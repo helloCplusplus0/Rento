@@ -1,0 +1,395 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 全局设置管理
+model GlobalSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique  // 设置键名，如 'electricityPrice', 'waterPrice'
+  value       String   // 设置值（JSON字符串格式）
+  type        String   // 数据类型：'number', 'string', 'boolean', 'object'
+  category    String   // 设置分类：'billing', 'system', 'notification'
+  description String?  // 设置描述
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("global_settings")
+}
+
+// 楼栋管理
+model Building {
+  id          String   @id @default(cuid())
+  name        String   // 平安寓6688_A栋
+  address     String?  // 详细地址
+  totalRooms  Int      @default(0)
+  description String?  // 楼栋描述
+  
+  // 关联关系
+  rooms       Room[]
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("buildings")
+}
+
+// 房间管理
+model Room {
+  id           String     @id @default(cuid())
+  roomNumber   String     // 101, 201, 302
+  floorNumber  Int        // 楼层号
+  buildingId   String     // 所属楼栋
+  
+  // 房间基本信息
+  roomType     RoomType   @default(SHARED)  // 合租/整租/单间
+  area         Float?     // 面积
+  rent         Decimal    // 租金
+  
+  // 房间状态
+  status       RoomStatus @default(VACANT)  // 空房/在租/逾期/维护
+  
+  // 租客信息
+  currentRenter String?   // 当前租客姓名
+  overdueDays   Int?      // 逾期天数
+  
+  // 关联关系
+  building     Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  contracts    Contract[]
+  meters       Meter[]    // 水电表关联
+  
+  // 时间戳
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  @@unique([buildingId, roomNumber])
+  @@index([buildingId, status])
+  @@index([roomNumber])
+  @@map("rooms")
+}
+
+enum RoomType {
+  SHARED  // 合租
+  WHOLE   // 整租
+  SINGLE  // 单间
+}
+
+enum RoomStatus {
+  VACANT      // 空房可租
+  OCCUPIED    // 在租中
+  OVERDUE     // 逾期
+  MAINTENANCE // 维护中
+}
+
+// 租客管理
+model Renter {
+  id               String    @id @default(cuid())
+  
+  // 基本信息
+  name             String    // 姓名
+  gender           String?   // 性别
+  phone            String    @unique // 手机号
+  idCard           String?   @unique // 身份证号
+  
+  // 联系信息
+  emergencyContact String?   // 紧急联系人
+  emergencyPhone   String?   // 紧急联系人电话
+  
+  // 职业信息
+  occupation       String?   // 职业
+  company          String?   // 公司名称
+  
+  // 入住信息
+  moveInDate       DateTime? // 入住日期
+  tenantCount      Int?      // 入住人数
+  
+  // 其他信息
+  remarks          String?   // 备注
+  
+  // 关联关系
+  contracts        Contract[]
+  
+  // 时间戳
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  @@map("renters")
+}
+
+// 合同管理
+model Contract {
+  id              String         @id @default(cuid())
+  contractNumber  String         @unique // 合同编号
+  
+  // 关联信息
+  roomId          String         // 房间ID
+  renterId        String         // 租客ID
+  
+  // 合同期限
+  startDate       DateTime       // 开始日期
+  endDate         DateTime       // 结束日期
+  isExtended      Boolean        @default(false) // 是否延期
+  
+  // 租金信息
+  monthlyRent     Decimal        // 月租金
+  totalRent       Decimal        // 总租金
+  deposit         Decimal        // 押金
+  keyDeposit      Decimal?       // 门卡押金
+  cleaningFee     Decimal?       // 保洁费
+  
+  // 合同状态
+  status          ContractStatus @default(PENDING)
+  businessStatus  String?        // 业务状态描述
+  
+  // 付款方式
+  paymentMethod   String?        // 付款方式描述
+  paymentTiming   String?        // 收租时间规则
+  
+  // 签约信息
+  signedBy        String?        // 签约人
+  signedDate      DateTime?      // 签约时间
+  
+  // 关联关系
+  room            Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  renter          Renter         @relation(fields: [renterId], references: [id], onDelete: Cascade)
+  bills           Bill[]
+  meterReadings   MeterReading[] // 抄表记录关联
+  
+  // 时间戳
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([status, endDate])
+  @@index([roomId, status])
+  @@map("contracts")
+}
+
+enum ContractStatus {
+  PENDING    // 待签约
+  ACTIVE     // 生效中
+  EXPIRED    // 已到期
+  TERMINATED // 已终止
+}
+
+// 账单管理
+model Bill {
+  id             String     @id @default(cuid())
+  billNumber     String     @unique // 账单编号
+  
+  // 基本信息
+  type           BillType   @default(RENT)
+  amount         Decimal    // 应收金额
+  receivedAmount Decimal    @default(0) // 已收金额
+  pendingAmount  Decimal    // 待收金额
+  
+  // 时间信息
+  dueDate        DateTime   // 应付日期
+  paidDate       DateTime?  // 实际支付日期
+  period         String?    // 账期描述
+  
+  // 状态管理
+  status         BillStatus @default(PENDING)
+  
+  // 关联信息
+  contractId     String     // 关联合同ID
+  
+  // 支付信息
+  paymentMethod  String?    // 收款方式
+  operator       String?    // 经办人
+  remarks        String?    // 备注
+  
+  // 聚合账单支持
+  aggregationType String?   @default("SINGLE") // 'SINGLE' | 'AGGREGATED'
+  
+  // 自动生成相关
+  metadata       String?    // 生成元数据(JSON格式) - 记录触发器类型、生成时间、计算依据等
+  
+  // 关联关系
+  contract       Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  meterReading   MeterReading? @relation(fields: [meterReadingId], references: [id], onDelete: SetNull)
+  billDetails    BillDetail[] // 账单明细关联
+  
+  // 水电费账单关联字段 (保持向后兼容)
+  meterReadingId String?    // 关联抄表记录ID (用于单仪表账单)
+  
+  // 时间戳
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  
+  @@index([status, dueDate])
+  @@index([contractId, status])
+  @@index([aggregationType])
+  @@index([type, status, createdAt])
+  @@index([dueDate, status, amount])
+  @@index([contractId, dueDate])
+  @@map("bills")
+}
+
+// 账单明细管理 (新增)
+model BillDetail {
+  id              String       @id @default(cuid())
+  
+  // 关联信息
+  billId          String       // 关联账单ID
+  meterReadingId  String       // 关联抄表记录ID
+  
+  // 仪表信息
+  meterType       MeterType    // 仪表类型
+  meterName       String?      // 仪表名称
+  
+  // 计费信息
+  usage           Decimal      // 用量
+  unitPrice       Decimal      // 单价
+  amount          Decimal      // 小计金额
+  unit            String       // 计量单位
+  
+  // 读数信息
+  previousReading Decimal?     // 上次读数
+  currentReading  Decimal      // 本次读数
+  readingDate     DateTime     // 抄表日期
+  
+  // 价格来源
+  priceSource     String?      // 'METER_CONFIG' | 'GLOBAL_SETTING'
+  
+  // 关联关系
+  bill            Bill         @relation(fields: [billId], references: [id], onDelete: Cascade)
+  meterReading    MeterReading @relation(fields: [meterReadingId], references: [id], onDelete: Cascade)
+  
+  // 时间戳
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([billId])
+  @@index([meterReadingId])
+  @@index([meterType])
+  @@map("bill_details")
+}
+
+enum BillType {
+  RENT      // 租金
+  DEPOSIT   // 押金
+  UTILITIES // 水电费
+  OTHER     // 其他
+}
+
+enum BillStatus {
+  PENDING   // 待付款
+  PAID      // 已付款
+  OVERDUE   // 逾期
+  COMPLETED // 已完成
+}
+
+// 仪表配置管理
+model Meter {
+  id            String     @id @default(cuid())
+  
+  // 基本信息
+  meterNumber   String     @unique // 仪表编号 (全局唯一)
+  displayName   String     // 显示名称 (如: 冷水表1, 电表-客厅)
+  meterType     MeterType  // 仪表类型
+  
+  // 关联信息
+  roomId        String     // 所属房间
+  
+  // 配置信息
+  unitPrice     Decimal    @default(0) // 单价 (元/度 或 元/吨)
+  unit          String     // 计量单位 (度/吨/立方米)
+  location      String?    // 安装位置描述
+  
+  // 状态管理
+  isActive      Boolean    @default(true) // 是否启用
+  installDate   DateTime?  // 安装日期
+  
+  // 排序和分组
+  sortOrder     Int        @default(0) // 同类型仪表的排序
+  
+  // 备注信息
+  remarks       String?    // 备注
+  
+  // 关联关系
+  room          Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  readings      MeterReading[]
+  
+  // 时间戳
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  @@index([roomId, meterType, isActive])
+  @@index([meterType, isActive])
+  @@map("meters")
+}
+
+// 抄表记录管理
+model MeterReading {
+  id              String    @id @default(cuid())
+  
+  // 关联信息
+  meterId         String    // 仪表ID
+  contractId      String?   // 关联合同ID (可选，用于账单生成)
+  
+  // 读数信息
+  previousReading Decimal?  // 上次读数
+  currentReading  Decimal   // 本次读数
+  usage           Decimal   // 用量 (本次-上次)
+  
+  // 时间信息
+  readingDate     DateTime  // 抄表日期
+  period          String?   // 抄表周期描述 (如: 2024年1月)
+  
+  // 费用信息
+  unitPrice       Decimal   // 抄表时的单价
+  amount          Decimal   // 费用金额 (用量×单价)
+  
+  // 状态管理
+  status          ReadingStatus @default(PENDING) // 抄表状态
+  isBilled        Boolean   @default(false) // 是否已生成账单
+  
+  // 操作信息
+  operator        String?   // 抄表员
+  remarks         String?   // 备注
+  
+  // 异常标记
+  isAbnormal      Boolean   @default(false) // 是否异常
+  abnormalReason  String?   // 异常原因
+  
+  // 关联关系
+  meter           Meter     @relation(fields: [meterId], references: [id], onDelete: Cascade)
+  contract        Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  bills           Bill[]    // 关联的账单 (保持向后兼容)
+  billDetails     BillDetail[] // 关联的账单明细 (新增)
+  
+  // 时间戳
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([meterId, readingDate])
+  @@index([contractId, readingDate])
+  @@index([status, readingDate])
+  @@map("meter_readings")
+}
+
+// 仪表类型枚举
+enum MeterType {
+  ELECTRICITY  // 电表
+  COLD_WATER   // 冷水表
+  HOT_WATER    // 热水表
+  GAS          // 燃气表
+}
+
+// 抄表状态枚举
+enum ReadingStatus {
+  PENDING    // 待确认
+  CONFIRMED  // 已确认
+  BILLED     // 已生成账单
+  CANCELLED  // 已取消
+}

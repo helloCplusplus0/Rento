@@ -1,11 +1,6 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // 启用实验性功能
-  experimental: {
-    // 为移动端优化
-    optimizeCss: true,
-  },
   // 图片优化配置
   images: {
     formats: ['image/webp', 'image/avif'],

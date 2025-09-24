@@ -1,0 +1,27 @@
+'use client'
+
+import { TopNavigation } from './TopNavigation'
+
+interface DesktopLayoutProps {
+  children: React.ReactNode
+}
+
+/**
+ * 桌面端布局组件
+ * 特点：顶部导航栏，多列内容布局，支持键盘导航
+ */
+export function DesktopLayout({ children }: DesktopLayoutProps) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 顶部导航栏 */}
+      <TopNavigation />
+      
+      {/* 主内容区域 */}
+      <main className="pt-18">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {children}
+        </div>
+      </main>
+    </div>
+  )
+}
