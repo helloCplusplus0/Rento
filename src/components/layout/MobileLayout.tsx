@@ -1,6 +1,6 @@
 'use client'
 
-import { BottomNavigation } from './BottomNavigation'
+import { UnifiedNavigation } from './UnifiedNavigation'
 
 interface MobileLayoutProps {
   children: React.ReactNode
@@ -18,8 +18,8 @@ export function MobileLayout({ children }: MobileLayoutProps) {
         {children}
       </main>
       
-      {/* 底部导航栏 */}
-      <BottomNavigation />
+      {/* 统一导航栏 - 移动端样式 */}
+      <UnifiedNavigation variant="mobile" />
     </div>
   )
 }

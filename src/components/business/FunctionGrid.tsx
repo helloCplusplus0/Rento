@@ -17,7 +17,7 @@ interface FunctionItem {
 }
 
 /**
- * 核心功能定义 - 4个主要业务功能 + 批量抄表 + 抄表历史 + 系统监控
+ * 核心功能定义 - 4个主要业务功能 + 批量抄表 + 抄表历史 + 系统监控 + 性能测试功能
  */
 const coreFeatures: FunctionItem[] = [
   {
@@ -112,6 +112,45 @@ const coreFeatures: FunctionItem[] = [
     color: 'text-white',
     bgColor: 'bg-gradient-to-br from-teal-500 to-teal-600',
     description: '实时监控系统健康状态'
+  },
+  {
+    id: 'performance-test',
+    title: '性能测试',
+    href: '/performance-test',
+    icon: (
+      <svg fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+      </svg>
+    ),
+    color: 'text-white',
+    bgColor: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+    description: '系统性能测试和验证'
+  },
+  {
+    id: 'performance-benchmark',
+    title: '性能基准',
+    href: '/performance-benchmark',
+    icon: (
+      <svg fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+      </svg>
+    ),
+    color: 'text-white',
+    bgColor: 'bg-gradient-to-br from-amber-500 to-amber-600',
+    description: '性能基准测试和评分'
+  },
+  {
+    id: 'performance-analysis',
+    title: '性能分析',
+    href: '/performance-analysis',
+    icon: (
+      <svg fill="currentColor" viewBox="0 0 24 24">
+        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+      </svg>
+    ),
+    color: 'text-white',
+    bgColor: 'bg-gradient-to-br from-rose-500 to-rose-600',
+    description: '页面跳转性能分析'
   }
 ]
 
@@ -185,7 +224,7 @@ export function FunctionGrid({ className, showTitle = true }: FunctionGridProps)
         </CardHeader>
       )}
       <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-10 gap-3 sm:gap-4">
           {coreFeatures.map(feature => (
             <FunctionGridItem key={feature.id} feature={feature} />
           ))}
@@ -205,8 +244,8 @@ export function FunctionGridSkeleton({ className }: { className?: string }) {
         <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
       </CardHeader>
       <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {Array.from({ length: 6 }).map((_, index) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-10 gap-3 sm:gap-4">
+          {Array.from({ length: 10 }).map((_, index) => (
             <div 
               key={index}
               className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-lg bg-gray-200 animate-pulse"

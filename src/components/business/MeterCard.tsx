@@ -190,7 +190,7 @@ export function MeterCard({
               <AlertDialogHeader>
                 <AlertDialogTitle>确认删除仪表</AlertDialogTitle>
                 <AlertDialogDescription>
-                  您确定要删除仪表 "{meter.displayName}" 吗？
+                  您确定要删除仪表 &quot;{meter.displayName}&quot; 吗？
                   <br />
                   <span className="text-red-600 font-medium">
                     此操作无法撤销，仪表的所有历史数据将被永久删除。

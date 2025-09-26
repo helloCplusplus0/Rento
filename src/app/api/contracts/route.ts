@@ -131,7 +131,7 @@ async function handlePostContracts(request: NextRequest) {
     paymentTiming,
     signedBy,
     signedDate,
-    remarks,
+    remarks: contractRemarks,
     generateBills = true
   } = body
 
@@ -197,7 +197,8 @@ async function handlePostContracts(request: NextRequest) {
     paymentMethod: paymentMethod || undefined,
     paymentTiming: paymentTiming || undefined,
     signedBy: signedBy || undefined,
-    signedDate: signedDate ? new Date(signedDate) : undefined
+    signedDate: signedDate ? new Date(signedDate) : undefined,
+    remarks: contractRemarks || undefined
   }
 
   const contract = await contractQueries.create(contractData)

@@ -1,0 +1,8 @@
+<svg width="144" height="144" viewBox="0 0 144 144" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="144" height="144" rx="32" fill="#3b82f6"/>
+  <path d="M36 48h72v48H36V48z" fill="white" opacity="0.9"/>
+  <path d="M44 56h16v8h-16v-8zm24 0h16v8h-16v-8zm24 0h16v8h-16v-8z" fill="#3b82f6"/>
+  <path d="M44 72h16v8h-16v-8zm24 0h16v8h-16v-8zm24 0h16v8h-16v-8z" fill="#3b82f6"/>
+  <path d="M44 88h16v8h-16v-8zm24 0h16v8h-16v-8zm24 0h16v8h-16v-8z" fill="#3b82f6"/>
+  <text x="72" y="116" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Rento</text>
+</svg>

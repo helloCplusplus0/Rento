@@ -1,6 +1,6 @@
 'use client'
 
-import { TopNavigation } from './TopNavigation'
+import { UnifiedNavigation } from './UnifiedNavigation'
 
 interface DesktopLayoutProps {
   children: React.ReactNode
@@ -13,11 +13,11 @@ interface DesktopLayoutProps {
 export function DesktopLayout({ children }: DesktopLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
-      <TopNavigation />
+      {/* 统一导航栏 - 桌面端样式 */}
+      <UnifiedNavigation variant="desktop" />
       
       {/* 主内容区域 */}
-      <main className="pt-18">
+      <main className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {children}
         </div>

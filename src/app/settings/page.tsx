@@ -216,6 +216,13 @@ export default function SettingsPage() {
       description: '检查和修复系统数据一致性问题',
       type: 'button' as const,
       action: () => window.open('/data-consistency', '_blank')
+    },
+    {
+      id: 'businessFlowValidation',
+      title: '业务流程验证',
+      description: '验证核心业务流程的完整性和数据一致性',
+      type: 'button' as const,
+      action: () => window.open('/business-flow-validation', '_blank')
     }
   ]
 
@@ -347,6 +354,12 @@ export default function SettingsPage() {
               </div>
               <div>
                 <strong>自动备份：</strong>开启后系统会定期备份重要数据，确保数据安全。
+              </div>
+              <div>
+                <strong>数据一致性管理：</strong>检查和修复系统中的数据不一致问题，确保数据完整性。
+              </div>
+              <div>
+                <strong>业务流程验证：</strong>全面验证房间管理、账单生成、水电表抄表、合同生命周期等核心业务流程，确保系统运行正常。
               </div>
             </div>
           </CardContent>

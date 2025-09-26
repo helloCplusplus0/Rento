@@ -2,6 +2,5 @@
 export { AppLayout } from './AppLayout'
 export { MobileLayout } from './MobileLayout'
 export { DesktopLayout } from './DesktopLayout'
-export { BottomNavigation } from './BottomNavigation'
-export { TopNavigation } from './TopNavigation'
+export { UnifiedNavigation } from './UnifiedNavigation'
 export { PageContainer, PageContainerSkeleton } from './PageContainer'

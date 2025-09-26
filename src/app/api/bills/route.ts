@@ -139,9 +139,9 @@ export async function POST(request: NextRequest) {
     
     return Response.json(transformedBill)
   } catch (error) {
-    console.error('Failed to create bill:', error)
+    console.error('账单生成失败:', error)
     return Response.json(
-      { error: 'Internal server error' },
+      { error: '账单生成失败' },
       { status: 500 }
     )
   }

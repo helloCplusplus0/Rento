@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import { getEnhancedDashboardStats } from '@/lib/dashboard-queries'
 import { 
   withApiErrorHandler, 

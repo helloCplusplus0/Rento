@@ -634,7 +634,8 @@ export const contractQueries = {
   }),
 
   // 创建合同
-  create: (data: {
+  // 创建合同
+  create: async (data: {
     contractNumber: string
     roomId: string
     renterId: string
@@ -649,34 +650,83 @@ export const contractQueries = {
     paymentTiming?: string
     signedBy?: string
     signedDate?: Date
-  }) => prisma.contract.create({
-    data,
-    include: {
-      room: {
-        include: { building: true }
-      },
-      renter: true
-    }
-  }),
+  }) => {
+    // 使用事务确保数据一致性
+    return await prisma.$transaction(async (tx) => {
+      // 创建合同
+      const contract = await tx.contract.create({
+        data: {
+          ...data,
+          status: 'ACTIVE' // 明确设置为ACTIVE状态
+        },
+        include: {
+          room: {
+            include: { building: true }
+          },
+          renter: true
+        }
+      })
+
+      // 同步更新房间状态为OCCUPIED
+      await tx.room.update({
+        where: { id: data.roomId },
+        data: { 
+          status: 'OCCUPIED',
+          currentRenter: data.renterId
+        }
+      })
+
+      return contract
+    })
+  },
 
   // 更新合同
-  update: (id: string, data: {
+  update: async (id: string, data: {
     status?: ContractStatus
     isExtended?: boolean
     endDate?: Date
     businessStatus?: string
     signedBy?: string
     signedDate?: Date
-  }) => prisma.contract.update({
-    where: { id },
-    data,
-    include: {
-      room: {
-        include: { building: true }
-      },
-      renter: true
-    }
-  }),
+  }) => {
+    // 使用事务确保数据一致性
+    return await prisma.$transaction(async (tx) => {
+      // 获取合同信息
+      const existingContract = await tx.contract.findUnique({
+        where: { id },
+        include: { room: true }
+      })
+
+      if (!existingContract) {
+        throw new Error(`合同不存在: ${id}`)
+      }
+
+      // 更新合同
+      const updatedContract = await tx.contract.update({
+        where: { id },
+        data,
+        include: {
+          room: {
+            include: { building: true }
+          },
+          renter: true
+        }
+      })
+
+      // 如果合同状态变为TERMINATED，同步更新房间状态为VACANT
+      if (data.status === 'TERMINATED') {
+        await tx.room.update({
+          where: { id: existingContract.roomId },
+          data: { 
+            status: 'VACANT',
+            currentRenter: null
+          }
+        })
+      }
+
+      return updatedContract
+    })
+  },
 
   // 删除合同
   delete: (id: string) => prisma.contract.delete({
