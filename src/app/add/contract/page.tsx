@@ -7,7 +7,13 @@ export const metadata: Metadata = {
   description: '新建租赁合同，设置租客信息和房间信息'
 }
 
-export default async function AddContractRoute() {
+export default async function AddContractRoute({
+  searchParams
+}: {
+  searchParams: Promise<{ roomId?: string }>
+}) {
+  const { roomId } = await searchParams
+  
   try {
     // 获取租客和可用房间数据
     const [renters, availableRooms] = await Promise.all([
@@ -59,6 +65,7 @@ export default async function AddContractRoute() {
       <CreateContractPage 
         renters={rentersData}
         availableRooms={roomsData}
+        preselectedRoomId={roomId}
       />
     )
   } catch (error) {
@@ -67,6 +74,7 @@ export default async function AddContractRoute() {
       <CreateContractPage 
         renters={[]}
         availableRooms={[]}
+        preselectedRoomId={roomId}
       />
     )
   }

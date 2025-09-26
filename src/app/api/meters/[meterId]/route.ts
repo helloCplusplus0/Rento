@@ -124,7 +124,7 @@ export async function PUT(
 }
 
 /**
- * 删除仪表（软删除）
+ * 移除仪表关联（软删除或硬删除）
  * DELETE /api/meters/[meterId]
  */
 export async function DELETE(
@@ -145,20 +145,24 @@ export async function DELETE(
     
     // 检查是否有抄表记录
     if (existingMeter.readings && existingMeter.readings.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete meter with existing readings. Please disable it instead.' },
-        { status: 400 }
-      )
+      // 有抄表记录时，只能软删除（设置为禁用状态）
+      await meterQueries.softDelete(meterId)
+      return NextResponse.json({ 
+        message: 'Meter association removed successfully. Historical data preserved.',
+        action: 'soft_delete'
+      })
+    } else {
+      // 没有抄表记录时，可以硬删除
+      await meterQueries.delete(meterId)
+      return NextResponse.json({ 
+        message: 'Meter removed successfully.',
+        action: 'hard_delete'
+      })
     }
-    
-    // 软删除仪表（设置为禁用状态）
-    await meterQueries.delete(meterId)
-    
-    return NextResponse.json({ message: 'Meter deleted successfully' })
   } catch (error) {
-    console.error('Failed to delete meter:', error)
+    console.error('Failed to remove meter:', error)
     return NextResponse.json(
-      { error: 'Failed to delete meter' },
+      { error: 'Failed to remove meter' },
       { status: 500 }
     )
   }

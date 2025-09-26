@@ -1,11 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { MeterList } from './MeterList'
-import { MeterForm } from './MeterForm'
-import type { RoomMeterManagementProps, MeterWithReadingsForClient, MeterFormData } from '@/types/meter'
+import { MeterFormDialog } from './MeterFormDialog'
+import type { RoomMeterManagementProps, MeterWithReadingsForClient } from '@/types/meter'
 
 /**
  * 房间仪表管理组件
@@ -19,7 +18,6 @@ export function RoomMeterManagement({
 }: RoomMeterManagementProps) {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingMeter, setEditingMeter] = useState<MeterWithReadingsForClient | undefined>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // 打开添加仪表表单
   const handleAddMeter = () => {
@@ -39,54 +37,13 @@ export function RoomMeterManagement({
     setEditingMeter(undefined)
   }
 
-  // 提交仪表表单
-  const handleSubmitForm = async (formData: MeterFormData) => {
-    setIsSubmitting(true)
-    try {
-      if (editingMeter) {
-        // 更新仪表
-        const response = await fetch(`/api/meters/${editingMeter.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to update meter')
-        }
-
-        toast.success('仪表更新成功')
-      } else {
-        // 添加仪表
-        const response = await fetch(`/api/rooms/${roomId}/meters`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to create meter')
-        }
-
-        toast.success('仪表添加成功')
-      }
-
-      // 关闭表单并刷新数据
-      handleCloseForm()
-      onMeterUpdate()
-    } catch (error) {
-      console.error('Failed to submit meter form:', error)
-      toast.error(error instanceof Error ? error.message : '操作失败，请重试')
-    } finally {
-      setIsSubmitting(false)
-    }
+  // 表单操作成功后的处理
+  const handleFormSuccess = () => {
+    onMeterUpdate()
   }
 
   // 删除仪表
   const handleDeleteMeter = async (meterId: string) => {
-    // 移除原来的confirm对话框，因为现在使用AlertDialog组件处理确认
     try {
       const response = await fetch(`/api/meters/${meterId}`, {
         method: 'DELETE'
@@ -94,14 +51,22 @@ export function RoomMeterManagement({
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to delete meter')
+        throw new Error(error.error || 'Failed to remove meter')
       }
 
-      toast.success('仪表删除成功')
+      const result = await response.json()
+      
+      // 根据删除类型显示不同的成功消息
+      if (result.action === 'soft_delete') {
+        toast.success('仪表关联已移除，历史数据已保留')
+      } else {
+        toast.success('仪表移除成功')
+      }
+      
       onMeterUpdate()
     } catch (error) {
-      console.error('Failed to delete meter:', error)
-      toast.error(error instanceof Error ? error.message : '删除失败，请重试')
+      console.error('Failed to remove meter:', error)
+      toast.error(error instanceof Error ? error.message : '移除失败，请重试')
     }
   }
 
@@ -142,23 +107,13 @@ export function RoomMeterManagement({
       />
 
       {/* 仪表配置表单弹窗 */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingMeter ? '编辑仪表配置' : '添加仪表配置'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <MeterForm
-            roomId={roomId}
-            meter={editingMeter}
-            onSubmit={handleSubmitForm}
-            onCancel={handleCloseForm}
-            loading={isSubmitting}
-          />
-        </DialogContent>
-      </Dialog>
+      <MeterFormDialog
+        roomId={roomId}
+        meter={editingMeter}
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSuccess={handleFormSuccess}
+      />
     </div>
   )
 }

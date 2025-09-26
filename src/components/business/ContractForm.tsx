@@ -32,6 +32,7 @@ interface ContractFormData {
 interface ContractFormProps {
   renters: RenterWithContractsForClient[]
   availableRooms: RoomWithBuildingForClient[]
+  preselectedRoomId?: string // 新增：预选房间ID
   onSubmit: (data: ContractFormData) => void
   onCancel: () => void
   loading?: boolean
@@ -46,6 +47,7 @@ interface ContractFormProps {
 export function ContractForm({
   renters,
   availableRooms,
+  preselectedRoomId,
   onSubmit,
   onCancel,
   loading = false,
@@ -73,12 +75,20 @@ export function ContractForm({
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 初始化表单数据
+  // 初始化表单数据和预选房间
   useEffect(() => {
     if (initialData) {
       setFormData(prev => ({ ...prev, ...initialData }))
     }
-  }, [initialData])
+    
+    // 如果有预选房间ID，自动选择该房间
+    if (preselectedRoomId) {
+      const preselectedRoom = availableRooms.find(room => room.id === preselectedRoomId)
+      if (preselectedRoom) {
+        setSelectedRoom(preselectedRoom)
+      }
+    }
+  }, [initialData, preselectedRoomId, availableRooms])
 
   // 当选择房间时，自动填充租金信息
   useEffect(() => {

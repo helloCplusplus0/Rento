@@ -14,7 +14,7 @@ export const METER_BUSINESS_RULES = {
   maxSameTypePerRoom: 5,
   
   // 单价规则
-  priceRange: { min: 0, max: 100 },
+  priceRange: { min: 0.01, max: 100 },
   
   // 显示名称规则
   displayNameMaxLength: 50,

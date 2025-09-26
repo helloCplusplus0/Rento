@@ -23,15 +23,23 @@ export async function GET(
     // 获取房间仪表列表
     const meters = await meterQueries.findByRoom(roomId)
     
-    // 转换Decimal类型为number，并添加最新读数信息
+    // 转换Decimal类型为number，并添加完整的仪表信息
     const metersData = meters.map((meter: any) => ({
       id: meter.id,
+      meterNumber: meter.meterNumber,
       displayName: meter.displayName,
       meterType: meter.meterType,
+      roomId: meter.roomId,
       unitPrice: Number(meter.unitPrice),
       unit: meter.unit,
       location: meter.location,
       isActive: meter.isActive,
+      installDate: meter.installDate,
+      sortOrder: meter.sortOrder,
+      remarks: meter.remarks,
+      createdAt: meter.createdAt,
+      updatedAt: meter.updatedAt,
+      room: meter.room,
       // 添加最新读数信息供抄表使用
       lastReading: meter.readings.length > 0 ? Number(meter.readings[0].currentReading) : 0,
       lastReadingDate: meter.readings.length > 0 ? meter.readings[0].readingDate : null,

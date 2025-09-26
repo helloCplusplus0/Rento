@@ -180,20 +180,24 @@ export function MeterCard({
                 variant="ghost"
                 size="sm"
                 disabled={loading}
-                className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
-                删除
+                移除
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>确认删除仪表</AlertDialogTitle>
+                <AlertDialogTitle>移除仪表关联</AlertDialogTitle>
                 <AlertDialogDescription>
-                  您确定要删除仪表 &quot;{meter.displayName}&quot; 吗？
+                  您确定要从房间中移除仪表 &quot;{meter.displayName}&quot; 吗？
                   <br />
-                  <span className="text-red-600 font-medium">
-                    此操作无法撤销，仪表的所有历史数据将被永久删除。
+                  <span className="text-blue-600 font-medium">
+                    此操作仅会取消仪表与房间的关联关系，不会删除仪表的历史数据和账单记录。
+                  </span>
+                  <br />
+                  <span className="text-gray-600 text-sm mt-2 block">
+                    如需彻底删除仪表，请先确保没有相关的抄表记录和账单数据。
                   </span>
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -201,9 +205,9 @@ export function MeterCard({
                 <AlertDialogCancel>取消</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                  className="bg-orange-600 hover:bg-orange-700 focus:ring-orange-600"
                 >
-                  确认删除
+                  确认移除
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

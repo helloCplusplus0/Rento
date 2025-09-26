@@ -171,6 +171,11 @@ function FunctionGridItem({ feature }: FunctionGridItemProps) {
     setIsLoading(true)
     
     try {
+      // 使用 window.location.href 替代 router.push 避免预取冲突
+      window.location.href = feature.href
+    } catch (error) {
+      console.error('Navigation error:', error)
+      // 回退到 router.push
       await router.push(feature.href)
     } finally {
       // 延迟重置加载状态，避免闪烁

@@ -44,6 +44,27 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
     setGeneratedRooms([])
   }
 
+  // 处理楼栋更新
+  const handleBuildingUpdate = (updatedBuilding: Building & { totalRooms: number }) => {
+    setBuildings(prev => prev.map(building => 
+      building.id === updatedBuilding.id ? updatedBuilding : building
+    ))
+    // 如果当前选中的楼栋被更新，也要更新选中状态
+    if (selectedBuilding?.id === updatedBuilding.id) {
+      setSelectedBuilding(updatedBuilding)
+    }
+  }
+
+  // 处理楼栋删除
+  const handleBuildingDelete = (buildingId: string) => {
+    setBuildings(prev => prev.filter(building => building.id !== buildingId))
+    // 如果删除的是当前选中的楼栋，清空选中状态
+    if (selectedBuilding?.id === buildingId) {
+      setSelectedBuilding(null)
+      setGeneratedRooms([])
+    }
+  }
+
   // 处理房间生成
   const handleRoomsGenerate = (rooms: RoomData[]) => {
     setGeneratedRooms(rooms)
@@ -88,6 +109,8 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
           buildings={buildings}
           onBuildingSelect={handleBuildingSelect}
           onNewBuilding={handleNewBuilding}
+          onBuildingUpdate={handleBuildingUpdate}
+          onBuildingDelete={handleBuildingDelete}
         />
 
         {/* 房间批量添加表单 */}

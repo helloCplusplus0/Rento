@@ -102,7 +102,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const updateData = await request.json()
+    const requestData = await request.json()
     
     // 检查房间是否存在
     const existingRoom = await roomQueries.findById(id)
@@ -112,6 +112,28 @@ export async function PUT(
         { status: 404 }
       )
     }
+    
+    // 过滤掉不支持的字段，只保留roomQueries.update支持的字段
+    const updateData: {
+      roomNumber?: string
+      floorNumber?: number
+      roomType?: 'SHARED' | 'WHOLE' | 'SINGLE'
+      area?: number
+      rent?: number
+      status?: any
+      currentRenter?: string
+      overdueDays?: number
+    } = {}
+    
+    // 只复制支持的字段
+    if (requestData.roomNumber !== undefined) updateData.roomNumber = requestData.roomNumber
+    if (requestData.floorNumber !== undefined) updateData.floorNumber = requestData.floorNumber
+    if (requestData.roomType !== undefined) updateData.roomType = requestData.roomType
+    if (requestData.area !== undefined) updateData.area = requestData.area
+    if (requestData.rent !== undefined) updateData.rent = requestData.rent
+    if (requestData.status !== undefined) updateData.status = requestData.status
+    if (requestData.currentRenter !== undefined) updateData.currentRenter = requestData.currentRenter
+    if (requestData.overdueDays !== undefined) updateData.overdueDays = requestData.overdueDays
     
     // 如果更新房间号，检查唯一性
     if (updateData.roomNumber && updateData.roomNumber !== existingRoom.roomNumber) {

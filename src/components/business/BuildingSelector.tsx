@@ -5,31 +5,43 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Building } from 'lucide-react'
+import { Plus, Building, Edit, Trash2, MoreVertical } from 'lucide-react'
 import type { Building as BuildingType } from '@prisma/client'
 
 interface BuildingSelectorProps {
   buildings: (BuildingType & { totalRooms: number })[]
   onBuildingSelect: (building: BuildingType) => void
   onNewBuilding: (building: BuildingType) => void
+  onBuildingUpdate?: (building: BuildingType & { totalRooms: number }) => void
+  onBuildingDelete?: (buildingId: string) => void
 }
 
 /**
  * 楼栋选择器组件
- * 支持选择现有楼栋和新建楼栋
+ * 支持选择现有楼栋、新建楼栋、编辑楼栋和删除楼栋
  */
 export function BuildingSelector({ 
   buildings, 
   onBuildingSelect, 
-  onNewBuilding 
+  onNewBuilding,
+  onBuildingUpdate,
+  onBuildingDelete
 }: BuildingSelectorProps) {
   const [showNewForm, setShowNewForm] = useState(false)
+  const [editingBuilding, setEditingBuilding] = useState<(BuildingType & { totalRooms: number }) | null>(null)
   const [newBuilding, setNewBuilding] = useState({
     name: '',
     address: '',
     description: ''
   })
+  const [editBuilding, setEditBuilding] = useState({
+    name: '',
+    address: '',
+    description: ''
+  })
   const [isCreating, setIsCreating] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   const handleCreateBuilding = async () => {
     if (!newBuilding.name.trim()) {
@@ -63,6 +75,87 @@ export function BuildingSelector({
       alert('创建楼栋失败，请重试')
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const handleEditBuilding = (building: BuildingType & { totalRooms: number }) => {
+    setEditingBuilding(building)
+    setEditBuilding({
+      name: building.name,
+      address: building.address || '',
+      description: building.description || ''
+    })
+  }
+
+  const handleUpdateBuilding = async () => {
+    if (!editingBuilding || !editBuilding.name.trim()) {
+      alert('请输入楼栋名称')
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      const response = await fetch(`/api/buildings/${editingBuilding.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editBuilding.name.trim(),
+          address: editBuilding.address.trim() || undefined,
+          description: editBuilding.description.trim() || undefined
+        })
+      })
+      
+      if (response.ok) {
+        const updatedBuilding = await response.json()
+        onBuildingUpdate?.(updatedBuilding)
+        setEditingBuilding(null)
+        setEditBuilding({ name: '', address: '', description: '' })
+      } else {
+        const error = await response.json()
+        alert(`更新失败: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Failed to update building:', error)
+      alert('更新楼栋失败，请重试')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDeleteBuilding = async (building: BuildingType & { totalRooms: number }) => {
+    const hasRooms = building.totalRooms > 0
+    
+    // 最佳实践：存在房间时禁止直接删除，引导用户先处理房间
+    if (hasRooms) {
+      alert(`无法删除楼栋 "${building.name}"\n\n该楼栋包含 ${building.totalRooms} 间房间。为了数据安全，请先：\n\n1. 终止所有房间的租赁合同\n2. 结清所有相关账单\n3. 删除所有房间\n4. 然后再删除楼栋\n\n这样可以确保不会意外丢失重要的业务数据。`)
+      return
+    }
+    
+    // 只有空楼栋才允许删除
+    const confirmMessage = `确定要删除空楼栋 "${building.name}" 吗？`
+    if (!confirm(confirmMessage)) {
+      return
+    }
+
+    setIsDeleting(building.id)
+    try {
+      const response = await fetch(`/api/buildings/${building.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        onBuildingDelete?.(building.id)
+        alert(result.message || '楼栋删除成功')
+      } else {
+        const error = await response.json()
+        alert(`删除失败: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Failed to delete building:', error)
+      alert('删除楼栋失败，请重试')
+    } finally {
+      setIsDeleting(null)
     }
   }
 
@@ -130,18 +223,79 @@ export function BuildingSelector({
           </div>
         )}
 
+        {/* 编辑楼栋表单 */}
+        {editingBuilding && (
+          <div className="p-4 border rounded-lg space-y-3 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-blue-900">编辑楼栋</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingBuilding(null)}
+                disabled={isUpdating}
+              >
+                ✕
+              </Button>
+            </div>
+            <div>
+              <Label htmlFor="editBuildingName">楼栋名称 *</Label>
+              <Input
+                id="editBuildingName"
+                placeholder="如：平安寓6688_A栋"
+                value={editBuilding.name}
+                onChange={(e) => setEditBuilding(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editBuildingAddress">楼栋地址</Label>
+              <Input
+                id="editBuildingAddress"
+                placeholder="详细地址"
+                value={editBuilding.address}
+                onChange={(e) => setEditBuilding(prev => ({ ...prev, address: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editBuildingDescription">楼栋描述</Label>
+              <Input
+                id="editBuildingDescription"
+                placeholder="楼栋描述信息"
+                value={editBuilding.description}
+                onChange={(e) => setEditBuilding(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleUpdateBuilding} 
+                disabled={!editBuilding.name.trim() || isUpdating}
+              >
+                {isUpdating ? '更新中...' : '更新'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setEditingBuilding(null)}
+                disabled={isUpdating}
+              >
+                取消
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* 现有楼栋列表 */}
         {buildings.length > 0 ? (
           <div className="grid grid-cols-1 gap-3">
             {buildings.map(building => (
               <div
                 key={building.id}
-                className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => onBuildingSelect(building)}
+                className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center">
                   <Building className="w-5 h-5 text-gray-400 mr-3" />
-                  <div className="flex-1">
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => onBuildingSelect(building)}
+                  >
                     <h4 className="font-medium">{building.name}</h4>
                     {building.address && (
                       <p className="text-sm text-gray-500">{building.address}</p>
@@ -149,6 +303,38 @@ export function BuildingSelector({
                     <p className="text-xs text-gray-400">
                       共 {building.totalRooms} 间房
                     </p>
+                  </div>
+                  
+                  {/* 操作按钮 */}
+                  <div className="flex items-center gap-1 ml-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditBuilding(building)
+                      }}
+                      disabled={editingBuilding?.id === building.id}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteBuilding(building)
+                      }}
+                      disabled={isDeleting === building.id}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {isDeleting === building.id ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>

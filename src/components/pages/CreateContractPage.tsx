@@ -9,13 +9,14 @@ import type { RenterWithContractsForClient, RoomWithBuildingForClient } from '@/
 interface CreateContractPageProps {
   renters: RenterWithContractsForClient[]
   availableRooms: RoomWithBuildingForClient[]
+  preselectedRoomId?: string // 新增：预选房间ID
 }
 
 /**
  * 创建合同页面组件
  * 提供完整的合同创建流程
  */
-export function CreateContractPage({ renters, availableRooms }: CreateContractPageProps) {
+export function CreateContractPage({ renters, availableRooms, preselectedRoomId }: CreateContractPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -60,6 +61,7 @@ export function CreateContractPage({ renters, availableRooms }: CreateContractPa
         <ContractForm
           renters={renters}
           availableRooms={availableRooms}
+          preselectedRoomId={preselectedRoomId}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           loading={loading}

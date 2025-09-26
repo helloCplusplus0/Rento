@@ -1322,13 +1322,27 @@ export const meterReadingQueries = {
   },
 
   // 获取抄表统计
-  getReadingStats: async (startDate?: Date, endDate?: Date) => {
-    const whereClause = startDate && endDate ? {
-      readingDate: {
+  getReadingStats: async (startDate?: Date, endDate?: Date, options: {
+    includeInactiveMeters?: boolean // 是否包含已移除仪表的历史数据
+  } = {}) => {
+    const { includeInactiveMeters = true } = options
+    
+    const whereClause: any = {}
+    
+    // 时间范围筛选
+    if (startDate && endDate) {
+      whereClause.readingDate = {
         gte: startDate,
         lte: endDate
       }
-    } : {}
+    }
+    
+    // 是否包含已移除仪表的数据
+    if (!includeInactiveMeters) {
+      whereClause.meter = {
+        isActive: true
+      }
+    }
 
     const readings = await prisma.meterReading.findMany({
       where: whereClause,
@@ -1337,13 +1351,21 @@ export const meterReadingQueries = {
         usage: true,
         status: true,
         meter: {
-          select: { meterType: true }
+          select: { 
+            meterType: true,
+            isActive: true,
+            displayName: true
+          }
         }
       }
     })
 
     const totalAmount = readings.reduce((sum, reading) => sum + Number(reading.amount), 0)
     const totalUsage = readings.reduce((sum, reading) => sum + Number(reading.usage), 0)
+    
+    // 分别统计活跃和已移除仪表的数据
+    const activeReadings = readings.filter(r => r.meter.isActive)
+    const inactiveReadings = readings.filter(r => !r.meter.isActive)
 
     return {
       totalReadings: readings.length,
@@ -1353,7 +1375,33 @@ export const meterReadingQueries = {
       billedReadings: readings.filter(r => r.status === 'BILLED').length,
       electricityReadings: readings.filter(r => r.meter.meterType === 'ELECTRICITY').length,
       waterReadings: readings.filter(r => r.meter.meterType === 'COLD_WATER' || r.meter.meterType === 'HOT_WATER').length,
-      gasReadings: readings.filter(r => r.meter.meterType === 'GAS').length
+      gasReadings: readings.filter(r => r.meter.meterType === 'GAS').length,
+      // 新增：活跃和已移除仪表的数据分析
+      activeMetersData: {
+        readings: activeReadings.length,
+        amount: activeReadings.reduce((sum, r) => sum + Number(r.amount), 0),
+        usage: activeReadings.reduce((sum, r) => sum + Number(r.usage), 0)
+      },
+      removedMetersData: {
+        readings: inactiveReadings.length,
+        amount: inactiveReadings.reduce((sum, r) => sum + Number(r.amount), 0),
+        usage: inactiveReadings.reduce((sum, r) => sum + Number(r.usage), 0)
+      },
+      dataIntegrity: {
+        includesRemovedMeters: includeInactiveMeters,
+        removedMeterContribution: inactiveReadings.length > 0 ? 
+          Math.round((inactiveReadings.length / readings.length) * 100 * 100) / 100 : 0
+      }
     }
+  },
+
+  // 新增：获取包含已移除仪表的完整历史统计
+  getCompleteHistoryStats: async (startDate?: Date, endDate?: Date) => {
+    return meterReadingQueries.getReadingStats(startDate, endDate, { includeInactiveMeters: true })
+  },
+
+  // 新增：仅获取活跃仪表的统计
+  getActiveMetersStats: async (startDate?: Date, endDate?: Date) => {
+    return meterReadingQueries.getReadingStats(startDate, endDate, { includeInactiveMeters: false })
   }
 }
