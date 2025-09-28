@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RenterSelector } from './RenterSelector'
 import { RoomSelector } from './RoomSelector'
+import { ContractBillPreview } from './ContractBillPreview'
 import { ErrorAlert, SimpleErrorAlert } from './ErrorAlert'
 import { formatCurrency } from '@/lib/format'
 import { ErrorLogger, ErrorType, ErrorSeverity } from '@/lib/error-logger'
@@ -32,7 +33,8 @@ interface ContractFormData {
 interface ContractFormProps {
   renters: RenterWithContractsForClient[]
   availableRooms: RoomWithBuildingForClient[]
-  preselectedRoomId?: string // 新增：预选房间ID
+  preselectedRoomId?: string // 预选房间ID
+  preselectedRenterId?: string // 预选租客ID
   onSubmit: (data: ContractFormData) => void
   onCancel: () => void
   loading?: boolean
@@ -48,6 +50,7 @@ export function ContractForm({
   renters,
   availableRooms,
   preselectedRoomId,
+  preselectedRenterId,
   onSubmit,
   onCancel,
   loading = false,
@@ -75,7 +78,7 @@ export function ContractForm({
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 初始化表单数据和预选房间
+  // 初始化表单数据和预选房间/租客
   useEffect(() => {
     if (initialData) {
       setFormData(prev => ({ ...prev, ...initialData }))
@@ -88,7 +91,15 @@ export function ContractForm({
         setSelectedRoom(preselectedRoom)
       }
     }
-  }, [initialData, preselectedRoomId, availableRooms])
+    
+    // 如果有预选租客ID，自动选择该租客
+    if (preselectedRenterId) {
+      const preselectedRenter = renters.find(renter => renter.id === preselectedRenterId)
+      if (preselectedRenter) {
+        setSelectedRenter(preselectedRenter)
+      }
+    }
+  }, [initialData, preselectedRoomId, preselectedRenterId, availableRooms, renters])
 
   // 当选择房间时，自动填充租金信息
   useEffect(() => {
@@ -102,15 +113,72 @@ export function ContractForm({
     }
   }, [selectedRoom])
 
-  // 当选择租客时，更新租客ID
+  // 当选择租客时，自动填充签约人信息
   useEffect(() => {
     if (selectedRenter) {
       setFormData(prev => ({
         ...prev,
-        renterId: selectedRenter.id
+        renterId: selectedRenter.id,
+        signedBy: selectedRenter.name // 自动填充签约人为租客姓名
       }))
     }
   }, [selectedRenter])
+
+  // 租期快速选择处理函数
+  const handleQuickPeriodSelect = (months: number) => {
+    const today = new Date()
+    const startDate = new Date(today)
+    
+    // 设置开始日期为今天
+    const startDateStr = startDate.toISOString().split('T')[0]
+    
+    // 计算结束日期：开始日期 + 指定月数 - 1天
+    const endDate = new Date(startDate)
+    endDate.setMonth(endDate.getMonth() + months)
+    endDate.setDate(endDate.getDate() - 1) // 减去1天，确保是准确的月数
+    
+    const endDateStr = endDate.toISOString().split('T')[0]
+    
+    setFormData(prev => ({
+      ...prev,
+      startDate: startDateStr,
+      endDate: endDateStr
+    }))
+  }
+
+  // 计算并显示租期信息
+  const calculateRentPeriodDisplay = (startDateStr: string, endDateStr: string): string => {
+    if (!startDateStr || !endDateStr) return ''
+    
+    const start = new Date(startDateStr)
+    const end = new Date(endDateStr)
+    
+    // 计算天数
+    const diffTime = end.getTime() - start.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 包含结束日期当天
+    
+    // 计算月数（使用与后端相同的逻辑）
+    const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30))
+    
+    return `${diffDays}天 (约${diffMonths}个月)`
+  }
+
+  // 根据支付方式计算租金倍数
+  const calculateRentMultiplier = (paymentMethod: string): number => {
+    if (paymentMethod.includes('季') || paymentMethod.includes('3个月')) {
+      return 3
+    }
+    if (paymentMethod.includes('半年') || paymentMethod.includes('6个月')) {
+      return 6  // 半年付必须在年付之前检查
+    }
+    if (paymentMethod.includes('年') || paymentMethod.includes('12个月')) {
+      return 12
+    }
+    return 1 // 默认月付
+  }
+
+  // 计算实际租金金额（根据支付周期）
+  const actualRentAmount = formData.monthlyRent * calculateRentMultiplier(formData.paymentMethod || '月付')
 
   const handleInputChange = (field: keyof ContractFormData, value: string | number) => {
     setFormData(prev => ({
@@ -201,8 +269,13 @@ export function ContractForm({
             renters={renters}
             selectedRenter={selectedRenter}
             onRenterSelect={setSelectedRenter}
-            disabled={loading}
+            disabled={loading || mode === 'edit'}
           />
+          {mode === 'edit' && (
+            <p className="text-sm text-gray-500 mt-2">
+              编辑模式下不能更改租客
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -216,8 +289,13 @@ export function ContractForm({
             rooms={availableRooms}
             selectedRoom={selectedRoom}
             onRoomSelect={setSelectedRoom}
-            disabled={loading}
+            disabled={loading || mode === 'edit'}
           />
+          {mode === 'edit' && (
+            <p className="text-sm text-gray-500 mt-2">
+              编辑模式下不能更改房间
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -227,6 +305,48 @@ export function ContractForm({
           <CardTitle>合同信息</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* 租期快速选择 */}
+          {mode === 'create' && (
+            <div className="mb-4">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">租期快速选择</Label>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPeriodSelect(3)}
+                  disabled={loading}
+                  className="text-xs"
+                >
+                  3个月
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPeriodSelect(6)}
+                  disabled={loading}
+                  className="text-xs"
+                >
+                  6个月
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPeriodSelect(12)}
+                  disabled={loading}
+                  className="text-xs"
+                >
+                  12个月
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                点击快速设置标准租期，或手动选择具体日期
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate">开始日期 *</Label>
@@ -235,9 +355,14 @@ export function ContractForm({
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 required
               />
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  编辑模式下不能更改合同日期
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="endDate">结束日期 *</Label>
@@ -246,9 +371,14 @@ export function ContractForm({
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 required
               />
+              {formData.startDate && formData.endDate && (
+                <p className="text-xs text-gray-500 mt-1">
+                  租期: {calculateRentPeriodDisplay(formData.startDate, formData.endDate)}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -258,6 +388,12 @@ export function ContractForm({
       <Card>
         <CardHeader>
           <CardTitle>租金信息</CardTitle>
+          {mode === 'edit' && (
+            <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+              ⚠️ 为保证合同的完整性和租客信任，合同生效后不建议修改费用信息。
+              如需处理额外费用，请使用"创建账单"功能；如需调整租金，请在合同到期后重新签约。
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,11 +404,16 @@ export function ContractForm({
                 type="number"
                 value={formData.monthlyRent}
                 onChange={(e) => handleInputChange('monthlyRent', Number(e.target.value))}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 required
                 min="0"
                 step="0.01"
               />
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  合同生效后不可修改租金，如需调整请在续约时处理
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="deposit">押金 (元) *</Label>
@@ -281,11 +422,16 @@ export function ContractForm({
                 type="number"
                 value={formData.deposit}
                 onChange={(e) => handleInputChange('deposit', Number(e.target.value))}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 required
                 min="0"
                 step="0.01"
               />
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  合同生效后不可修改押金
+                </p>
+              )}
             </div>
           </div>
           
@@ -297,10 +443,15 @@ export function ContractForm({
                 type="number"
                 value={formData.keyDeposit || ''}
                 onChange={(e) => handleInputChange('keyDeposit', Number(e.target.value) || 0)}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 min="0"
                 step="0.01"
               />
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  合同生效后不可修改钥匙押金
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="cleaningFee">清洁费 (元)</Label>
@@ -309,10 +460,15 @@ export function ContractForm({
                 type="number"
                 value={formData.cleaningFee || ''}
                 onChange={(e) => handleInputChange('cleaningFee', Number(e.target.value) || 0)}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 min="0"
                 step="0.01"
               />
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  合同生效后不可修改清洁费
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -322,6 +478,12 @@ export function ContractForm({
       <Card>
         <CardHeader>
           <CardTitle>支付信息</CardTitle>
+          {mode === 'edit' && (
+            <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+              ⚠️ 支付信息涉及合同核心条款，生效后不建议修改。
+              如有特殊情况需要调整，请在合同续约时处理。
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -331,7 +493,7 @@ export function ContractForm({
                 id="paymentMethod"
                 value={formData.paymentMethod}
                 onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="月付">月付</option>
@@ -339,6 +501,11 @@ export function ContractForm({
                 <option value="半年付">半年付</option>
                 <option value="年付">年付</option>
               </select>
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  支付方式影响账单生成，生效后不可修改
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="paymentTiming">付款时间</Label>
@@ -346,9 +513,14 @@ export function ContractForm({
                 id="paymentTiming"
                 value={formData.paymentTiming || ''}
                 onChange={(e) => handleInputChange('paymentTiming', e.target.value)}
-                disabled={loading}
+                disabled={loading || mode === 'edit'}
                 placeholder="如：每月1号前"
               />
+              {mode === 'edit' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  付款时间涉及合同条款，生效后不可修改
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -358,18 +530,25 @@ export function ContractForm({
       <Card>
         <CardHeader>
           <CardTitle>签约信息</CardTitle>
+          <p className="text-sm text-gray-600">
+            签约人默认为租客本人，如需代签请修改签约人信息
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="signedBy">签约人</Label>
+              <Label htmlFor="signedBy">签约人 *</Label>
               <Input
                 id="signedBy"
                 value={formData.signedBy || ''}
                 onChange={(e) => handleInputChange('signedBy', e.target.value)}
                 disabled={loading}
                 placeholder="签约人姓名"
+                required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                合同签署人，默认为租客本人
+              </p>
             </div>
             <div>
               <Label htmlFor="signedDate">签约日期</Label>
@@ -380,6 +559,9 @@ export function ContractForm({
                 onChange={(e) => handleInputChange('signedDate', e.target.value)}
                 disabled={loading}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                合同正式签署的日期
+              </p>
             </div>
           </div>
           
@@ -415,48 +597,19 @@ export function ContractForm({
         </Button>
       </div>
 
-      {/* 费用预览 */}
-      {selectedRoom && formData.monthlyRent > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>费用预览</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>月租金:</span>
-                <span>{formatCurrency(formData.monthlyRent)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>押金:</span>
-                <span>{formatCurrency(formData.deposit)}</span>
-              </div>
-              {formData.keyDeposit && formData.keyDeposit > 0 && (
-                <div className="flex justify-between">
-                  <span>钥匙押金:</span>
-                  <span>{formatCurrency(formData.keyDeposit)}</span>
-                </div>
-              )}
-              {formData.cleaningFee && formData.cleaningFee > 0 && (
-                <div className="flex justify-between">
-                  <span>清洁费:</span>
-                  <span>{formatCurrency(formData.cleaningFee)}</span>
-                </div>
-              )}
-              <div className="border-t pt-2 flex justify-between font-semibold">
-                <span>首次缴费总额:</span>
-                <span>
-                  {formatCurrency(
-                    formData.monthlyRent + 
-                    formData.deposit + 
-                    (formData.keyDeposit || 0) + 
-                    (formData.cleaningFee || 0)
-                  )}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* 账单预览 - 仅在创建模式下显示 */}
+      {mode === 'create' && selectedRoom && formData.monthlyRent > 0 && formData.startDate && formData.endDate && (
+        <ContractBillPreview
+          contractData={{
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            monthlyRent: formData.monthlyRent,
+            deposit: formData.deposit,
+            keyDeposit: formData.keyDeposit,
+            cleaningFee: formData.cleaningFee,
+            paymentMethod: formData.paymentMethod
+          }}
+        />
       )}
     </form>
   )

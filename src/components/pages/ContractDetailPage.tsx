@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DetailPageTemplate, DetailInfoCard, DetailField } from '@/components/layout/DetailPageTemplate'
-import { ContractDetail } from '@/components/business/contract-detail'
+import { PageContainer } from '@/components/layout'
+import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
 import { SingleMeterReadingModal } from '@/components/business/SingleMeterReadingModal'
-import { Edit, RefreshCw, XCircle, FileText, Gauge } from 'lucide-react'
 
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
 interface ContractWithDetailsForClient {
@@ -27,6 +26,7 @@ interface ContractWithDetailsForClient {
   businessStatus?: string | null
   signedBy?: string | null
   signedDate?: Date | null
+  remarks?: string | null
   createdAt: Date
   updatedAt: Date
   room: {
@@ -107,21 +107,27 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
     router.push(`/contracts/${contract.id}/renew`)
   }
   
-  // 处理终止
-  const handleTerminate = async () => {
-    if (!confirm('确定要终止这个合同吗？此操作不可撤销。')) {
+  // 处理退租
+  const handleCheckout = () => {
+    // 跳转到退租页面
+    router.push(`/contracts/${contract.id}/checkout`)
+  }
+
+  // 处理删除
+  const handleDelete = async () => {
+    if (!confirm('确定要删除这个合同吗？此操作不可撤销，将同时删除相关的账单记录。')) {
       return
     }
     
     setLoading(true)
     try {
-      // TODO: 实现终止合同API调用
-      console.log('终止合同:', contract.id)
-      // 刷新页面或跳转
-      router.refresh()
+      // TODO: 实现删除合同API调用
+      console.log('删除合同:', contract.id)
+      // 跳转回合同列表
+      router.push('/contracts')
     } catch (error) {
-      console.error('终止合同失败:', error)
-      alert('终止合同失败，请重试')
+      console.error('删除合同失败:', error)
+      alert('删除合同失败，请重试')
     } finally {
       setLoading(false)
     }
@@ -137,57 +143,19 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
   const handleMeterReading = () => {
     setShowMeterReadingModal(true)
   }
-
-  // 定义操作按钮
-  const actions = [
-    {
-      label: '查看PDF',
-      icon: <FileText className="w-4 h-4" />,
-      onClick: handleViewPDF,
-      disabled: loading
-    },
-    {
-      label: '抄表录入',
-      icon: <Gauge className="w-4 h-4" />,
-      onClick: handleMeterReading,
-      disabled: loading
-    },
-    {
-      label: '编辑',
-      icon: <Edit className="w-4 h-4" />,
-      onClick: handleEdit,
-      disabled: loading
-    },
-    ...(contract.status === 'ACTIVE' ? [
-      {
-        label: '续约',
-        icon: <RefreshCw className="w-4 h-4" />,
-        onClick: handleRenew,
-        disabled: loading
-      },
-      {
-        label: '终止',
-        icon: <XCircle className="w-4 h-4" />,
-        onClick: handleTerminate,
-        disabled: loading,
-        variant: 'destructive' as const,
-        className: 'text-red-600 hover:text-red-700'
-      }
-    ] : [])
-  ]
   
   return (
-    <>
-      <DetailPageTemplate
-        title={`合同详情 - ${contract.contractNumber}`}
-        actions={actions}
-      >
-        {/* 使用现有的合同详情组件，但移除顶部操作按钮 */}
-        <ContractDetail
-          contract={contract as any}
-          // 不传递操作回调，让模板统一处理
+    <PageContainer title="合同详情" showBackButton>
+      <div className="pb-6">
+        <EnhancedContractDetail
+          contract={contract}
+          onEdit={handleEdit}
+          onRenew={handleRenew}
+          onTerminate={handleCheckout}
+          onDelete={handleDelete}
+          onViewPDF={handleViewPDF}
         />
-      </DetailPageTemplate>
+      </div>
 
       {/* 单次抄表弹窗 */}
       <SingleMeterReadingModal
@@ -200,6 +168,6 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
           // TODO: 刷新合同数据或显示成功提示
         }}
       />
-    </>
+    </PageContainer>
   )
 }

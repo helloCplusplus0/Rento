@@ -178,8 +178,30 @@ async function handlePostContracts(request: NextRequest) {
     const month = String(now.getMonth() + 1).padStart(2, '0')
     const contractNumber = `CT${year}${month}${String(Date.now()).slice(-6)}`
 
-  // 计算总租金（按月数计算）
-  const monthsDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30))
+  // 计算总租金（修复月数计算逻辑）
+  const calculateMonthsDifference = (startDate: Date, endDate: Date): number => {
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    
+    // 计算总天数
+    const timeDiff = end.getTime() - start.getTime()
+    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1 // +1 包含结束日期当天
+    
+    // 对于标准租期，按天数计算更准确
+    if (daysDiff >= 365) {
+      // 一年或以上，按年计算
+      const years = Math.floor(daysDiff / 365)
+      return years * 12
+    } else if (daysDiff >= 30) {
+      // 按月计算，每30天为一个月
+      return Math.ceil(daysDiff / 30)
+    } else {
+      // 不足30天，按1个月计算
+      return 1
+    }
+  }
+  
+  const monthsDiff = calculateMonthsDifference(start, end)
   const totalRent = monthlyRent * monthsDiff
 
   // 创建合同

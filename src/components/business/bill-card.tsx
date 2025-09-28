@@ -56,10 +56,43 @@ export function BillCard({ bill, onClick, className }: BillCardProps) {
                 <span className="text-xs text-muted-foreground">应收金额</span>
                 <span className="font-semibold text-sm">{formatCurrency(Number(bill.amount))}</span>
               </div>
+              
+              {/* 已收金额 - 与移动端保持一致 */}
+              {Number(bill.receivedAmount) > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">已收金额</span>
+                  <span className="font-medium text-sm text-green-600">{formatCurrency(Number(bill.receivedAmount))}</span>
+                </div>
+              )}
+              
+              {/* 待收金额 - 与移动端保持一致 */}
+              {Number(bill.pendingAmount) > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">待收金额</span>
+                  <span className="font-medium text-sm text-orange-600">{formatCurrency(Number(bill.pendingAmount))}</span>
+                </div>
+              )}
+              
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">到期日期</span>
                 <span className="font-medium text-sm">{formatDate(bill.dueDate)}</span>
               </div>
+              
+              {/* 账期信息 - 与移动端保持一致 */}
+              {bill.period && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">账期</span>
+                  <span className="text-xs">{bill.period}</span>
+                </div>
+              )}
+              
+              {/* 支付方式 - 与移动端保持一致 */}
+              {bill.paymentMethod && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">支付方式</span>
+                  <span className="text-xs">{bill.paymentMethod}</span>
+                </div>
+              )}
             </div>
             
             {/* 底部信息 */}
@@ -70,9 +103,25 @@ export function BillCard({ bill, onClick, className }: BillCardProps) {
                   isOverdue ? 'bg-red-500' : 'bg-blue-500'
                 )}></div>
                 <span className="text-xs text-muted-foreground truncate">
-                  {bill.contract.renter.name}
+                  租客：{bill.contract.renter.name}
                 </span>
               </div>
+              
+              {/* 备注信息 - 与移动端保持一致 */}
+              {bill.remarks && (
+                <div className="mb-1">
+                  <span className="text-xs text-muted-foreground">备注：</span>
+                  <span className="text-xs ml-1">{bill.remarks}</span>
+                </div>
+              )}
+              
+              {/* 操作员信息 - 与移动端保持一致 */}
+              {bill.operator && (
+                <div className="mb-1">
+                  <span className="text-xs text-muted-foreground">操作员：</span>
+                  <span className="text-xs ml-1">{bill.operator}</span>
+                </div>
+              )}
               
               {isOverdue && (
                 <div className="text-red-600 text-xs font-medium">

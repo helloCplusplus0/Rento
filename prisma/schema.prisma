@@ -159,6 +159,9 @@ model Contract {
   signedBy        String?        // 签约人
   signedDate      DateTime?      // 签约时间
   
+  // 其他信息
+  remarks         String?        // 备注
+  
   // 关联关系
   room            Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
   renter          Renter         @relation(fields: [renterId], references: [id], onDelete: Cascade)

@@ -1,10 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { DetailPageTemplate } from '@/components/layout/DetailPageTemplate'
+import { PageContainer } from '@/components/layout'
 import { RenterBasicInfo } from '@/components/business/RenterBasicInfo'
 import { RenterContractHistory } from '@/components/business/RenterContractHistory'
-import { Edit, Trash2 } from 'lucide-react'
+import { RenterActions } from '@/components/business/RenterActions'
 import { useState } from 'react'
 
 interface RenterDetailPageProps {
@@ -50,63 +50,51 @@ export function RenterDetailPage({ renter }: RenterDetailPageProps) {
   
   const hasActiveContract = renter.contracts?.some((c: any) => c.status === 'ACTIVE')
 
-  // 定义操作按钮
-  const actions = [
-    {
-      label: '编辑',
-      icon: <Edit className="w-4 h-4" />,
-      onClick: handleEdit,
-      disabled: loading
-    },
-    {
-      label: '删除',
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: handleDelete,
-      disabled: hasActiveContract || loading,
-      variant: 'destructive' as const,
-      className: 'text-red-600 hover:text-red-700'
-    }
-  ]
-  
   return (
-    <DetailPageTemplate
-      title={renter.name}
+    <PageContainer 
+      title={renter.name} 
       subtitle="租客详情"
-      actions={actions}
+      showBackButton
     >
-      {/* 基本信息 */}
-      <RenterBasicInfo 
-        renter={renter} 
-        editable={true}
-        onEdit={handleEdit}
-      />
-      
-      {/* 合同历史 */}
-      <RenterContractHistory 
-        contracts={renter.contracts || []}
-        onContractClick={handleContractClick}
-      />
-      
-      {/* 删除提示 */}
-      {hasActiveContract && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
-                无法删除租客
-              </h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p>该租客有活跃的合同，请先终止合同后再删除租客信息。</p>
+      <div className="space-y-6 pb-6">
+        {/* 操作按钮 */}
+        <RenterActions
+          renter={renter}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isLoading={loading}
+        />
+        
+        {/* 基本信息 */}
+        <RenterBasicInfo renter={renter} />
+        
+        {/* 合同历史 */}
+        <RenterContractHistory 
+          contracts={renter.contracts || []}
+          onContractClick={handleContractClick}
+        />
+        
+        {/* 删除提示 */}
+        {hasActiveContract && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  无法删除租客
+                </h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>该租客有活跃的合同，请先终止合同后再删除租客信息。</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </DetailPageTemplate>
+        )}
+      </div>
+    </PageContainer>
   )
 }

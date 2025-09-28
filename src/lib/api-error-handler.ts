@@ -99,25 +99,46 @@ function createErrorResponse(error: unknown, method: string, url: string): NextR
   // 根据错误类型返回不同的HTTP状态码
   let status = 500
   let userMessage = '服务器内部错误，请稍后重试'
+  let errorType = 'SYSTEM_ERROR'
 
   if (errorMessage.includes('not found') || errorMessage.includes('不存在')) {
     status = 404
     userMessage = '请求的资源不存在'
+    errorType = 'NOT_FOUND'
   } else if (errorMessage.includes('validation') || errorMessage.includes('验证')) {
     status = 400
     userMessage = '请求参数验证失败'
+    errorType = 'VALIDATION_ERROR'
   } else if (errorMessage.includes('unauthorized') || errorMessage.includes('权限')) {
     status = 401
     userMessage = '权限不足'
+    errorType = 'UNAUTHORIZED'
   } else if (errorMessage.includes('timeout') || errorMessage.includes('超时')) {
     status = 408
     userMessage = '请求超时，请重试'
+    errorType = 'TIMEOUT'
+  } else if (errorMessage.includes('未结清账单') || errorMessage.includes('账单')) {
+    // 业务逻辑错误：未结清账单
+    status = 400
+    userMessage = errorMessage // 直接使用具体的错误消息
+    errorType = 'BUSINESS_RULE_VIOLATION'
+  } else if (errorMessage.includes('合同状态') || errorMessage.includes('房间状态')) {
+    // 业务逻辑错误：状态不符合要求
+    status = 400
+    userMessage = errorMessage // 直接使用具体的错误消息
+    errorType = 'BUSINESS_RULE_VIOLATION'
+  } else if (errorMessage.includes('日期') || errorMessage.includes('金额') || errorMessage.includes('必须')) {
+    // 数据验证错误
+    status = 400
+    userMessage = errorMessage // 直接使用具体的错误消息
+    errorType = 'VALIDATION_ERROR'
   }
 
   return NextResponse.json(
     {
       success: false,
       error: userMessage,
+      errorType,
       details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
       timestamp: new Date().toISOString(),
       path: url,

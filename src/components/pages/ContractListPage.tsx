@@ -31,6 +31,7 @@ interface ContractWithDetailsForClient {
   businessStatus?: string | null
   signedBy?: string | null
   signedDate?: Date | null
+  remarks?: string | null
   createdAt: Date
   updatedAt: Date
   room: {

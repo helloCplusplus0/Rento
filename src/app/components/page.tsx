@@ -15,7 +15,7 @@ import { AdvancedForm, sampleFormSections } from '@/components/business/advanced
 import { DataList } from '@/components/business/data-list'
 import { FacilitySelector, defaultFacilityCategories } from '@/components/business/facility-selector'
 import { AmountSummary, SimpleAmountSummary, AmountStatCard } from '@/components/business/amount-summary'
-import { ContractDetail, ContractDetailSkeleton } from '@/components/business/contract-detail'
+import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
 import { DashboardHome, DashboardHomeSkeleton, defaultQuickActions, defaultAlerts } from '@/components/business/dashboard-home'
 
 // 导入UI组件
@@ -544,14 +544,17 @@ export default function ComponentsPage() {
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-3">合同详情页面</h3>
             {loading ? (
-              <ContractDetailSkeleton />
+              <div className="animate-pulse">
+                <div className="bg-gray-200 rounded-lg h-96"></div>
+              </div>
             ) : (
               <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-                <ContractDetail
+                <EnhancedContractDetail
                   contract={mockContract as any}
                   onEdit={() => alert('编辑合同')}
                   onRenew={() => alert('续租合同')}
                   onTerminate={() => alert('终止合同')}
+                  onDelete={() => alert('删除合同')}
                   onViewPDF={() => alert('查看PDF')}
                 />
               </div>

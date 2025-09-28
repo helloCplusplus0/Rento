@@ -9,14 +9,15 @@ import type { RenterWithContractsForClient, RoomWithBuildingForClient } from '@/
 interface CreateContractPageProps {
   renters: RenterWithContractsForClient[]
   availableRooms: RoomWithBuildingForClient[]
-  preselectedRoomId?: string // 新增：预选房间ID
+  preselectedRoomId?: string // 预选房间ID
+  preselectedRenterId?: string // 预选租客ID
 }
 
 /**
  * 创建合同页面组件
  * 提供完整的合同创建流程
  */
-export function CreateContractPage({ renters, availableRooms, preselectedRoomId }: CreateContractPageProps) {
+export function CreateContractPage({ renters, availableRooms, preselectedRoomId, preselectedRenterId }: CreateContractPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -42,7 +43,13 @@ export function CreateContractPage({ renters, availableRooms, preselectedRoomId 
       const result = await response.json()
       
       // 创建成功，跳转到合同详情页
-      router.push(`/contracts/${result.contract.id}`)
+      // API返回的数据结构是 { success: true, data: { contract: ..., bills: ... } }
+      const contractId = result.data?.contract?.id || result.contract?.id
+      if (!contractId) {
+        throw new Error('创建合同成功但无法获取合同ID')
+      }
+      
+      router.push(`/contracts/${contractId}`)
     } catch (error) {
       console.error('创建合同失败:', error)
       alert(error instanceof Error ? error.message : '创建合同失败，请重试')
@@ -62,6 +69,7 @@ export function CreateContractPage({ renters, availableRooms, preselectedRoomId 
           renters={renters}
           availableRooms={availableRooms}
           preselectedRoomId={preselectedRoomId}
+          preselectedRenterId={preselectedRenterId}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           loading={loading}

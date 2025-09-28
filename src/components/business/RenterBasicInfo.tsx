@@ -8,23 +8,15 @@ import { formatDate } from '@/lib/format'
 
 interface RenterBasicInfoProps {
   renter: any
-  editable?: boolean
-  onEdit?: () => void
 }
 
-export function RenterBasicInfo({ renter, editable = false, onEdit }: RenterBasicInfoProps) {
+export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
   const activeContract = renter.contracts?.find((c: any) => c.status === 'ACTIVE')
   
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-lg">基本信息</CardTitle>
-        {editable && (
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Edit className="w-4 h-4 mr-2" />
-            编辑
-          </Button>
-        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 基本信息 */}

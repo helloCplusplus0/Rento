@@ -21,8 +21,15 @@ export function RenterCreatePage() {
       })
       
       if (response.ok) {
-        const newRenter = await response.json()
-        router.push(`/renters/${newRenter.id}`)
+        const result = await response.json()
+        // API返回格式: { success: true, data: renter, message: '租客创建成功' }
+        const newRenter = result.data
+        if (newRenter && newRenter.id) {
+          router.push(`/renters/${newRenter.id}`)
+        } else {
+          console.error('API返回的租客数据格式错误:', result)
+          alert('创建成功，但跳转失败，请手动刷新页面')
+        }
       } else {
         const error = await response.json()
         alert(error.error || '创建失败')
