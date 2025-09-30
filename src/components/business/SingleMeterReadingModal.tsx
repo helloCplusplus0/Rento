@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -33,12 +33,12 @@ interface SingleMeterReadingModalProps {
   roomId: string
   isOpen: boolean
   onClose: () => void
-  onSuccess?: (reading: MeterReading) => void
+  onSuccess?: (readings: MeterReading[]) => void
 }
 
 /**
- * 单次抄表弹窗组件
- * 用于在合同详情页面进行单个房间的抄表录入
+ * 合同抄表弹窗组件
+ * 参考批量抄表设计，同时显示该合同房间的所有仪表，支持批量录入
  */
 export function SingleMeterReadingModal({
   contractId,
@@ -49,12 +49,10 @@ export function SingleMeterReadingModal({
 }: SingleMeterReadingModalProps) {
   const { settings } = useSettings()
   const [meters, setMeters] = useState<Meter[]>([])
-  const [selectedMeter, setSelectedMeter] = useState<Meter | null>(null)
-  const [currentReading, setCurrentReading] = useState<number>(0)
-  const [remarks, setRemarks] = useState<string>('')
+  const [readings, setReadings] = useState<Record<string, MeterReading>>({})
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [validationError, setValidationError] = useState<string>('')
 
   // 加载房间仪表数据
   useEffect(() => {
@@ -63,340 +61,373 @@ export function SingleMeterReadingModal({
     }
   }, [isOpen, roomId])
 
+  // 重置状态
+  useEffect(() => {
+    if (!isOpen) {
+      setReadings({})
+      setValidationErrors({})
+    }
+  }, [isOpen])
+
   const loadRoomMeters = async () => {
     try {
       setLoading(true)
-      // 实际API调用 - 根据房间ID获取该房间的所有仪表
       const response = await fetch(`/api/rooms/${roomId}/meters`)
+      
       if (response.ok) {
-        const metersData = await response.json()
-        setMeters(metersData.data || [])
-        if (metersData.data && metersData.data.length > 0) {
-          setSelectedMeter(metersData.data[0])
+        const result = await response.json()
+        if (result.success && result.data) {
+          const activeMeters = result.data.filter((meter: any) => meter.isActive)
+          setMeters(activeMeters)
+        } else {
+          console.warn('获取仪表数据失败:', result)
+          setMeters([])
         }
       } else {
-        // 如果API调用失败，使用模拟数据
-        const mockMeters: Meter[] = [
-          {
-            id: 'm1',
-            displayName: '电表',
-            meterType: 'ELECTRICITY',
-            unitPrice: settings.electricityPrice,
-            unit: '度',
-            lastReading: 1000,
-            lastReadingDate: new Date('2024-01-01')
-          },
-          {
-            id: 'm2',
-            displayName: '冷水表',
-            meterType: 'COLD_WATER',
-            unitPrice: settings.waterPrice,
-            unit: '吨',
-            lastReading: 50,
-            lastReadingDate: new Date('2024-01-01')
-          }
-        ]
-        
-        setMeters(mockMeters)
-        if (mockMeters.length > 0) {
-          setSelectedMeter(mockMeters[0])
-        }
+        console.error('API调用失败:', response.status, response.statusText)
+        setMeters([])
       }
     } catch (error) {
       console.error('加载仪表数据失败:', error)
-      // 出错时使用模拟数据
-      const mockMeters: Meter[] = [
-        {
-          id: 'm1',
-          displayName: '电表',
-          meterType: 'ELECTRICITY',
-          unitPrice: settings.electricityPrice,
-          unit: '度',
-          lastReading: 1000,
-          lastReadingDate: new Date('2024-01-01')
-        }
-      ]
-      setMeters(mockMeters)
-      if (mockMeters.length > 0) {
-        setSelectedMeter(mockMeters[0])
-      }
+      setMeters([])
     } finally {
       setLoading(false)
     }
   }
 
   // 处理读数变更
-  const handleReadingChange = (value: number) => {
-    setCurrentReading(value)
-    
-    if (!selectedMeter) return
+  const handleReadingChange = (meterId: string, currentReading: number) => {
+    const meter = meters.find(m => m.id === meterId)
+    if (!meter) return
 
-    // 简化验证逻辑 - 只检查基本规则，与批量抄表保持一致
-    if (value < (selectedMeter.lastReading || 0)) {
-      setValidationError('本次读数不能小于上次读数')
-    } else {
-      setValidationError('')
-    }
+    const lastReading = Math.round(meter.lastReading || 0)
+    const usage = currentReading - lastReading
+    const amount = usage * meter.unitPrice
+
+    // 验证逻辑
+    const errors: Record<string, string> = {}
     
-    // 移除复杂的异常用量检测
-    // 注释掉原有的异常检测逻辑：
-    // } else if (value - (selectedMeter.lastReading || 0) > (selectedMeter.lastReading || 0) * settings.usageAnomalyThreshold) {
-    //   setValidationError(`用量异常偏高（超过${settings.usageAnomalyThreshold}倍平均用量）`)
+    if (currentReading < lastReading) {
+      errors[meterId] = '本次读数不能小于上次读数'
+    } else if (usage > lastReading * (settings.usageAnomalyThreshold || 3.0)) {
+      errors[meterId] = `用量异常偏高（超过${settings.usageAnomalyThreshold || 3.0}倍历史读数）`
+    }
+
+    setValidationErrors(prev => ({
+      ...prev,
+      [meterId]: errors[meterId] || ''
+    }))
+
+    if (currentReading > 0) {
+      setReadings(prev => ({
+        ...prev,
+        [meterId]: {
+          meterId,
+          currentReading,
+          readingDate: new Date(),
+          usage,
+          amount
+        }
+      }))
+    } else {
+      setReadings(prev => {
+        const newReadings = { ...prev }
+        delete newReadings[meterId]
+        return newReadings
+      })
+    }
   }
 
-  // 计算用量和费用
-  const calculateUsageAndAmount = () => {
-    if (!selectedMeter || currentReading <= 0) {
-      return { usage: 0, amount: 0 }
+  // 获取仪表类型颜色
+  const getMeterTypeColor = (type: string) => {
+    switch (type) {
+      case 'ELECTRICITY': return 'bg-yellow-100 text-yellow-800'
+      case 'COLD_WATER': return 'bg-blue-100 text-blue-800'
+      case 'HOT_WATER': return 'bg-red-100 text-red-800'
+      case 'GAS': return 'bg-purple-100 text-purple-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
-    
-    const usage = currentReading - (selectedMeter.lastReading || 0)
-    const amount = usage * selectedMeter.unitPrice
-    
-    return { usage, amount }
+  }
+
+  // 获取仪表类型标签
+  const getMeterTypeLabel = (type: string) => {
+    switch (type) {
+      case 'ELECTRICITY': return '电表'
+      case 'COLD_WATER': return '冷水表'
+      case 'HOT_WATER': return '热水表'
+      case 'GAS': return '燃气表'
+      default: return '未知'
+    }
+  }
+
+  // 处理关闭
+  const handleClose = () => {
+    setReadings({})
+    setValidationErrors({})
+    onClose()
   }
 
   // 提交抄表
   const handleSubmit = async () => {
-    if (!selectedMeter || currentReading <= 0) {
-      alert('请输入有效的读数')
+    const readingsToSubmit = Object.values(readings).filter(reading => reading.currentReading > 0)
+    
+    if (readingsToSubmit.length === 0) {
+      alert('请至少录入一个仪表读数')
       return
     }
 
-    if (validationError) {
-      const confirmed = confirm(`检测到异常：${validationError}\n\n是否仍要提交？`)
+    // 检查是否有验证错误
+    const hasErrors = Object.values(validationErrors).some(error => error)
+    if (hasErrors) {
+      const confirmed = confirm('检测到异常数据，是否仍要提交？')
       if (!confirmed) return
     }
 
     try {
       setSubmitting(true)
       
-      const { usage, amount } = calculateUsageAndAmount()
-      
-      const readingData: MeterReading = {
-        meterId: selectedMeter.id,
-        currentReading,
-        readingDate: new Date(),
-        usage,
-        amount,
-        remarks
+      // 构建提交数据
+      const submitData = readingsToSubmit.map(reading => {
+        const meter = meters.find(m => m.id === reading.meterId)
+        return {
+          meterId: reading.meterId,
+          contractId: contractId,
+          previousReading: Math.round(meter?.lastReading || 0),
+          currentReading: reading.currentReading,
+          usage: reading.usage,
+          readingDate: new Date().toISOString(),
+          period: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
+          unitPrice: meter?.unitPrice || 0,
+          amount: reading.amount,
+          operator: '系统用户',
+          remarks: reading.remarks || undefined
+        }
+      })
+
+      // 调用抄表API
+      const response = await fetch('/api/meter-readings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          readings: submitData,
+          aggregationMode: 'AGGREGATED' // 聚合模式
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          // 修复：正确访问API返回的数据结构
+          const successCount = result.data?.results?.length || result.data?.length || 0
+          let message = `✅ 成功录入 ${successCount} 个仪表读数`
+          
+          if (result.data?.warnings && result.data.warnings.length > 0) {
+            message += `\n\n⚠️ 警告信息 (${result.data.warnings.length} 个):`
+            result.data.warnings.forEach((warning: any, index: number) => {
+              message += `\n${index + 1}. ${warning.warning}`
+            })
+          }
+          
+          if (result.data?.bills && result.data.bills.length > 0) {
+            message += `\n\n💰 已自动生成 ${result.data.bills.length} 个水电费账单`
+          }
+          
+          alert(message)
+          
+          // 调用成功回调
+          onSuccess?.(readingsToSubmit)
+          handleClose()
+        } else {
+          alert(`提交失败：${result.error || '未知错误'}`)
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        alert(`提交失败：${errorData.error || '网络错误'}`)
       }
-
-      // TODO: 实际API调用
-      // const response = await fetch('/api/meter-readings', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     readings: [readingData],
-      //     contractId
-      //   })
-      // })
-
-      console.log('提交抄表数据:', readingData)
-      
-      // 模拟成功
-      alert('抄表录入成功')
-      onSuccess?.(readingData)
-      handleClose()
     } catch (error) {
       console.error('提交抄表失败:', error)
-      alert('提交失败，请重试')
+      alert('提交失败，请检查网络连接后重试')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // 关闭弹窗
-  const handleClose = () => {
-    setCurrentReading(0)
-    setRemarks('')
-    setValidationError('')
-    setSelectedMeter(null)
-    onClose()
-  }
-
-  // 获取仪表类型显示名称
-  const getMeterTypeLabel = (type: string) => {
-    const labels = {
-      ELECTRICITY: '电表',
-      COLD_WATER: '冷水表',
-      HOT_WATER: '热水表',
-      GAS: '燃气表'
-    }
-    return labels[type as keyof typeof labels] || type
-  }
-
-  // 获取仪表类型颜色
-  const getMeterTypeColor = (type: string) => {
-    const colors = {
-      ELECTRICITY: 'bg-yellow-100 text-yellow-800',
-      COLD_WATER: 'bg-blue-100 text-blue-800',
-      HOT_WATER: 'bg-red-100 text-red-800',
-      GAS: 'bg-orange-100 text-orange-800'
-    }
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
-  }
-
-  const { usage, amount } = calculateUsageAndAmount()
+  const readingsCount = Object.keys(readings).length
+  const totalAmount = Object.values(readings).reduce((sum, r) => sum + r.amount, 0)
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span>抄表录入</span>
-            {selectedMeter && (
-              <Badge className={getMeterTypeColor(selectedMeter.meterType)}>
-                {getMeterTypeLabel(selectedMeter.meterType)}
+            <span>合同抄表录入</span>
+            {readingsCount > 0 && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                已录入 {readingsCount} 个仪表
               </Badge>
             )}
           </DialogTitle>
+          <DialogDescription>
+            为该合同房间的所有仪表录入当前读数，系统将自动计算用量和费用，并生成聚合账单
+          </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-12">
             <div className="text-gray-500">加载仪表数据中...</div>
           </div>
         ) : meters.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            该房间暂无配置仪表
+          <div className="text-center py-12 text-gray-500">
+            <p>该房间暂无配置仪表</p>
+            <p className="text-sm mt-2">请先为房间配置仪表后再进行抄表</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {/* 仪表选择 */}
-            {meters.length > 1 && (
-              <div>
-                <label className="block text-sm font-medium mb-2">选择仪表</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {meters.map(meter => (
-                    <button
-                      key={meter.id}
-                      onClick={() => setSelectedMeter(meter)}
-                      className={`p-2 text-sm border rounded-md transition-colors ${
-                        selectedMeter?.id === meter.id
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      {meter.displayName}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedMeter && (
-              <>
-                {/* 仪表信息 */}
-                <Card>
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">上次读数：</span>
-                      <span className="font-medium">
-                        {selectedMeter.lastReading || 0} {selectedMeter.unit}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">单价：</span>
-                      <span className="font-medium">
-                        {selectedMeter.unitPrice} 元/{selectedMeter.unit}
-                      </span>
-                    </div>
-                    {selectedMeter.lastReadingDate && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">上次抄表：</span>
-                        <span className="font-medium">
-                          {selectedMeter.lastReadingDate.toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* 读数录入 */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    本次读数 ({selectedMeter.unit})
-                  </label>
-                  <input
-                    type="number"
-                    min={selectedMeter.lastReading || 0}
-                    step="0.1"
-                    placeholder={`请输入读数（≥${selectedMeter.lastReading || 0}）`}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      validationError ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                    value={currentReading || ''}
-                    onChange={(e) => handleReadingChange(parseFloat(e.target.value) || 0)}
-                  />
-                  {validationError && (
-                    <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                      <AlertTriangle className="w-4 h-4" />
-                      {validationError}
-                    </p>
-                  )}
-                </div>
-
-                {/* 计算结果 */}
-                {currentReading > 0 && !validationError && (
-                  <Card>
-                    <CardContent className="p-4 bg-green-50 border-green-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700">计算结果</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">用量：</span>
-                          <span className="font-medium text-green-700">
-                            {usage.toFixed(1)} {selectedMeter.unit}
-                          </span>
+            {/* 仪表列表 */}
+            <div className="space-y-2">
+              {meters.map((meter) => {
+                const reading = readings[meter.id]
+                const error = validationErrors[meter.id]
+                const hasReading = reading && reading.currentReading > 0
+                
+                return (
+                  <Card key={meter.id} className={`${hasReading && !error ? 'border-green-200 bg-green-50' : error ? 'border-red-200 bg-red-50' : ''}`}>
+                    <CardContent className="p-3">
+                      {/* 仪表信息头部 */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getMeterTypeColor(meter.meterType)} variant="secondary">
+                            {getMeterTypeLabel(meter.meterType)}
+                          </Badge>
+                          <div>
+                            <div className="font-medium text-sm">{meter.displayName}</div>
+                            <div className="text-xs text-gray-500">
+                              ¥{meter.unitPrice}/{meter.unit}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-gray-600">费用：</span>
-                          <span className="font-medium text-green-700">
-                            ¥{amount.toFixed(2)}
-                          </span>
+                        <div className="text-right">
+                          {hasReading && !error ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : error ? (
+                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                          ) : (
+                            <div className="w-4 h-4 border border-gray-300 rounded-full"></div>
+                          )}
                         </div>
                       </div>
+
+                      {/* 读数录入区域 */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">上次读数</label>
+                          <div className="font-mono text-sm font-medium">
+                            {Math.round(meter.lastReading || 0)} {meter.unit}
+                          </div>
+                          {meter.lastReadingDate && (
+                            <div className="text-xs text-gray-400">
+                              {meter.lastReadingDate instanceof Date 
+                                ? meter.lastReadingDate.toLocaleDateString()
+                                : new Date(meter.lastReadingDate).toLocaleDateString()
+                              }
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-500">本次读数 *</label>
+                          <input
+                            type="number"
+                            min={Math.round(meter.lastReading || 0)}
+                            step="1"
+                            placeholder="请输入"
+                            className={`w-full px-2 py-1 text-center border rounded text-sm font-mono ${
+                              error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                            }`}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0
+                              handleReadingChange(meter.id, value)
+                            }}
+                          />
+                        </div>
+
+                        {hasReading && (
+                          <>
+                            <div>
+                              <label className="text-xs text-gray-500">用量</label>
+                              <div className="font-mono text-sm font-medium text-blue-600">
+                                {reading.usage.toFixed(1)} {meter.unit}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <label className="text-xs text-gray-500">费用</label>
+                              <div className="font-mono text-sm font-medium text-green-600">
+                                ¥{reading.amount.toFixed(2)}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* 错误提示 */}
+                      {error && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>{error}</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-                )}
+                )
+              })}
+            </div>
 
-                {/* 备注 */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">备注（可选）</label>
-                  <textarea
-                    rows={2}
-                    placeholder="请输入备注信息"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none"
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                  />
-                </div>
-
-                {/* 操作按钮 */}
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    取消
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={submitting || currentReading <= 0}
-                    className="flex-1"
-                  >
-                    <Save className="w-4 h-4 mr-1" />
-                    {submitting ? '提交中...' : '提交'}
-                  </Button>
-                </div>
-              </>
+            {/* 汇总信息 */}
+            {readingsCount > 0 && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-blue-800">
+                      <span className="font-medium">抄表汇总：</span>
+                      已录入 {readingsCount} 个仪表，总费用 ¥{totalAmount.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      将生成一个聚合水电费账单
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
+
+            {/* 操作按钮 */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={submitting}
+              >
+                <X className="w-4 h-4 mr-1" />
+                取消
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={readingsCount === 0 || submitting}
+                className="flex items-center gap-1"
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    提交中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    提交抄表 ({readingsCount})
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

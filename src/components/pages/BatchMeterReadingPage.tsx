@@ -35,7 +35,10 @@ interface Meter {
   unit: string
   lastReading?: number
   lastReadingDate?: Date
-  contractId?: string | null // 新增：关联的合同ID
+  contractId?: string | null // 关联的合同ID
+  contractNumber?: string | null // 合同编号
+  renterName?: string | null // 租客姓名
+  contractStatus?: string | null // 合同状态
 }
 
 interface MeterReading {
@@ -382,13 +385,25 @@ export function BatchMeterReadingPage() {
                               {getMeterTypeLabel(meter.meterType)}
                             </Badge>
                             <span className="text-sm text-gray-600">{meter.displayName}</span>
-                            {/* 显示合同关联状态 */}
+                            {/* 优化：显示详细的合同关联状态 */}
                             {meter.contractId ? (
-                              <Badge variant="default" className="bg-green-100 text-green-800">
-                                已关联合同
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
+                                  已关联合同
+                                </Badge>
+                                {meter.contractNumber && (
+                                  <span className="text-xs text-gray-500">
+                                    {meter.contractNumber}
+                                  </span>
+                                )}
+                                {meter.renterName && (
+                                  <span className="text-xs text-gray-500">
+                                    • {meter.renterName}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
-                              <Badge variant="destructive" className="bg-red-100 text-red-800">
+                              <Badge variant="outline" className="bg-gray-100 text-gray-600 text-xs">
                                 未关联合同
                               </Badge>
                             )}

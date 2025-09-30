@@ -139,31 +139,36 @@ async function handleCheckoutContract(
 
     // 4.5. 自动结清所有未付账单
     // 退租时一次性结清所有权利和义务，将未付账单标记为已支付
-    if (contract.bills.length > 0) {
-      // 获取所有未付账单
-      const unpaidBills = await tx.bill.findMany({
-        where: {
-          contractId: contractId,
-          status: { in: ['PENDING', 'OVERDUE'] }
+    console.log(`[退租] 开始处理未付账单结清，合同ID: ${contractId}`)
+    
+    // 获取所有未付账单（不依赖contract.bills，直接查询数据库）
+    const unpaidBills = await tx.bill.findMany({
+      where: {
+        contractId: contractId,
+        status: { in: ['PENDING', 'OVERDUE'] }
+      }
+    })
+
+    console.log(`[退租] 发现${unpaidBills.length}个未付账单需要结清`)
+
+    // 逐个更新账单状态
+    for (const bill of unpaidBills) {
+      console.log(`[退租] 结清账单: ${bill.billNumber}, 金额: ${bill.amount}`)
+      await tx.bill.update({
+        where: { id: bill.id },
+        data: {
+          status: 'PAID',
+          receivedAmount: bill.amount,
+          pendingAmount: 0,
+          paidDate: checkoutDateObj,
+          paymentMethod: '退租结算',
+          operator: '系统自动',
+          remarks: '退租时自动结清'
         }
       })
-
-      // 逐个更新账单状态
-      for (const bill of unpaidBills) {
-        await tx.bill.update({
-          where: { id: bill.id },
-          data: {
-            status: 'PAID',
-            receivedAmount: bill.amount,
-            pendingAmount: 0,
-            paidDate: checkoutDateObj,
-            paymentMethod: '退租结算',
-            operator: '系统自动',
-            remarks: '退租时自动结清'
-          }
-        })
-      }
     }
+
+    console.log(`[退租] 账单结清完成，共处理${unpaidBills.length}个账单`)
 
     // 5. 更新合同状态
     const updatedContract = await tx.contract.update({

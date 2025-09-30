@@ -216,12 +216,61 @@ async function handlePostMeterReadings(request: NextRequest) {
     }
   }
 
-  // 自动生成账单逻辑（简化版）
+  // 自动生成账单逻辑
+  const generatedBills = []
   if (settings.autoGenerateBills && results.length > 0) {
     try {
-      const { generateAggregatedUtilityBill } = await import('@/lib/bill-aggregation')
-      // 这里可以添加账单生成逻辑
+      const { generateAggregatedUtilityBill, groupReadingsByContract, AggregationStrategy } = await import('@/lib/bill-aggregation')
+      const { contractQueries } = await import('@/lib/queries')
+      
+      console.log(`[抄表API] 开始账单生成流程，处理${results.length}个抄表记录`)
+      
+      // 按合同分组抄表数据
+      const readingsByContract = groupReadingsByContract(results)
+      console.log(`[抄表API] 分组结果: ${readingsByContract.size}个合同`)
+      
+      for (const [contractId, contractReadings] of readingsByContract) {
+        if (!contractId || contractReadings.length === 0) {
+          console.warn(`[抄表API] 跳过无效合同: ${contractId}`)
+          continue
+        }
+        
+        try {
+          console.log(`[抄表API] 为合同${contractId}生成聚合账单，包含${contractReadings.length}个仪表`)
+          
+          // 获取合同信息
+          const contract = await contractQueries.findById(contractId)
+          if (!contract) {
+            console.error(`[抄表API] 合同不存在: ${contractId}`)
+            warnings.push({
+              contractId,
+              warning: `合同${contractId}不存在，账单生成失败`
+            })
+            continue
+          }
+          
+          // 生成聚合账单
+          const bill = await generateAggregatedUtilityBill(contractReadings, {
+            strategy: AggregationStrategy.AGGREGATED,
+            period: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
+            contractId: contractId,
+            contractNumber: contract.contractNumber
+          })
+          
+          generatedBills.push(bill)
+          console.log(`[抄表API] 成功为合同${contractId}生成聚合账单`)
+          
+        } catch (billError) {
+          console.error(`[抄表API] 合同${contractId}账单生成失败:`, billError)
+          warnings.push({
+            contractId,
+            warning: `合同${contractId}账单生成失败: ${billError instanceof Error ? billError.message : '未知错误'}`
+          })
+        }
+      }
+      
     } catch (billError) {
+      console.error('[抄表API] 账单生成模块加载失败:', billError)
       warnings.push({
         warning: '抄表记录已保存，但自动生成账单失败'
       })
@@ -230,15 +279,17 @@ async function handlePostMeterReadings(request: NextRequest) {
 
   return createSuccessResponse({
     results,
+    bills: generatedBills,
     warnings,
     errors,
     summary: {
       total: readings.length,
       success: results.length,
       warnings: warnings.length,
-      errors: errors.length
+      errors: errors.length,
+      billsGenerated: generatedBills.length
     }
-  }, `成功处理 ${results.length} 个抄表记录${warnings.length > 0 ? `，${warnings.length} 个警告` : ''}${errors.length > 0 ? `，${errors.length} 个错误` : ''}`)
+  }, `成功处理 ${results.length} 个抄表记录${generatedBills.length > 0 ? `，生成 ${generatedBills.length} 个账单` : ''}${warnings.length > 0 ? `，${warnings.length} 个警告` : ''}${errors.length > 0 ? `，${errors.length} 个错误` : ''}`)
 }
 
 export const POST = withApiErrorHandler(handlePostMeterReadings, {

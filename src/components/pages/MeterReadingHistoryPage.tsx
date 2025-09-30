@@ -49,6 +49,7 @@ interface FilterOptions {
   status: string
   dateRange: string
   operator?: string
+  recordType?: string // 新增：记录类型过滤
 }
 
 /**
@@ -63,7 +64,8 @@ export function MeterReadingHistoryPage() {
     meterType: 'all',
     status: 'all',
     dateRange: 'all',
-    operator: ''
+    operator: '',
+    recordType: 'all' // 新增：默认显示所有记录
   })
 
   // 加载抄表历史数据
@@ -86,7 +88,31 @@ export function MeterReadingHistoryPage() {
       const response = await fetch(`/api/meter-readings?${queryParams.toString()}`)
       if (response.ok) {
         const data = await response.json()
-        setReadings(data.readings || [])
+        let allReadings = data.data || [] // 修复：使用data字段而不是readings字段
+        
+        // 客户端过滤记录类型
+        if (filters.recordType && filters.recordType !== 'all') {
+          if (filters.recordType === 'initial') {
+            // 只显示初始底数记录：usage为0且备注包含特定关键词
+            allReadings = allReadings.filter((reading: MeterReadingHistory) => 
+              reading.usage === 0 && 
+              (reading.remarks?.includes('合同创建') || 
+               reading.remarks?.includes('初始读数') || 
+               reading.remarks?.includes('底数'))
+            )
+          } else if (filters.recordType === 'normal') {
+            // 只显示正常抄表记录：usage大于0或者（usage为0但备注不包含初始底数关键词）
+            allReadings = allReadings.filter((reading: MeterReadingHistory) => 
+              reading.usage > 0 || 
+              (reading.usage === 0 && 
+               !reading.remarks?.includes('合同创建') && 
+               !reading.remarks?.includes('初始读数') && 
+               !reading.remarks?.includes('底数'))
+            )
+          }
+        }
+        
+        setReadings(allReadings)
       } else {
         console.error('Failed to load meter reading history')
         setReadings([])
@@ -186,6 +212,28 @@ export function MeterReadingHistoryPage() {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
+  // 获取记录类型标识
+  const getRecordTypeBadge = (reading: MeterReadingHistory) => {
+    const isInitialReading = reading.usage === 0 && 
+      (reading.remarks?.includes('合同创建') || 
+       reading.remarks?.includes('初始读数') || 
+       reading.remarks?.includes('底数'))
+    
+    if (isInitialReading) {
+      return (
+        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          初始底数
+        </Badge>
+      )
+    }
+    
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        正常抄表
+      </Badge>
+    )
+  }
+
   if (loading) {
     return (
       <PageContainer title="抄表历史" showBackButton>
@@ -213,79 +261,76 @@ export function MeterReadingHistoryPage() {
 
         {/* 筛选区域 */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              筛选条件
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* 搜索 */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="搜索房间号、租客姓名"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="pl-10"
-                />
+          <CardContent className="p-4">
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* 搜索框 */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="搜索房间号、租客姓名或备注..."
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-
-              {/* 仪表类型 */}
-              <Select value={filters.meterType} onValueChange={(value) => handleFilterChange('meterType', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="仪表类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部类型</SelectItem>
-                  <SelectItem value="ELECTRICITY">电表</SelectItem>
-                  <SelectItem value="COLD_WATER">冷水表</SelectItem>
-                  <SelectItem value="HOT_WATER">热水表</SelectItem>
-                  <SelectItem value="GAS">燃气表</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* 状态 */}
-              <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="PENDING">待确认</SelectItem>
-                  <SelectItem value="CONFIRMED">已确认</SelectItem>
-                  <SelectItem value="BILLED">已生成账单</SelectItem>
-                  <SelectItem value="CANCELLED">已取消</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* 时间范围 */}
-              <Select value={filters.dateRange} onValueChange={(value) => handleFilterChange('dateRange', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="抄表时间" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部时间</SelectItem>
-                  <SelectItem value="today">今天</SelectItem>
-                  <SelectItem value="week">本周</SelectItem>
-                  <SelectItem value="month">本月</SelectItem>
-                  <SelectItem value="quarter">本季度</SelectItem>
-                  <SelectItem value="year">本年度</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* 操作员筛选 */}
-              <Select value={filters.operator || 'all'} onValueChange={(value) => handleFilterChange('operator', value === 'all' ? '' : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="操作员" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部操作员</SelectItem>
-                  <SelectItem value="管理员">管理员</SelectItem>
-                  <SelectItem value="系统">系统</SelectItem>
-                </SelectContent>
-              </Select>
+              
+              {/* 筛选选项 */}
+              <div className="flex flex-wrap gap-2">
+                {/* 记录类型筛选 */}
+                <Select value={filters.recordType} onValueChange={(value) => handleFilterChange('recordType', value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="记录类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部记录</SelectItem>
+                    <SelectItem value="normal">正常抄表</SelectItem>
+                    <SelectItem value="initial">初始底数</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {/* 仪表类型筛选 */}
+                <Select value={filters.meterType} onValueChange={(value) => handleFilterChange('meterType', value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="仪表类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部类型</SelectItem>
+                    <SelectItem value="ELECTRICITY">电表</SelectItem>
+                    <SelectItem value="COLD_WATER">冷水表</SelectItem>
+                    <SelectItem value="HOT_WATER">热水表</SelectItem>
+                    <SelectItem value="GAS">燃气表</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {/* 状态筛选 */}
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="PENDING">待确认</SelectItem>
+                    <SelectItem value="CONFIRMED">已确认</SelectItem>
+                    <SelectItem value="BILLED">已生成账单</SelectItem>
+                    <SelectItem value="CANCELLED">已取消</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {/* 时间范围筛选 */}
+                <Select value={filters.dateRange} onValueChange={(value) => handleFilterChange('dateRange', value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="时间范围" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部时间</SelectItem>
+                    <SelectItem value="today">今天</SelectItem>
+                    <SelectItem value="week">本周</SelectItem>
+                    <SelectItem value="month">本月</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -328,33 +373,42 @@ export function MeterReadingHistoryPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {readings.map(reading => (
               <Card key={reading.id}>
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1">
                       {/* 头部信息 - 房间和仪表信息 */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className={getMeterTypeColor(reading.meterType)}>
-                          {getMeterTypeLabel(reading.meterType)}
-                        </Badge>
-                        <Badge className={getStatusColor(reading.status)}>
-                          {getStatusLabel(reading.status)}
-                        </Badge>
-                        <span className="font-medium text-lg">
-                          {reading.meter?.room?.building?.name} - {reading.meter?.room?.roomNumber}
-                        </span>
-                        <span className="text-gray-600">
-                          {reading.meter?.displayName || getMeterTypeLabel(reading.meterType)}
-                        </span>
-                        {reading.contract?.renter?.name && (
-                          <span className="text-gray-500">租客: {reading.contract.renter.name}</span>
-                        )}
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Badge className={getMeterTypeColor(reading.meterType)}>
+                              {getMeterTypeLabel(reading.meterType)}
+                            </Badge>
+                            {getRecordTypeBadge(reading)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {reading.meter?.displayName || `${getMeterTypeLabel(reading.meterType)}表`}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {reading.meter?.room?.building?.name} - {reading.meter?.room?.roomNumber}
+                              {reading.contract?.renter?.name && (
+                                <span className="ml-2">• {reading.contract.renter.name}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getStatusColor(reading.status)}>
+                            {getStatusLabel(reading.status)}
+                          </Badge>
+                        </div>
                       </div>
 
                       {/* 核心抄表数据 */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm bg-gray-50 p-3 rounded">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm bg-gray-50 p-2 rounded mb-2">
                         <div>
                           <span className="text-gray-500">上次读数：</span>
                           <span className="font-medium block">{reading.previousReading || 0}</span>
@@ -374,10 +428,10 @@ export function MeterReadingHistoryPage() {
                       </div>
 
                       {/* 抄表时间和操作信息 */}
-                      <div className="flex items-center gap-6 text-sm text-gray-600">
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>抄表时间: {new Date(reading.readingDate).toLocaleDateString()}</span>
+                          <span>{new Date(reading.readingDate).toLocaleDateString()}</span>
                         </div>
                         {reading.operator && (
                           <div>
@@ -388,21 +442,31 @@ export function MeterReadingHistoryPage() {
 
                       {/* 备注信息 */}
                       {reading.remarks && (
-                        <div className="text-sm text-gray-600 bg-yellow-50 p-2 rounded">
+                        <div className="text-sm text-gray-600 bg-yellow-50 p-2 rounded mt-2">
                           <span className="font-medium">备注: </span>
                           {reading.remarks}
                         </div>
                       )}
                     </div>
 
-                    {/* 操作按钮 - 只保留删除功能 */}
-                    <div className="flex gap-2 ml-4">
+                    {/* 操作按钮 */}
+                    <div className="flex gap-1 ml-3">
                       <Button
+                        variant="ghost"
                         size="sm"
-                        variant="outline"
+                        onClick={() => handleEdit(reading)}
+                        disabled={reading.status === 'BILLED'}
+                        className="h-8 w-8 p-0"
+                        title={reading.status === 'BILLED' ? '已生成账单的记录不可编辑' : '编辑抄表记录'}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleDelete(reading)}
                         disabled={reading.status === 'BILLED'}
-                        className="text-red-600 hover:text-red-700"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                         title={reading.status === 'BILLED' ? '已生成账单的记录不可删除' : '删除抄表记录'}
                       >
                         <Trash2 className="w-4 h-4" />

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合同抄表录入 - UI设计展示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .meter-card {
+            transition: all 0.2s ease;
+        }
+        .meter-card.completed {
+            border-color: #10b981;
+            background-color: #f0fdf4;
+        }
+        .meter-card.error {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-4">
+    <div class="max-w-2xl mx-auto">
+        <!-- 弹窗标题 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <div class="flex items-center gap-2 mb-2">
+                <h2 class="text-xl font-semibold">合同抄表录入</h2>
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">已录入 2 个仪表</span>
+            </div>
+            <p class="text-gray-600 text-sm">为该合同房间的所有仪表录入当前读数，系统将自动计算用量和费用，并生成聚合账单</p>
+        </div>
+
+        <!-- 仪表列表 -->
+        <div class="space-y-3">
+            <!-- 电表 - 已录入 -->
+            <div class="meter-card completed bg-white border-2 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">电表</span>
+                        <div>
+                            <div class="font-medium">主电表</div>
+                            <div class="text-sm text-gray-500">单价: ¥0.6/度</div>
+                        </div>
+                    </div>
+                    <div class="text-green-500">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500">上次读数</label>
+                        <div class="font-mono text-sm font-medium">1000 度</div>
+                        <div class="text-xs text-gray-400">2024-12-01</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">本次读数 *</label>
+                        <input type="number" value="1150" class="w-full px-2 py-1 text-center border rounded text-sm font-mono border-gray-300" readonly>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">用量</label>
+                        <div class="font-mono text-sm font-medium text-blue-600">150.0 度</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">费用</label>
+                        <div class="font-mono text-sm font-medium text-green-600">¥90.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 冷水表 - 已录入 -->
+            <div class="meter-card completed bg-white border-2 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">冷水表</span>
+                        <div>
+                            <div class="font-medium">主水表</div>
+                            <div class="text-sm text-gray-500">单价: ¥3.5/吨</div>
+                        </div>
+                    </div>
+                    <div class="text-green-500">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500">上次读数</label>
+                        <div class="font-mono text-sm font-medium">50 吨</div>
+                        <div class="text-xs text-gray-400">2024-12-01</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">本次读数 *</label>
+                        <input type="number" value="55" class="w-full px-2 py-1 text-center border rounded text-sm font-mono border-gray-300" readonly>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">用量</label>
+                        <div class="font-mono text-sm font-medium text-blue-600">5.0 吨</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">费用</label>
+                        <div class="font-mono text-sm font-medium text-green-600">¥17.50</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热水表 - 待录入 -->
+            <div class="meter-card bg-white border-2 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">热水表</span>
+                        <div>
+                            <div class="font-medium">热水表</div>
+                            <div class="text-sm text-gray-500">单价: ¥5.0/吨</div>
+                        </div>
+                    </div>
+                    <div class="w-5 h-5 border border-gray-300 rounded-full"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500">上次读数</label>
+                        <div class="font-mono text-sm font-medium">20 吨</div>
+                        <div class="text-xs text-gray-400">2024-12-01</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">本次读数 *</label>
+                        <input type="number" placeholder="请输入" class="w-full px-2 py-1 text-center border rounded text-sm font-mono border-gray-300">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">用量</label>
+                        <div class="font-mono text-sm font-medium text-gray-400">-- 吨</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">费用</label>
+                        <div class="font-mono text-sm font-medium text-gray-400">¥--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 燃气表 - 异常 -->
+            <div class="meter-card error bg-white border-2 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">燃气表</span>
+                        <div>
+                            <div class="font-medium">燃气表</div>
+                            <div class="text-sm text-gray-500">单价: ¥2.5/立方米</div>
+                        </div>
+                    </div>
+                    <div class="text-red-500">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500">上次读数</label>
+                        <div class="font-mono text-sm font-medium">100 立方米</div>
+                        <div class="text-xs text-gray-400">2024-12-01</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">本次读数 *</label>
+                        <input type="number" value="500" class="w-full px-2 py-1 text-center border rounded text-sm font-mono border-red-300 bg-red-50" readonly>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">用量</label>
+                        <div class="font-mono text-sm font-medium text-blue-600">400.0 立方米</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">费用</label>
+                        <div class="font-mono text-sm font-medium text-green-600">¥1000.00</div>
+                    </div>
+                </div>
+                
+                <div class="mt-2 flex items-center gap-2 text-sm text-red-600">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>用量异常偏高（超过3.0倍历史读数）</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 汇总信息 -->
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mt-4">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-blue-800">
+                    <span class="font-medium">抄表汇总：</span>
+                    已录入 3 个仪表，总费用 ¥1107.50
+                </div>
+                <div class="text-xs text-blue-600">
+                    将生成一个聚合水电费账单
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex justify-end gap-2 pt-4 border-t mt-6">
+            <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                取消
+            </button>
+            <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                </svg>
+                提交抄表 (3)
+            </button>
+        </div>
+
+        <!-- 设计说明 -->
+        <div class="mt-8 bg-white rounded-lg p-6 border">
+            <h3 class="text-lg font-semibold mb-4">🎯 UI设计改进说明</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-start gap-2">
+                    <span class="text-green-600 font-bold">✅</span>
+                    <div>
+                        <strong>批量显示所有仪表：</strong>参考批量抄表设计，同时显示该合同房间的所有仪表，避免用户在不同仪表间切换的困惑
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-green-600 font-bold">✅</span>
+                    <div>
+                        <strong>清晰的录入状态：</strong>通过颜色和图标明确显示每个仪表的录入状态（待录入、已录入、异常）
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-green-600 font-bold">✅</span>
+                    <div>
+                        <strong>实时计算反馈：</strong>录入数据后立即显示用量和费用计算结果，提供即时反馈
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-green-600 font-bold">✅</span>
+                    <div>
+                        <strong>统一提交操作：</strong>所有仪表数据录入完成后，通过一个"提交抄表"按钮统一提交，避免认知负担
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-green-600 font-bold">✅</span>
+                    <div>
+                        <strong>汇总信息展示：</strong>实时显示已录入仪表数量和总费用，让用户清楚了解当前进度
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-green-600 font-bold">✅</span>
+                    <div>
+                        <strong>异常检测提示：</strong>对异常数据进行标识和说明，帮助用户识别可能的录入错误
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

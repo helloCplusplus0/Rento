@@ -352,3 +352,50 @@ export async function performDeleteSafetyCheck(roomId: string) {
     ]
   }
 }
+
+/**
+ * 合同删除安全检查
+ */
+export async function performContractDeleteSafetyCheck(contractId: string) {
+  const contract = await prisma.contract.findUnique({
+    where: { id: contractId },
+    include: {
+      bills: true,
+      meterReadings: true
+    }
+  })
+  
+  if (!contract) {
+    throw new Error('Contract not found')
+  }
+  
+  // 检查合同状态 - 只有PENDING状态的合同才能删除
+  const canDelete = contract.status === 'PENDING'
+  
+  // 检查已支付账单
+  const paidBills = contract.bills?.filter(b => b.status === 'PAID' && Number(b.receivedAmount) > 0) || []
+  
+  // 检查未支付账单
+  const unpaidBills = contract.bills?.filter(b => b.status !== 'PAID') || []
+  
+  return {
+    canDelete,
+    contractStatus: contract.status,
+    hasPaidBills: paidBills.length > 0,
+    paidBillCount: paidBills.length,
+    hasUnpaidBills: unpaidBills.length > 0,
+    unpaidBillCount: unpaidBills.length,
+    hasMeterReadings: (contract.meterReadings?.length || 0) > 0,
+    meterReadingCount: contract.meterReadings?.length || 0,
+    errorCode: !canDelete ? (
+      contract.status === 'ACTIVE' ? 'INVALID_STATUS_ACTIVE' :
+      contract.status === 'EXPIRED' ? 'INVALID_STATUS_EXPIRED' :
+      contract.status === 'TERMINATED' ? 'INVALID_STATUS_TERMINATED' :
+      'INVALID_STATUS'
+    ) : (paidBills.length > 0 ? 'HAS_PAID_BILLS' : null),
+    suggestion: !canDelete ? (
+      contract.status === 'ACTIVE' ? '请使用退租功能处理生效中的合同' :
+      '已完成的合同不能删除，用于保护历史记录'
+    ) : (paidBills.length > 0 ? '不能删除有已支付账单的合同' : null)
+  }
+}

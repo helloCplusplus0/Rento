@@ -117,7 +117,8 @@ export const roomQueries = {
         include: { 
           renter: true,
           bills: true
-        }
+        },
+        orderBy: { createdAt: 'desc' } // 按创建时间倒序，最新的合同在前
       }
     }
   }),
@@ -653,11 +654,20 @@ export const contractQueries = {
   }) => {
     // 使用事务确保数据一致性
     return await prisma.$transaction(async (tx) => {
+      // 智能设置合同初始状态：根据开始日期判断
+      const today = new Date()
+      today.setHours(0, 0, 0, 0) // 设置为当天开始时间
+      const startDate = new Date(data.startDate)
+      startDate.setHours(0, 0, 0, 0) // 设置为开始日期的开始时间
+      
+      // 如果开始日期是未来日期，设为PENDING；否则设为ACTIVE
+      const initialStatus = startDate > today ? 'PENDING' : 'ACTIVE'
+      
       // 创建合同
       const contract = await tx.contract.create({
         data: {
           ...data,
-          status: 'ACTIVE' // 明确设置为ACTIVE状态
+          status: initialStatus
         },
         include: {
           room: {
@@ -667,14 +677,16 @@ export const contractQueries = {
         }
       })
 
-      // 同步更新房间状态为OCCUPIED
-      await tx.room.update({
-        where: { id: data.roomId },
-        data: { 
-          status: 'OCCUPIED',
-          currentRenter: data.renterId
-        }
-      })
+      // 同步更新房间状态：只有ACTIVE合同才占用房间
+      if (initialStatus === 'ACTIVE') {
+        await tx.room.update({
+          where: { id: data.roomId },
+          data: { 
+            status: 'OCCUPIED',
+            currentRenter: data.renterId
+          }
+        })
+      }
 
       return contract
     })

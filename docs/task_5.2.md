@@ -1144,7 +1144,8 @@ export function ContractGrid({
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PageContainer } from '@/components/layout'
-import { ContractDetail } from '@/components/business/contract-detail'
+import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
+import { SingleMeterReadingModal } from '@/components/business/SingleMeterReadingModal'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Edit, RefreshCw, XCircle, FileText } from 'lucide-react'
 
@@ -1248,14 +1249,31 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
       }
     >
       <div className="pb-6">
-        <ContractDetail
+        <EnhancedContractDetail
           contract={contract as any}
           onEdit={handleEdit}
           onRenew={handleRenew}
           onTerminate={handleTerminate}
+          onDelete={handleDelete}
           onViewPDF={handleViewPDF}
+          onActivate={handleActivate}
+          onMeterReading={handleMeterReading}
         />
       </div>
+
+      {/* 单次抄表弹窗 */}
+      <SingleMeterReadingModal
+        contractId={contract.id}
+        roomId={contract.roomId}
+        isOpen={showMeterReadingModal}
+        onClose={() => setShowMeterReadingModal(false)}
+        onSuccess={(reading) => {
+          console.log('抄表成功:', reading)
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
+        }}
+      />
     </PageContainer>
   )
 }

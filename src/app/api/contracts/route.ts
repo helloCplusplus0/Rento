@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { contractQueries, roomQueries, renterQueries } from '@/lib/queries'
+import { contractQueries, roomQueries, renterQueries, meterQueries, meterReadingQueries } from '@/lib/queries'
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import { prisma } from '@/lib/prisma'
 import { 
@@ -117,6 +117,7 @@ export const GET = withApiErrorHandler(handleGetContracts, {
 })
 
 async function handlePostContracts(request: NextRequest) {
+  const startTime = Date.now()
   const body = await parseRequestBody(request)
   const {
     renterId,
@@ -132,8 +133,12 @@ async function handlePostContracts(request: NextRequest) {
     signedBy,
     signedDate,
     remarks: contractRemarks,
-    generateBills = true
+    generateBills = true,
+    // 新增：仪表初始读数
+    meterInitialReadings
   } = body
+
+  console.log(`[合同创建] 开始处理，耗时: ${Date.now() - startTime}ms`)
 
   // 基础字段验证
   validateRequired(body, ['renterId', 'roomId', 'startDate', 'endDate', 'monthlyRent', 'deposit'])
@@ -150,8 +155,14 @@ async function handlePostContracts(request: NextRequest) {
     throw new Error('租金和押金必须大于0')
   }
 
-  // 检查房间是否可用
-  const room = await roomQueries.findById(roomId)
+  console.log(`[合同创建] 基础验证完成，耗时: ${Date.now() - startTime}ms`)
+
+  // 并行查询房间和租客信息，提高效率
+  const [room, renter] = await Promise.all([
+    roomQueries.findById(roomId),
+    renterQueries.findById(renterId)
+  ])
+
   if (!room) {
     throw new Error('房间不存在')
   }
@@ -160,8 +171,6 @@ async function handlePostContracts(request: NextRequest) {
     throw new Error(`房间不可用，当前状态：${room.status}`)
   }
 
-  // 检查租客是否已有活跃合同
-  const renter = await renterQueries.findById(renterId)
   if (!renter) {
     throw new Error('租客不存在')
   }
@@ -172,11 +181,13 @@ async function handlePostContracts(request: NextRequest) {
     throw new Error('该租客已有活跃合同')
   }
 
+  console.log(`[合同创建] 房间和租客验证完成，耗时: ${Date.now() - startTime}ms`)
+
   // 生成合同编号
   const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const contractNumber = `CT${year}${month}${String(Date.now()).slice(-6)}`
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const contractNumber = `CT${year}${month}${String(Date.now()).slice(-6)}`
 
   // 计算总租金（修复月数计算逻辑）
   const calculateMonthsDifference = (startDate: Date, endDate: Date): number => {
@@ -223,31 +234,102 @@ async function handlePostContracts(request: NextRequest) {
     remarks: contractRemarks || undefined
   }
 
-  const contract = await contractQueries.create(contractData)
+  console.log(`[合同创建] 开始核心事务，耗时: ${Date.now() - startTime}ms`)
 
-  // 更新房间状态为已占用
-  await roomQueries.update(roomId, {
-    status: 'OCCUPIED',
-    currentRenter: renter.name
+  // 核心事务：只包含必要的数据库操作，减少事务时间
+  const result = await prisma.$transaction(async (tx) => {
+    // 创建合同
+    const contract = await tx.contract.create({
+      data: contractData
+    })
+
+    // 智能设置合同初始状态：根据开始日期判断
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // 设置为当天开始时间
+    const startDate = new Date(contractData.startDate)
+    startDate.setHours(0, 0, 0, 0) // 设置为开始日期的开始时间
+    
+    // 如果开始日期是未来日期，设为PENDING；否则设为ACTIVE
+    const initialStatus = startDate > today ? 'PENDING' : 'ACTIVE'
+    
+    // 更新合同状态
+    const updatedContract = await tx.contract.update({
+      where: { id: contract.id },
+      data: { status: initialStatus }
+    })
+
+    // 只有当合同状态为ACTIVE时才更新房间状态
+    if (initialStatus === 'ACTIVE') {
+      await tx.room.update({
+        where: { id: roomId },
+        data: {
+          status: 'OCCUPIED',
+          currentRenter: renter.name
+        }
+      })
+    }
+
+    // 处理仪表初始读数（如果提供）- 简化处理
+    if (meterInitialReadings && Object.keys(meterInitialReadings).length > 0) {
+      // 获取房间的活跃仪表
+      const roomMeters = await tx.meter.findMany({
+        where: { 
+          roomId: roomId,
+          isActive: true 
+        },
+        select: { id: true, unitPrice: true } // 只选择必要字段
+      })
+
+       // 批量创建仪表读数记录
+       const meterReadingData = roomMeters
+         .filter(meter => meterInitialReadings[meter.id] !== undefined)
+         .map(meter => ({
+           meterId: meter.id,
+           contractId: contract.id,
+           currentReading: meterInitialReadings[meter.id],
+           previousReading: null,
+           usage: 0,
+           unitPrice: meter.unitPrice,
+           amount: 0,
+           readingDate: contract.startDate,
+           period: `${contract.startDate.toISOString().slice(0, 7)} 初始读数`,
+           status: 'CONFIRMED' as const,
+           isBilled: false,
+           operator: signedBy || 'SYSTEM',
+           remarks: '合同创建时的仪表底数'
+         }))
+
+      if (meterReadingData.length > 0) {
+        await tx.meterReading.createMany({
+          data: meterReadingData
+        })
+      }
+    }
+
+    return updatedContract
+  }, {
+    timeout: 8000 // 减少到8秒超时
   })
 
-  // 自动生成账单（如果需要）
-  let bills: any[] = []
+  console.log(`[合同创建] 核心事务完成，耗时: ${Date.now() - startTime}ms`)
+
+  // 异步处理账单生成，不阻塞响应
+  let billGenerationPromise: Promise<any> | null = null
   if (generateBills) {
-    try {
-      bills = await generateBillsOnContractSigned(contract.id)
-    } catch (error) {
-      console.error('自动生成账单失败:', error)
-      // 不影响合同创建，只记录错误
-    }
+    billGenerationPromise = generateBillsOnContractSigned(result.id).catch(error => {
+      console.error('异步账单生成失败:', error)
+      return []
+    })
   }
 
   // 获取完整的合同信息
-  const fullContract = await contractQueries.findById(contract.id)
+  const fullContract = await contractQueries.findById(result.id)
   
   if (!fullContract) {
     throw new Error('创建合同后无法获取完整信息')
   }
+
+  console.log(`[合同创建] 合同创建完成，总耗时: ${Date.now() - startTime}ms`)
 
   // 转换数据类型
   const contractForClient = {
@@ -274,6 +356,23 @@ async function handlePostContracts(request: NextRequest) {
     }))
   }
 
+  // 如果账单生成很快完成，等待一下结果
+  let bills: any[] = []
+  if (billGenerationPromise) {
+    try {
+      // 最多等待2秒获取账单结果
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('账单生成超时')), 2000)
+      )
+      
+      bills = await Promise.race([billGenerationPromise, timeoutPromise]) as any[]
+      console.log(`[合同创建] 快速账单生成完成，生成${bills.length}个账单`)
+    } catch (error) {
+      console.log(`[合同创建] 账单生成将在后台继续，不影响合同创建`)
+      // 账单生成失败或超时，不影响合同创建成功
+    }
+  }
+
   return createSuccessResponse({
     contract: contractForClient,
     bills: bills.map((bill: any) => ({
@@ -282,7 +381,7 @@ async function handlePostContracts(request: NextRequest) {
       receivedAmount: Number(bill.receivedAmount),
       pendingAmount: Number(bill.pendingAmount)
     })),
-    message: '合同创建成功' + (generateBills ? `，已自动生成 ${bills.length} 个账单` : '')
+    message: '合同创建成功' + (bills.length > 0 ? `，已生成 ${bills.length} 个账单` : '，账单正在后台生成')
   })
 }
 

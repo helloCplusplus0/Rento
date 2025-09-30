@@ -28,6 +28,8 @@ interface ContractFormData {
   signedBy?: string
   signedDate?: string
   remarks?: string
+  // 新增：仪表初始读数
+  meterInitialReadings?: Record<string, number>
 }
 
 interface ContractFormProps {
@@ -59,6 +61,11 @@ export function ContractForm({
 }: ContractFormProps) {
   const [selectedRenter, setSelectedRenter] = useState<RenterWithContractsForClient | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<RoomWithBuildingForClient | null>(null)
+  // 新增：仪表相关状态
+  const [roomMeters, setRoomMeters] = useState<MeterForClient[]>([])
+  const [metersLoading, setMetersLoading] = useState(false)
+  const [meterReadings, setMeterReadings] = useState<Record<string, number>>({})
+  
   const [formData, setFormData] = useState<ContractFormData>({
     renterId: '',
     roomId: '',
@@ -72,11 +79,54 @@ export function ContractForm({
     paymentTiming: '每月1号前',
     signedBy: '',
     signedDate: '',
-    remarks: ''
+    remarks: '',
+    meterInitialReadings: {}
   })
 
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // 新增：加载房间仪表数据
+  const loadRoomMeters = async (roomId: string) => {
+    if (!roomId) return
+    
+    setMetersLoading(true)
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/meters`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          // 只显示活跃的仪表
+          const activeMeters = result.data.filter((meter: any) => meter.isActive)
+          setRoomMeters(activeMeters)
+          
+          // 初始化仪表读数为0
+          const initialReadings: Record<string, number> = {}
+          activeMeters.forEach((meter: MeterForClient) => {
+            initialReadings[meter.id] = 0
+          })
+          setMeterReadings(initialReadings)
+          setFormData(prev => ({
+            ...prev,
+            meterInitialReadings: initialReadings
+          }))
+        } else {
+          setRoomMeters([])
+          setMeterReadings({})
+        }
+      } else {
+        console.error('获取房间仪表失败:', response.status)
+        setRoomMeters([])
+        setMeterReadings({})
+      }
+    } catch (error) {
+      console.error('加载房间仪表数据失败:', error)
+      setRoomMeters([])
+      setMeterReadings({})
+    } finally {
+      setMetersLoading(false)
+    }
+  }
 
   // 初始化表单数据和预选房间/租客
   useEffect(() => {
@@ -110,8 +160,13 @@ export function ContractForm({
         monthlyRent: selectedRoom.rent,
         deposit: selectedRoom.rent * 2 // 默认2个月押金
       }))
+      
+      // 新增：加载房间仪表数据
+      if (mode === 'create') {
+        loadRoomMeters(selectedRoom.id)
+      }
     }
-  }, [selectedRoom])
+  }, [selectedRoom, mode])
 
   // 当选择租客时，自动填充签约人信息
   useEffect(() => {
@@ -191,6 +246,19 @@ export function ContractForm({
     }
   }
 
+  // 新增：处理仪表读数变化
+  const handleMeterReadingChange = (meterId: string, value: number) => {
+    const newReadings = {
+      ...meterReadings,
+      [meterId]: value
+    }
+    setMeterReadings(newReadings)
+    setFormData(prev => ({
+      ...prev,
+      meterInitialReadings: newReadings
+    }))
+  }
+
   const validateForm = (): string | null => {
     if (!formData.renterId || !formData.roomId || !formData.startDate || !formData.endDate) {
       return '请填写必填信息'
@@ -202,6 +270,21 @@ export function ContractForm({
 
     if (formData.monthlyRent <= 0) {
       return '月租金必须大于0'
+    }
+
+    // 新增：仪表配置验证（仅在创建模式下）
+    if (mode === 'create' && selectedRoom) {
+      if (roomMeters.length === 0 && !metersLoading) {
+        return '该房间未配置仪表，建议先配置仪表后再创建合同'
+      }
+      
+      // 检查是否所有仪表都有初始读数
+      for (const meter of roomMeters) {
+        const reading = meterReadings[meter.id]
+        if (reading === undefined || reading < 0) {
+          return `请为仪表"${meter.displayName}"设置有效的初始读数`
+        }
+      }
     }
 
     return null
@@ -298,6 +381,84 @@ export function ContractForm({
           )}
         </CardContent>
       </Card>
+
+      {/* 新增：仪表初始读数录入 */}
+      {mode === 'create' && selectedRoom && (
+        <Card>
+          <CardHeader>
+            <CardTitle>仪表初始读数（底数）</CardTitle>
+            <p className="text-sm text-gray-600">
+              请录入房间内各仪表的当前读数作为租期开始的底数
+            </p>
+          </CardHeader>
+          <CardContent>
+            {metersLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-500">加载仪表数据中...</p>
+                </div>
+              </div>
+            ) : roomMeters.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-2">该房间暂未配置仪表</p>
+                <p className="text-sm text-amber-600">
+                  ⚠️ 建议先为房间配置仪表后再创建合同
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {roomMeters.map((meter) => (
+                  <div key={meter.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {meter.displayName}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {meter.meterNumber} • {meter.location || '未设置位置'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-700">
+                          单价: ¥{meter.unitPrice}/{meter.unit}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {meter.meterType === 'ELECTRICITY' ? '电表' :
+                           meter.meterType === 'COLD_WATER' ? '冷水表' :
+                           meter.meterType === 'HOT_WATER' ? '热水表' : '燃气表'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Label htmlFor={`meter-${meter.id}`} className="text-sm font-medium">
+                        初始读数:
+                      </Label>
+                      <Input
+                        id={`meter-${meter.id}`}
+                        type="number"
+                        value={meterReadings[meter.id] || 0}
+                        onChange={(e) => handleMeterReadingChange(meter.id, Number(e.target.value) || 0)}
+                        disabled={loading}
+                        min="0"
+                        step="0.01"
+                        className="w-32"
+                        placeholder="0"
+                      />
+                      <span className="text-sm text-gray-500">{meter.unit}</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    💡 提示：仪表初始读数将作为租期开始的底数，用于后续抄表计费。请确保读数准确无误。
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 合同基本信息 */}
       <Card>
@@ -613,4 +774,17 @@ export function ContractForm({
       )}
     </form>
   )
+}
+
+
+// 新增：仪表类型定义
+interface MeterForClient {
+  id: string
+  meterNumber: string
+  displayName: string
+  meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
+  unitPrice: number
+  unit: string
+  location?: string
+  isActive: boolean
 }

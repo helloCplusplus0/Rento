@@ -67,8 +67,11 @@ export async function GET(request: NextRequest) {
               isActive: meter.isActive,
               lastReading: meter.readings.length > 0 ? Number(meter.readings[0].currentReading) : 0,
               lastReadingDate: meter.readings.length > 0 ? meter.readings[0].readingDate : null,
-              // 新增：关联的有效合同ID
-              contractId: activeContract?.id || null
+              // 优化：关联的有效合同ID和详细信息
+              contractId: activeContract?.id || null,
+              contractNumber: activeContract?.contractNumber || null,
+              renterName: activeContract?.renter?.name || null,
+              contractStatus: activeContract?.status || null
             }))
             
             return {

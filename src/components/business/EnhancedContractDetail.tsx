@@ -29,7 +29,8 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  ExternalLink
+  ExternalLink,
+  Gauge
 } from 'lucide-react'
 
 interface ContractWithDetailsForClient {
@@ -120,6 +121,8 @@ interface EnhancedContractDetailProps {
   onTerminate?: () => void
   onDelete?: () => void
   onViewPDF?: () => void
+  onActivate?: () => void  // 新增激活回调
+  onMeterReading?: () => void  // 新增抄表回调
   className?: string
 }
 
@@ -134,6 +137,8 @@ export function EnhancedContractDetail({
   onTerminate,
   onDelete,
   onViewPDF,
+  onActivate,  // 新增激活回调
+  onMeterReading,  // 新增抄表回调
   className
 }: EnhancedContractDetailProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'bills' | 'facilities'>('overview')
@@ -269,6 +274,12 @@ export function EnhancedContractDetail({
             编辑合同
           </Button>
         )}
+        {contract.status === 'PENDING' && onActivate && (
+          <Button onClick={onActivate} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+            <CheckCircle className="w-4 h-4" />
+            激活合同
+          </Button>
+        )}
         {isActive && onRenew && (
           <Button onClick={onRenew} className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
             <RefreshCw className="w-4 h-4" />
@@ -279,6 +290,12 @@ export function EnhancedContractDetail({
           <Button variant="outline" onClick={onTerminate} className="flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50">
             <UserX className="w-4 h-4" />
             退租
+          </Button>
+        )}
+        {isActive && onMeterReading && (
+          <Button variant="outline" onClick={onMeterReading} className="flex items-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50">
+            <Gauge className="w-4 h-4" />
+            抄表录入
           </Button>
         )}
         {onDelete && (
