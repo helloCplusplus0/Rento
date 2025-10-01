@@ -1,0 +1,93 @@
+# Rento 生产环境 Docker Compose 配置
+# 用于 GitHub Actions 自动部署
+
+version: '3.8'
+
+services:
+  app:
+    image: ghcr.io/helloCplusplus0/rento:latest
+    container_name: rento-app-prod
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://rento:${POSTGRES_PASSWORD}@postgres:5432/rento_production
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://your-domain.com}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - BACKUP_DIR=/app/backups
+      - LOG_DIR=/app/logs
+      - ENABLE_MONITORING=true
+      - PERFORMANCE_MONITORING=true
+      - LOG_LEVEL=info
+    volumes:
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - rento-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rento-postgres-prod
+    environment:
+      - POSTGRES_DB=rento_production
+      - POSTGRES_USER=rento
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rento -d rento_production']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rento-network
+    # PostgreSQL 生产优化配置
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+
+  nginx:
+    image: nginx:alpine
+    container_name: rento-nginx-prod
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - rento-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  rento-network:
+    driver: bridge
