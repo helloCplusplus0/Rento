@@ -4,17 +4,17 @@
 
 ## 🎯 统一部署理念
 
-**核心原则**: 本地部署和生产部署使用完全相同的流程和配置，确保部署一致性。
+**核心原则**: 使用单一的 `docker-compose.yml` 文件，通过环境变量区分不同部署环境，确保部署一致性。
 
-- **本地部署**: 在开发环境（Ubuntu 24）中运行容器，验证所有部署环节
+- **本地部署**: 在开发环境中运行容器，验证所有部署环节
 - **生产部署**: 在云服务器中运行相同的容器配置
-- **唯一差异**: 运行环境的物理位置，配置和流程完全一致
+- **环境差异**: 仅通过 `.env` 文件中的环境变量进行区分
 
 ### 优势
-- ✅ **部署一致性**: 消除本地和生产环境的差异
-- ✅ **风险降低**: 本地验证所有部署步骤，降低生产部署风险
-- ✅ **快速部署**: 本地验证通过后，可快速复制到生产环境
-- ✅ **问题排查**: 本地可完全复现生产环境问题
+- ✅ **配置统一**: 消除多个编排文件的冗余和混乱
+- ✅ **部署一致性**: 本地和生产环境使用完全相同的配置
+- ✅ **维护简化**: 只需维护一个 Docker Compose 文件
+- ✅ **灵活配置**: 通过环境变量支持多种部署场景
 
 ## 📋 部署前准备
 
@@ -86,8 +86,6 @@ docker-compose --version
 # 克隆完整仓库
 git clone https://github.com/helloCplusplus0/Rento.git
 cd Rento
-```
-
 #### 方式二：仅下载部署文件
 ```bash
 # 创建部署目录
@@ -97,6 +95,12 @@ mkdir rento-deploy && cd rento-deploy
 wget https://raw.githubusercontent.com/helloCplusplus0/Rento/main/docker-compose.yml
 wget https://raw.githubusercontent.com/helloCplusplus0/Rento/main/.env.example
 
+# 下载部署脚本
+mkdir -p scripts
+wget -P scripts https://raw.githubusercontent.com/helloCplusplus0/Rento/main/scripts/health-check.sh
+wget -P scripts https://raw.githubusercontent.com/helloCplusplus0/Rento/main/scripts/migrate-and-seed.sh
+chmod +x scripts/*.sh
+```
 # 下载部署脚本
 mkdir -p scripts
 wget -P scripts https://raw.githubusercontent.com/helloCplusplus0/Rento/main/scripts/health-check.sh
@@ -202,10 +206,10 @@ docker-compose logs -f app
 #### 执行数据库迁移
 ```bash
 # Podman 环境（推荐）
-podman exec -it rento-app-1 /app/scripts/migrate-and-seed.sh
+podman exec -it rento-app /app/scripts/migrate-and-seed.sh
 
 # Docker 环境（备选）
-docker exec -it rento-app-1 /app/scripts/migrate-and-seed.sh
+docker exec -it rento-app /app/scripts/migrate-and-seed.sh
 ```
 
 #### 验证数据库状态

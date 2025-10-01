@@ -40,7 +40,7 @@ podman-compose up -d
 # docker-compose up -d
 
 # 执行数据库迁移
-podman exec -it rento-app-1 /app/scripts/migrate-and-seed.sh
+podman exec -it rento-app /app/scripts/migrate-and-seed.sh
 
 # 验证部署
 ./scripts/health-check.sh
