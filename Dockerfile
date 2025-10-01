@@ -7,8 +7,7 @@
 # 阶段1: 依赖安装和构建
 FROM node:20-alpine AS builder
 
-# 安装构建依赖
-RUN apk add --no-cache libc6-compat
+# 跳过额外包安装，直接使用基础镜像
 
 # 设置工作目录
 WORKDIR /app
@@ -17,13 +16,17 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 安装依赖 (仅生产依赖)
-RUN npm ci --only=production && npm cache clean --force
+# 安装所有依赖 (包括开发依赖，构建时需要)
+RUN npm ci && npm cache clean --force
 
 # 复制源代码
 COPY . .
 
-# 生成Prisma客户端
+# 生成Prisma客户端 (禁用代理避免网络问题)
+ENV http_proxy=""
+ENV https_proxy=""
+ENV HTTP_PROXY=""
+ENV HTTPS_PROXY=""
 RUN npx prisma generate
 
 # 构建应用 (Next.js standalone模式)
@@ -32,12 +35,7 @@ RUN npm run build
 # 阶段2: 生产运行环境
 FROM node:20-alpine AS runner
 
-# 安装运行时依赖
-RUN apk add --no-cache \
-    postgresql-client \
-    curl \
-    dumb-init \
-    tzdata
+# 跳过运行时依赖安装，使用基础镜像
 
 # 设置时区
 ENV TZ=Asia/Shanghai
@@ -75,12 +73,9 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-# 健康检查
+# 健康检查 (使用node内置功能)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/api/health || exit 1
+  CMD node -e "require('http').get('http://localhost:3001/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# 使用dumb-init作为PID 1 (处理信号和僵尸进程)
-ENTRYPOINT ["dumb-init", "--"]
-
-# 启动命令
+# 启动命令 (不使用dumb-init)
 CMD ["node", "server.js"]

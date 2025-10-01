@@ -1,5 +1,6 @@
-# Rento 房屋租赁管理系统 - 容器编排配置
+# Rento 房屋租赁管理系统 - 统一容器编排配置
 # 兼容 Docker Compose 和 Podman Compose
+# 支持开发、测试、生产环境的统一部署
 # 推荐使用: podman-compose up -d
 # 备选使用: docker-compose up -d
 
@@ -9,12 +10,12 @@ services:
   app:
     # 使用预构建的镜像，支持多架构 (amd64/arm64)
     image: ghcr.io/hellocplusplus0/rento:latest
-    container_name: rento-app-1
+    container_name: ${CONTAINER_PREFIX:-rento}-app
     ports:
-      - '3001:3001'
+      - '${APP_PORT:-3001}:3001'
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - DATABASE_URL=postgresql://rento:${POSTGRES_PASSWORD}@postgres:5432/rento_production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-rento}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rento_production}
       - BACKUP_DIR=/app/backups
       - LOG_DIR=/app/logs
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3001}
@@ -44,7 +45,7 @@ services:
   postgres:
     # PostgreSQL 16 数据库服务
     image: postgres:16-alpine
-    container_name: rento-postgres-1
+    container_name: ${CONTAINER_PREFIX:-rento}-postgres
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-rento_production}
       - POSTGRES_USER=${POSTGRES_USER:-rento}
@@ -87,7 +88,7 @@ services:
   # Nginx 反向代理 (生产环境可选)
   nginx:
     image: nginx:alpine
-    container_name: rento-nginx-1
+    container_name: ${CONTAINER_PREFIX:-rento}-nginx
     ports:
       - '${HTTP_PORT:-80}:80'
       - '${HTTPS_PORT:-443}:443'
@@ -108,7 +109,7 @@ services:
   # Redis 缓存服务 (可选)
   redis:
     image: redis:7-alpine
-    container_name: rento-redis-1
+    container_name: ${CONTAINER_PREFIX:-rento}-redis
     ports:
       - '${REDIS_PORT:-6379}:6379'
     volumes:

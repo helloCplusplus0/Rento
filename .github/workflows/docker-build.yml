@@ -61,7 +61,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           mkdir -p deployment
-          cp docker-compose.prod.yml deployment/
+          cp docker-compose.yml deployment/
           cp .env.example deployment/.env.template
           echo "IMAGE_TAG=${{ steps.meta.outputs.tags }}" >> deployment/.env.template
 
