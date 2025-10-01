@@ -20,6 +20,7 @@ interface DetailPageTemplateProps {
   showBackButton?: boolean
   children: ReactNode
   actions?: DetailPageAction[]
+  extraActions?: ReactNode
   className?: string
 }
 
@@ -39,6 +40,7 @@ export function DetailPageTemplate({
   showBackButton = true,
   children,
   actions = [],
+  extraActions,
   className
 }: DetailPageTemplateProps) {
   return (
@@ -47,6 +49,7 @@ export function DetailPageTemplate({
       subtitle={subtitle}
       showBackButton={showBackButton}
       className={className}
+      actions={extraActions}
     >
       <div className="space-y-6 pb-6">
         {/* 主要内容区域 */}

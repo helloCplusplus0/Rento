@@ -99,9 +99,9 @@ export const statusTextMap = {
   },
   bill: {
     PENDING: '待付',
-    PAID: '已付',
+    PAID: '部分付款',
     OVERDUE: '逾期',
-    COMPLETED: '完成'
+    COMPLETED: '已完成'
   },
   contract: {
     ACTIVE: '生效',

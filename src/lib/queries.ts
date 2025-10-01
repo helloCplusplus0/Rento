@@ -926,8 +926,11 @@ export const billQueries = {
   // 更新账单
   update: (id: string, data: {
     status?: BillStatus
+    amount?: number
     receivedAmount?: number
     pendingAmount?: number
+    dueDate?: Date
+    period?: string
     paidDate?: Date
     paymentMethod?: string
     operator?: string

@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillStatusBadge } from '@/components/ui/status-badge'
 import { formatDate, formatCurrency } from '@/lib/format'
+import { ExternalLink } from 'lucide-react'
 
 interface BillBasicInfoProps {
   bill: any
@@ -15,6 +17,8 @@ interface BillBasicInfoProps {
  * 支持不同类型账单的差异化展示
  */
 export function BillBasicInfo({ bill }: BillBasicInfoProps) {
+  const router = useRouter()
+  
   // 根据到期日期自动判断是否逾期
   const today = new Date()
   const dueDate = new Date(bill.dueDate)
@@ -26,32 +30,26 @@ export function BillBasicInfo({ bill }: BillBasicInfoProps) {
   // 显示实际状态（基于日期计算）
   const actualStatus = isActuallyOverdue ? 'OVERDUE' : bill.status
 
+  // 跳转到合同详情
+  const handleContractClick = () => {
+    router.push(`/contracts/${bill.contract.id}`)
+  }
+
+  // 跳转到租客详情
+  const handleRenterClick = () => {
+    router.push(`/renters/${bill.contract.renter.id}`)
+  }
+
   return (
     <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-lg mb-4">账单信息</CardTitle>
         
-        {/* 整合的账单核心信息区域 */}
+        {/* 简化的账单核心信息区域 - 只保留金额和状态 */}
         <div className="bg-gradient-to-r from-blue-50 via-green-50 to-blue-50 rounded-lg p-4 border border-blue-200">
-          {/* 顶部：租客信息和状态 */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div>
-                <p className="text-lg font-semibold text-gray-900">
-                  {bill.contract.renter.name}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {bill.contract.room.building.name} - {bill.contract.room.roomNumber}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-xs text-gray-500">合同编号</p>
-                <p className="text-sm font-mono text-gray-700">{bill.contract.contractNumber}</p>
-              </div>
-              <BillStatusBadge status={actualStatus} />
-            </div>
+          {/* 顶部：状态 */}
+          <div className="flex justify-center mb-4">
+            <BillStatusBadge status={actualStatus} />
           </div>
           
           {/* 中部：账单总金额 */}
@@ -120,9 +118,20 @@ export function BillBasicInfo({ bill }: BillBasicInfoProps) {
  * 水电费账单明细组件
  */
 function UtilitiesBillDetails({ bill }: { bill: any }) {
+  const router = useRouter()
   const [billDetails, setBillDetails] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLegacy, setIsLegacy] = useState(false)
+
+  // 跳转到合同详情
+  const handleContractClick = () => {
+    router.push(`/contracts/${bill.contract.id}`)
+  }
+
+  // 跳转到租客详情
+  const handleRenterClick = () => {
+    router.push(`/renters/${bill.contract.renter.id}`)
+  }
 
   useEffect(() => {
     // 获取真实的账单明细数据
@@ -176,6 +185,7 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
 
   return (
     <div className="space-y-4">
+      {/* 账单基本信息 - 下沉到这里 */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <div>
           <label className="text-xs font-medium text-gray-600">账单编号</label>
@@ -185,6 +195,42 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
           <label className="text-xs font-medium text-gray-600">账单类型</label>
           <p className="text-sm">{getBillTypeText(bill.type)}</p>
         </div>
+        
+        {/* 租客信息 - 可点击跳转 */}
+        <div>
+          <label className="text-xs font-medium text-gray-600">租客姓名</label>
+          <button
+            onClick={handleRenterClick}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group"
+          >
+            {bill.contract.renter.name}
+            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        </div>
+        
+        {/* 房间信息 - 可点击跳转 */}
+        <div>
+          <label className="text-xs font-medium text-gray-600">房间信息</label>
+          <button
+            onClick={handleContractClick}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group"
+          >
+            {bill.contract.room.building.name} - {bill.contract.room.roomNumber}
+            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        </div>
+        
+        {/* 合同编号 - 可点击跳转 */}
+        <div>
+          <label className="text-xs font-medium text-gray-600">合同编号</label>
+          <button
+            onClick={handleContractClick}
+            className="text-sm font-mono text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            {bill.contract.contractNumber}
+          </button>
+        </div>
+        
         <div className="col-span-2">
           <label className="text-xs font-medium text-gray-600">缴费周期</label>
           <p className="text-sm font-medium text-blue-600">
@@ -273,6 +319,18 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
  * 通用账单详情组件 (租金、押金、其他)
  */
 function GeneralBillDetails({ bill }: { bill: any }) {
+  const router = useRouter()
+
+  // 跳转到合同详情
+  const handleContractClick = () => {
+    router.push(`/contracts/${bill.contract.id}`)
+  }
+
+  // 跳转到租客详情
+  const handleRenterClick = () => {
+    router.push(`/renters/${bill.contract.renter.id}`)
+  }
+
   // 生成缴费周期时间段 (模拟数据，实际应从数据库获取)
   const getBillingPeriod = () => {
     if (bill.period) return bill.period
@@ -305,6 +363,42 @@ function GeneralBillDetails({ bill }: { bill: any }) {
         <label className="text-xs font-medium text-gray-600">账单类型</label>
         <p className="text-sm">{getBillTypeText(bill.type)}</p>
       </div>
+      
+      {/* 租客信息 - 可点击跳转 */}
+      <div>
+        <label className="text-xs font-medium text-gray-600">租客姓名</label>
+        <button
+          onClick={handleRenterClick}
+          className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group"
+        >
+          {bill.contract.renter.name}
+          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </button>
+      </div>
+      
+      {/* 房间信息 - 可点击跳转 */}
+      <div>
+        <label className="text-xs font-medium text-gray-600">房间信息</label>
+        <button
+          onClick={handleContractClick}
+          className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group"
+        >
+          {bill.contract.room.building.name} - {bill.contract.room.roomNumber}
+          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </button>
+      </div>
+      
+      {/* 合同编号 - 可点击跳转 */}
+      <div>
+        <label className="text-xs font-medium text-gray-600">合同编号</label>
+        <button
+          onClick={handleContractClick}
+          className="text-sm font-mono text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          {bill.contract.contractNumber}
+        </button>
+      </div>
+      
       <div className="col-span-2">
         <label className="text-xs font-medium text-gray-600">缴费周期</label>
         <p className="text-sm font-medium text-blue-600">{getBillingPeriod()}</p>
@@ -313,10 +407,7 @@ function GeneralBillDetails({ bill }: { bill: any }) {
         <label className="text-xs font-medium text-gray-600">到期日期</label>
         <p className="text-sm">{formatDate(bill.dueDate)}</p>
       </div>
-      <div>
-        <label className="text-xs font-medium text-gray-600">生成日期</label>
-        <p className="text-sm">{formatDate(bill.createdAt)}</p>
-      </div>
+      <div></div> {/* 占位保持对齐 */}
       {bill.paidDate && (
         <>
           <div>

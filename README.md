@@ -1,36 +1,206 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rento - 房屋租赁管理系统
 
-## Getting Started
+专业的房屋租赁管理系统，提供房源管理、租客管理、合同管理、账单管理等功能。
 
-First, run the development server:
+## 🎯 统一部署理念
 
+**核心原则**: 本地部署和生产部署使用完全相同的流程和配置，确保部署一致性。
+
+- **本地部署**: 在开发环境中运行容器，验证所有部署环节
+- **生产部署**: 在云服务器中运行相同的容器配置  
+- **唯一差异**: 运行环境的物理位置，配置和流程完全一致
+
+## 🚀 快速开始
+
+### 统一容器部署（推荐）
+
+无论本地还是生产环境，都使用相同的部署流程：
+
+#### 1. 获取代码
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/helloCplusplus0/Rento.git
+cd Rento
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### 2. 配置环境
+```bash
+# 复制环境变量模板
+cp .env.example .env
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# 根据环境修改配置
+nano .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### 3. 启动服务
+```bash
+# 启动所有服务（推荐使用Podman）
+podman-compose up -d
 
-## Learn More
+# 或使用Docker（备选）
+# docker-compose up -d
 
-To learn more about Next.js, take a look at the following resources:
+# 执行数据库迁移
+podman exec -it rento-app-1 /app/scripts/migrate-and-seed.sh
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 验证部署
+./scripts/health-check.sh
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### 4. 访问应用
+- **本地环境**: http://localhost:3001
+- **生产环境**: https://your-domain.com
 
-## Deploy on Vercel
+> 📖 **详细部署指南**: 查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取完整的部署文档
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 本地开发（可选）
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+如需进行代码开发，可以使用本地开发模式：
+
+```bash
+# 安装依赖
+npm install
+
+# 配置数据库
+npx prisma generate
+npx prisma migrate dev
+
+# 启动开发服务器
+npm run dev
+```
+
+#### 健康检查
+
+```bash
+# 使用内置健康检查脚本
+./scripts/health-check.sh
+
+# 或直接访问健康检查端点
+curl http://localhost:3001/api/health
+```
+
+#### 服务管理
+
+```bash
+# 查看服务状态（推荐使用Podman）
+podman-compose ps
+
+# 查看日志
+podman-compose logs -f
+
+# 停止服务
+podman-compose down
+
+# 重启服务
+podman-compose restart
+
+# 如果使用Docker，将podman-compose替换为docker-compose
+```
+
+## 📁 项目结构
+
+```
+├── src/                     # 应用源代码
+│   ├── app/                 # Next.js App Router
+│   ├── components/          # React 组件
+│   ├── lib/                 # 工具库和配置
+│   └── types/               # TypeScript 类型定义
+├── prisma/                  # 数据库模式和迁移
+├── scripts/                 # 部署和维护脚本
+├── .github/workflows/       # GitHub Actions CI/CD
+├── docker-compose.yml       # 容器编排配置
+├── DEPLOYMENT.md           # 详细部署指南
+└── ENVIRONMENT_GUIDE.md    # 环境配置指南
+```
+
+## 🛠️ 技术栈
+
+- **前端**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **后端**: Next.js API Routes, Prisma ORM
+- **数据库**: PostgreSQL (生产), SQLite (开发)
+- **缓存**: Redis
+- **容器**: Podman/Docker
+- **CI/CD**: GitHub Actions
+
+## 📊 功能特性
+
+- ✅ **房源管理**: 楼栋、房间、状态管理
+- ✅ **租客管理**: 信息管理、合同关联
+- ✅ **合同管理**: 创建、续约、退租
+- ✅ **账单管理**: 租金、水电费、支付状态
+- ✅ **水电表管理**: 抄表、计费
+- ✅ **数据统计**: 收支统计、趋势分析
+- ✅ **移动端适配**: 响应式设计
+- ✅ **PWA支持**: 离线访问、安装到桌面
+
+## 🔧 开发指南
+
+### 环境要求
+
+- Node.js 20+
+- PostgreSQL 16+ (生产环境)
+- Docker/Podman (容器部署)
+
+### 开发命令
+
+```bash
+# 开发服务器
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 代码检查
+npm run lint
+npm run type-check
+
+# 数据库操作
+npm run db:generate    # 生成 Prisma 客户端
+npm run db:migrate     # 运行数据库迁移
+npm run db:seed        # 运行种子数据
+npm run db:studio      # 打开 Prisma Studio
+```
+
+### 容器镜像
+
+项目使用 GitHub Actions 自动构建 Docker 镜像：
+
+- **镜像仓库**: `ghcr.io/hellocplusplus0/rento`
+- **标签**: `latest` (主分支), `v*` (版本标签)
+- **架构**: linux/amd64, linux/arm64
+
+## 📝 部署注意事项
+
+### 安全配置
+- ✅ 修改默认密码 (`POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`)
+- ✅ 使用 HTTPS (生产环境)
+- ✅ 配置防火墙规则
+
+### 性能优化
+- ✅ PostgreSQL 配置已优化
+- ✅ Redis 缓存配置
+- ✅ 健康检查和监控
+
+### 数据备份
+- ✅ 定期备份 PostgreSQL 数据
+- ✅ 备份目录: `./backups`
+- ✅ 日志目录: `./logs`
+
+## 📖 相关文档
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)**: 完整的部署指南
+- **[ENVIRONMENT_GUIDE.md](./ENVIRONMENT_GUIDE.md)**: 环境配置指南
+- **[GitHub Actions](./.github/workflows/)**: CI/CD 配置
+
+## 📄 许可证
+
+MIT License
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+**版本**: v0.1.0  
+**部署方式**: 统一容器部署  
+**最后更新**: 2024年1月

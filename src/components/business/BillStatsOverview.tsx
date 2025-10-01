@@ -72,24 +72,29 @@ export function BillStatsOverview({ bills, statusCounts }: BillStatsOverviewProp
   ]
   
   return (
-    <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
-      {statsCards.map((stat) => (
-        <Card key={stat.title} className="overflow-hidden">
-          <CardHeader className={`pb-1 pt-2 px-3 ${stat.bgColor}`}>
-            <CardTitle className="text-xs font-medium text-gray-600 leading-tight">
-              {stat.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2 pb-3 px-3">
-            <div className={`text-lg lg:text-2xl font-bold mb-1 ${stat.textColor} leading-tight`}>
-              {stat.value}
+    <Card>
+      <CardHeader>
+        <CardTitle>财务概览</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {statsCards.map((stat, index) => (
+            <div key={index} className={`p-4 rounded-lg ${stat.bgColor}`}>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${stat.textColor}`}>
+                  {stat.value}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {stat.title}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {stat.description}
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 leading-tight">
-              {stat.description}
-            </p>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

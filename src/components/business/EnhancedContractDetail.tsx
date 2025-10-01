@@ -630,7 +630,7 @@ export function EnhancedContractDetail({
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-2xl font-bold text-green-600">{billStats.paid}</p>
-                    <p className="text-sm text-gray-600">已付款</p>
+                    <p className="text-sm text-gray-600">部分付款</p>
                   </div>
                 </div>
               </CardContent>

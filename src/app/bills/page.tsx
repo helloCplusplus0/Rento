@@ -41,21 +41,7 @@ export default async function BillsPage() {
     }))
     
     return (
-      <div className="space-y-4">
-        {/* 页面头部操作 */}
-        <div className="flex justify-between items-center px-4 pt-4">
-          <h1 className="text-xl font-semibold">账单管理</h1>
-          <Link href="/bills/stats">
-            <Button variant="outline" size="sm">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              统计分析
-            </Button>
-          </Link>
-        </div>
-        
-        {/* 账单列表 */}
-        <BillListPage initialBills={billsData} />
-      </div>
+      <BillListPage initialBills={billsData} />
     )
   } catch (error) {
     console.error('Failed to load bills:', error)

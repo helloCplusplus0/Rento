@@ -114,7 +114,7 @@ export function UtilityBillDetailCard({
             </div>
             <Badge variant="outline" color={getStatusColor(bill.status)}>
               {bill.status === 'PENDING' ? '待付款' : 
-               bill.status === 'PAID' ? '已付款' : 
+               bill.status === 'PAID' ? '部分付款' : 
                bill.status === 'OVERDUE' ? '逾期' : '已完成'}
             </Badge>
           </div>

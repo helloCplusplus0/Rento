@@ -47,6 +47,118 @@ export async function GET(
 }
 
 /**
+ * 更新账单API
+ * PATCH /api/bills/[id]
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    
+    // 检查账单是否存在
+    const existingBill = await billQueries.findById(id)
+    if (!existingBill) {
+      return Response.json(
+        { error: 'Bill not found' },
+        { status: 404 }
+      )
+    }
+
+    // 权限检查：只有PENDING状态的账单才能编辑关键信息
+    if (existingBill.status !== 'PENDING') {
+      return Response.json(
+        { 
+          error: 'Only pending bills can be edited',
+          message: '只有待付款状态的账单才能编辑关键信息'
+        },
+        { status: 400 }
+      )
+    }
+
+    // 提取可编辑的字段
+    const {
+      amount,
+      pendingAmount,
+      dueDate,
+      period,
+      remarks
+    } = body
+
+    // 构建更新数据
+    const updateData: any = {}
+    
+    if (amount !== undefined) {
+      // 验证金额
+      if (amount <= 0) {
+        return Response.json(
+          { error: 'Amount must be greater than 0' },
+          { status: 400 }
+        )
+      }
+      updateData.amount = amount
+    }
+    
+    if (pendingAmount !== undefined) {
+      updateData.pendingAmount = pendingAmount
+    }
+    
+    if (dueDate !== undefined) {
+      // 验证日期格式
+      const parsedDate = new Date(dueDate)
+      if (isNaN(parsedDate.getTime())) {
+        return Response.json(
+          { error: 'Invalid due date format' },
+          { status: 400 }
+        )
+      }
+      updateData.dueDate = parsedDate
+    }
+    
+    if (period !== undefined) {
+      updateData.period = period
+    }
+    
+    if (remarks !== undefined) {
+      updateData.remarks = remarks
+    }
+
+    // 更新账单
+    const updatedBill = await billQueries.update(id, updateData)
+
+    // 转换 Decimal 类型为 number
+    const billData = {
+      ...updatedBill,
+      amount: Number(updatedBill.amount),
+      receivedAmount: Number(updatedBill.receivedAmount),
+      pendingAmount: Number(updatedBill.pendingAmount),
+      contract: {
+        ...updatedBill.contract,
+        monthlyRent: Number(updatedBill.contract.monthlyRent),
+        totalRent: Number(updatedBill.contract.totalRent),
+        deposit: Number(updatedBill.contract.deposit),
+        keyDeposit: updatedBill.contract.keyDeposit ? Number(updatedBill.contract.keyDeposit) : null,
+        cleaningFee: updatedBill.contract.cleaningFee ? Number(updatedBill.contract.cleaningFee) : null
+      }
+    }
+
+    return Response.json({
+      success: true,
+      message: 'Bill updated successfully',
+      data: billData
+    })
+  } catch (error) {
+    console.error('Failed to update bill:', error)
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * 删除账单API
  * DELETE /api/bills/[id]
  */

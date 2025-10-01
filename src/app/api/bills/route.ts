@@ -1,6 +1,4 @@
 import { NextRequest } from 'next/server'
-import { optimizedBillQueries } from '@/lib/optimized-bill-queries'
-import { billQueryCache, invalidateBillCaches } from '@/lib/bill-cache'
 import { billQueries, contractQueries } from '@/lib/queries'
 import type { BillStatus, BillType } from '@prisma/client'
 
@@ -38,20 +36,42 @@ export async function GET(request: NextRequest) {
       ...(renterId && { renterId })
     }
     
-    // 使用缓存获取数据
-    const result = await billQueryCache.getCachedQuery(
-      {
-        type: search ? 'search' : 'list',
-        page,
-        limit,
-        filters,
-        search: search || undefined
-      },
-      () => optimizedBillQueries.findWithPagination({ page, limit }, filters)
-    )
+    // 使用现有的billQueries获取数据
+    const bills = await billQueries.findAll()
+    
+    // 应用筛选逻辑
+    let filteredBills = bills
+    
+    if (status) {
+      filteredBills = filteredBills.filter(bill => bill.status === status)
+    }
+    
+    if (type) {
+      filteredBills = filteredBills.filter(bill => bill.type === type)
+    }
+    
+    if (contractId) {
+      filteredBills = filteredBills.filter(bill => bill.contractId === contractId)
+    }
+    
+    if (search) {
+      const searchLower = search.toLowerCase()
+      filteredBills = filteredBills.filter(bill => 
+        bill.billNumber.toLowerCase().includes(searchLower) ||
+        bill.contract.renter.name.toLowerCase().includes(searchLower) ||
+        bill.contract.room.roomNumber.toLowerCase().includes(searchLower) ||
+        bill.contract.room.building.name.toLowerCase().includes(searchLower)
+      )
+    }
+    
+    // 分页处理
+    const total = filteredBills.length
+    const totalPages = Math.ceil(total / limit)
+    const skip = (page - 1) * limit
+    const paginatedBills = filteredBills.slice(skip, skip + limit)
     
     // 转换 Decimal 类型为 number
-    const billsData = result.data.map(bill => ({
+    const billsData = paginatedBills.map(bill => ({
       ...bill,
       amount: Number(bill.amount),
       receivedAmount: Number(bill.receivedAmount),
@@ -67,8 +87,13 @@ export async function GET(request: NextRequest) {
     }))
     
     return Response.json({
-      ...result,
-      data: billsData
+      data: billsData,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
     })
   } catch (error) {
     console.error('Failed to fetch bills:', error)
@@ -117,9 +142,6 @@ export async function POST(request: NextRequest) {
       operator: billData.operator || '手动创建',
       remarks: billData.remarks || `${billData.type || 'OTHER'}账单 - 手动创建`
     })
-    
-    // 清除相关缓存
-    await invalidateBillCaches(newBill.id)
     
     // 转换 Decimal 类型
     const transformedBill = {

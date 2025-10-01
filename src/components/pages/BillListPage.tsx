@@ -2,12 +2,15 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { PageContainer } from '@/components/layout'
 import { BillSearchBar } from '@/components/business/BillSearchBar'
 import { BillStatusFilter } from '@/components/business/BillStatusFilter'
 import { BillStatsOverview } from '@/components/business/BillStatsOverview'
 import { BillCard, BillCardSkeleton } from '@/components/business/bill-card'
 import { BillCardCompact, BillCardCompactSkeleton } from '@/components/business/BillCardCompact'
+import { Button } from '@/components/ui/button'
+import { BarChart3 } from 'lucide-react'
 import type { Bill, Contract, Room, Building, Renter } from '@prisma/client'
 
 // 简化类型定义，使用any避免复杂的类型转换
@@ -144,6 +147,17 @@ export function BillListPage({ initialBills }: BillListPageProps) {
   return (
     <PageContainer title="账单管理" showBackButton>
       <div className="space-y-6 pb-6">
+        {/* 页面头部操作 */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900">账单概览</h2>
+          <Link href="/bills/stats">
+            <Button variant="outline" size="sm">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              统计分析
+            </Button>
+          </Link>
+        </div>
+        
         {/* 搜索栏 */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <BillSearchBar

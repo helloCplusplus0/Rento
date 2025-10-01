@@ -50,26 +50,29 @@ async function getTodayStats() {
   tomorrow.setDate(tomorrow.getDate() + 1)
   
   try {
-    const [receivablesCount, receivablesAmount] = await Promise.all([
+    // 今日收款统计 - 统计今天点击确认收款的金额汇总
+    const [todayPayments, todayPaymentAmount] = await Promise.all([
+      // 统计今日有收款操作的账单数量
       prisma.bill.count({
         where: { 
-          paidDate: { gte: today, lt: tomorrow }, 
-          status: 'PAID' 
+          paidDate: { gte: today, lt: tomorrow }, // 使用paidDate而不是updatedAt
+          receivedAmount: { gt: 0 }
         }
       }),
+      // 统计今日确认收款的总额
       prisma.bill.aggregate({
         where: { 
-          paidDate: { gte: today, lt: tomorrow }, 
-          status: 'PAID' 
+          paidDate: { gte: today, lt: tomorrow }, // 使用paidDate而不是updatedAt
+          receivedAmount: { gt: 0 }
         },
-        _sum: { amount: true }
+        _sum: { receivedAmount: true }
       })
     ])
 
     return {
       receivables: {
-        count: receivablesCount,
-        amount: Number(receivablesAmount._sum.amount || 0)
+        count: todayPayments,
+        amount: Number(todayPaymentAmount._sum.receivedAmount || 0)
       },
       payables: {
         count: 0, // 暂时为0，后续扩展
@@ -93,26 +96,29 @@ async function getMonthlyStats() {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   
   try {
-    const [receivablesCount, receivablesAmount] = await Promise.all([
+    // 30日收款统计 - 统计30日内点击确认收款的金额汇总
+    const [monthlyPayments, monthlyPaymentAmount] = await Promise.all([
+      // 统计30日内有收款操作的账单数量
       prisma.bill.count({
         where: { 
-          paidDate: { gte: thirtyDaysAgo }, 
-          status: 'PAID' 
+          paidDate: { gte: thirtyDaysAgo }, // 使用paidDate而不是updatedAt
+          receivedAmount: { gt: 0 }
         }
       }),
+      // 统计30日内确认收款的总额
       prisma.bill.aggregate({
         where: { 
-          paidDate: { gte: thirtyDaysAgo }, 
-          status: 'PAID' 
+          paidDate: { gte: thirtyDaysAgo }, // 使用paidDate而不是updatedAt
+          receivedAmount: { gt: 0 }
         },
-        _sum: { amount: true }
+        _sum: { receivedAmount: true }
       })
     ])
 
     return {
       receivables: {
-        count: receivablesCount,
-        amount: Number(receivablesAmount._sum.amount || 0)
+        count: monthlyPayments,
+        amount: Number(monthlyPaymentAmount._sum.receivedAmount || 0)
       },
       payables: {
         count: 0, // 暂时为0，后续扩展
@@ -142,25 +148,26 @@ async function getStatsTrends() {
     const thisMonth = new Date()
     const thisMonthStart = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1)
     
+    // 使用paidDate进行趋势对比，统计确认收款的金额
     const [lastMonthReceivables, thisMonthReceivables] = await Promise.all([
       prisma.bill.aggregate({
         where: {
-          paidDate: { gte: lastMonthStart, lte: lastMonthEnd },
-          status: 'PAID'
+          paidDate: { gte: lastMonthStart, lte: lastMonthEnd }, // 使用paidDate
+          receivedAmount: { gt: 0 }
         },
-        _sum: { amount: true }
+        _sum: { receivedAmount: true }
       }),
       prisma.bill.aggregate({
         where: {
-          paidDate: { gte: thisMonthStart },
-          status: 'PAID'
+          paidDate: { gte: thisMonthStart }, // 使用paidDate
+          receivedAmount: { gt: 0 }
         },
-        _sum: { amount: true }
+        _sum: { receivedAmount: true }
       })
     ])
 
-    const lastMonthAmount = Number(lastMonthReceivables._sum.amount || 0)
-    const thisMonthAmount = Number(thisMonthReceivables._sum.amount || 0)
+    const lastMonthAmount = Number(lastMonthReceivables._sum.receivedAmount || 0)
+    const thisMonthAmount = Number(thisMonthReceivables._sum.receivedAmount || 0)
     
     const receivablesChange = lastMonthAmount > 0 
       ? ((thisMonthAmount - lastMonthAmount) / lastMonthAmount) * 100 
@@ -190,15 +197,13 @@ export async function getEnhancedDashboardStats(): Promise<EnhancedDashboardStat
       monthlyStats,
       trends
     ] = await Promise.all([
-      // 待收逾期统计
+      // 待收金额统计 - 统计所有待收金额（包括未逾期的）
       prisma.bill.aggregate({
         where: {
-          status: 'OVERDUE',
-          type: 'RENT'
+          pendingAmount: { gt: 0 },
+          status: { in: ['PENDING', 'OVERDUE', 'PAID'] } // 包括部分付款状态
         },
-        _sum: {
-          pendingAmount: true
-        }
+        _sum: { pendingAmount: true }
       }),
       
       // 今日统计
@@ -212,7 +217,7 @@ export async function getEnhancedDashboardStats(): Promise<EnhancedDashboardStat
     ])
 
     return {
-      pendingReceivables: Number(pendingReceivablesData._sum.pendingAmount || 0),
+      pendingReceivables: Number(pendingReceivablesData._sum?.pendingAmount || 0),
       pendingPayables: 0, // 暂时设为0，后续可扩展为支出账单
       todayReceivables: todayStats.receivables,
       todayPayables: todayStats.payables,
@@ -233,7 +238,7 @@ export async function getEnhancedDashboardStats(): Promise<EnhancedDashboardStat
  */
 export async function getDashboardAlerts() {
   try {
-    // 空房快查
+    // 空房查询
     const vacantRooms = await prisma.room.count({
       where: { status: 'VACANT' }
     })
@@ -246,31 +251,30 @@ export async function getDashboardAlerts() {
       where: {
         status: 'ACTIVE',
         endDate: {
+          gte: new Date(),
           lte: thirtyDaysFromNow
         }
       }
     })
 
-    // 30天欠入 (逾期账单)
-    const overdueThirtyDays = new Date()
-    overdueThirtyDays.setDate(overdueThirtyDays.getDate() - 30)
-    
-    const overdueBills = await prisma.bill.count({
+    // 30天搬入 (即将生效的合同)
+    const today = new Date()
+    const upcomingContracts = await prisma.contract.count({
       where: {
-        status: 'OVERDUE',
-        dueDate: {
-          lte: overdueThirtyDays
+        status: 'PENDING',
+        startDate: {
+          gte: today,
+          lte: thirtyDaysFromNow
         }
       }
     })
 
-    // 合同到期
-    const today = new Date()
+    // 合同到期 (已到期但未处理的合同)
     const contractsExpiring = await prisma.contract.count({
       where: {
         status: 'ACTIVE',
         endDate: {
-          lte: today
+          lt: today
         }
       }
     })
@@ -279,48 +283,40 @@ export async function getDashboardAlerts() {
       { 
         id: 'room_check', 
         type: 'room_check' as const, 
-        title: '空房快查', 
+        title: '空房查询', 
         count: vacantRooms, 
-        color: 'gray' as const 
+        color: vacantRooms > 0 ? 'blue' as const : 'gray' as const 
       },
       { 
         id: 'lease_expiry', 
         type: 'lease_expiry' as const, 
         title: '30天离店', 
         count: expiringContracts, 
-        color: 'gray' as const 
+        color: expiringContracts > 0 ? 'orange' as const : 'gray' as const 
       },
       { 
-        id: 'overdue_payment', 
-        type: 'overdue_payment' as const, 
-        title: '30天欠入', 
-        count: overdueBills, 
-        color: 'gray' as const 
+        id: 'upcoming_contracts', 
+        type: 'upcoming_contracts' as const, 
+        title: '30天搬入', 
+        count: upcomingContracts, 
+        color: upcomingContracts > 0 ? 'green' as const : 'gray' as const 
       },
       { 
         id: 'contract_expiry', 
         type: 'contract_expiry' as const, 
         title: '合同到期', 
         count: contractsExpiring, 
-        color: contractsExpiring > 0 ? 'orange' as const : 'gray' as const 
-      },
-      { 
-        id: 'unpaid_rent', 
-        type: 'unpaid_rent' as const, 
-        title: '退租未结', 
-        count: 0, 
-        color: 'gray' as const 
+        color: contractsExpiring > 0 ? 'red' as const : 'gray' as const 
       }
     ]
   } catch (error) {
     console.error('获取提醒数据失败:', error)
     // 返回默认提醒数据
     return [
-      { id: 'room_check', type: 'room_check' as const, title: '空房快查', count: 0, color: 'gray' as const },
+      { id: 'room_check', type: 'room_check' as const, title: '空房查询', count: 0, color: 'gray' as const },
       { id: 'lease_expiry', type: 'lease_expiry' as const, title: '30天离店', count: 0, color: 'gray' as const },
-      { id: 'overdue_payment', type: 'overdue_payment' as const, title: '30天欠入', count: 0, color: 'gray' as const },
-      { id: 'contract_expiry', type: 'contract_expiry' as const, title: '合同到期', count: 0, color: 'gray' as const },
-      { id: 'unpaid_rent', type: 'unpaid_rent' as const, title: '退租未结', count: 0, color: 'gray' as const }
+      { id: 'upcoming_contracts', type: 'upcoming_contracts' as const, title: '30天搬入', count: 0, color: 'gray' as const },
+      { id: 'contract_expiry', type: 'contract_expiry' as const, title: '合同到期', count: 0, color: 'gray' as const }
     ]
   }
 }

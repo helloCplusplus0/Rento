@@ -15,7 +15,7 @@ interface DashboardStats {
 
 interface AlertItem {
   id: string
-  type: 'room_check' | 'lease_expiry' | 'overdue_payment' | 'contract_expiry' | 'unpaid_rent'
+  type: 'room_check' | 'lease_expiry' | 'upcoming_contracts' | 'contract_expiry'
   title: string
   count: number
   color: 'red' | 'orange' | 'blue' | 'green' | 'gray'
@@ -219,11 +219,10 @@ export const defaultQuickActions: QuickAction[] = [
  * 预定义的提醒数据
  */
 export const defaultAlerts: AlertItem[] = [
-  { id: 'room_check', type: 'room_check', title: '空房快查', count: 2, color: 'gray' },
+  { id: 'room_check', type: 'room_check', title: '空房查询', count: 2, color: 'gray' },
   { id: 'lease_expiry', type: 'lease_expiry', title: '30天离店', count: 0, color: 'gray' },
-  { id: 'overdue_payment', type: 'overdue_payment', title: '30天欠入', count: 0, color: 'gray' },
-  { id: 'contract_expiry', type: 'contract_expiry', title: '合同到期', count: 13, color: 'orange' },
-  { id: 'unpaid_rent', type: 'unpaid_rent', title: '退租未结', count: 0, color: 'gray' }
+  { id: 'upcoming_contracts', type: 'upcoming_contracts', title: '30天搬入', count: 0, color: 'gray' },
+  { id: 'contract_expiry', type: 'contract_expiry', title: '合同到期', count: 13, color: 'orange' }
 ]
 
 /**

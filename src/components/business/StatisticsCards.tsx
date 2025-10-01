@@ -240,11 +240,11 @@ export function StatisticsCards({
       </div>
       
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {/* 待收逾期金额 */}
+        {/* 待收逾期金额 - 修正为待收金额 */}
         <StatCard
-          title="待收逾期"
+          title="待收金额"
           value={stats.pendingReceivables}
-          subtitle="逾期未收金额"
+          subtitle="所有待收金额"
           trend={{
             value: stats.trends?.receivablesChange || 0,
             isPositive: (stats.trends?.receivablesChange || 0) >= 0
@@ -253,11 +253,11 @@ export function StatisticsCards({
           color="orange"
         />
 
-        {/* 待付逾期金额 */}
+        {/* 待付逾期金额 - 修正为待付金额 */}
         <StatCard
-          title="待付逾期"
+          title="待付金额"
           value={stats.pendingPayables}
-          subtitle="逾期未付金额"
+          subtitle="所有待付金额"
           trend={{
             value: stats.trends?.payablesChange || 0,
             isPositive: (stats.trends?.payablesChange || 0) <= 0 // 付款减少是好事

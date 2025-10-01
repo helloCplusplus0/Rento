@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { AlertTriangle, Clock, Eye, RefreshCw, Calendar, Home, Users, CreditCard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { defaultAlerts } from './dashboard-home'
 
 interface AlertDetail {
   id: string
@@ -18,6 +17,14 @@ interface AlertDetail {
   data?: any
   actionText?: string
   onAction?: () => void
+}
+
+interface AlertItem {
+  id: string
+  type: 'room_check' | 'lease_expiry' | 'upcoming_contracts' | 'contract_expiry'
+  title: string
+  count: number
+  color: 'red' | 'orange' | 'blue' | 'green' | 'gray'
 }
 
 interface UnifiedAlertsPanelProps {
@@ -32,6 +39,79 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null)
   const [alertDetails, setAlertDetails] = useState<AlertDetail[]>([])
   const [loading, setLoading] = useState(false)
+  const [alerts, setAlerts] = useState<AlertItem[]>([])
+  const [alertsLoading, setAlertsLoading] = useState(true)
+
+  // 获取动态提醒数据
+  const fetchAlerts = async () => {
+    try {
+      setAlertsLoading(true)
+      
+      // 并行获取所有提醒数据
+      const [vacantRoomsRes, leavingTenantsRes, upcomingContractsRes, contractAlertsRes] = await Promise.all([
+        fetch('/api/dashboard/vacant-rooms'),
+        fetch('/api/dashboard/leaving-tenants'),
+        fetch('/api/dashboard/upcoming-contracts'),
+        fetch('/api/dashboard/contract-alerts')
+      ])
+
+      const [vacantRooms, leavingTenants, upcomingContracts, contractAlerts] = await Promise.all([
+        vacantRoomsRes.ok ? vacantRoomsRes.json() : { data: { total: 0 } },
+        leavingTenantsRes.ok ? leavingTenantsRes.json() : { data: { total: 0 } },
+        upcomingContractsRes.ok ? upcomingContractsRes.json() : { data: { total: 0 } },
+        contractAlertsRes.ok ? contractAlertsRes.json() : { data: { total: 0 } }
+      ])
+
+      const dynamicAlerts: AlertItem[] = [
+        { 
+          id: 'room_check', 
+          type: 'room_check', 
+          title: '空房查询', 
+          count: vacantRooms.data?.total || 0, 
+          color: (vacantRooms.data?.total || 0) > 0 ? 'blue' : 'gray'
+        },
+        { 
+          id: 'lease_expiry', 
+          type: 'lease_expiry', 
+          title: '30天离店', 
+          count: leavingTenants.data?.total || 0, 
+          color: (leavingTenants.data?.total || 0) > 0 ? 'orange' : 'gray'
+        },
+        { 
+          id: 'upcoming_contracts', 
+          type: 'upcoming_contracts', 
+          title: '30天搬入', 
+          count: upcomingContracts.data?.total || 0, 
+          color: (upcomingContracts.data?.total || 0) > 0 ? 'green' : 'gray'
+        },
+        { 
+          id: 'contract_expiry', 
+          type: 'contract_expiry', 
+          title: '合同到期', 
+          count: contractAlerts.data?.total || 0, 
+          color: (contractAlerts.data?.total || 0) > 0 ? 'red' : 'gray'
+        }
+      ]
+
+      setAlerts(dynamicAlerts)
+    } catch (error) {
+      console.error('获取提醒数据失败:', error)
+      // 使用默认数据作为fallback
+      setAlerts([
+        { id: 'room_check', type: 'room_check', title: '空房查询', count: 0, color: 'gray' },
+        { id: 'lease_expiry', type: 'lease_expiry', title: '30天离店', count: 0, color: 'gray' },
+        { id: 'upcoming_contracts', type: 'upcoming_contracts', title: '30天搬入', count: 0, color: 'gray' },
+        { id: 'contract_expiry', type: 'contract_expiry', title: '合同到期', count: 0, color: 'gray' }
+      ])
+    } finally {
+      setAlertsLoading(false)
+    }
+  }
+
+  // 组件挂载时获取提醒数据
+  useEffect(() => {
+    fetchAlerts()
+  }, [])
 
   // 获取指定类型的详细提醒数据
   const fetchAlertDetails = async (alertType: string) => {
@@ -46,14 +126,11 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         case 'lease_expiry':
           details = await fetchLeavingTenantDetails()
           break
-        case 'overdue_payment':
-          details = await fetchOverduePaymentDetails()
+        case 'upcoming_contracts':
+          details = await fetchUpcomingContractDetails()
           break
         case 'contract_expiry':
           details = await fetchContractExpiryDetails()
-          break
-        case 'unpaid_rent':
-          details = await fetchUnpaidRentDetails()
           break
       }
       
@@ -72,7 +149,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     if (!response.ok) throw new Error('获取空房数据失败')
     const data = await response.json()
     
-    return data.rooms?.map((room: any) => ({
+    return data.data?.rooms?.map((room: any) => ({
       id: `vacant-${room.id}`,
       type: 'room_check',
       title: `${room.building.name} - ${room.roomNumber}`,
@@ -90,7 +167,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     if (!response.ok) throw new Error('获取离店数据失败')
     const data = await response.json()
     
-    return data.contracts?.map((contract: any) => ({
+    return data.data?.contracts?.map((contract: any) => ({
       id: `leaving-${contract.id}`,
       type: 'lease_expiry',
       title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
@@ -102,21 +179,21 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     })) || []
   }
 
-  // 获取逾期付款详情
-  const fetchOverduePaymentDetails = async (): Promise<AlertDetail[]> => {
-    const response = await fetch('/api/dashboard/overdue-payments')
-    if (!response.ok) throw new Error('获取逾期数据失败')
+  // 获取30天搬入详情
+  const fetchUpcomingContractDetails = async (): Promise<AlertDetail[]> => {
+    const response = await fetch('/api/dashboard/upcoming-contracts')
+    if (!response.ok) throw new Error('获取搬入数据失败')
     const data = await response.json()
     
-    return data.bills?.map((bill: any) => ({
-      id: `overdue-${bill.id}`,
-      type: 'overdue_payment',
-      title: `${bill.contract.renter.name} - ${bill.billNumber}`,
-      description: `逾期金额: ${formatCurrency(bill.pendingAmount)} | 逾期天数: ${Math.ceil((Date.now() - new Date(bill.dueDate).getTime()) / (1000 * 60 * 60 * 24))}天`,
-      level: 'danger' as const,
-      data: bill,
-      actionText: '催收',
-      onAction: () => window.location.href = `/bills/${bill.id}`
+    return data.data?.contracts?.map((contract: any) => ({
+      id: `upcoming-${contract.id}`,
+      type: 'upcoming_contracts',
+      title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
+      description: `合同生效: ${formatDate(contract.startDate)} | 租金: ${formatCurrency(contract.monthlyRent)}/月 | ${contract.daysUntilStart}天后生效`,
+      level: 'info' as const,
+      data: contract,
+      actionText: '查看合同',
+      onAction: () => window.location.href = `/contracts/${contract.id}`
     })) || []
   }
 
@@ -126,7 +203,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     if (!response.ok) throw new Error('获取合同到期数据失败')
     const data = await response.json()
     
-    return data.alerts?.map((alert: any) => ({
+    return data.data?.alerts?.map((alert: any) => ({
       id: `contract-${alert.contractId}`,
       type: 'contract_expiry',
       title: `${alert.renterName} - ${alert.roomInfo}`,
@@ -138,24 +215,6 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
       data: alert,
       actionText: alert.daysUntilExpiry < 0 ? '处理逾期' : '续约',
       onAction: () => window.location.href = `/contracts/${alert.contractId}`
-    })) || []
-  }
-
-  // 获取退租未结详情
-  const fetchUnpaidRentDetails = async (): Promise<AlertDetail[]> => {
-    const response = await fetch('/api/dashboard/unpaid-rent')
-    if (!response.ok) throw new Error('获取退租数据失败')
-    const data = await response.json()
-    
-    return data.contracts?.map((contract: any) => ({
-      id: `unpaid-${contract.id}`,
-      type: 'unpaid_rent',
-      title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
-      description: `退租日期: ${formatDate(contract.endDate)} | 待结算: ${formatCurrency(contract.pendingAmount || 0)}`,
-      level: 'warning' as const,
-      data: contract,
-      actionText: '结算',
-      onAction: () => window.location.href = `/contracts/${contract.id}`
     })) || []
   }
 
@@ -177,12 +236,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         return <Home className="w-4 h-4" />
       case 'lease_expiry':
         return <Users className="w-4 h-4" />
-      case 'overdue_payment':
-        return <CreditCard className="w-4 h-4" />
+      case 'upcoming_contracts':
+        return <Calendar className="w-4 h-4" />
       case 'contract_expiry':
         return <AlertTriangle className="w-4 h-4" />
-      case 'unpaid_rent':
-        return <LogOut className="w-4 h-4" />
       default:
         return <Clock className="w-4 h-4" />
     }
@@ -202,16 +259,45 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     }
   }
 
+  if (alertsLoading) {
+    return (
+      <div className={cn('bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-100', className)}>
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="text-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-lg mx-auto mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={cn('bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-100', className)}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        提醒
-        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          提醒
+          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+        </h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchAlerts}
+          disabled={alertsLoading}
+          className="h-6 w-6 p-0"
+        >
+          <RefreshCw className={cn('w-3 h-3', alertsLoading && 'animate-spin')} />
+        </Button>
+      </div>
       
       {/* 提醒概览网格 */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
-        {defaultAlerts.map(alert => (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {alerts.map(alert => (
           <button
             key={alert.id}
             onClick={() => handleAlertClick(alert.type)}
@@ -244,7 +330,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
               {getAlertIcon(selectedAlert)}
-              {defaultAlerts.find(a => a.type === selectedAlert)?.title}详情
+              {alerts.find(a => a.type === selectedAlert)?.title}详情
             </h4>
             <Button
               variant="ghost"
@@ -268,7 +354,12 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
               {alertDetails.slice(0, 10).map((detail) => (
                 <Card
                   key={detail.id}
-                  className={cn('border transition-all hover:shadow-sm', getLevelColor(detail.level))}
+                  className={cn(
+                    'border transition-all hover:shadow-md cursor-pointer', 
+                    getLevelColor(detail.level),
+                    detail.onAction && 'hover:bg-gray-50'
+                  )}
+                  onClick={detail.onAction}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
@@ -282,14 +373,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
                       </div>
                       
                       {detail.onAction && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={detail.onAction}
-                          className="ml-2 text-xs"
-                        >
-                          {detail.actionText}
-                        </Button>
+                        <div className="ml-2 text-xs text-gray-400 flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          <span className="hidden sm:inline">{detail.actionText}</span>
+                        </div>
                       )}
                     </div>
                   </CardContent>

@@ -13,7 +13,7 @@ interface BillStatusFilterProps {
 const statusOptions = [
   { value: null, label: '全部', color: 'default' },
   { value: 'PENDING', label: '待付款', color: 'orange' },
-  { value: 'PAID', label: '已付款', color: 'green' },
+  { value: 'PAID', label: '部分付款', color: 'green' },
   { value: 'OVERDUE', label: '逾期', color: 'red' },
   { value: 'COMPLETED', label: '已完成', color: 'blue' }
 ]

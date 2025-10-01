@@ -192,7 +192,7 @@ export function PaymentStatusManagement({ bill, onStatusChange }: PaymentStatusM
             <strong>当前状态：</strong>
             {isActuallyOverdue ? '逾期' : 
              bill.status === 'PENDING' ? '待付款' :
-             bill.status === 'PAID' ? '已付款' : 
+             bill.status === 'PAID' ? '部分付款' : 
              bill.status === 'COMPLETED' ? '已完成' : bill.status}
           </p>
           {bill.pendingAmount > 0 && (
