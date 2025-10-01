@@ -12,6 +12,29 @@
 
 ## 🚀 快速开始
 
+### ⚡ 5分钟部署
+```bash
+# 1. 获取代码
+git clone https://github.com/helloCplusplus0/Rento.git && cd Rento
+
+# 2. 配置环境（已包含安全默认值）
+cp .env.example .env
+
+# 3. 启动服务
+podman-compose up -d
+
+# 4. 等待启动完成
+sleep 60
+
+# 5. 初始化数据库
+podman exec -it rento-app /app/scripts/migrate-and-seed.sh
+
+# 6. 访问应用
+# 🌐 http://localhost:3001
+```
+
+> 📖 **详细指南**: 查看 [QUICK_START.md](./QUICK_START.md) 获取完整的快速开始指南
+
 ### 统一容器部署（推荐）
 
 无论本地还是生产环境，都使用相同的部署流程：
