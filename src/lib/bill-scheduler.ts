@@ -1,15 +1,16 @@
 /**
  * 账单调度器 - 自动生成周期性租金账单
- * 
+ *
  * 功能：
  * 1. 定时检查需要生成的下期租金账单
  * 2. 在账单支付完成后触发下期账单生成
  * 3. 支持手动触发和自动调度
  */
 
-import { checkAndGenerateUpcomingBills } from './auto-bill-generator'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
 import { getSettings } from '@/hooks/useSettings'
+
+import { checkAndGenerateUpcomingBills } from './auto-bill-generator'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 
 export class BillScheduler {
   private static instance: BillScheduler
@@ -48,11 +49,11 @@ export class BillScheduler {
     }, intervalMs)
 
     console.log(`📅 账单调度器已启动，检查间隔：${intervalHours}小时`)
-    
+
     this.logger.logInfo('账单调度器启动', {
       module: 'bill-scheduler',
       intervalHours,
-      nextCheck: new Date(Date.now() + intervalMs)
+      nextCheck: new Date(Date.now() + intervalMs),
     })
   }
 
@@ -66,36 +67,40 @@ export class BillScheduler {
     }
     this.isRunning = false
     console.log('📅 账单调度器已停止')
-    
+
     this.logger.logInfo('账单调度器停止', {
-      module: 'bill-scheduler'
+      module: 'bill-scheduler',
     })
   }
 
   /**
    * 手动触发账单检查和生成
    */
-  async triggerManualCheck(): Promise<{ success: boolean; billsGenerated: number; error?: string }> {
+  async triggerManualCheck(): Promise<{
+    success: boolean
+    billsGenerated: number
+    error?: string
+  }> {
     try {
       this.logger.logInfo('手动触发账单检查', {
         module: 'bill-scheduler',
-        trigger: 'manual'
+        trigger: 'manual',
       })
 
       const generatedBills = await checkAndGenerateUpcomingBills()
-      
+
       this.logger.logInfo('手动账单检查完成', {
         module: 'bill-scheduler',
-        billsGenerated: generatedBills.length
+        billsGenerated: generatedBills.length,
       })
 
       return {
         success: true,
-        billsGenerated: generatedBills.length
+        billsGenerated: generatedBills.length,
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误'
-      
+
       await this.logger.logError(
         ErrorType.BILL_GENERATION,
         ErrorSeverity.HIGH,
@@ -107,7 +112,7 @@ export class BillScheduler {
       return {
         success: false,
         billsGenerated: 0,
-        error: errorMessage
+        error: errorMessage,
       }
     }
   }
@@ -122,17 +127,17 @@ export class BillScheduler {
         module: 'bill-scheduler',
         contractId,
         billId,
-        trigger: 'payment_completed'
+        trigger: 'payment_completed',
       })
 
       // 检查该合同是否需要生成下期账单
       const generatedBills = await this.checkContractUpcomingBills(contractId)
-      
+
       if (generatedBills.length > 0) {
         this.logger.logInfo('支付完成后生成下期账单', {
           module: 'bill-scheduler',
           contractId,
-          billsGenerated: generatedBills.length
+          billsGenerated: generatedBills.length,
         })
       }
     } catch (error) {
@@ -148,13 +153,13 @@ export class BillScheduler {
 
   /**
    * 检查特定合同的即将到期账单
-   * 
+   *
    * 注意：在新设计中，所有租金账单都在合同创建时预生成
    * 此函数主要用于检查是否有缺失的账单需要补充
    */
   private async checkContractUpcomingBills(contractId: string): Promise<any[]> {
     const { prisma } = await import('@/lib/prisma')
-    
+
     try {
       // 获取合同信息和所有租金账单
       const contract = await prisma.contract.findUnique({
@@ -164,11 +169,11 @@ export class BillScheduler {
           renter: true,
           bills: {
             where: {
-              type: 'RENT'
+              type: 'RENT',
             },
-            orderBy: { dueDate: 'asc' }
-          }
-        }
+            orderBy: { dueDate: 'asc' },
+          },
+        },
       })
 
       if (!contract || contract.status !== 'ACTIVE') {
@@ -178,12 +183,12 @@ export class BillScheduler {
       // 在新设计中，检查是否有缺失的租金账单
       const { checkMissingRentBills } = await import('./auto-bill-generator')
       const missingBills = await checkMissingRentBills(contract)
-      
+
       if (missingBills.length > 0) {
         this.logger.logInfo('发现缺失的租金账单', {
           module: 'bill-scheduler',
           contractId,
-          missingBillCount: missingBills.length
+          missingBillCount: missingBills.length,
         })
       }
 
@@ -200,22 +205,24 @@ export class BillScheduler {
   private async executeScheduledCheck(): Promise<void> {
     try {
       console.log('📅 开始执行定时账单检查...')
-      
+
       const startTime = Date.now()
       const generatedBills = await checkAndGenerateUpcomingBills()
       const duration = Date.now() - startTime
 
-      console.log(`📅 定时账单检查完成，生成 ${generatedBills.length} 个账单，耗时 ${duration}ms`)
-      
+      console.log(
+        `📅 定时账单检查完成，生成 ${generatedBills.length} 个账单，耗时 ${duration}ms`
+      )
+
       this.logger.logInfo('定时账单检查完成', {
         module: 'bill-scheduler',
         billsGenerated: generatedBills.length,
         duration,
-        trigger: 'scheduled'
+        trigger: 'scheduled',
       })
     } catch (error) {
       console.error('📅 定时账单检查失败:', error)
-      
+
       await this.logger.logError(
         ErrorType.BILL_GENERATION,
         ErrorSeverity.HIGH,
@@ -235,7 +242,9 @@ export class BillScheduler {
   } {
     return {
       isRunning: this.isRunning,
-      nextCheck: this.schedulerTimer ? new Date(Date.now() + 24 * 60 * 60 * 1000) : undefined
+      nextCheck: this.schedulerTimer
+        ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+        : undefined,
     }
   }
 }

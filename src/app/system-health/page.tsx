@@ -3,13 +3,13 @@
  * 提供系统健康状态的实时监控和管理
  */
 
-import { AppLayout } from '@/components/layout'
 import { SystemHealthDashboard } from '@/components/business/SystemHealthDashboard'
+import { AppLayout } from '@/components/layout'
 
 export default function SystemHealthPage() {
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto max-w-7xl px-4 py-6">
         <SystemHealthDashboard />
       </div>
     </AppLayout>
@@ -18,5 +18,6 @@ export default function SystemHealthPage() {
 
 export const metadata = {
   title: '系统健康监控 - Rento',
-  description: '实时监控系统健康状态，包括数据库连接、账单系统、数据一致性等关键指标'
+  description:
+    '实时监控系统健康状态，包括数据库连接、账单系统、数据一致性等关键指标',
 }

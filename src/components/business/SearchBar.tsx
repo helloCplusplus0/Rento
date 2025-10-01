@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Search, Filter } from 'lucide-react'
+import { Filter, Search } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface SearchBarProps {
   placeholder?: string
@@ -16,16 +17,16 @@ interface SearchBarProps {
  * 搜索栏组件
  * 支持房源和合同搜索，提供统一的搜索入口
  */
-export function SearchBar({ 
-  placeholder = "搜索房源、合同", 
-  className 
+export function SearchBar({
+  placeholder = '搜索房源、合同',
+  className,
 }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const router = useRouter()
-  
+
   const handleSearch = () => {
     if (!query.trim()) return
-    
+
     // 根据查询内容判断搜索类型
     // 如果包含合同相关关键词，优先搜索合同
     if (query.includes('C') || query.includes('合同') || query.includes('CT')) {
@@ -43,25 +44,25 @@ export function SearchBar({
   }
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div className={cn('flex items-center space-x-2', className)}>
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="pl-10 h-10 bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-300"
+          className="h-10 border-gray-200 bg-gray-50 pl-10 focus:border-blue-300 focus:bg-white"
           onKeyDown={handleKeyDown}
         />
       </div>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         size="sm"
         onClick={handleSearch}
-        className="h-10 px-3 border-gray-200 hover:bg-gray-50"
+        className="h-10 border-gray-200 px-3 hover:bg-gray-50"
         disabled={!query.trim()}
       >
-        <Filter className="w-4 h-4" />
+        <Filter className="h-4 w-4" />
       </Button>
     </div>
   )
@@ -72,11 +73,11 @@ export function SearchBar({
  */
 export function SearchBarSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div className={cn('flex items-center space-x-2', className)}>
       <div className="relative flex-1">
-        <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
+        <div className="h-10 animate-pulse rounded-md bg-gray-200"></div>
       </div>
-      <div className="h-10 w-12 bg-gray-200 rounded-md animate-pulse"></div>
+      <div className="h-10 w-12 animate-pulse rounded-md bg-gray-200"></div>
     </div>
   )
 }

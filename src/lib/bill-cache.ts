@@ -1,4 +1,4 @@
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 
 /**
  * 缓存项接口
@@ -14,9 +14,9 @@ interface CacheItem<T> {
  * 缓存配置接口
  */
 interface CacheConfig {
-  defaultTTL: number        // 默认缓存时间（毫秒）
-  maxSize: number          // 最大缓存项数量
-  cleanupInterval: number  // 清理间隔（毫秒）
+  defaultTTL: number // 默认缓存时间（毫秒）
+  maxSize: number // 最大缓存项数量
+  cleanupInterval: number // 清理间隔（毫秒）
 }
 
 /**
@@ -27,11 +27,11 @@ export class BillCache {
   private cache = new Map<string, CacheItem<any>>()
   private cleanupTimer: NodeJS.Timeout | null = null
   private readonly logger = ErrorLogger.getInstance()
-  
+
   private readonly config: CacheConfig = {
-    defaultTTL: 5 * 60 * 1000,      // 5分钟默认缓存
-    maxSize: 1000,                  // 最大1000个缓存项
-    cleanupInterval: 60 * 1000      // 每分钟清理一次
+    defaultTTL: 5 * 60 * 1000, // 5分钟默认缓存
+    maxSize: 1000, // 最大1000个缓存项
+    cleanupInterval: 60 * 1000, // 每分钟清理一次
   }
 
   constructor(config?: Partial<CacheConfig>) {
@@ -47,17 +47,17 @@ export class BillCache {
   async get<T>(key: string): Promise<T | null> {
     try {
       const item = this.cache.get(key)
-      
+
       if (!item) {
         return null
       }
-      
+
       // 检查是否过期
       if (Date.now() - item.timestamp > item.ttl) {
         this.cache.delete(key)
         return null
       }
-      
+
       return item.data as T
     } catch (error) {
       await this.logger.logError(
@@ -67,7 +67,7 @@ export class BillCache {
         {
           module: 'BillCache',
           function: 'get',
-          key
+          key,
         },
         error instanceof Error ? error : undefined
       )
@@ -84,14 +84,14 @@ export class BillCache {
       if (this.cache.size >= this.config.maxSize) {
         this.evictOldest()
       }
-      
+
       const item: CacheItem<T> = {
         data,
         timestamp: Date.now(),
         ttl: ttl || this.config.defaultTTL,
-        key
+        key,
       }
-      
+
       this.cache.set(key, item)
     } catch (error) {
       await this.logger.logError(
@@ -101,7 +101,7 @@ export class BillCache {
         {
           module: 'BillCache',
           function: 'set',
-          key
+          key,
         },
         error instanceof Error ? error : undefined
       )
@@ -121,14 +121,14 @@ export class BillCache {
     if (cached !== null) {
       return cached
     }
-    
+
     try {
       // 生成新数据
       const data = await generator()
-      
+
       // 存入缓存
       await this.set(key, data, ttl)
-      
+
       return data
     } catch (error) {
       await this.logger.logError(
@@ -138,7 +138,7 @@ export class BillCache {
         {
           module: 'BillCache',
           function: 'getOrSet',
-          key
+          key,
         },
         error instanceof Error ? error : undefined
       )
@@ -158,14 +158,14 @@ export class BillCache {
    */
   async deletePattern(pattern: string): Promise<number> {
     let deletedCount = 0
-    
+
     for (const key of this.cache.keys()) {
       if (key.includes(pattern)) {
         this.cache.delete(key)
         deletedCount++
       }
     }
-    
+
     return deletedCount
   }
 
@@ -187,18 +187,18 @@ export class BillCache {
   } {
     const size = this.cache.size
     const maxSize = this.config.maxSize
-    
+
     // 估算内存使用量（简单估算）
     let memoryUsage = 0
     for (const item of this.cache.values()) {
       memoryUsage += JSON.stringify(item).length * 2 // 粗略估算
     }
-    
+
     return {
       size,
       maxSize,
       hitRate: 0, // TODO: 实现命中率统计
-      memoryUsage
+      memoryUsage,
     }
   }
 
@@ -208,14 +208,14 @@ export class BillCache {
   private evictOldest(): void {
     let oldestKey: string | null = null
     let oldestTime = Date.now()
-    
+
     for (const [key, item] of this.cache.entries()) {
       if (item.timestamp < oldestTime) {
         oldestTime = item.timestamp
         oldestKey = key
       }
     }
-    
+
     if (oldestKey) {
       this.cache.delete(oldestKey)
     }
@@ -227,21 +227,21 @@ export class BillCache {
   private cleanup(): void {
     const now = Date.now()
     const expiredKeys: string[] = []
-    
+
     for (const [key, item] of this.cache.entries()) {
       if (now - item.timestamp > item.ttl) {
         expiredKeys.push(key)
       }
     }
-    
-    expiredKeys.forEach(key => this.cache.delete(key))
-    
+
+    expiredKeys.forEach((key) => this.cache.delete(key))
+
     if (expiredKeys.length > 0) {
       this.logger.logInfo('缓存清理完成', {
         module: 'BillCache',
         function: 'cleanup',
         expiredCount: expiredKeys.length,
-        remainingCount: this.cache.size
+        remainingCount: this.cache.size,
       })
     }
   }
@@ -253,7 +253,7 @@ export class BillCache {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer)
     }
-    
+
     this.cleanupTimer = setInterval(() => {
       this.cleanup()
     }, this.config.cleanupInterval)
@@ -285,9 +285,9 @@ export class BillCache {
 export class BillStatsCache extends BillCache {
   constructor() {
     super({
-      defaultTTL: 10 * 60 * 1000,  // 统计数据缓存10分钟
-      maxSize: 500,                // 统计缓存项较少
-      cleanupInterval: 2 * 60 * 1000 // 每2分钟清理一次
+      defaultTTL: 10 * 60 * 1000, // 统计数据缓存10分钟
+      maxSize: 500, // 统计缓存项较少
+      cleanupInterval: 2 * 60 * 1000, // 每2分钟清理一次
     })
   }
 
@@ -332,9 +332,9 @@ export class BillStatsCache extends BillCache {
 export class BillQueryCache extends BillCache {
   constructor() {
     super({
-      defaultTTL: 3 * 60 * 1000,   // 查询结果缓存3分钟
-      maxSize: 2000,               // 查询缓存项较多
-      cleanupInterval: 60 * 1000   // 每分钟清理一次
+      defaultTTL: 3 * 60 * 1000, // 查询结果缓存3分钟
+      maxSize: 2000, // 查询缓存项较多
+      cleanupInterval: 60 * 1000, // 每分钟清理一次
     })
   }
 
@@ -386,15 +386,15 @@ export async function invalidateBillCaches(billId?: string): Promise<void> {
   try {
     // 清除统计缓存
     await billStatsCache.invalidateStatsCache()
-    
+
     // 清除查询缓存
     await billQueryCache.invalidateQueryCache()
-    
+
     const logger = ErrorLogger.getInstance()
     await logger.logInfo('账单缓存失效处理完成', {
       module: 'BillCache',
       function: 'invalidateBillCaches',
-      billId
+      billId,
     })
   } catch (error) {
     const logger = ErrorLogger.getInstance()
@@ -405,7 +405,7 @@ export async function invalidateBillCaches(billId?: string): Promise<void> {
       {
         module: 'BillCache',
         function: 'invalidateBillCaches',
-        billId
+        billId,
       },
       error instanceof Error ? error : undefined
     )

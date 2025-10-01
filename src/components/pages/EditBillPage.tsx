@@ -2,14 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { formatCurrency } from '@/lib/format'
 import { BillStatusBadge } from '@/components/ui/status-badge'
+import { Textarea } from '@/components/ui/textarea'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface EditBillPageProps {
   bill: any // 简化类型，避免复杂的类型转换
@@ -27,22 +28,25 @@ export function EditBillPage({ bill }: EditBillPageProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  
+
   // 初始化表单数据
   const [formData, setFormData] = useState<EditBillFormData>({
     amount: bill.amount,
     dueDate: new Date(bill.dueDate).toISOString().split('T')[0],
     period: bill.period || '',
-    remarks: bill.remarks || ''
+    remarks: bill.remarks || '',
   })
 
   // 检查是否可以编辑
   const canEdit = bill.status === 'PENDING'
 
-  const handleInputChange = (field: keyof EditBillFormData, value: string | number) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof EditBillFormData,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
     // 清除错误信息
     if (error) setError(null)
@@ -52,22 +56,22 @@ export function EditBillPage({ bill }: EditBillPageProps) {
     if (formData.amount <= 0) {
       return '应收金额必须大于0'
     }
-    
+
     if (!formData.dueDate) {
       return '到期日期不能为空'
     }
-    
+
     const dueDate = new Date(formData.dueDate)
     if (isNaN(dueDate.getTime())) {
       return '到期日期格式不正确'
     }
-    
+
     return null
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validationError = validateForm()
     if (validationError) {
       setError(validationError)
@@ -81,15 +85,15 @@ export function EditBillPage({ bill }: EditBillPageProps) {
       const response = await fetch(`/api/bills/${bill.id}`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           amount: formData.amount,
           pendingAmount: formData.amount - bill.receivedAmount, // 重新计算待收金额
           dueDate: new Date(formData.dueDate).toISOString(),
           period: formData.period,
-          remarks: formData.remarks
-        })
+          remarks: formData.remarks,
+        }),
       })
 
       if (!response.ok) {
@@ -98,10 +102,9 @@ export function EditBillPage({ bill }: EditBillPageProps) {
       }
 
       setSuccess('账单更新成功')
-      
+
       // 立即跳转，不使用延迟
       router.push(`/bills/${bill.id}`)
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新账单失败')
     } finally {
@@ -114,17 +117,15 @@ export function EditBillPage({ bill }: EditBillPageProps) {
   }
 
   return (
-    <PageContainer 
-      title="编辑账单" 
-      showBackButton
-      loading={loading}
-    >
+    <PageContainer title="编辑账单" showBackButton loading={loading}>
       <div className="space-y-6 pb-6">
         {/* 权限检查提示 */}
         {!canEdit && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-amber-800 mb-2">编辑限制说明</h3>
-            <div className="text-sm text-amber-700 space-y-1">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <h3 className="mb-2 text-sm font-medium text-amber-800">
+              编辑限制说明
+            </h3>
+            <div className="space-y-1 text-sm text-amber-700">
               <p>• 只有"待付款"状态的账单才能编辑关键信息</p>
               <p>• 已收款或已完成的账单不允许编辑，以保证财务数据的完整性</p>
               <p>• 如需调整已收款账单，请联系管理员或通过其他方式处理</p>
@@ -134,15 +135,15 @@ export function EditBillPage({ bill }: EditBillPageProps) {
 
         {/* 成功提示 */}
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-700 font-medium">{success}</p>
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+            <p className="font-medium text-green-700">{success}</p>
           </div>
         )}
 
         {/* 错误提示 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700 font-medium">{error}</p>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="font-medium text-red-700">{error}</p>
           </div>
         )}
 
@@ -152,40 +153,63 @@ export function EditBillPage({ bill }: EditBillPageProps) {
             <CardTitle>账单基本信息</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <Label className="text-sm font-medium text-gray-600">账单编号</Label>
-                <p className="text-sm font-mono">{bill.billNumber}</p>
+                <Label className="text-sm font-medium text-gray-600">
+                  账单编号
+                </Label>
+                <p className="font-mono text-sm">{bill.billNumber}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-600">账单类型</Label>
+                <Label className="text-sm font-medium text-gray-600">
+                  账单类型
+                </Label>
                 <p className="text-sm">
-                  {bill.type === 'RENT' ? '租金' : 
-                   bill.type === 'DEPOSIT' ? '押金' : 
-                   bill.type === 'UTILITIES' ? '水电费' : '其他'}
+                  {bill.type === 'RENT'
+                    ? '租金'
+                    : bill.type === 'DEPOSIT'
+                      ? '押金'
+                      : bill.type === 'UTILITIES'
+                        ? '水电费'
+                        : '其他'}
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-600">当前状态</Label>
+                <Label className="text-sm font-medium text-gray-600">
+                  当前状态
+                </Label>
                 <div className="mt-1">
                   <BillStatusBadge status={bill.status} />
                 </div>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-600">已收金额</Label>
-                <p className="text-sm text-green-600 font-medium">{formatCurrency(bill.receivedAmount)}</p>
+                <Label className="text-sm font-medium text-gray-600">
+                  已收金额
+                </Label>
+                <p className="text-sm font-medium text-green-600">
+                  {formatCurrency(bill.receivedAmount)}
+                </p>
               </div>
             </div>
-            
-            <div className="pt-2 border-t">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="border-t pt-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">租客信息</Label>
-                  <p className="text-sm">{bill.contract.renter.name} - {bill.contract.renter.phone}</p>
+                  <Label className="text-sm font-medium text-gray-600">
+                    租客信息
+                  </Label>
+                  <p className="text-sm">
+                    {bill.contract.renter.name} - {bill.contract.renter.phone}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">房间信息</Label>
-                  <p className="text-sm">{bill.contract.room.building.name} - {bill.contract.room.roomNumber}</p>
+                  <Label className="text-sm font-medium text-gray-600">
+                    房间信息
+                  </Label>
+                  <p className="text-sm">
+                    {bill.contract.room.building.name} -{' '}
+                    {bill.contract.room.roomNumber}
+                  </p>
                 </div>
               </div>
             </div>
@@ -202,7 +226,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* 应收金额 */}
                 <div>
                   <Label htmlFor="amount">应收金额 (元) *</Label>
@@ -212,12 +236,18 @@ export function EditBillPage({ bill }: EditBillPageProps) {
                     min="0"
                     step="0.01"
                     value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        'amount',
+                        parseFloat(e.target.value) || 0
+                      )
+                    }
                     disabled={!canEdit || loading}
                     className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    当前待收金额将自动重新计算：¥{(formData.amount - bill.receivedAmount).toFixed(2)}
+                  <p className="mt-1 text-xs text-gray-500">
+                    当前待收金额将自动重新计算：¥
+                    {(formData.amount - bill.receivedAmount).toFixed(2)}
                   </p>
                 </div>
 
@@ -228,11 +258,13 @@ export function EditBillPage({ bill }: EditBillPageProps) {
                     id="dueDate"
                     type="date"
                     value={formData.dueDate}
-                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange('dueDate', e.target.value)
+                    }
                     disabled={!canEdit || loading}
                     className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-gray-500">
                     用于统一管理多个合同的缴费时间
                   </p>
                 </div>
@@ -249,7 +281,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
                   placeholder="如：2024-01 至 2024-01"
                   className="mt-1"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-1 text-xs text-gray-500">
                   描述此账单对应的时间周期
                 </p>
               </div>
@@ -266,7 +298,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
                   rows={3}
                   className="mt-1"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-1 text-xs text-gray-500">
                   记录账单调整原因或其他重要信息
                 </p>
               </div>
@@ -274,7 +306,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
           </Card>
 
           {/* 操作按钮 */}
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="mt-6 flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -283,10 +315,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
             >
               取消
             </Button>
-            <Button
-              type="submit"
-              disabled={!canEdit || loading}
-            >
+            <Button type="submit" disabled={!canEdit || loading}>
               {loading ? '保存中...' : '保存修改'}
             </Button>
           </div>

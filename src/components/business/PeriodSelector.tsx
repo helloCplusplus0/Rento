@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MobileFormField } from '@/components/ui/mobile-form'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from 'react'
 import { Calendar } from 'lucide-react'
+
 import type { BillType, ContractWithDetailsForClient } from '@/types/database'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { MobileFormField } from '@/components/ui/mobile-form'
 
 interface PeriodSelectorProps {
   billType: BillType
@@ -21,17 +22,19 @@ interface PeriodSelectorProps {
  * 周期选择器组件
  * 根据账单类型智能生成账单周期和到期日期
  */
-export function PeriodSelector({ 
-  billType, 
-  contract, 
+export function PeriodSelector({
+  billType,
+  contract,
   value,
   dueDate,
-  onPeriodChange, 
+  onPeriodChange,
   error,
-  dueDateError
+  dueDateError,
 }: PeriodSelectorProps) {
   const [period, setPeriod] = useState(value)
-  const [dueDateStr, setDueDateStr] = useState(dueDate.toISOString().split('T')[0])
+  const [dueDateStr, setDueDateStr] = useState(
+    dueDate.toISOString().split('T')[0]
+  )
 
   // 同步外部值变化
   useEffect(() => {
@@ -55,27 +58,28 @@ export function PeriodSelector({
         const month = now.getMonth() + 1
         const nextMonth = month === 12 ? 1 : month + 1
         const nextYear = month === 12 ? year + 1 : year
-        
+
         periodStr = `${year}年${month}月1日 至 ${year}年${month}月${new Date(year, month, 0).getDate()}日`
         dueDateObj = new Date(nextYear, nextMonth - 1, 15) // 下月15日到期
         break
-        
+
       case 'UTILITIES':
         // 水电费：上月周期
         const lastMonth = now.getMonth() === 0 ? 12 : now.getMonth()
-        const lastYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
+        const lastYear =
+          now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
         const lastMonthEnd = new Date(lastYear, lastMonth, 0).getDate()
-        
+
         periodStr = `${lastYear}年${lastMonth}月1日 至 ${lastYear}年${lastMonth}月${lastMonthEnd}日`
         dueDateObj = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000) // 10天后到期
         break
-        
+
       case 'DEPOSIT':
         // 押金：合同期间
         periodStr = `${contract.startDate.toISOString().slice(0, 10)} 至 ${contract.endDate.toISOString().slice(0, 10)}`
         dueDateObj = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7天后到期
         break
-        
+
       default:
         // 其他类型：当前日期
         periodStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
@@ -104,9 +108,9 @@ export function PeriodSelector({
 
   return (
     <div className="space-y-4">
-      <MobileFormField 
-        label="账单周期" 
-        required 
+      <MobileFormField
+        label="账单周期"
+        required
         error={error}
         description="账单对应的服务周期"
       >
@@ -116,20 +120,20 @@ export function PeriodSelector({
             onChange={(e) => handlePeriodChange(e.target.value)}
             placeholder="请输入账单周期"
           />
-          <Button 
+          <Button
             type="button"
-            variant="outline" 
+            variant="outline"
             size="sm"
             onClick={generatePeriod}
           >
-            <Calendar className="w-4 h-4 mr-2" />
+            <Calendar className="mr-2 h-4 w-4" />
             自动生成周期
           </Button>
         </div>
       </MobileFormField>
 
-      <MobileFormField 
-        label="到期日期" 
+      <MobileFormField
+        label="到期日期"
         required
         error={dueDateError}
         description="账单的付款截止日期"

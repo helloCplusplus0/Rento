@@ -1,6 +1,6 @@
-import { Badge } from '@/components/ui/badge'
 import { statusColors, statusTextMap, type StatusType } from '@/lib/colors'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 type RoomStatus = keyof typeof statusColors.room
 type BillStatus = keyof typeof statusColors.bill
@@ -18,45 +18,45 @@ interface StatusBadgeProps {
  * 状态标识组件
  * 根据不同类型和状态显示对应的颜色和文本
  */
-export function StatusBadge({ 
-  type, 
-  status, 
-  children, 
+export function StatusBadge({
+  type,
+  status,
+  children,
   showIndicator = true,
-  className 
+  className,
 }: StatusBadgeProps) {
   // 获取对应的颜色配置
   const typeColors = statusColors[type] as Record<string, any>
   const colors = typeColors?.[status]
-  
+
   if (!colors) {
     // 如果找不到对应的颜色配置，使用默认样式
     return (
-      <Badge variant="outline" className={cn('font-medium text-xs', className)}>
+      <Badge variant="outline" className={cn('text-xs font-medium', className)}>
         {children || status}
       </Badge>
     )
   }
-  
+
   // 如果没有传入 children，使用默认的状态文本
   const typeTextMap = statusTextMap[type] as Record<string, string>
   const displayText = children || typeTextMap?.[status] || status
-  
+
   return (
-    <Badge 
+    <Badge
       variant="outline"
       className={cn(
         colors.bg,
         colors.text,
         colors.border,
-        'font-medium text-xs',
+        'text-xs font-medium',
         'flex items-center gap-1.5',
         className
       )}
     >
       {showIndicator && (
-        <div 
-          className="w-2 h-2 rounded-full flex-shrink-0"
+        <div
+          className="h-2 w-2 flex-shrink-0 rounded-full"
           style={{ backgroundColor: colors.indicator }}
         />
       )}
@@ -68,21 +68,16 @@ export function StatusBadge({
 /**
  * 房间状态标识组件
  */
-export function RoomStatusBadge({ 
-  status, 
-  children, 
+export function RoomStatusBadge({
+  status,
+  children,
   className,
-  ...props 
-}: Omit<StatusBadgeProps, 'type' | 'status'> & { 
-  status: RoomStatus 
+  ...props
+}: Omit<StatusBadgeProps, 'type' | 'status'> & {
+  status: RoomStatus
 }) {
   return (
-    <StatusBadge 
-      type="room" 
-      status={status} 
-      className={className}
-      {...props}
-    >
+    <StatusBadge type="room" status={status} className={className} {...props}>
       {children}
     </StatusBadge>
   )
@@ -91,21 +86,16 @@ export function RoomStatusBadge({
 /**
  * 账单状态标识组件
  */
-export function BillStatusBadge({ 
-  status, 
-  children, 
+export function BillStatusBadge({
+  status,
+  children,
   className,
-  ...props 
-}: Omit<StatusBadgeProps, 'type' | 'status'> & { 
-  status: BillStatus 
+  ...props
+}: Omit<StatusBadgeProps, 'type' | 'status'> & {
+  status: BillStatus
 }) {
   return (
-    <StatusBadge 
-      type="bill" 
-      status={status} 
-      className={className}
-      {...props}
-    >
+    <StatusBadge type="bill" status={status} className={className} {...props}>
       {children}
     </StatusBadge>
   )
@@ -114,18 +104,18 @@ export function BillStatusBadge({
 /**
  * 合同状态标识组件
  */
-export function ContractStatusBadge({ 
-  status, 
-  children, 
+export function ContractStatusBadge({
+  status,
+  children,
   className,
-  ...props 
-}: Omit<StatusBadgeProps, 'type' | 'status'> & { 
-  status: ContractStatus 
+  ...props
+}: Omit<StatusBadgeProps, 'type' | 'status'> & {
+  status: ContractStatus
 }) {
   return (
-    <StatusBadge 
-      type="contract" 
-      status={status} 
+    <StatusBadge
+      type="contract"
+      status={status}
       className={className}
       {...props}
     >

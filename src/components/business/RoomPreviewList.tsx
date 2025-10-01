@@ -1,9 +1,10 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import type { Building } from '@prisma/client'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface RoomData {
   roomNumber: string
@@ -24,11 +25,11 @@ interface RoomPreviewListProps {
  * 房间预览列表组件
  * 显示即将创建的房间列表，支持提交创建
  */
-export function RoomPreviewList({ 
-  rooms, 
-  building, 
-  onSubmit, 
-  isSubmitting 
+export function RoomPreviewList({
+  rooms,
+  building,
+  onSubmit,
+  isSubmitting,
 }: RoomPreviewListProps) {
   const getRoomTypeText = (type: string) => {
     switch (type) {
@@ -57,13 +58,16 @@ export function RoomPreviewList({
   }
 
   // 按楼层分组
-  const roomsByFloor = rooms.reduce((acc, room) => {
-    if (!acc[room.floorNumber]) {
-      acc[room.floorNumber] = []
-    }
-    acc[room.floorNumber].push(room)
-    return acc
-  }, {} as Record<number, RoomData[]>)
+  const roomsByFloor = rooms.reduce(
+    (acc, room) => {
+      if (!acc[room.floorNumber]) {
+        acc[room.floorNumber] = []
+      }
+      acc[room.floorNumber].push(room)
+      return acc
+    },
+    {} as Record<number, RoomData[]>
+  )
 
   const floors = Object.keys(roomsByFloor)
     .map(Number)
@@ -75,11 +79,11 @@ export function RoomPreviewList({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>房间预览</CardTitle>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-sm text-gray-500">
               将为 {building.name} 创建 {rooms.length} 间房间
             </p>
           </div>
-          <Button 
+          <Button
             onClick={onSubmit}
             disabled={isSubmitting || rooms.length === 0}
             className="min-w-[100px]"
@@ -89,36 +93,32 @@ export function RoomPreviewList({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {floors.map(floor => (
+        {floors.map((floor) => (
           <div key={floor} className="space-y-2">
             <div className="flex items-center gap-2">
               <h4 className="font-medium text-gray-900">{floor}楼</h4>
-              <Badge variant="outline">
-                {roomsByFloor[floor].length} 间房
-              </Badge>
+              <Badge variant="outline">{roomsByFloor[floor].length} 间房</Badge>
             </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {roomsByFloor[floor].map(room => (
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {roomsByFloor[floor].map((room) => (
                 <div
                   key={room.roomNumber}
-                  className="p-3 border rounded-lg bg-gray-50"
+                  className="rounded-lg border bg-gray-50 p-3"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium">
                       {room.roomNumber}
                     </span>
-                    <Badge 
+                    <Badge
                       className={`text-xs ${getRoomTypeColor(room.roomType)}`}
                     >
                       {getRoomTypeText(room.roomType)}
                     </Badge>
                   </div>
-                  
+
                   <div className="space-y-1 text-xs text-gray-600">
-                    {room.area && (
-                      <div>面积: {room.area}㎡</div>
-                    )}
+                    {room.area && <div>面积: {room.area}㎡</div>}
                     <div>租金: ¥{room.rent}</div>
                   </div>
                 </div>
@@ -126,11 +126,11 @@ export function RoomPreviewList({
             </div>
           </div>
         ))}
-        
+
         {rooms.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-gray-500">
             <p>暂无房间数据</p>
-            <p className="text-sm mt-1">请先配置并生成房间列表</p>
+            <p className="mt-1 text-sm">请先配置并生成房间列表</p>
           </div>
         )}
       </CardContent>

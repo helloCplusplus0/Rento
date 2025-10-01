@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+
 import { renterQueries } from '@/lib/queries'
 
 /**
@@ -11,9 +12,6 @@ export async function GET(request: NextRequest) {
     return Response.json(stats)
   } catch (error) {
     console.error('Failed to fetch renter stats:', error)
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

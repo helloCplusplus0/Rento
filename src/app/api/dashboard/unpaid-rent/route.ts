@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server'
-import { withApiErrorHandler, createSuccessResponse } from '@/lib/api-error-handler'
+
+import {
+  createSuccessResponse,
+  withApiErrorHandler,
+} from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { prisma } from '@/lib/prisma'
 
@@ -15,35 +19,35 @@ async function handleGetUnpaidRent(_request: NextRequest) {
         some: {
           status: { in: ['PENDING', 'OVERDUE'] },
           pendingAmount: {
-            gt: 0
-          }
-        }
-      }
+            gt: 0,
+          },
+        },
+      },
     },
     include: {
       renter: {
         select: {
           id: true,
           name: true,
-          phone: true
-        }
+          phone: true,
+        },
       },
       room: {
         include: {
           building: {
             select: {
               id: true,
-              name: true
-            }
-          }
-        }
+              name: true,
+            },
+          },
+        },
       },
       bills: {
         where: {
           status: { in: ['PENDING', 'OVERDUE'] },
           pendingAmount: {
-            gt: 0
-          }
+            gt: 0,
+          },
         },
         select: {
           id: true,
@@ -53,19 +57,20 @@ async function handleGetUnpaidRent(_request: NextRequest) {
           pendingAmount: true,
           dueDate: true,
           status: true,
-          type: true
-        }
-      }
+          type: true,
+        },
+      },
     },
     orderBy: {
-      endDate: 'desc'
-    }
+      endDate: 'desc',
+    },
   })
 
   // 转换数据类型并计算待结算金额
-  const contractsData = contracts.map(contract => {
-    const pendingAmount = contract.bills.reduce((sum, bill) => 
-      sum + Number(bill.pendingAmount), 0
+  const contractsData = contracts.map((contract) => {
+    const pendingAmount = contract.bills.reduce(
+      (sum, bill) => sum + Number(bill.pendingAmount),
+      0
     )
 
     return {
@@ -79,24 +84,24 @@ async function handleGetUnpaidRent(_request: NextRequest) {
       room: {
         ...contract.room,
         rent: Number(contract.room.rent),
-        area: contract.room.area ? Number(contract.room.area) : null
+        area: contract.room.area ? Number(contract.room.area) : null,
       },
-      bills: contract.bills.map(bill => ({
+      bills: contract.bills.map((bill) => ({
         ...bill,
         amount: Number(bill.amount),
         receivedAmount: Number(bill.receivedAmount),
-        pendingAmount: Number(bill.pendingAmount)
-      }))
+        pendingAmount: Number(bill.pendingAmount),
+      })),
     }
   })
 
   return createSuccessResponse({
     contracts: contractsData,
-    total: contracts.length
+    total: contracts.length,
   })
 }
 
 export const GET = withApiErrorHandler(handleGetUnpaidRent, {
   module: 'unpaid-rent-api',
-  errorType: ErrorType.DATABASE_ERROR
+  errorType: ErrorType.DATABASE_ERROR,
 })

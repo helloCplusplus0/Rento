@@ -1,7 +1,7 @@
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
 
 interface MobileFormFieldProps {
   label: string
@@ -16,28 +16,26 @@ interface MobileFormFieldProps {
  * 移动端表单字段容器
  * 提供统一的标签、错误信息和描述布局
  */
-export function MobileFormField({ 
-  label, 
-  children, 
-  error, 
-  required, 
+export function MobileFormField({
+  label,
+  children,
+  error,
+  required,
   description,
-  className 
+  className,
 }: MobileFormFieldProps) {
   return (
     <div className={cn('space-y-2', className)}>
       <Label className="text-base font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="ml-1 text-red-500">*</span>}
       </Label>
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       )}
-      <div className="relative">
-        {children}
-      </div>
+      <div className="relative">{children}</div>
       {error && (
-        <p className="text-sm text-red-600 flex items-center gap-1">
+        <p className="flex items-center gap-1 text-sm text-red-600">
           <span className="text-red-500">⚠</span>
           {error}
         </p>
@@ -57,18 +55,18 @@ interface MobileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
  * 移动端输入框组件
  * 针对移动端优化的输入体验
  */
-export function MobileInput({ 
-  label, 
-  error, 
-  required, 
+export function MobileInput({
+  label,
+  error,
+  required,
   description,
-  className, 
-  ...props 
+  className,
+  ...props
 }: MobileInputProps) {
   return (
-    <MobileFormField 
-      label={label} 
-      error={error} 
+    <MobileFormField
+      label={label}
+      error={error}
       required={required}
       description={description}
     >
@@ -90,7 +88,8 @@ export function MobileInput({
   )
 }
 
-interface MobileTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface MobileTextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string
   error?: string
   required?: boolean
@@ -100,18 +99,18 @@ interface MobileTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaE
 /**
  * 移动端文本域组件
  */
-export function MobileTextarea({ 
-  label, 
-  error, 
-  required, 
+export function MobileTextarea({
+  label,
+  error,
+  required,
   description,
-  className, 
-  ...props 
+  className,
+  ...props
 }: MobileTextareaProps) {
   return (
-    <MobileFormField 
-      label={label} 
-      error={error} 
+    <MobileFormField
+      label={label}
+      error={error}
       required={required}
       description={description}
     >
@@ -135,7 +134,8 @@ export function MobileTextarea({
   )
 }
 
-interface MobileSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface MobileSelectProps
+  extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label: string
   error?: string
   required?: boolean
@@ -146,31 +146,31 @@ interface MobileSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement
 /**
  * 移动端选择框组件
  */
-export function MobileSelect({ 
-  label, 
-  error, 
-  required, 
+export function MobileSelect({
+  label,
+  error,
+  required,
   description,
   options,
-  className, 
-  ...props 
+  className,
+  ...props
 }: MobileSelectProps) {
   return (
-    <MobileFormField 
-      label={label} 
-      error={error} 
+    <MobileFormField
+      label={label}
+      error={error}
       required={required}
       description={description}
     >
       <select
         className={cn(
           // 基础样式
-          'flex h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base',
+          'border-input bg-background flex h-12 w-full rounded-md border px-4 py-3 text-base',
           'ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium',
-          'placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2',
+          'placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:outline-none',
           'focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
           // 移动端优化
-          'appearance-none cursor-pointer',
+          'cursor-pointer appearance-none',
           // 错误状态样式
           error && 'border-red-500 focus-visible:ring-red-500',
           className
@@ -191,10 +191,10 @@ export function MobileSelect({
  * 移动端表单容器
  * 提供适合移动端的表单布局和间距
  */
-export function MobileForm({ 
-  children, 
+export function MobileForm({
+  children,
   className,
-  ...props 
+  ...props
 }: React.FormHTMLAttributes<HTMLFormElement>) {
   return (
     <form
@@ -216,23 +216,25 @@ export function MobileForm({
  * 表单按钮组
  * 移动端优化的按钮布局
  */
-export function MobileFormActions({ 
-  children, 
-  className 
+export function MobileFormActions({
+  children,
+  className,
 }: {
   children: React.ReactNode
   className?: string
 }) {
   return (
-    <div className={cn(
-      // 移动端按钮布局
-      'flex flex-col sm:flex-row gap-3 sm:gap-4',
-      // 按钮占满宽度（移动端）
-      '[&>button]:w-full sm:[&>button]:w-auto',
-      // 主要按钮在移动端排在前面
-      'flex-col-reverse sm:flex-row sm:justify-end',
-      className
-    )}>
+    <div
+      className={cn(
+        // 移动端按钮布局
+        'flex flex-col gap-3 sm:flex-row sm:gap-4',
+        // 按钮占满宽度（移动端）
+        '[&>button]:w-full sm:[&>button]:w-auto',
+        // 主要按钮在移动端排在前面
+        'flex-col-reverse sm:flex-row sm:justify-end',
+        className
+      )}
+    >
       {children}
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+
 import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
 
 /**
@@ -16,21 +17,22 @@ export function useStatistics(autoRefresh = false, refreshInterval = 30000) {
     try {
       setError(null)
       const response = await fetch('/api/dashboard/stats')
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       const data = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error || '获取统计数据失败')
       }
-      
+
       // 从新的API响应格式中提取实际数据
       setStats(data.data)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取统计数据失败'
+      const errorMessage =
+        err instanceof Error ? err.message : '获取统计数据失败'
       setError(errorMessage)
       console.error('统计数据获取失败:', err)
     } finally {
@@ -61,6 +63,6 @@ export function useStatistics(autoRefresh = false, refreshInterval = 30000) {
     isLoading,
     error,
     refreshStats,
-    lastUpdated: stats?.lastUpdated
+    lastUpdated: stats?.lastUpdated,
   }
 }

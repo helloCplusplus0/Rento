@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { DashboardStats as StatsType } from '@/types/database'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { DashboardStats as StatsType } from '@/types/database'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface DashboardStatsProps {
   stats: StatsType
@@ -18,7 +18,7 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
       {/* 待收逾期金额 */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-muted-foreground text-sm font-medium">
             待收逾期
           </CardTitle>
         </CardHeader>
@@ -32,7 +32,7 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
       {/* 待付逾期金额 */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-muted-foreground text-sm font-medium">
             待付逾期
           </CardTitle>
         </CardHeader>
@@ -46,7 +46,7 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
       {/* 今日统计 */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-muted-foreground text-sm font-medium">
             今日收付款
           </CardTitle>
         </CardHeader>
@@ -56,13 +56,13 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
               <div className="text-lg font-semibold text-green-600">
                 {stats.todayStats.receivables}
               </div>
-              <div className="text-xs text-muted-foreground">收款笔数</div>
+              <div className="text-muted-foreground text-xs">收款笔数</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-blue-600">
                 {stats.todayStats.payables}
               </div>
-              <div className="text-xs text-muted-foreground">付款笔数</div>
+              <div className="text-muted-foreground text-xs">付款笔数</div>
             </div>
           </div>
         </CardContent>
@@ -71,7 +71,7 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
       {/* 30日统计 */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-muted-foreground text-sm font-medium">
             30日收付款
           </CardTitle>
         </CardHeader>
@@ -81,13 +81,13 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
               <div className="text-lg font-semibold text-green-600">
                 {stats.monthlyStats.receivables}
               </div>
-              <div className="text-xs text-muted-foreground">收款笔数</div>
+              <div className="text-muted-foreground text-xs">收款笔数</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-blue-600">
                 {stats.monthlyStats.payables}
               </div>
-              <div className="text-xs text-muted-foreground">付款笔数</div>
+              <div className="text-muted-foreground text-xs">付款笔数</div>
             </div>
           </div>
         </CardContent>
@@ -100,14 +100,17 @@ export function DashboardStats({ stats, className }: DashboardStatsProps) {
  * 简化版统计面板
  * 只显示核心的待收/待付金额
  */
-export function SimpleDashboardStats({ stats, className }: DashboardStatsProps) {
+export function SimpleDashboardStats({
+  stats,
+  className,
+}: DashboardStatsProps) {
   return (
     <div className={cn('grid grid-cols-2 gap-4', className)}>
       {/* 待收逾期金额 */}
-      <Card className="bg-red-50 border-red-200">
+      <Card className="border-red-200 bg-red-50">
         <CardContent className="p-4">
           <div className="text-center">
-            <div className="text-sm text-red-600 font-medium mb-1">
+            <div className="mb-1 text-sm font-medium text-red-600">
               待收逾期
             </div>
             <div className="text-xl font-bold text-red-700">
@@ -118,10 +121,10 @@ export function SimpleDashboardStats({ stats, className }: DashboardStatsProps) 
       </Card>
 
       {/* 待付逾期金额 */}
-      <Card className="bg-orange-50 border-orange-200">
+      <Card className="border-orange-200 bg-orange-50">
         <CardContent className="p-4">
           <div className="text-center">
-            <div className="text-sm text-orange-600 font-medium mb-1">
+            <div className="mb-1 text-sm font-medium text-orange-600">
               待付逾期
             </div>
             <div className="text-xl font-bold text-orange-700">
@@ -146,35 +149,33 @@ interface StatCardProps {
   className?: string
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  subtitle, 
+export function StatCard({
+  title,
+  value,
+  subtitle,
   color = 'gray',
-  className 
+  className,
 }: StatCardProps) {
   const colorClasses = {
     red: 'text-red-600',
     orange: 'text-orange-600',
     green: 'text-green-600',
     blue: 'text-blue-600',
-    gray: 'text-gray-600'
+    gray: 'text-gray-600',
   }
 
   return (
     <Card className={className}>
       <CardContent className="p-4">
         <div className="text-center">
-          <div className="text-sm text-muted-foreground font-medium mb-1">
+          <div className="text-muted-foreground mb-1 text-sm font-medium">
             {title}
           </div>
           <div className={cn('text-2xl font-bold', colorClasses[color])}>
             {typeof value === 'number' ? formatCurrency(value) : value}
           </div>
           {subtitle && (
-            <div className="text-xs text-muted-foreground mt-1">
-              {subtitle}
-            </div>
+            <div className="text-muted-foreground mt-1 text-xs">{subtitle}</div>
           )}
         </div>
       </CardContent>
@@ -186,16 +187,20 @@ export function StatCard({
  * 统计面板骨架屏
  * 用于加载状态
  */
-export function DashboardStatsSkeleton({ simple = false }: { simple?: boolean }) {
+export function DashboardStatsSkeleton({
+  simple = false,
+}: {
+  simple?: boolean
+}) {
   if (simple) {
     return (
       <div className="grid grid-cols-2 gap-4">
         {[1, 2].map((i) => (
           <Card key={i}>
             <CardContent className="p-4">
-              <div className="text-center space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-16 mx-auto animate-pulse" />
-                <div className="h-6 bg-gray-200 rounded w-20 mx-auto animate-pulse" />
+              <div className="space-y-2 text-center">
+                <div className="mx-auto h-4 w-16 animate-pulse rounded bg-gray-200" />
+                <div className="mx-auto h-6 w-20 animate-pulse rounded bg-gray-200" />
               </div>
             </CardContent>
           </Card>
@@ -209,10 +214,10 @@ export function DashboardStatsSkeleton({ simple = false }: { simple?: boolean })
       {[1, 2, 3, 4].map((i) => (
         <Card key={i}>
           <CardHeader className="pb-2">
-            <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+            <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
           </CardHeader>
           <CardContent>
-            <div className="h-8 bg-gray-200 rounded w-24 animate-pulse" />
+            <div className="h-8 w-24 animate-pulse rounded bg-gray-200" />
           </CardContent>
         </Card>
       ))}

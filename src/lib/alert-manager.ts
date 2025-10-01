@@ -3,7 +3,7 @@
  * 提供智能的错误检测和通知功能
  */
 
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { prisma } from './prisma'
 
 /**
@@ -13,7 +13,7 @@ export enum AlertSeverity {
   CRITICAL = 'CRITICAL',
   HIGH = 'HIGH',
   MEDIUM = 'MEDIUM',
-  LOW = 'LOW'
+  LOW = 'LOW',
 }
 
 /**
@@ -22,7 +22,7 @@ export enum AlertSeverity {
 export enum AlertStatus {
   ACTIVE = 'ACTIVE',
   RESOLVED = 'RESOLVED',
-  SUPPRESSED = 'SUPPRESSED'
+  SUPPRESSED = 'SUPPRESSED',
 }
 
 /**
@@ -82,7 +82,8 @@ export class AlertManager {
   /**
    * 启动告警监控
    */
-  startMonitoring(intervalMs = 5 * 60 * 1000): void { // 默认5分钟检查一次
+  startMonitoring(intervalMs = 5 * 60 * 1000): void {
+    // 默认5分钟检查一次
     if (this.checkInterval) {
       clearInterval(this.checkInterval)
     }
@@ -94,7 +95,7 @@ export class AlertManager {
     this.logger.logInfo('告警监控已启动', {
       module: 'alert-manager',
       interval: intervalMs,
-      rulesCount: this.alertRules.size
+      rulesCount: this.alertRules.size,
     })
   }
 
@@ -108,7 +109,7 @@ export class AlertManager {
     }
 
     this.logger.logInfo('告警监控已停止', {
-      module: 'alert-manager'
+      module: 'alert-manager',
     })
   }
 
@@ -117,11 +118,11 @@ export class AlertManager {
    */
   registerRule(rule: AlertRule): void {
     this.alertRules.set(rule.id, rule)
-    
+
     this.logger.logInfo(`注册告警规则: ${rule.name}`, {
       module: 'alert-manager',
       ruleId: rule.id,
-      severity: rule.severity
+      severity: rule.severity,
     })
   }
 
@@ -134,8 +135,10 @@ export class AlertManager {
 
       try {
         // 检查冷却时间
-        if (rule.lastTriggered && 
-            Date.now() - rule.lastTriggered.getTime() < rule.cooldown) {
+        if (
+          rule.lastTriggered &&
+          Date.now() - rule.lastTriggered.getTime() < rule.cooldown
+        ) {
           continue
         }
 
@@ -152,7 +155,7 @@ export class AlertManager {
           {
             module: 'alert-manager',
             ruleId: rule.id,
-            ruleName: rule.name
+            ruleName: rule.name,
           },
           error instanceof Error ? error : undefined
         )
@@ -172,7 +175,7 @@ export class AlertManager {
       message: rule.message,
       status: AlertStatus.ACTIVE,
       timestamp: new Date(),
-      metadata: await this.collectAlertMetadata(rule)
+      metadata: await this.collectAlertMetadata(rule),
     }
 
     // 更新规则的最后触发时间
@@ -190,7 +193,7 @@ export class AlertManager {
     this.logger.logInfo(`触发告警: ${rule.name}`, {
       module: 'alert-manager',
       alertId: alert.id,
-      severity: alert.severity
+      severity: alert.severity,
     })
   }
 
@@ -209,7 +212,7 @@ export class AlertManager {
     this.logger.logInfo(`告警已解决: ${alert.ruleName}`, {
       module: 'alert-manager',
       alertId,
-      duration: alert.resolvedAt.getTime() - alert.timestamp.getTime()
+      duration: alert.resolvedAt.getTime() - alert.timestamp.getTime(),
     })
   }
 
@@ -239,11 +242,10 @@ export class AlertManager {
             severity: alert.severity,
             message: alert.message,
             timestamp: alert.timestamp,
-            metadata: alert.metadata
-          })
+            metadata: alert.metadata,
+          }),
         })
       }
-
     } catch (error) {
       await this.logger.logError(
         ErrorType.EXTERNAL_SERVICE,
@@ -251,7 +253,7 @@ export class AlertManager {
         '告警通知发送失败',
         {
           module: 'alert-manager',
-          alertId: alert.id
+          alertId: alert.id,
         },
         error instanceof Error ? error : undefined
       )
@@ -264,16 +266,20 @@ export class AlertManager {
   private async logAlert(alert: Alert): Promise<void> {
     await this.logger.logError(
       ErrorType.SYSTEM_ERROR,
-      alert.severity === AlertSeverity.CRITICAL ? ErrorSeverity.CRITICAL :
-      alert.severity === AlertSeverity.HIGH ? ErrorSeverity.HIGH :
-      alert.severity === AlertSeverity.MEDIUM ? ErrorSeverity.MEDIUM : ErrorSeverity.LOW,
+      alert.severity === AlertSeverity.CRITICAL
+        ? ErrorSeverity.CRITICAL
+        : alert.severity === AlertSeverity.HIGH
+          ? ErrorSeverity.HIGH
+          : alert.severity === AlertSeverity.MEDIUM
+            ? ErrorSeverity.MEDIUM
+            : ErrorSeverity.LOW,
       `告警触发: ${alert.message}`,
       {
         module: 'alert-manager',
         alertId: alert.id,
         ruleId: alert.ruleId,
         ruleName: alert.ruleName,
-        metadata: alert.metadata
+        metadata: alert.metadata,
       }
     )
   }
@@ -281,12 +287,14 @@ export class AlertManager {
   /**
    * 收集告警元数据
    */
-  private async collectAlertMetadata(rule: AlertRule): Promise<Record<string, any>> {
+  private async collectAlertMetadata(
+    rule: AlertRule
+  ): Promise<Record<string, any>> {
     try {
       const metadata: Record<string, any> = {
         ruleId: rule.id,
         ruleName: rule.name,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
 
       // 根据规则类型收集相关数据
@@ -299,9 +307,9 @@ export class AlertManager {
         const recentBills = await prisma.bill.count({
           where: {
             createdAt: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-            }
-          }
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            },
+          },
         })
         metadata.recentBillCount = recentBills
       }
@@ -329,7 +337,7 @@ export class AlertManager {
         return errorRate > 0.1 // 10%错误率
       },
       cooldown: 30 * 60 * 1000, // 30分钟冷却
-      enabled: true
+      enabled: true,
     })
 
     // 账单生成异常告警
@@ -343,11 +351,11 @@ export class AlertManager {
         try {
           const lastBill = await prisma.bill.findFirst({
             orderBy: { createdAt: 'desc' },
-            select: { createdAt: true }
+            select: { createdAt: true },
           })
-          
+
           if (!lastBill) return false
-          
+
           const timeSinceLastBill = Date.now() - lastBill.createdAt.getTime()
           return timeSinceLastBill > 4 * 60 * 60 * 1000 // 4小时无账单生成
         } catch {
@@ -355,7 +363,7 @@ export class AlertManager {
         }
       },
       cooldown: 60 * 60 * 1000, // 1小时冷却
-      enabled: true
+      enabled: true,
     })
 
     // 数据一致性问题告警
@@ -371,8 +379,8 @@ export class AlertManager {
           const billsWithoutDetails = await prisma.bill.count({
             where: {
               type: 'UTILITIES',
-              billDetails: { none: {} }
-            }
+              billDetails: { none: {} },
+            },
           })
 
           // 检查抄表状态不一致
@@ -380,18 +388,18 @@ export class AlertManager {
             where: {
               OR: [
                 { status: 'BILLED', isBilled: false },
-                { status: 'PENDING', isBilled: true }
-              ]
-            }
+                { status: 'PENDING', isBilled: true },
+              ],
+            },
           })
 
-          return (billsWithoutDetails + inconsistentReadings) > 5
+          return billsWithoutDetails + inconsistentReadings > 5
         } catch {
           return false
         }
       },
       cooldown: 15 * 60 * 1000, // 15分钟冷却
-      enabled: true
+      enabled: true,
     })
 
     // 数据库性能告警
@@ -406,14 +414,14 @@ export class AlertManager {
           const startTime = Date.now()
           await prisma.bill.findFirst()
           const responseTime = Date.now() - startTime
-          
+
           return responseTime > 2000 // 2秒响应时间
         } catch {
           return true // 查询失败也触发告警
         }
       },
       cooldown: 10 * 60 * 1000, // 10分钟冷却
-      enabled: true
+      enabled: true,
     })
   }
 
@@ -440,19 +448,26 @@ export class AlertManager {
     activeAlerts: number
     alertsBySeverity: Record<AlertSeverity, number>
   } {
-    const enabledRules = Array.from(this.alertRules.values()).filter(r => r.enabled).length
+    const enabledRules = Array.from(this.alertRules.values()).filter(
+      (r) => r.enabled
+    ).length
     const activeAlerts = Array.from(this.activeAlerts.values())
-    
-    const alertsBySeverity = Object.values(AlertSeverity).reduce((acc, severity) => {
-      acc[severity] = activeAlerts.filter(a => a.severity === severity).length
-      return acc
-    }, {} as Record<AlertSeverity, number>)
+
+    const alertsBySeverity = Object.values(AlertSeverity).reduce(
+      (acc, severity) => {
+        acc[severity] = activeAlerts.filter(
+          (a) => a.severity === severity
+        ).length
+        return acc
+      },
+      {} as Record<AlertSeverity, number>
+    )
 
     return {
       totalRules: this.alertRules.size,
       enabledRules,
       activeAlerts: activeAlerts.length,
-      alertsBySeverity
+      alertsBySeverity,
     }
   }
 }

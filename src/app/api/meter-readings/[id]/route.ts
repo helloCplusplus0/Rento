@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { meterReadingQueries } from '@/lib/queries'
 
 /**
@@ -11,9 +12,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    
+
     const reading = await meterReadingQueries.findById(id)
-    
+
     if (!reading) {
       return NextResponse.json(
         { success: false, error: '抄表记录不存在' },
@@ -24,29 +25,41 @@ export async function GET(
     // 转换数据类型
     const readingData = {
       ...reading,
-      previousReading: reading.previousReading ? Number(reading.previousReading) : null,
+      previousReading: reading.previousReading
+        ? Number(reading.previousReading)
+        : null,
       currentReading: Number(reading.currentReading),
       usage: Number(reading.usage),
       unitPrice: Number(reading.unitPrice),
       amount: Number(reading.amount),
-      meter: reading.meter ? {
-        ...reading.meter,
-        unitPrice: Number(reading.meter.unitPrice),
-        room: reading.meter.room ? {
-          ...reading.meter.room,
-          rent: Number(reading.meter.room.rent),
-          area: reading.meter.room.area ? Number(reading.meter.room.area) : null,
-          building: reading.meter.room.building ? {
-            ...reading.meter.room.building,
-            totalRooms: Number(reading.meter.room.building.totalRooms)
-          } : undefined
-        } : undefined
-      } : undefined
+      meter: reading.meter
+        ? {
+            ...reading.meter,
+            unitPrice: Number(reading.meter.unitPrice),
+            room: reading.meter.room
+              ? {
+                  ...reading.meter.room,
+                  rent: Number(reading.meter.room.rent),
+                  area: reading.meter.room.area
+                    ? Number(reading.meter.room.area)
+                    : null,
+                  building: reading.meter.room.building
+                    ? {
+                        ...reading.meter.room.building,
+                        totalRooms: Number(
+                          reading.meter.room.building.totalRooms
+                        ),
+                      }
+                    : undefined,
+                }
+              : undefined,
+          }
+        : undefined,
     }
 
     return NextResponse.json({
       success: true,
-      data: readingData
+      data: readingData,
     })
   } catch (error) {
     console.error('获取抄表记录失败:', error)
@@ -92,23 +105,25 @@ export async function PUT(
       usage: body.usage,
       amount: body.amount,
       operator: body.operator,
-      remarks: body.remarks
+      remarks: body.remarks,
     })
 
     // 转换数据类型
     const readingData = {
       ...updatedReading,
-      previousReading: updatedReading.previousReading ? Number(updatedReading.previousReading) : null,
+      previousReading: updatedReading.previousReading
+        ? Number(updatedReading.previousReading)
+        : null,
       currentReading: Number(updatedReading.currentReading),
       usage: Number(updatedReading.usage),
       unitPrice: Number(updatedReading.unitPrice),
-      amount: Number(updatedReading.amount)
+      amount: Number(updatedReading.amount),
     }
 
     return NextResponse.json({
       success: true,
       data: readingData,
-      message: '抄表记录更新成功'
+      message: '抄表记录更新成功',
     })
   } catch (error) {
     console.error('更新抄表记录失败:', error)
@@ -152,7 +167,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: '抄表记录删除成功'
+      message: '抄表记录删除成功',
     })
   } catch (error) {
     console.error('删除抄表记录失败:', error)

@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+
+import type { ContractWithDetails } from '@/types/database'
+import { calculateOverdueDays, formatCurrency, formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ContractStatusBadge } from '@/components/ui/status-badge'
 import { TouchCard } from '@/components/ui/touch-button'
-import { formatDate, formatCurrency, calculateOverdueDays } from '@/lib/format'
-import { cn } from '@/lib/utils'
-import type { ContractWithDetails } from '@/types/database'
 
 interface ContractCardProps {
   contract: ContractWithDetails
@@ -26,9 +27,13 @@ interface ContractListProps {
  * 合同卡片组件
  * 显示合同基本信息和状态
  */
-export function ContractCard({ contract, onClick, className }: ContractCardProps) {
+export function ContractCard({
+  contract,
+  onClick,
+  className,
+}: ContractCardProps) {
   const overdueDays = calculateOverdueDays(contract.endDate)
-  
+
   return (
     <TouchCard onClick={onClick} className={className}>
       <Card className="h-full transition-all hover:shadow-md">
@@ -41,25 +46,27 @@ export function ContractCard({ contract, onClick, className }: ContractCardProps
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             {contract.room.building.name} - {contract.room.roomNumber}
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <span className="text-sm">租客</span>
             <span className="font-medium">{contract.renter.name}</span>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <span className="text-sm">月租金</span>
-            <span className="font-medium">{formatCurrency(Number(contract.monthlyRent))}</span>
+            <span className="font-medium">
+              {formatCurrency(Number(contract.monthlyRent))}
+            </span>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <span className="text-sm">合同期限</span>
-            <span className="font-medium text-xs">
+            <span className="text-xs font-medium">
               {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
             </span>
           </div>
           {contract.status === 'EXPIRED' && overdueDays > 0 && (
-            <div className="text-red-600 text-xs font-medium">
+            <div className="text-xs font-medium text-red-600">
               已过期 {overdueDays} 天
             </div>
           )}
@@ -77,20 +84,26 @@ export function ContractList({
   contracts,
   onContractClick,
   onInviteBinding,
-  className
+  className,
 }: ContractListProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'status'>('date')
 
   // 筛选和搜索逻辑
-  const filteredContracts = contracts.filter(contract => {
-    const matchesStatus = selectedStatus === 'all' || contract.status === selectedStatus
-    const matchesSearch = !searchTerm || 
-      contract.room.building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredContracts = contracts.filter((contract) => {
+    const matchesStatus =
+      selectedStatus === 'all' || contract.status === selectedStatus
+    const matchesSearch =
+      !searchTerm ||
+      contract.room.building.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      contract.room.roomNumber
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       contract.renter.name.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     return matchesStatus && matchesSearch
   })
 
@@ -114,10 +127,26 @@ export function ContractList({
   // 状态选项
   const statusOptions = [
     { value: 'all', label: '全部', count: contracts.length },
-    { value: 'ACTIVE', label: '在租中', count: contracts.filter(c => c.status === 'ACTIVE').length },
-    { value: 'EXPIRED', label: '已到期', count: contracts.filter(c => c.status === 'EXPIRED').length },
-    { value: 'PENDING', label: '待生效', count: contracts.filter(c => c.status === 'PENDING').length },
-    { value: 'TERMINATED', label: '已终止', count: contracts.filter(c => c.status === 'TERMINATED').length }
+    {
+      value: 'ACTIVE',
+      label: '在租中',
+      count: contracts.filter((c) => c.status === 'ACTIVE').length,
+    },
+    {
+      value: 'EXPIRED',
+      label: '已到期',
+      count: contracts.filter((c) => c.status === 'EXPIRED').length,
+    },
+    {
+      value: 'PENDING',
+      label: '待生效',
+      count: contracts.filter((c) => c.status === 'PENDING').length,
+    },
+    {
+      value: 'TERMINATED',
+      label: '已终止',
+      count: contracts.filter((c) => c.status === 'TERMINATED').length,
+    },
   ]
 
   return (
@@ -137,7 +166,11 @@ export function ContractList({
               <Button variant="ghost" size="sm">
                 筛选
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
+              >
                 排序
               </Button>
             </div>
@@ -154,10 +187,12 @@ export function ContractList({
 
           {/* 状态筛选标签 */}
           <div className="flex flex-wrap gap-2">
-            {statusOptions.map(option => (
+            {statusOptions.map((option) => (
               <Button
                 key={option.value}
-                variant={selectedStatus === option.value ? 'default' : 'outline'}
+                variant={
+                  selectedStatus === option.value ? 'default' : 'outline'
+                }
                 size="sm"
                 onClick={() => setSelectedStatus(option.value)}
                 className="h-8"
@@ -174,12 +209,12 @@ export function ContractList({
 
       {/* 合同列表 */}
       <div className="space-y-3">
-        {sortedContracts.map(contract => {
+        {sortedContracts.map((contract) => {
           const overdueDays = getOverdueDays(contract)
           const isOverdue = overdueDays > 0
-          
+
           return (
-            <Card 
+            <Card
               key={contract.id}
               className={cn(
                 'cursor-pointer transition-all hover:shadow-md',
@@ -190,29 +225,30 @@ export function ContractList({
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg">
+                    <div className="mb-2 flex items-center gap-3">
+                      <h3 className="text-lg font-semibold">
                         {contract.room.building.name}_{contract.room.roomNumber}
                       </h3>
                       <ContractStatusBadge status={contract.status} />
                     </div>
-                    
-                    <div className="text-sm text-gray-600 space-y-1">
+
+                    <div className="space-y-1 text-sm text-gray-600">
                       <p>
-                        {formatDate(contract.startDate)} 至 {formatDate(contract.endDate)} | {contract.renter.name}
+                        {formatDate(contract.startDate)} 至{' '}
+                        {formatDate(contract.endDate)} | {contract.renter.name}
                       </p>
-                      
+
                       {isOverdue && (
                         <div className="flex items-center gap-2">
                           <Badge variant="destructive" className="text-xs">
                             已到期{overdueDays}天
                           </Badge>
-                          <span className="text-red-600 text-xs">备注</span>
+                          <span className="text-xs text-red-600">备注</span>
                         </div>
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {onInviteBinding && (
                       <Button
@@ -254,7 +290,11 @@ export function ContractList({
  * 紧凑型合同卡片
  * 用于列表中的小尺寸显示
  */
-export function CompactContractCard({ contract, onClick, className }: ContractCardProps) {
+export function CompactContractCard({
+  contract,
+  onClick,
+  className,
+}: ContractCardProps) {
   const getExpiryText = () => {
     const daysToExpiry = calculateOverdueDays(contract.endDate)
     if (daysToExpiry > 0) {
@@ -271,32 +311,32 @@ export function CompactContractCard({ contract, onClick, className }: ContractCa
         <CardContent className="p-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-sm truncate max-w-[100px]">
+              <span className="max-w-[100px] truncate text-sm font-semibold">
                 {contract.contractNumber}
               </span>
-              <ContractStatusBadge 
-                status={contract.status} 
+              <ContractStatusBadge
+                status={contract.status}
                 showIndicator={true}
-                className="text-xs px-1.5 py-0.5"
+                className="px-1.5 py-0.5 text-xs"
               />
             </div>
-            <div className="text-xs text-muted-foreground truncate">
+            <div className="text-muted-foreground truncate text-xs">
               {contract.room.building.name} - {contract.room.roomNumber}
             </div>
-            <div className="text-xs text-muted-foreground truncate">
+            <div className="text-muted-foreground truncate text-xs">
               {contract.renter.name}
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">月租</span>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">月租</span>
               <span className="text-sm font-medium">
                 {formatCurrency(Number(contract.monthlyRent))}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               至 {formatDate(contract.endDate)}
             </div>
             {getExpiryText() && (
-              <div className="text-red-600 text-xs font-medium">
+              <div className="text-xs font-medium text-red-600">
                 {getExpiryText()}
               </div>
             )}
@@ -311,10 +351,16 @@ export function CompactContractCard({ contract, onClick, className }: ContractCa
  * 合同概览卡片
  * 显示合同的关键信息摘要
  */
-export function ContractSummaryCard({ contract, onClick, className }: ContractCardProps) {
+export function ContractSummaryCard({
+  contract,
+  onClick,
+  className,
+}: ContractCardProps) {
   const totalBills = contract.bills?.length || 0
-  const paidBills = contract.bills?.filter(bill => bill.status === 'PAID').length || 0
-  const overdueBills = contract.bills?.filter(bill => bill.status === 'OVERDUE').length || 0
+  const paidBills =
+    contract.bills?.filter((bill) => bill.status === 'PAID').length || 0
+  const overdueBills =
+    contract.bills?.filter((bill) => bill.status === 'OVERDUE').length || 0
 
   return (
     <TouchCard onClick={onClick} className={className}>
@@ -325,7 +371,7 @@ export function ContractSummaryCard({ contract, onClick, className }: ContractCa
               <CardTitle className="text-base font-semibold">
                 {contract.renter.name}
               </CardTitle>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 {contract.room.building.name} - {contract.room.roomNumber}
               </div>
             </div>
@@ -338,20 +384,20 @@ export function ContractSummaryCard({ contract, onClick, className }: ContractCa
               <div className="text-lg font-semibold text-green-600">
                 {paidBills}
               </div>
-              <div className="text-xs text-muted-foreground">已付账单</div>
+              <div className="text-muted-foreground text-xs">已付账单</div>
             </div>
             <div>
               <div className="text-lg font-semibold text-red-600">
                 {overdueBills}
               </div>
-              <div className="text-xs text-muted-foreground">逾期账单</div>
+              <div className="text-muted-foreground text-xs">逾期账单</div>
             </div>
           </div>
           <div className="text-center">
             <div className="text-sm font-medium">
               月租 {formatCurrency(Number(contract.monthlyRent))}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               至 {formatDate(contract.endDate)}
             </div>
           </div>
@@ -365,12 +411,12 @@ export function ContractSummaryCard({ contract, onClick, className }: ContractCa
  * 合同卡片骨架屏
  * 用于加载状态
  */
-export function ContractCardSkeleton({ 
-  compact = false, 
-  summary = false 
-}: { 
+export function ContractCardSkeleton({
+  compact = false,
+  summary = false,
+}: {
   compact?: boolean
-  summary?: boolean 
+  summary?: boolean
 }) {
   if (summary) {
     return (
@@ -378,26 +424,26 @@ export function ContractCardSkeleton({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="h-5 bg-gray-200 rounded w-16 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-24 animate-pulse" />
+              <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
+              <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
             </div>
-            <div className="h-6 bg-gray-200 rounded w-12 animate-pulse" />
+            <div className="h-6 w-12 animate-pulse rounded bg-gray-200" />
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div className="space-y-1">
-              <div className="h-6 bg-gray-200 rounded w-8 mx-auto animate-pulse" />
-              <div className="h-3 bg-gray-200 rounded w-12 mx-auto animate-pulse" />
+              <div className="mx-auto h-6 w-8 animate-pulse rounded bg-gray-200" />
+              <div className="mx-auto h-3 w-12 animate-pulse rounded bg-gray-200" />
             </div>
             <div className="space-y-1">
-              <div className="h-6 bg-gray-200 rounded w-8 mx-auto animate-pulse" />
-              <div className="h-3 bg-gray-200 rounded w-12 mx-auto animate-pulse" />
+              <div className="mx-auto h-6 w-8 animate-pulse rounded bg-gray-200" />
+              <div className="mx-auto h-3 w-12 animate-pulse rounded bg-gray-200" />
             </div>
           </div>
-          <div className="text-center space-y-1">
-            <div className="h-4 bg-gray-200 rounded w-20 mx-auto animate-pulse" />
-            <div className="h-3 bg-gray-200 rounded w-16 mx-auto animate-pulse" />
+          <div className="space-y-1 text-center">
+            <div className="mx-auto h-4 w-20 animate-pulse rounded bg-gray-200" />
+            <div className="mx-auto h-3 w-16 animate-pulse rounded bg-gray-200" />
           </div>
         </CardContent>
       </Card>
@@ -410,16 +456,16 @@ export function ContractCardSkeleton({
         <CardContent className="p-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse" />
-              <div className="h-5 bg-gray-200 rounded w-12 animate-pulse" />
+              <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+              <div className="h-5 w-12 animate-pulse rounded bg-gray-200" />
             </div>
-            <div className="h-3 bg-gray-200 rounded w-24 animate-pulse" />
-            <div className="h-3 bg-gray-200 rounded w-16 animate-pulse" />
-            <div className="flex justify-between items-center">
-              <div className="h-3 bg-gray-200 rounded w-8 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+            <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+            <div className="h-3 w-16 animate-pulse rounded bg-gray-200" />
+            <div className="flex items-center justify-between">
+              <div className="h-3 w-8 animate-pulse rounded bg-gray-200" />
+              <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
             </div>
-            <div className="h-3 bg-gray-200 rounded w-20 animate-pulse" />
+            <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
           </div>
         </CardContent>
       </Card>
@@ -430,23 +476,23 @@ export function ContractCardSkeleton({
     <Card className="h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <div className="h-6 bg-gray-200 rounded w-24 animate-pulse" />
-          <div className="h-6 bg-gray-200 rounded w-12 animate-pulse" />
+          <div className="h-6 w-24 animate-pulse rounded bg-gray-200" />
+          <div className="h-6 w-12 animate-pulse rounded bg-gray-200" />
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse" />
-        <div className="flex justify-between items-center">
-          <div className="h-4 bg-gray-200 rounded w-8 animate-pulse" />
-          <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+        <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-8 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
         </div>
-        <div className="flex justify-between items-center">
-          <div className="h-4 bg-gray-200 rounded w-12 animate-pulse" />
-          <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-12 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
         </div>
-        <div className="flex justify-between items-center">
-          <div className="h-4 bg-gray-200 rounded w-12 animate-pulse" />
-          <div className="h-4 bg-gray-200 rounded w-24 animate-pulse" />
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-12 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
         </div>
       </CardContent>
     </Card>

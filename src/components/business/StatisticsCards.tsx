@@ -1,12 +1,22 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { RefreshCw, TrendingUp, TrendingDown, AlertCircle, DollarSign, Calendar, Clock, CreditCard } from 'lucide-react'
+import {
+  AlertCircle,
+  Calendar,
+  Clock,
+  CreditCard,
+  DollarSign,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react'
+
+import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface StatCardProps {
   title: string
@@ -26,15 +36,15 @@ interface StatCardProps {
  * 单个统计卡片组件
  * 支持加载状态、错误状态、趋势显示
  */
-export function StatCard({ 
-  title, 
-  value, 
-  subtitle, 
-  trend, 
-  icon, 
-  color, 
-  isLoading, 
-  error 
+export function StatCard({
+  title,
+  value,
+  subtitle,
+  trend,
+  icon,
+  color,
+  isLoading,
+  error,
 }: StatCardProps) {
   if (isLoading) {
     return <StatCardSkeleton />
@@ -48,44 +58,45 @@ export function StatCard({
     blue: 'text-blue-600 bg-blue-50',
     green: 'text-green-600 bg-green-50',
     orange: 'text-orange-600 bg-orange-50',
-    purple: 'text-purple-600 bg-purple-50'
+    purple: 'text-purple-600 bg-purple-50',
   }
 
   return (
-    <Card className="relative overflow-hidden hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3 sm:px-6 sm:pt-6 sm:pb-2">
-        <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+    <Card className="relative overflow-hidden transition-shadow hover:shadow-md">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-2">
+        <CardTitle className="truncate text-xs font-medium text-gray-600 sm:text-sm">
           {title}
         </CardTitle>
-        <div className={cn('p-1 sm:p-2 rounded-lg', colorClasses[color])}>
-          <div className="w-3 h-3 sm:w-4 sm:h-4">
-            {icon}
-          </div>
+        <div className={cn('rounded-lg p-1 sm:p-2', colorClasses[color])}>
+          <div className="h-3 w-3 sm:h-4 sm:w-4">{icon}</div>
         </div>
       </CardHeader>
       <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-        <div className="text-lg sm:text-2xl font-bold text-gray-900 mb-1">
+        <div className="mb-1 text-lg font-bold text-gray-900 sm:text-2xl">
           {typeof value === 'number' ? formatCurrency(value) : value}
         </div>
         {subtitle && (
-          <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2">
+          <p className="mb-1 line-clamp-2 text-xs text-gray-500 sm:mb-2">
             {subtitle}
           </p>
         )}
         {trend && (
           <div className="flex items-center text-xs">
             {trend.isPositive ? (
-              <TrendingUp className="w-3 h-3 text-green-500 mr-1 flex-shrink-0" />
+              <TrendingUp className="mr-1 h-3 w-3 flex-shrink-0 text-green-500" />
             ) : (
-              <TrendingDown className="w-3 h-3 text-red-500 mr-1 flex-shrink-0" />
+              <TrendingDown className="mr-1 h-3 w-3 flex-shrink-0 text-red-500" />
             )}
-            <span className={cn(
-              'font-medium',
-              trend.isPositive ? 'text-green-600' : 'text-red-600'
-            )}>
-              {trend.isPositive ? '+' : ''}{trend.value.toFixed(1)}%
+            <span
+              className={cn(
+                'font-medium',
+                trend.isPositive ? 'text-green-600' : 'text-red-600'
+              )}
+            >
+              {trend.isPositive ? '+' : ''}
+              {trend.value.toFixed(1)}%
             </span>
-            <span className="text-gray-500 ml-1 hidden sm:inline">较上月</span>
+            <span className="ml-1 hidden text-gray-500 sm:inline">较上月</span>
           </div>
         )}
       </CardContent>
@@ -99,13 +110,13 @@ export function StatCard({
 export function StatCardSkeleton() {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3 sm:px-6 sm:pt-6 sm:pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-2">
         <Skeleton className="h-3 w-16 sm:h-4 sm:w-20" />
-        <Skeleton className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg" />
+        <Skeleton className="h-6 w-6 rounded-lg sm:h-8 sm:w-8" />
       </CardHeader>
       <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-        <Skeleton className="h-5 w-16 sm:h-8 sm:w-24 mb-1" />
-        <Skeleton className="h-3 w-24 sm:w-32 mb-1 sm:mb-2" />
+        <Skeleton className="mb-1 h-5 w-16 sm:h-8 sm:w-24" />
+        <Skeleton className="mb-1 h-3 w-24 sm:mb-2 sm:w-32" />
         <Skeleton className="h-3 w-12 sm:w-16" />
       </CardContent>
     </Card>
@@ -115,7 +126,13 @@ export function StatCardSkeleton() {
 /**
  * 统计卡片错误状态
  */
-export function StatCardError({ title, error }: { title: string; error: string }) {
+export function StatCardError({
+  title,
+  error,
+}: {
+  title: string
+  error: string
+}) {
   return (
     <Card className="border-red-200">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -125,9 +142,7 @@ export function StatCardError({ title, error }: { title: string; error: string }
         <AlertCircle className="h-4 w-4 text-red-500" />
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-red-600">
-          {error}
-        </div>
+        <div className="text-sm text-red-600">{error}</div>
       </CardContent>
     </Card>
   )
@@ -158,11 +173,11 @@ interface StatisticsCardsProps {
  * 统计卡片网格组件
  * 展示完整的财务统计数据
  */
-export function StatisticsCards({ 
-  stats, 
-  isLoading = false, 
-  error = null, 
-  onRefresh 
+export function StatisticsCards({
+  stats,
+  isLoading = false,
+  error = null,
+  onRefresh,
 }: StatisticsCardsProps) {
   if (isLoading || !stats) {
     return (
@@ -170,13 +185,15 @@ export function StatisticsCards({
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">财务统计</h2>
           {onRefresh && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onRefresh}
               disabled={isLoading}
             >
-              <RefreshCw className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')} />
+              <RefreshCw
+                className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')}
+              />
               刷新
             </Button>
           )}
@@ -192,20 +209,16 @@ export function StatisticsCards({
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">财务统计</h2>
           {onRefresh && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onRefresh}
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="mr-2 h-4 w-4" />
               重试
             </Button>
           )}
         </div>
         <Card className="border-red-200">
           <CardContent className="p-6 text-center">
-            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-            <p className="text-red-600 mb-4">{error}</p>
+            <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-500" />
+            <p className="mb-4 text-red-600">{error}</p>
             {onRefresh && (
               <Button onClick={onRefresh} variant="outline" size="sm">
                 重新加载
@@ -226,19 +239,21 @@ export function StatisticsCards({
             更新时间: {new Date(stats.lastUpdated).toLocaleTimeString()}
           </span>
           {onRefresh && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onRefresh}
               disabled={isLoading}
             >
-              <RefreshCw className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')} />
+              <RefreshCw
+                className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')}
+              />
               刷新
             </Button>
           )}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {/* 待收逾期金额 - 修正为待收金额 */}
         <StatCard
@@ -247,7 +262,7 @@ export function StatisticsCards({
           subtitle="所有待收金额"
           trend={{
             value: stats.trends?.receivablesChange || 0,
-            isPositive: (stats.trends?.receivablesChange || 0) >= 0
+            isPositive: (stats.trends?.receivablesChange || 0) >= 0,
           }}
           icon={<DollarSign />}
           color="orange"
@@ -260,7 +275,7 @@ export function StatisticsCards({
           subtitle="所有待付金额"
           trend={{
             value: stats.trends?.payablesChange || 0,
-            isPositive: (stats.trends?.payablesChange || 0) <= 0 // 付款减少是好事
+            isPositive: (stats.trends?.payablesChange || 0) <= 0, // 付款减少是好事
           }}
           icon={<CreditCard />}
           color="purple"

@@ -1,7 +1,8 @@
 'use client'
 
+import { UserCheck, UserPlus, Users, UserX } from 'lucide-react'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, UserCheck, UserX, UserPlus } from 'lucide-react'
 
 interface RenterStatsOverviewProps {
   stats: {
@@ -21,7 +22,7 @@ export function RenterStatsOverview({ stats }: RenterStatsOverviewProps) {
       icon: Users,
       color: 'blue',
       bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600'
+      textColor: 'text-blue-600',
     },
     {
       title: '在租租客',
@@ -30,7 +31,7 @@ export function RenterStatsOverview({ stats }: RenterStatsOverviewProps) {
       icon: UserCheck,
       color: 'green',
       bgColor: 'bg-green-50',
-      textColor: 'text-green-600'
+      textColor: 'text-green-600',
     },
     {
       title: '空闲租客',
@@ -39,7 +40,7 @@ export function RenterStatsOverview({ stats }: RenterStatsOverviewProps) {
       icon: UserX,
       color: 'orange',
       bgColor: 'bg-orange-50',
-      textColor: 'text-orange-600'
+      textColor: 'text-orange-600',
     },
     {
       title: '本月新增',
@@ -48,28 +49,30 @@ export function RenterStatsOverview({ stats }: RenterStatsOverviewProps) {
       icon: UserPlus,
       color: 'purple',
       bgColor: 'bg-purple-50',
-      textColor: 'text-purple-600'
-    }
+      textColor: 'text-purple-600',
+    },
   ]
-  
+
   return (
-    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {statsCards.map((stat) => {
         const IconComponent = stat.icon
-        
+
         return (
           <Card key={stat.title} className="overflow-hidden">
-            <CardHeader className={`pb-2 pt-3 px-4 ${stat.bgColor}`}>
-              <CardTitle className="text-sm font-medium text-gray-600 leading-tight flex items-center">
-                <IconComponent className="w-4 h-4 mr-2" />
+            <CardHeader className={`px-4 pt-3 pb-2 ${stat.bgColor}`}>
+              <CardTitle className="flex items-center text-sm leading-tight font-medium text-gray-600">
+                <IconComponent className="mr-2 h-4 w-4" />
                 {stat.title}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-3 pb-4 px-4">
-              <div className={`text-xl lg:text-2xl font-bold mb-1 ${stat.textColor} leading-tight`}>
+            <CardContent className="px-4 pt-3 pb-4">
+              <div
+                className={`mb-1 text-xl font-bold lg:text-2xl ${stat.textColor} leading-tight`}
+              >
                 {stat.value}
               </div>
-              <p className="text-xs text-gray-500 leading-tight">
+              <p className="text-xs leading-tight text-gray-500">
                 {stat.description}
               </p>
             </CardContent>

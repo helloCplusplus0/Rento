@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server'
-import { withApiErrorHandler, createSuccessResponse } from '@/lib/api-error-handler'
+
+import {
+  createSuccessResponse,
+  withApiErrorHandler,
+} from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { prisma } from '@/lib/prisma'
 
@@ -15,35 +19,35 @@ async function handleGetLeavingTenants(_request: NextRequest) {
       status: 'ACTIVE',
       endDate: {
         gte: new Date(),
-        lte: thirtyDaysFromNow
-      }
+        lte: thirtyDaysFromNow,
+      },
     },
     include: {
       renter: {
         select: {
           id: true,
           name: true,
-          phone: true
-        }
+          phone: true,
+        },
       },
       room: {
         include: {
           building: {
             select: {
               id: true,
-              name: true
-            }
-          }
-        }
-      }
+              name: true,
+            },
+          },
+        },
+      },
     },
     orderBy: {
-      endDate: 'asc'
-    }
+      endDate: 'asc',
+    },
   })
 
   // 转换数据类型
-  const contractsData = contracts.map(contract => ({
+  const contractsData = contracts.map((contract) => ({
     ...contract,
     monthlyRent: Number(contract.monthlyRent),
     totalRent: Number(contract.totalRent),
@@ -53,17 +57,17 @@ async function handleGetLeavingTenants(_request: NextRequest) {
     room: {
       ...contract.room,
       rent: Number(contract.room.rent),
-      area: contract.room.area ? Number(contract.room.area) : null
-    }
+      area: contract.room.area ? Number(contract.room.area) : null,
+    },
   }))
 
   return createSuccessResponse({
     contracts: contractsData,
-    total: contracts.length
+    total: contracts.length,
   })
 }
 
 export const GET = withApiErrorHandler(handleGetLeavingTenants, {
   module: 'leaving-tenants-api',
-  errorType: ErrorType.DATABASE_ERROR
+  errorType: ErrorType.DATABASE_ERROR,
 })

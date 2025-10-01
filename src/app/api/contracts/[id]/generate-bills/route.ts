@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import type { FallbackResult } from '@/lib/fallback-manager'
 
@@ -18,7 +19,7 @@ interface BillData {
 /**
  * 合同签订时自动生成账单API
  * POST /api/contracts/[id]/generate-bills
- * 
+ *
  * 当合同状态变更为ACTIVE时，自动触发账单生成
  */
 export async function POST(
@@ -27,12 +28,9 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    
+
     if (!id) {
-      return Response.json(
-        { error: '合同ID不能为空' },
-        { status: 400 }
-      )
+      return Response.json({ error: '合同ID不能为空' }, { status: 400 })
     }
 
     // 调用自动生成账单函数
@@ -54,8 +52,8 @@ export async function POST(
             amount: Number(bill.amount),
             dueDate: bill.dueDate,
             status: bill.status,
-            remarks: bill.remarks
-          }))
+            remarks: bill.remarks,
+          })),
         })
       } else {
         throw new Error(fallbackResult.error?.message || '账单生成失败')
@@ -74,18 +72,17 @@ export async function POST(
         amount: Number(bill.amount),
         dueDate: bill.dueDate,
         status: bill.status,
-        remarks: bill.remarks
-      }))
+        remarks: bill.remarks,
+      })),
     })
-
   } catch (error) {
     console.error('自动生成账单失败:', error)
-    
+
     return Response.json(
-      { 
+      {
         success: false,
         error: '自动生成账单失败',
-        details: error instanceof Error ? error.message : '未知错误'
+        details: error instanceof Error ? error.message : '未知错误',
       },
       { status: 500 }
     )

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { BillStatsPage } from '@/components/pages/BillStatsPage'
+
 import { advancedBillStats, parseDateRange } from '@/lib/bill-stats'
+import { BillStatsPage } from '@/components/pages/BillStatsPage'
 
 export const metadata: Metadata = {
   title: '账单统计',
-  description: '查看账单收支统计和趋势分析'
+  description: '查看账单收支统计和趋势分析',
 }
 
 interface BillStatsPageProps {
@@ -15,21 +16,23 @@ interface BillStatsPageProps {
   }>
 }
 
-export default async function BillStatsRoute({ searchParams }: BillStatsPageProps) {
+export default async function BillStatsRoute({
+  searchParams,
+}: BillStatsPageProps) {
   const params = await searchParams
-  
+
   try {
     // 解析时间范围参数
     const dateRange = parseDateRange(params)
-    
+
     // 获取统计数据
     const statsData = await advancedBillStats.getDetailedStats({
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
       groupBy: 'day',
-      includeComparison: true
+      includeComparison: true,
     })
-    
+
     // 转换 Decimal 类型为 number
     const clientStatsData = {
       ...statsData,
@@ -37,11 +40,11 @@ export default async function BillStatsRoute({ searchParams }: BillStatsPageProp
       paidAmount: Number(statsData.paidAmount),
       pendingAmount: Number(statsData.pendingAmount),
       overdueAmount: Number(statsData.overdueAmount),
-      timeSeries: statsData.timeSeries.map(item => ({
+      timeSeries: statsData.timeSeries.map((item) => ({
         ...item,
         totalAmount: Number(item.totalAmount),
         paidAmount: Number(item.paidAmount),
-        pendingAmount: Number(item.pendingAmount)
+        pendingAmount: Number(item.pendingAmount),
       })),
       typeBreakdown: {
         RENT: { amount: 0, count: 0 },
@@ -53,27 +56,39 @@ export default async function BillStatsRoute({ searchParams }: BillStatsPageProp
             key,
             {
               amount: Number(value.amount),
-              count: Number(value.count)
-            }
+              count: Number(value.count),
+            },
           ])
-        )
+        ),
       },
-      comparison: statsData.comparison ? {
-        ...statsData.comparison,
-        previousPeriod: {
-          ...statsData.comparison.previousPeriod,
-          totalAmount: Number(statsData.comparison.previousPeriod.totalAmount),
-          paidAmount: Number(statsData.comparison.previousPeriod.paidAmount),
-          pendingAmount: Number(statsData.comparison.previousPeriod.pendingAmount),
-          overdueAmount: Number(statsData.comparison.previousPeriod.overdueAmount)
-        }
-      } : undefined
+      comparison: statsData.comparison
+        ? {
+            ...statsData.comparison,
+            previousPeriod: {
+              ...statsData.comparison.previousPeriod,
+              totalAmount: Number(
+                statsData.comparison.previousPeriod.totalAmount
+              ),
+              paidAmount: Number(
+                statsData.comparison.previousPeriod.paidAmount
+              ),
+              pendingAmount: Number(
+                statsData.comparison.previousPeriod.pendingAmount
+              ),
+              overdueAmount: Number(
+                statsData.comparison.previousPeriod.overdueAmount
+              ),
+            },
+          }
+        : undefined,
     }
-    
-    return <BillStatsPage initialData={clientStatsData} initialRange={dateRange} />
+
+    return (
+      <BillStatsPage initialData={clientStatsData} initialRange={dateRange} />
+    )
   } catch (error) {
     console.error('Failed to load bill stats:', error)
-    
+
     // 返回空数据的默认页面
     const defaultRange = parseDateRange({})
     const emptyData = {
@@ -89,12 +104,12 @@ export default async function BillStatsRoute({ searchParams }: BillStatsPageProp
         RENT: { amount: 0, count: 0 },
         DEPOSIT: { amount: 0, count: 0 },
         UTILITIES: { amount: 0, count: 0 },
-        OTHER: { amount: 0, count: 0 }
+        OTHER: { amount: 0, count: 0 },
       },
       timeSeries: [],
-      dateRange: defaultRange
+      dateRange: defaultRange,
     }
-    
+
     return <BillStatsPage initialData={emptyData} initialRange={defaultRange} />
   }
 }

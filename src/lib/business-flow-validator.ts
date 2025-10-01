@@ -1,7 +1,18 @@
+import {
+  generateBillsOnContractSigned,
+  generateUtilityBillOnReading,
+} from './auto-bill-generator'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { prisma } from './prisma'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
-import { buildingQueries, roomQueries, renterQueries, contractQueries, billQueries, meterQueries, meterReadingQueries } from './queries'
-import { generateBillsOnContractSigned, generateUtilityBillOnReading } from './auto-bill-generator'
+import {
+  billQueries,
+  buildingQueries,
+  contractQueries,
+  meterQueries,
+  meterReadingQueries,
+  renterQueries,
+  roomQueries,
+} from './queries'
 
 /**
  * 验证结果接口
@@ -85,7 +96,9 @@ export class BusinessFlowValidator {
     const startTime = Date.now()
     const results: ValidationResult[] = []
 
-    this.logger.logInfo('开始核心业务流程验证', { module: 'business-flow-validator' })
+    this.logger.logInfo('开始核心业务流程验证', {
+      module: 'business-flow-validator',
+    })
 
     try {
       // 1. 房间管理完整流程验证
@@ -104,7 +117,7 @@ export class BusinessFlowValidator {
       results.push(await this.validateDataConsistency())
 
       const executionTime = Date.now() - startTime
-      const successfulFlows = results.filter(r => r.success).length
+      const successfulFlows = results.filter((r) => r.success).length
       const failedFlows = results.length - successfulFlows
 
       const report: ValidationReport = {
@@ -115,23 +128,33 @@ export class BusinessFlowValidator {
         executionTime,
         results,
         summary: {
-          roomManagement: results.find(r => r.flowName === 'RoomManagement')?.success || false,
-          billGeneration: results.find(r => r.flowName === 'BillGeneration')?.success || false,
-          meterReading: results.find(r => r.flowName === 'MeterReading')?.success || false,
-          contractLifecycle: results.find(r => r.flowName === 'ContractLifecycle')?.success || false,
-          dataConsistency: results.find(r => r.flowName === 'DataConsistency')?.success || false
-        }
+          roomManagement:
+            results.find((r) => r.flowName === 'RoomManagement')?.success ||
+            false,
+          billGeneration:
+            results.find((r) => r.flowName === 'BillGeneration')?.success ||
+            false,
+          meterReading:
+            results.find((r) => r.flowName === 'MeterReading')?.success ||
+            false,
+          contractLifecycle:
+            results.find((r) => r.flowName === 'ContractLifecycle')?.success ||
+            false,
+          dataConsistency:
+            results.find((r) => r.flowName === 'DataConsistency')?.success ||
+            false,
+        },
       }
 
-      this.logger.logInfo('核心业务流程验证完成', { 
+      this.logger.logInfo('核心业务流程验证完成', {
         module: 'business-flow-validator',
         report: {
           totalFlows: report.totalFlows,
           successfulFlows: report.successfulFlows,
           failedFlows: report.failedFlows,
           overallSuccess: report.overallSuccess,
-          executionTime: report.executionTime
-        }
+          executionTime: report.executionTime,
+        },
       })
 
       return report
@@ -163,34 +186,52 @@ export class BusinessFlowValidator {
       const building = await buildingQueries.create({
         name: `${this.testDataPrefix}楼栋`,
         address: '测试地址123号',
-        description: '验证流程测试楼栋'
+        description: '验证流程测试楼栋',
       })
       steps.push({
         stepName: '创建测试楼栋',
         success: true,
         data: { buildingId: building.id },
-        duration: Date.now() - step1Start
+        duration: Date.now() - step1Start,
       })
 
       // 步骤2: 批量添加房间
       const step2Start = Date.now()
       const roomsData = [
-        { roomNumber: '101', floorNumber: 1, buildingId: building.id, roomType: 'WHOLE' as const, rent: 2000 },
-        { roomNumber: '102', floorNumber: 1, buildingId: building.id, roomType: 'SHARED' as const, rent: 1500 },
-        { roomNumber: '201', floorNumber: 2, buildingId: building.id, roomType: 'SINGLE' as const, rent: 1200 }
+        {
+          roomNumber: '101',
+          floorNumber: 1,
+          buildingId: building.id,
+          roomType: 'WHOLE' as const,
+          rent: 2000,
+        },
+        {
+          roomNumber: '102',
+          floorNumber: 1,
+          buildingId: building.id,
+          roomType: 'SHARED' as const,
+          rent: 1500,
+        },
+        {
+          roomNumber: '201',
+          floorNumber: 2,
+          buildingId: building.id,
+          roomType: 'SINGLE' as const,
+          rent: 1200,
+        },
       ]
-      
+
       const rooms = []
       for (const roomData of roomsData) {
         const room = await roomQueries.create(roomData)
         rooms.push(room)
       }
-      
+
       steps.push({
         stepName: '批量添加房间',
         success: true,
-        data: { roomCount: rooms.length, roomIds: rooms.map(r => r.id) },
-        duration: Date.now() - step2Start
+        data: { roomCount: rooms.length, roomIds: rooms.map((r) => r.id) },
+        duration: Date.now() - step2Start,
       })
 
       // 步骤3: 创建测试租客
@@ -201,13 +242,13 @@ export class BusinessFlowValidator {
         gender: '男',
         idCard: '110101199001010001',
         emergencyContact: '紧急联系人',
-        emergencyPhone: '13900139000'
+        emergencyPhone: '13900139000',
       })
       steps.push({
         stepName: '创建测试租客',
         success: true,
         data: { renterId: renter.id },
-        duration: Date.now() - step3Start
+        duration: Date.now() - step3Start,
       })
 
       // 步骤4: 签订合同（房间租赁）
@@ -223,60 +264,66 @@ export class BusinessFlowValidator {
         deposit: 4000,
         keyDeposit: 200,
         paymentMethod: '月付',
-        signedBy: '系统验证'
+        signedBy: '系统验证',
       })
-      
+
       // 验证房间状态是否更新为OCCUPIED
       const updatedRoom = await roomQueries.findById(rooms[0].id)
       if (updatedRoom?.status !== 'OCCUPIED') {
         warnings.push({
           step: '签订合同',
           message: '房间状态未自动更新为OCCUPIED',
-          details: { roomId: rooms[0].id, currentStatus: updatedRoom?.status }
+          details: { roomId: rooms[0].id, currentStatus: updatedRoom?.status },
         })
       }
-      
+
       steps.push({
         stepName: '签订合同（房间租赁）',
         success: true,
         data: { contractId: contract.id },
-        duration: Date.now() - step4Start
+        duration: Date.now() - step4Start,
       })
 
       // 步骤5: 验证自动账单生成
       const step5Start = Date.now()
       await generateBillsOnContractSigned(contract.id)
       const bills = await billQueries.findByContract(contract.id)
-      
+
       if (bills.length === 0) {
         errors.push({
           step: '验证自动账单生成',
           message: '合同签订后未自动生成账单',
-          details: { contractId: contract.id }
+          details: { contractId: contract.id },
         })
       }
-      
+
       steps.push({
         stepName: '验证自动账单生成',
         success: bills.length > 0,
-        data: { billCount: bills.length, billIds: bills.map(b => b.id) },
-        duration: Date.now() - step5Start
+        data: { billCount: bills.length, billIds: bills.map((b) => b.id) },
+        duration: Date.now() - step5Start,
       })
 
       // 步骤6: 合同终止（房间退租）
       const step6Start = Date.now()
       await contractQueries.update(contract.id, { status: 'TERMINATED' })
       await roomQueries.update(rooms[0].id, { status: 'VACANT' })
-      
+
       steps.push({
         stepName: '合同终止（房间退租）',
         success: true,
         data: { contractId: contract.id, roomId: rooms[0].id },
-        duration: Date.now() - step6Start
+        duration: Date.now() - step6Start,
       })
 
       // 清理测试数据
-      await this.cleanupTestData([building.id], rooms.map(r => r.id), [renter.id], [contract.id], bills.map(b => b.id))
+      await this.cleanupTestData(
+        [building.id],
+        rooms.map((r) => r.id),
+        [renter.id],
+        [contract.id],
+        bills.map((b) => b.id)
+      )
 
       return {
         flowName: 'RoomManagement',
@@ -285,14 +332,13 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: true
+        dataConsistency: true,
       }
-
     } catch (error) {
       errors.push({
         step: '房间管理流程验证',
         message: (error as Error).message,
-        details: error
+        details: error,
       })
 
       return {
@@ -302,7 +348,7 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: false
+        dataConsistency: false,
       }
     }
   }
@@ -325,7 +371,7 @@ export class BusinessFlowValidator {
         errors.push({
           step: '创建测试合同',
           message: '测试合同创建失败',
-          details: { testData }
+          details: { testData },
         })
         return {
           flowName: 'BillGeneration',
@@ -334,7 +380,7 @@ export class BusinessFlowValidator {
           errors,
           warnings,
           executionTime: Date.now() - startTime,
-          dataConsistency: false
+          dataConsistency: false,
         }
       }
 
@@ -342,36 +388,36 @@ export class BusinessFlowValidator {
       const step1Start = Date.now()
       await generateBillsOnContractSigned(contract.id)
       const generatedBills = await billQueries.findByContract(contract.id)
-      
-      const hasDepositBill = generatedBills.some(b => b.type === 'DEPOSIT')
-      const hasRentBill = generatedBills.some(b => b.type === 'RENT')
-      
+
+      const hasDepositBill = generatedBills.some((b) => b.type === 'DEPOSIT')
+      const hasRentBill = generatedBills.some((b) => b.type === 'RENT')
+
       if (!hasDepositBill) {
         errors.push({
           step: '验证押金账单生成',
           message: '未生成押金账单',
-          details: { contractId: contract.id }
+          details: { contractId: contract.id },
         })
       }
-      
+
       if (!hasRentBill) {
         errors.push({
           step: '验证租金账单生成',
           message: '未生成租金账单',
-          details: { contractId: contract.id }
+          details: { contractId: contract.id },
         })
       }
-      
+
       steps.push({
         stepName: '验证合同签订自动生成账单',
         success: hasDepositBill && hasRentBill,
-        data: { 
+        data: {
           billCount: generatedBills.length,
           hasDepositBill,
           hasRentBill,
-          billTypes: generatedBills.map(b => b.type)
+          billTypes: generatedBills.map((b) => b.type),
         },
-        duration: Date.now() - step1Start
+        duration: Date.now() - step1Start,
       })
 
       // 步骤2: 验证账单支付流程
@@ -384,29 +430,35 @@ export class BusinessFlowValidator {
           pendingAmount: 0,
           paidDate: new Date(),
           paymentMethod: '现金',
-          operator: '系统验证'
+          operator: '系统验证',
         })
-        
+
         steps.push({
           stepName: '验证账单支付流程',
           success: updatedBill.status === 'PAID',
-          data: { 
+          data: {
             billId: billToPayment.id,
             status: updatedBill.status,
-            receivedAmount: updatedBill.receivedAmount
+            receivedAmount: updatedBill.receivedAmount,
           },
-          duration: Date.now() - step2Start
+          duration: Date.now() - step2Start,
         })
       } else {
         errors.push({
           step: '验证账单支付流程',
           message: '没有可支付的账单',
-          details: { contractId: contract.id }
+          details: { contractId: contract.id },
         })
       }
 
       // 清理测试数据
-      await this.cleanupTestData([building.id], [room.id], [renter.id], [contract.id], generatedBills.map(b => b.id))
+      await this.cleanupTestData(
+        [building.id],
+        [room.id],
+        [renter.id],
+        [contract.id],
+        generatedBills.map((b) => b.id)
+      )
 
       return {
         flowName: 'BillGeneration',
@@ -415,14 +467,13 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: true
+        dataConsistency: true,
       }
-
     } catch (error) {
       errors.push({
         step: '账单生成流程验证',
         message: (error as Error).message,
-        details: error
+        details: error,
       })
 
       return {
@@ -432,7 +483,7 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: false
+        dataConsistency: false,
       }
     }
   }
@@ -455,7 +506,7 @@ export class BusinessFlowValidator {
         errors.push({
           step: '创建测试合同',
           message: '测试合同创建失败',
-          details: { testData }
+          details: { testData },
         })
         return {
           flowName: 'MeterReading',
@@ -464,7 +515,7 @@ export class BusinessFlowValidator {
           errors,
           warnings,
           executionTime: Date.now() - startTime,
-          dataConsistency: false
+          dataConsistency: false,
         }
       }
 
@@ -477,9 +528,9 @@ export class BusinessFlowValidator {
         roomId: room.id,
         unitPrice: 0.6,
         unit: '度',
-        location: '房间内'
+        location: '房间内',
       })
-      
+
       const waterMeter = await meterQueries.create({
         meterNumber: `${this.testDataPrefix}W001`,
         displayName: '水表-测试',
@@ -487,17 +538,17 @@ export class BusinessFlowValidator {
         roomId: room.id,
         unitPrice: 3.5,
         unit: '吨',
-        location: '卫生间'
+        location: '卫生间',
       })
-      
+
       steps.push({
         stepName: '创建仪表配置',
         success: true,
-        data: { 
+        data: {
           electricMeterId: electricMeter.id,
-          waterMeterId: waterMeter.id
+          waterMeterId: waterMeter.id,
         },
-        duration: Date.now() - step1Start
+        duration: Date.now() - step1Start,
       })
 
       // 步骤2: 录入抄表数据
@@ -512,9 +563,9 @@ export class BusinessFlowValidator {
         period: '2024-01',
         unitPrice: 0.6,
         amount: 90, // 150 * 0.6
-        operator: '系统验证'
+        operator: '系统验证',
       })
-      
+
       const waterReading = await meterReadingQueries.create({
         meterId: waterMeter.id,
         contractId: contract.id,
@@ -525,18 +576,18 @@ export class BusinessFlowValidator {
         period: '2024-01',
         unitPrice: 3.5,
         amount: 17.5, // 5 * 3.5
-        operator: '系统验证'
+        operator: '系统验证',
       })
-      
+
       steps.push({
         stepName: '录入抄表数据',
         success: true,
-        data: { 
+        data: {
           electricReadingId: electricReading.id,
           waterReadingId: waterReading.id,
-          totalAmount: 107.5
+          totalAmount: 107.5,
         },
-        duration: Date.now() - step2Start
+        duration: Date.now() - step2Start,
       })
 
       // 步骤3: 验证水电费账单自动生成
@@ -549,18 +600,18 @@ export class BusinessFlowValidator {
         aggregationStrategy: 'AGGREGATE',
         meterPrices: {
           electricityPrice: 0.6,
-          waterPrice: 3.5
-        }
+          waterPrice: 3.5,
+        },
       })
-      
+
       const utilityBills = await billQueries.findByContract(contract.id)
-      const utilityBill = utilityBills.find(b => b.type === 'UTILITIES')
-      
+      const utilityBill = utilityBills.find((b) => b.type === 'UTILITIES')
+
       if (!utilityBill) {
         errors.push({
           step: '验证水电费账单自动生成',
           message: '未生成水电费账单',
-          details: { contractId: contract.id }
+          details: { contractId: contract.id },
         })
       } else {
         // 验证账单金额计算是否正确
@@ -569,33 +620,33 @@ export class BusinessFlowValidator {
           warnings.push({
             step: '验证水电费账单金额',
             message: '水电费账单金额计算可能有误',
-            details: { 
+            details: {
               expected: expectedAmount,
               actual: Number(utilityBill.amount),
-              billId: utilityBill.id
-            }
+              billId: utilityBill.id,
+            },
           })
         }
       }
-      
+
       steps.push({
         stepName: '验证水电费账单自动生成',
         success: !!utilityBill,
-        data: { 
+        data: {
           utilityBillId: utilityBill?.id,
-          amount: utilityBill ? Number(utilityBill.amount) : 0
+          amount: utilityBill ? Number(utilityBill.amount) : 0,
         },
-        duration: Date.now() - step3Start
+        duration: Date.now() - step3Start,
       })
 
       // 清理测试数据
       const allBills = await billQueries.findByContract(contract.id)
       await this.cleanupMeterTestData(
-        [building.id], 
-        [room.id], 
-        [renter.id], 
-        [contract.id], 
-        allBills.map(b => b.id),
+        [building.id],
+        [room.id],
+        [renter.id],
+        [contract.id],
+        allBills.map((b) => b.id),
         [electricMeter.id, waterMeter.id],
         [electricReading.id, waterReading.id]
       )
@@ -607,14 +658,13 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: true
+        dataConsistency: true,
       }
-
     } catch (error) {
       errors.push({
         step: '水电表抄表流程验证',
         message: (error as Error).message,
-        details: error
+        details: error,
       })
 
       return {
@@ -624,7 +674,7 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: false
+        dataConsistency: false,
       }
     }
   }
@@ -654,64 +704,70 @@ export class BusinessFlowValidator {
         monthlyRent: 2000,
         totalRent: 24000,
         deposit: 4000,
-        paymentMethod: '月付'
+        paymentMethod: '月付',
       })
-      
+
       steps.push({
         stepName: '合同创建（ACTIVE状态）',
         success: contract.status === 'ACTIVE',
         data: { contractId: contract.id, status: contract.status },
-        duration: Date.now() - step1Start
+        duration: Date.now() - step1Start,
       })
 
       // 步骤2: 合同激活和账单生成
       const step2Start = Date.now()
       await generateBillsOnContractSigned(contract.id)
       const bills = await billQueries.findByContract(contract.id)
-      
+
       steps.push({
         stepName: '合同激活和账单生成',
         success: bills.length > 0,
         data: { billCount: bills.length },
-        duration: Date.now() - step2Start
+        duration: Date.now() - step2Start,
       })
 
       // 步骤3: 合同续约
       const step3Start = Date.now()
       const renewedContract = await contractQueries.update(contract.id, {
         isExtended: true,
-        endDate: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000) // 延长一年
+        endDate: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000), // 延长一年
       })
-      
+
       steps.push({
         stepName: '合同续约',
         success: renewedContract.isExtended === true,
-        data: { 
+        data: {
           contractId: contract.id,
           isExtended: renewedContract.isExtended,
-          newEndDate: renewedContract.endDate
+          newEndDate: renewedContract.endDate,
         },
-        duration: Date.now() - step3Start
+        duration: Date.now() - step3Start,
       })
 
       // 步骤4: 合同终止
       const step4Start = Date.now()
       const terminatedContract = await contractQueries.update(contract.id, {
-        status: 'TERMINATED'
+        status: 'TERMINATED',
       })
-      
+
       steps.push({
         stepName: '合同终止',
         success: terminatedContract.status === 'TERMINATED',
-        data: { 
+        data: {
           contractId: contract.id,
-          status: terminatedContract.status
+          status: terminatedContract.status,
         },
-        duration: Date.now() - step4Start
+        duration: Date.now() - step4Start,
       })
 
       // 清理测试数据
-      await this.cleanupTestData([building.id], [room.id], [renter.id], [contract.id], bills.map(b => b.id))
+      await this.cleanupTestData(
+        [building.id],
+        [room.id],
+        [renter.id],
+        [contract.id],
+        bills.map((b) => b.id)
+      )
 
       return {
         flowName: 'ContractLifecycle',
@@ -720,14 +776,13 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: true
+        dataConsistency: true,
       }
-
     } catch (error) {
       errors.push({
         step: '合同生命周期验证',
         message: (error as Error).message,
-        details: error
+        details: error,
       })
 
       return {
@@ -737,7 +792,7 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: false
+        dataConsistency: false,
       }
     }
   }
@@ -756,9 +811,10 @@ export class BusinessFlowValidator {
       const step1Start = Date.now()
       const occupiedRooms = await roomQueries.findByStatus('OCCUPIED')
       let inconsistentRooms = 0
-      
+
       for (const room of occupiedRooms) {
-        const activeContracts = room.contracts?.filter(c => c.status === 'ACTIVE') || []
+        const activeContracts =
+          room.contracts?.filter((c) => c.status === 'ACTIVE') || []
         if (activeContracts.length === 0) {
           // 检查是否为测试数据，如果是则跳过警告
           if (!room.roomNumber.includes('TEST_VALIDATION_')) {
@@ -766,27 +822,27 @@ export class BusinessFlowValidator {
             warnings.push({
               step: '房间-合同关联一致性检查',
               message: `房间${room.roomNumber}状态为OCCUPIED但无活跃合同`,
-              details: { roomId: room.id, roomNumber: room.roomNumber }
+              details: { roomId: room.id, roomNumber: room.roomNumber },
             })
           }
         }
       }
-      
+
       steps.push({
         stepName: '房间-合同关联一致性检查',
         success: inconsistentRooms === 0,
-        data: { 
+        data: {
           occupiedRoomCount: occupiedRooms.length,
-          inconsistentRoomCount: inconsistentRooms
+          inconsistentRoomCount: inconsistentRooms,
         },
-        duration: Date.now() - step1Start
+        duration: Date.now() - step1Start,
       })
 
       // 步骤2: 检查账单-合同关联完整性
       const step2Start = Date.now()
       const allBills = await billQueries.findAll()
       let orphanBills = 0
-      
+
       for (const bill of allBills) {
         if (!bill.contract) {
           // 检查是否为测试数据，如果是则跳过警告
@@ -795,49 +851,55 @@ export class BusinessFlowValidator {
             warnings.push({
               step: '账单-合同关联完整性检查',
               message: `账单${bill.billNumber}缺少关联合同`,
-              details: { billId: bill.id, billNumber: bill.billNumber }
+              details: { billId: bill.id, billNumber: bill.billNumber },
             })
           }
         }
       }
-      
+
       steps.push({
         stepName: '账单-合同关联完整性检查',
         success: orphanBills === 0,
-        data: { 
+        data: {
           totalBillCount: allBills.length,
-          orphanBillCount: orphanBills
+          orphanBillCount: orphanBills,
         },
-        duration: Date.now() - step2Start
+        duration: Date.now() - step2Start,
       })
 
       // 步骤3: 检查抄表-账单关联一致性
       const step3Start = Date.now()
       const allReadings = await meterReadingQueries.findAll({ limit: 100 })
       let unbilledReadings = 0
-      
+
       for (const reading of allReadings) {
-        if (reading.status === 'CONFIRMED' && (!reading.bills || reading.bills.length === 0)) {
+        if (
+          reading.status === 'CONFIRMED' &&
+          (!reading.bills || reading.bills.length === 0)
+        ) {
           // 检查是否为测试数据，如果是则跳过警告
-          if (!reading.operator?.includes('TEST_VALIDATION_') && !reading.operator?.includes('系统验证')) {
+          if (
+            !reading.operator?.includes('TEST_VALIDATION_') &&
+            !reading.operator?.includes('系统验证')
+          ) {
             unbilledReadings++
             warnings.push({
               step: '抄表-账单关联一致性检查',
               message: `抄表记录已确认但未生成账单`,
-              details: { readingId: reading.id, meterId: reading.meterId }
+              details: { readingId: reading.id, meterId: reading.meterId },
             })
           }
         }
       }
-      
+
       steps.push({
         stepName: '抄表-账单关联一致性检查',
         success: unbilledReadings === 0,
-        data: { 
+        data: {
           totalReadingCount: allReadings.length,
-          unbilledReadingCount: unbilledReadings
+          unbilledReadingCount: unbilledReadings,
         },
-        duration: Date.now() - step3Start
+        duration: Date.now() - step3Start,
       })
 
       return {
@@ -847,14 +909,16 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: inconsistentRooms === 0 && orphanBills === 0 && unbilledReadings === 0
+        dataConsistency:
+          inconsistentRooms === 0 &&
+          orphanBills === 0 &&
+          unbilledReadings === 0,
       }
-
     } catch (error) {
       errors.push({
         step: '数据一致性验证',
         message: (error as Error).message,
-        details: error
+        details: error,
       })
 
       return {
@@ -864,7 +928,7 @@ export class BusinessFlowValidator {
         errors,
         warnings,
         executionTime: Date.now() - startTime,
-        dataConsistency: false
+        dataConsistency: false,
       }
     }
   }
@@ -874,11 +938,11 @@ export class BusinessFlowValidator {
    */
   private async createTestContractData(createContract = true) {
     const testId = this.generateTestId()
-    
+
     const building = await buildingQueries.create({
       name: `${testId}_楼栋`,
       address: '测试地址123号',
-      description: '验证流程测试楼栋'
+      description: '验证流程测试楼栋',
     })
 
     const room = await roomQueries.create({
@@ -886,14 +950,16 @@ export class BusinessFlowValidator {
       floorNumber: 1,
       buildingId: building.id,
       roomType: 'WHOLE',
-      rent: 2000
+      rent: 2000,
     })
 
     const renter = await renterQueries.create({
       name: `${testId}_租客`,
-      phone: `138${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`, // 生成唯一手机号
+      phone: `138${Math.floor(Math.random() * 100000000)
+        .toString()
+        .padStart(8, '0')}`, // 生成唯一手机号
       gender: '男',
-      remarks: '验证流程测试租客'
+      remarks: '验证流程测试租客',
     })
 
     let contract = null
@@ -908,7 +974,7 @@ export class BusinessFlowValidator {
         totalRent: 24000,
         deposit: 4000,
         paymentMethod: '月付',
-        signedBy: '系统验证'
+        signedBy: '系统验证',
       })
     }
 
@@ -919,10 +985,10 @@ export class BusinessFlowValidator {
    * 清理测试数据
    */
   private async cleanupTestData(
-    buildingIds: string[], 
-    roomIds: string[], 
-    renterIds: string[], 
-    contractIds: string[], 
+    buildingIds: string[],
+    roomIds: string[],
+    renterIds: string[],
+    contractIds: string[],
     billIds: string[]
   ) {
     try {
@@ -951,7 +1017,10 @@ export class BusinessFlowValidator {
         await buildingQueries.delete(buildingId).catch(() => {})
       }
     } catch (error) {
-      this.logger.logWarning('清理测试数据时出现错误', { error, module: 'business-flow-validator' })
+      this.logger.logWarning('清理测试数据时出现错误', {
+        error,
+        module: 'business-flow-validator',
+      })
     }
   }
 
@@ -959,10 +1028,10 @@ export class BusinessFlowValidator {
    * 清理仪表测试数据
    */
   private async cleanupMeterTestData(
-    buildingIds: string[], 
-    roomIds: string[], 
-    renterIds: string[], 
-    contractIds: string[], 
+    buildingIds: string[],
+    roomIds: string[],
+    renterIds: string[],
+    contractIds: string[],
     billIds: string[],
     meterIds: string[],
     readingIds: string[]
@@ -979,9 +1048,18 @@ export class BusinessFlowValidator {
       }
 
       // 删除其他数据
-      await this.cleanupTestData(buildingIds, roomIds, renterIds, contractIds, billIds)
+      await this.cleanupTestData(
+        buildingIds,
+        roomIds,
+        renterIds,
+        contractIds,
+        billIds
+      )
     } catch (error) {
-      this.logger.logWarning('清理仪表测试数据时出现错误', { error, module: 'business-flow-validator' })
+      this.logger.logWarning('清理仪表测试数据时出现错误', {
+        error,
+        module: 'business-flow-validator',
+      })
     }
   }
 }

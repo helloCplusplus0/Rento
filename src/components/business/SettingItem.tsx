@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 /**
  * 设置项类型定义
@@ -40,10 +41,11 @@ function InputSettingItem({ config, onValueChange }: SettingItemProps) {
   const [isEditing, setIsEditing] = useState(false)
 
   const handleSave = () => {
-    const numericValue = config.type === 'input' && typeof config.value === 'number' 
-      ? parseFloat(value) || 0 
-      : value
-    
+    const numericValue =
+      config.type === 'input' && typeof config.value === 'number'
+        ? parseFloat(value) || 0
+        : value
+
     onValueChange?.(config.id, numericValue)
     setIsEditing(false)
   }
@@ -58,11 +60,11 @@ function InputSettingItem({ config, onValueChange }: SettingItemProps) {
       <div className="flex-1">
         <div className="font-medium text-gray-900">{config.title}</div>
         {config.description && (
-          <div className="text-sm text-gray-500 mt-1">{config.description}</div>
+          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
         )}
       </div>
-      
-      <div className="flex items-center gap-2 ml-4">
+
+      <div className="ml-4 flex items-center gap-2">
         {isEditing ? (
           <>
             <Input
@@ -73,7 +75,7 @@ function InputSettingItem({ config, onValueChange }: SettingItemProps) {
               min={config.min}
               max={config.max}
               step={config.step}
-              className="w-24 h-8 text-sm"
+              className="h-8 w-24 text-sm"
             />
             {config.unit && (
               <span className="text-sm text-gray-500">{config.unit}</span>
@@ -81,19 +83,26 @@ function InputSettingItem({ config, onValueChange }: SettingItemProps) {
             <Button size="sm" onClick={handleSave} className="h-8 px-2">
               保存
             </Button>
-            <Button size="sm" variant="outline" onClick={handleCancel} className="h-8 px-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              className="h-8 px-2"
+            >
               取消
             </Button>
           </>
         ) : (
           <>
-            <span className="text-sm text-gray-900 min-w-[60px] text-right">
+            <span className="min-w-[60px] text-right text-sm text-gray-900">
               {config.value}
-              {config.unit && <span className="text-gray-500 ml-1">{config.unit}</span>}
+              {config.unit && (
+                <span className="ml-1 text-gray-500">{config.unit}</span>
+              )}
             </span>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => {
                 setValue(config.value || '')
                 setIsEditing(true)
@@ -114,25 +123,27 @@ function InputSettingItem({ config, onValueChange }: SettingItemProps) {
  * 选择器设置项
  */
 function SelectSettingItem({ config, onValueChange }: SettingItemProps) {
-  const currentOption = config.options?.find(opt => opt.value === config.value)
+  const currentOption = config.options?.find(
+    (opt) => opt.value === config.value
+  )
 
   return (
     <div className="flex items-center justify-between">
       <div className="flex-1">
         <div className="font-medium text-gray-900">{config.title}</div>
         {config.description && (
-          <div className="text-sm text-gray-500 mt-1">{config.description}</div>
+          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
         )}
       </div>
-      
+
       <div className="ml-4">
         <select
           value={config.value}
           onChange={(e) => onValueChange?.(config.id, e.target.value)}
           disabled={config.disabled}
-          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
         >
-          {config.options?.map(option => (
+          {config.options?.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -152,16 +163,16 @@ function SwitchSettingItem({ config, onValueChange }: SettingItemProps) {
       <div className="flex-1">
         <div className="font-medium text-gray-900">{config.title}</div>
         {config.description && (
-          <div className="text-sm text-gray-500 mt-1">{config.description}</div>
+          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
         )}
       </div>
-      
+
       <div className="ml-4">
         <button
           onClick={() => onValueChange?.(config.id, !config.value)}
           disabled={config.disabled}
           className={cn(
-            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none',
             config.value ? 'bg-blue-600' : 'bg-gray-200'
           )}
         >
@@ -186,10 +197,10 @@ function ButtonSettingItem({ config }: SettingItemProps) {
       <div className="flex-1">
         <div className="font-medium text-gray-900">{config.title}</div>
         {config.description && (
-          <div className="text-sm text-gray-500 mt-1">{config.description}</div>
+          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
         )}
       </div>
-      
+
       <div className="ml-4">
         <Button
           size="sm"
@@ -213,10 +224,10 @@ function InfoSettingItem({ config }: SettingItemProps) {
       <div className="flex-1">
         <div className="font-medium text-gray-900">{config.title}</div>
         {config.description && (
-          <div className="text-sm text-gray-500 mt-1">{config.description}</div>
+          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
         )}
       </div>
-      
+
       <div className="ml-4">
         <span className="text-sm text-gray-600">{config.value}</span>
       </div>
@@ -228,17 +239,29 @@ function InfoSettingItem({ config }: SettingItemProps) {
  * 设置项组件
  * 根据配置类型渲染不同的设置项
  */
-export function SettingItem({ config, onValueChange, className }: SettingItemProps) {
+export function SettingItem({
+  config,
+  onValueChange,
+  className,
+}: SettingItemProps) {
   const renderSettingItem = () => {
     switch (config.type) {
       case 'input':
-        return <InputSettingItem config={config} onValueChange={onValueChange} />
+        return (
+          <InputSettingItem config={config} onValueChange={onValueChange} />
+        )
       case 'select':
-        return <SelectSettingItem config={config} onValueChange={onValueChange} />
+        return (
+          <SelectSettingItem config={config} onValueChange={onValueChange} />
+        )
       case 'switch':
-        return <SwitchSettingItem config={config} onValueChange={onValueChange} />
+        return (
+          <SwitchSettingItem config={config} onValueChange={onValueChange} />
+        )
       case 'button':
-        return <ButtonSettingItem config={config} onValueChange={onValueChange} />
+        return (
+          <ButtonSettingItem config={config} onValueChange={onValueChange} />
+        )
       case 'info':
         return <InfoSettingItem config={config} onValueChange={onValueChange} />
       default:
@@ -247,7 +270,9 @@ export function SettingItem({ config, onValueChange, className }: SettingItemPro
   }
 
   return (
-    <div className={cn('py-4 border-b border-gray-100 last:border-b-0', className)}>
+    <div
+      className={cn('border-b border-gray-100 py-4 last:border-b-0', className)}
+    >
       {renderSettingItem()}
     </div>
   )
@@ -263,13 +288,18 @@ interface SettingCategoryProps {
   className?: string
 }
 
-export function SettingCategory({ title, items, onValueChange, className }: SettingCategoryProps) {
+export function SettingCategory({
+  title,
+  items,
+  onValueChange,
+  className,
+}: SettingCategoryProps) {
   return (
     <Card className={className}>
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">{title}</h3>
         <div className="space-y-0">
-          {items.map(item => (
+          {items.map((item) => (
             <SettingItem
               key={item.id}
               config={item}

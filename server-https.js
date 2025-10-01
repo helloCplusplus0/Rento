@@ -29,18 +29,18 @@ app.prepare().then(() => {
       res.end('internal server error')
     }
   })
-  .once('error', (err) => {
-    console.error(err)
-    process.exit(1)
-  })
-  .listen(port, () => {
-    console.log(`\n🎉 HTTPS服务器启动成功!`)
-    console.log(`📱 本地访问: https://localhost:${port}`)
-    console.log(`🌐 局域网访问: https://192.168.31.84:${port}`)
-    console.log(`\n📋 测试步骤:`)
-    console.log(`1. 在浏览器访问上述地址`)
-    console.log(`2. 接受自签名证书警告`)
-    console.log(`3. 测试应用功能`)
-    console.log(`\n⚠️  注意: 首次访问需要接受自签名SSL证书警告`)
-  })
+    .once('error', (err) => {
+      console.error(err)
+      process.exit(1)
+    })
+    .listen(port, () => {
+      console.log(`\n🎉 HTTPS服务器启动成功!`)
+      console.log(`📱 本地访问: https://localhost:${port}`)
+      console.log(`🌐 局域网访问: https://192.168.31.84:${port}`)
+      console.log(`\n📋 测试步骤:`)
+      console.log(`1. 在浏览器访问上述地址`)
+      console.log(`2. 接受自签名证书警告`)
+      console.log(`3. 测试应用功能`)
+      console.log(`\n⚠️  注意: 首次访问需要接受自签名SSL证书警告`)
+    })
 })

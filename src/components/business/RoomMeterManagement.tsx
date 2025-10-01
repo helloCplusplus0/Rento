@@ -2,9 +2,14 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { MeterList } from './MeterList'
+
+import type {
+  MeterWithReadingsForClient,
+  RoomMeterManagementProps,
+} from '@/types/meter'
+
 import { MeterFormDialog } from './MeterFormDialog'
-import type { RoomMeterManagementProps, MeterWithReadingsForClient } from '@/types/meter'
+import { MeterList } from './MeterList'
 
 /**
  * 房间仪表管理组件
@@ -14,10 +19,12 @@ export function RoomMeterManagement({
   roomId,
   meters,
   onMeterUpdate,
-  loading = false
+  loading = false,
 }: RoomMeterManagementProps) {
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingMeter, setEditingMeter] = useState<MeterWithReadingsForClient | undefined>()
+  const [editingMeter, setEditingMeter] = useState<
+    MeterWithReadingsForClient | undefined
+  >()
 
   // 打开添加仪表表单
   const handleAddMeter = () => {
@@ -46,7 +53,7 @@ export function RoomMeterManagement({
   const handleDeleteMeter = async (meterId: string) => {
     try {
       const response = await fetch(`/api/meters/${meterId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       if (!response.ok) {
@@ -55,14 +62,14 @@ export function RoomMeterManagement({
       }
 
       const result = await response.json()
-      
+
       // 根据删除类型显示不同的成功消息
       if (result.action === 'soft_delete') {
         toast.success('仪表关联已移除，历史数据已保留')
       } else {
         toast.success('仪表移除成功')
       }
-      
+
       onMeterUpdate()
     } catch (error) {
       console.error('Failed to remove meter:', error)
@@ -71,12 +78,15 @@ export function RoomMeterManagement({
   }
 
   // 切换仪表状态
-  const handleToggleMeterStatus = async (meterId: string, newStatus: boolean) => {
+  const handleToggleMeterStatus = async (
+    meterId: string,
+    newStatus: boolean
+  ) => {
     try {
       const response = await fetch(`/api/meters/${meterId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: newStatus })
+        body: JSON.stringify({ isActive: newStatus }),
       })
 
       if (!response.ok) {
@@ -88,7 +98,9 @@ export function RoomMeterManagement({
       onMeterUpdate()
     } catch (error) {
       console.error('Failed to toggle meter status:', error)
-      toast.error(error instanceof Error ? error.message : '状态切换失败，请重试')
+      toast.error(
+        error instanceof Error ? error.message : '状态切换失败，请重试'
+      )
     }
   }
 
@@ -102,7 +114,7 @@ export function RoomMeterManagement({
         actions={{
           onEdit: handleEditMeter,
           onDelete: handleDeleteMeter,
-          onToggleStatus: handleToggleMeterStatus
+          onToggleStatus: handleToggleMeterStatus,
         }}
       />
 

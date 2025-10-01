@@ -2,9 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
+
+import type {
+  ContractWithDetailsForClient,
+  RenterWithContractsForClient,
+  RoomWithBuildingForClient,
+} from '@/types/database'
 import { ContractForm } from '@/components/business/ContractForm'
-import type { ContractWithDetailsForClient, RenterWithContractsForClient, RoomWithBuildingForClient } from '@/types/database'
+import { PageContainer } from '@/components/layout'
 
 interface EditContractPageProps {
   contract: ContractWithDetailsForClient
@@ -16,7 +21,11 @@ interface EditContractPageProps {
  * 编辑合同页面组件
  * 提供合同信息的编辑功能
  */
-export function EditContractPage({ contract, renters, availableRooms }: EditContractPageProps) {
+export function EditContractPage({
+  contract,
+  renters,
+  availableRooms,
+}: EditContractPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -63,12 +72,17 @@ export function EditContractPage({ contract, renters, availableRooms }: EditCont
     paymentMethod: contract.paymentMethod || '',
     paymentTiming: contract.paymentTiming || '',
     signedBy: contract.signedBy || '',
-    signedDate: contract.signedDate ? contract.signedDate.toISOString().split('T')[0] : '',
-    remarks: ''
+    signedDate: contract.signedDate
+      ? contract.signedDate.toISOString().split('T')[0]
+      : '',
+    remarks: '',
   }
 
   return (
-    <PageContainer title={`编辑合同 - ${contract.contractNumber}`} showBackButton>
+    <PageContainer
+      title={`编辑合同 - ${contract.contractNumber}`}
+      showBackButton
+    >
       <div className="pb-6">
         <ContractForm
           renters={renters}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
+
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 
 /**
  * API响应优化配置接口
@@ -35,7 +36,7 @@ export interface ApiPerformanceMetrics {
 
 /**
  * API响应优化器
- * 
+ *
  * 提供API响应的优化功能，包括：
  * - 数据压缩和清理
  * - 响应时间监控
@@ -54,7 +55,7 @@ export class ApiOptimizer {
     removeEmptyStrings: true,
     removeUndefinedValues: true,
     maxResponseSize: 1024 * 1024, // 1MB
-    enableTimingMonitor: true
+    enableTimingMonitor: true,
   }
 
   private constructor() {}
@@ -98,13 +99,13 @@ export class ApiOptimizer {
 
     if (Array.isArray(value)) {
       return value
-        .map(item => this.optimizeValue(item, config))
-        .filter(item => item !== undefined)
+        .map((item) => this.optimizeValue(item, config))
+        .filter((item) => item !== undefined)
     }
 
     if (value && typeof value === 'object' && value.constructor === Object) {
       const optimized: any = {}
-      
+
       for (const [key, val] of Object.entries(value)) {
         const optimizedVal = this.optimizeValue(val, config)
         if (optimizedVal !== undefined) {
@@ -145,7 +146,7 @@ export class ApiOptimizer {
       this.logger.logWarning('Large API response detected', {
         responseSize,
         maxSize: finalConfig.maxResponseSize,
-        endpoint: 'unknown'
+        endpoint: 'unknown',
       })
     }
 
@@ -154,7 +155,7 @@ export class ApiOptimizer {
       'Content-Type': 'application/json',
       'X-Response-Size': responseSize.toString(),
       'X-Optimized': 'true',
-      ...headers
+      ...headers,
     }
 
     if (cacheHit) {
@@ -163,7 +164,7 @@ export class ApiOptimizer {
 
     return NextResponse.json(optimizedData, {
       status,
-      headers: responseHeaders
+      headers: responseHeaders,
     })
   }
 
@@ -177,7 +178,7 @@ export class ApiOptimizer {
     return async (...args: T): Promise<NextResponse> => {
       const startTime = Date.now()
       const request = args[0] as NextRequest
-      
+
       try {
         const response = await handler(...args)
         const endTime = Date.now()
@@ -193,7 +194,7 @@ export class ApiOptimizer {
             statusCode: response.status,
             timestamp: new Date(),
             cacheHit: response.headers.get('X-Cache') === 'HIT',
-            optimizationApplied: response.headers.get('X-Optimized') === 'true'
+            optimizationApplied: response.headers.get('X-Optimized') === 'true',
           })
         }
 
@@ -214,7 +215,7 @@ export class ApiOptimizer {
           statusCode: 500,
           timestamp: new Date(),
           cacheHit: false,
-          optimizationApplied: false
+          optimizationApplied: false,
         })
 
         throw error
@@ -230,7 +231,9 @@ export class ApiOptimizer {
 
     // 限制指标数量
     if (this.performanceMetrics.length > this.maxMetricsSize) {
-      this.performanceMetrics = this.performanceMetrics.slice(-this.maxMetricsSize)
+      this.performanceMetrics = this.performanceMetrics.slice(
+        -this.maxMetricsSize
+      )
     }
 
     // 记录慢查询
@@ -238,7 +241,7 @@ export class ApiOptimizer {
       this.logger.logWarning('Slow API response detected', {
         endpoint: metrics.endpoint,
         responseTime: metrics.responseTime,
-        method: metrics.method
+        method: metrics.method,
       })
     }
   }
@@ -260,11 +263,14 @@ export class ApiOptimizer {
     slowRequests: number
     cacheHitRate: number
     optimizationRate: number
-    endpointStats: Record<string, {
-      count: number
-      averageTime: number
-      averageSize: number
-    }>
+    endpointStats: Record<
+      string,
+      {
+        count: number
+        averageTime: number
+        averageSize: number
+      }
+    >
   } {
     if (this.performanceMetrics.length === 0) {
       return {
@@ -273,47 +279,56 @@ export class ApiOptimizer {
         slowRequests: 0,
         cacheHitRate: 0,
         optimizationRate: 0,
-        endpointStats: {}
+        endpointStats: {},
       }
     }
 
     const totalRequests = this.performanceMetrics.length
-    const averageResponseTime = this.performanceMetrics.reduce(
-      (sum, metric) => sum + metric.responseTime, 0
-    ) / totalRequests
+    const averageResponseTime =
+      this.performanceMetrics.reduce(
+        (sum, metric) => sum + metric.responseTime,
+        0
+      ) / totalRequests
 
     const slowRequests = this.performanceMetrics.filter(
-      metric => metric.responseTime > 1000
+      (metric) => metric.responseTime > 1000
     ).length
 
     const cacheHits = this.performanceMetrics.filter(
-      metric => metric.cacheHit
+      (metric) => metric.cacheHit
     ).length
 
     const optimizedResponses = this.performanceMetrics.filter(
-      metric => metric.optimizationApplied
+      (metric) => metric.optimizationApplied
     ).length
 
     // 按端点统计
-    const endpointStats: Record<string, {
-      count: number
-      averageTime: number
-      averageSize: number
-    }> = {}
+    const endpointStats: Record<
+      string,
+      {
+        count: number
+        averageTime: number
+        averageSize: number
+      }
+    > = {}
 
-    this.performanceMetrics.forEach(metric => {
+    this.performanceMetrics.forEach((metric) => {
       if (!endpointStats[metric.endpoint]) {
         endpointStats[metric.endpoint] = {
           count: 0,
           averageTime: 0,
-          averageSize: 0
+          averageSize: 0,
         }
       }
 
       const stats = endpointStats[metric.endpoint]
       stats.count++
-      stats.averageTime = (stats.averageTime * (stats.count - 1) + metric.responseTime) / stats.count
-      stats.averageSize = (stats.averageSize * (stats.count - 1) + metric.responseSize) / stats.count
+      stats.averageTime =
+        (stats.averageTime * (stats.count - 1) + metric.responseTime) /
+        stats.count
+      stats.averageSize =
+        (stats.averageSize * (stats.count - 1) + metric.responseSize) /
+        stats.count
     })
 
     return {
@@ -322,7 +337,7 @@ export class ApiOptimizer {
       slowRequests,
       cacheHitRate: cacheHits / totalRequests,
       optimizationRate: optimizedResponses / totalRequests,
-      endpointStats
+      endpointStats,
     }
   }
 
@@ -371,7 +386,7 @@ export function withApiCache(
     const cached = cache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < ttl) {
       return ApiOptimizer.getInstance().createOptimizedResponse(cached.data, {
-        cacheHit: true
+        cacheHit: true,
       })
     }
 
@@ -382,11 +397,11 @@ export function withApiCache(
     // 存储到缓存
     cache.set(cacheKey, {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     })
 
     return ApiOptimizer.getInstance().createOptimizedResponse(data, {
-      status: response.status
+      status: response.status,
     })
   }
 }
@@ -401,17 +416,20 @@ export function withBatchOptimization(
 ) {
   const optimizer = ApiOptimizer.getInstance()
 
-  const optimizedHandlers: Record<string, (req: NextRequest) => Promise<NextResponse>> = {}
+  const optimizedHandlers: Record<
+    string,
+    (req: NextRequest) => Promise<NextResponse>
+  > = {}
 
   Object.entries(handlers).forEach(([endpoint, handler]) => {
     optimizedHandlers[endpoint] = optimizer.withPerformanceMonitoring(
       async (req: NextRequest) => {
         const response = await handler(req)
         const data = await response.json()
-        
+
         return optimizer.createOptimizedResponse(data, {
           status: response.status,
-          config
+          config,
         })
       },
       endpoint

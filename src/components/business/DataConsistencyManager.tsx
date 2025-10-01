@@ -1,14 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  RefreshCw,
+  Wrench,
+  XCircle,
+} from 'lucide-react'
+
+import { ErrorLogger, ErrorSeverity, ErrorType } from '@/lib/error-logger'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Wrench, Clock } from 'lucide-react'
+
 import { ErrorAlert, SimpleErrorAlert, SuccessAlert } from './ErrorAlert'
-import { ErrorLogger, ErrorType, ErrorSeverity } from '@/lib/error-logger'
 
 /**
  * 数据一致性管理组件
@@ -76,11 +91,11 @@ export function DataConsistencyManager() {
     setError(null)
     setSuccess(null)
     setRepairResult(null)
-    
+
     try {
       const response = await fetch('/api/data-consistency')
       const result = await response.json()
-      
+
       if (result.success) {
         setReport(result.data)
         setSuccess('数据一致性检查完成')
@@ -88,7 +103,7 @@ export function DataConsistencyManager() {
       } else {
         const errorMessage = result.details || result.error || '检查失败'
         setError(errorMessage)
-        
+
         // 记录错误日志
         const logger = ErrorLogger.getInstance()
         await logger.logError(
@@ -97,14 +112,14 @@ export function DataConsistencyManager() {
           `数据一致性检查失败: ${errorMessage}`,
           {
             module: 'DataConsistencyManager',
-            function: 'handleCheck'
+            function: 'handleCheck',
           }
         )
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '网络错误'
       setError(errorMessage)
-      
+
       // 记录错误日志
       const logger = ErrorLogger.getInstance()
       await logger.logError(
@@ -113,7 +128,7 @@ export function DataConsistencyManager() {
         `数据一致性检查异常: ${errorMessage}`,
         {
           module: 'DataConsistencyManager',
-          function: 'handleCheck'
+          function: 'handleCheck',
         },
         err instanceof Error ? err : undefined
       )
@@ -129,7 +144,7 @@ export function DataConsistencyManager() {
     setIsRepairing(true)
     setError(null)
     setSuccess(null)
-    
+
     try {
       const response = await fetch('/api/data-consistency', {
         method: 'POST',
@@ -139,14 +154,14 @@ export function DataConsistencyManager() {
           repairOptions: {
             dryRun: false,
             maxRepairs: 100,
-            skipCritical: false
+            skipCritical: false,
           },
-          performCheckFirst: issueIds.length === 0
-        })
+          performCheckFirst: issueIds.length === 0,
+        }),
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success) {
         setRepairResult(result.data)
         setSuccess(`数据修复完成，共修复 ${result.data.repairedIssues} 个问题`)
@@ -155,7 +170,7 @@ export function DataConsistencyManager() {
         setTimeout(() => handleCheck(), 1000)
       } else {
         setError(result.details || result.error || '修复失败')
-        
+
         // 记录错误日志
         const logger = ErrorLogger.getInstance()
         await logger.logError(
@@ -165,14 +180,14 @@ export function DataConsistencyManager() {
           {
             module: 'DataConsistencyManager',
             function: 'handleRepair',
-            issueIds
+            issueIds,
           }
         )
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '网络错误'
       setError(errorMessage)
-      
+
       // 记录错误日志
       const logger = ErrorLogger.getInstance()
       await logger.logError(
@@ -182,7 +197,7 @@ export function DataConsistencyManager() {
         {
           module: 'DataConsistencyManager',
           function: 'handleRepair',
-          issueIds
+          issueIds,
         },
         err instanceof Error ? err : undefined
       )
@@ -227,7 +242,7 @@ export function DataConsistencyManager() {
           onRetry={handleRetry}
         />
       )}
-      
+
       {/* 成功提示 */}
       {success && (
         <SuccessAlert
@@ -236,7 +251,7 @@ export function DataConsistencyManager() {
           onDismiss={handleDismissSuccess}
         />
       )}
-      
+
       {/* 操作区域 */}
       <Card>
         <CardHeader>
@@ -250,23 +265,27 @@ export function DataConsistencyManager() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <Button 
+            <Button
               onClick={handleCheck}
               disabled={isChecking || isRepairing}
               className="flex items-center gap-2"
             >
-              <RefreshCw className={`h-4 w-4 ${isChecking ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isChecking ? 'animate-spin' : ''}`}
+              />
               {isChecking ? '检查中...' : '执行检查'}
             </Button>
-            
+
             {report && report.issues.length > 0 && (
-              <Button 
+              <Button
                 onClick={() => handleRepair()}
                 disabled={isChecking || isRepairing}
                 variant="outline"
                 className="flex items-center gap-2"
               >
-                <Wrench className={`h-4 w-4 ${isRepairing ? 'animate-spin' : ''}`} />
+                <Wrench
+                  className={`h-4 w-4 ${isRepairing ? 'animate-spin' : ''}`}
+                />
                 {isRepairing ? '修复中...' : '修复所有问题'}
               </Button>
             )}
@@ -287,14 +306,17 @@ export function DataConsistencyManager() {
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            修复完成: 成功 {repairResult.repairedIssues} 个, 跳过 {repairResult.skippedIssues} 个, 
-            失败 {repairResult.failedIssues} 个 (耗时: {repairResult.executionTime}ms)
+            修复完成: 成功 {repairResult.repairedIssues} 个, 跳过{' '}
+            {repairResult.skippedIssues} 个, 失败 {repairResult.failedIssues} 个
+            (耗时: {repairResult.executionTime}ms)
             {repairResult.errors.length > 0 && (
               <div className="mt-2">
                 <strong>错误详情:</strong>
-                <ul className="list-disc list-inside mt-1">
+                <ul className="mt-1 list-inside list-disc">
                   {repairResult.errors.map((error, index) => (
-                    <li key={index} className="text-sm">{error.error}</li>
+                    <li key={index} className="text-sm">
+                      {error.error}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -314,13 +336,15 @@ export function DataConsistencyManager() {
 
           {/* 检查摘要 */}
           <TabsContent value="summary">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">总检查项</p>
-                      <p className="text-2xl font-bold">{report.summary.totalChecks}</p>
+                      <p className="text-muted-foreground text-sm">总检查项</p>
+                      <p className="text-2xl font-bold">
+                        {report.summary.totalChecks}
+                      </p>
                     </div>
                     <CheckCircle className="h-8 w-8 text-blue-500" />
                   </div>
@@ -331,8 +355,10 @@ export function DataConsistencyManager() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">通过检查</p>
-                      <p className="text-2xl font-bold text-green-600">{report.summary.passedChecks}</p>
+                      <p className="text-muted-foreground text-sm">通过检查</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {report.summary.passedChecks}
+                      </p>
                     </div>
                     <CheckCircle className="h-8 w-8 text-green-500" />
                   </div>
@@ -343,8 +369,10 @@ export function DataConsistencyManager() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">失败检查</p>
-                      <p className="text-2xl font-bold text-red-600">{report.summary.failedChecks}</p>
+                      <p className="text-muted-foreground text-sm">失败检查</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {report.summary.failedChecks}
+                      </p>
                     </div>
                     <XCircle className="h-8 w-8 text-red-500" />
                   </div>
@@ -355,10 +383,12 @@ export function DataConsistencyManager() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">总问题数</p>
+                      <p className="text-muted-foreground text-sm">总问题数</p>
                       <p className="text-2xl font-bold text-orange-600">
-                        {report.summary.criticalIssues + report.summary.highIssues + 
-                         report.summary.mediumIssues + report.summary.lowIssues}
+                        {report.summary.criticalIssues +
+                          report.summary.highIssues +
+                          report.summary.mediumIssues +
+                          report.summary.lowIssues}
                       </p>
                     </div>
                     <AlertTriangle className="h-8 w-8 text-orange-500" />
@@ -375,7 +405,10 @@ export function DataConsistencyManager() {
               <CardContent>
                 <div className="space-y-2">
                   {report.checks.map((check, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between rounded border p-3"
+                    >
                       <div className="flex items-center gap-3">
                         {check.passed ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
@@ -386,10 +419,12 @@ export function DataConsistencyManager() {
                       </div>
                       <div className="flex items-center gap-2">
                         {check.issueCount > 0 && (
-                          <Badge variant="destructive">{check.issueCount} 问题</Badge>
+                          <Badge variant="destructive">
+                            {check.issueCount} 问题
+                          </Badge>
                         )}
-                        <span className="text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4 inline mr-1" />
+                        <span className="text-muted-foreground text-sm">
+                          <Clock className="mr-1 inline h-4 w-4" />
                           {new Date(check.executedAt).toLocaleTimeString()}
                         </span>
                       </div>
@@ -411,8 +446,8 @@ export function DataConsistencyManager() {
               </CardHeader>
               <CardContent>
                 {report.issues.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                  <div className="text-muted-foreground py-8 text-center">
+                    <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500" />
                     <p>没有发现数据一致性问题</p>
                   </div>
                 ) : (
@@ -420,16 +455,21 @@ export function DataConsistencyManager() {
                     {report.issues.map((issue, index) => {
                       const severityInfo = getSeverityInfo(issue.severity)
                       const Icon = severityInfo.icon
-                      
+
                       return (
-                        <div key={index} className="border rounded p-4 space-y-2">
+                        <div
+                          key={index}
+                          className="space-y-2 rounded border p-4"
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
                               <Icon className="h-5 w-5" />
                               <Badge variant={severityInfo.color as any}>
                                 {severityInfo.label}
                               </Badge>
-                              <Badge variant="outline">{issue.entityType}</Badge>
+                              <Badge variant="outline">
+                                {issue.entityType}
+                              </Badge>
                             </div>
                             {issue.id && (
                               <Button
@@ -444,14 +484,18 @@ export function DataConsistencyManager() {
                               </Button>
                             )}
                           </div>
-                          
+
                           <p className="text-sm">{issue.description}</p>
-                          
-                          <div className="text-xs text-muted-foreground">
+
+                          <div className="text-muted-foreground text-xs">
                             <span>类型: {issue.type}</span>
-                            <span className="ml-4">建议修复: {issue.suggestedFix}</span>
+                            <span className="ml-4">
+                              建议修复: {issue.suggestedFix}
+                            </span>
                             {issue.entityId && (
-                              <span className="ml-4">实体ID: {issue.entityId}</span>
+                              <span className="ml-4">
+                                实体ID: {issue.entityId}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -479,7 +523,7 @@ export function DataConsistencyManager() {
                   <ul className="space-y-2">
                     {report.recommendations.map((recommendation, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 mt-0.5 text-orange-500 flex-shrink-0" />
+                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-500" />
                         <span className="text-sm">{recommendation}</span>
                       </li>
                     ))}

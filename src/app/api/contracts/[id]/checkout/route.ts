@@ -1,18 +1,24 @@
 import { NextRequest } from 'next/server'
-import { contractQueries, roomQueries, meterQueries, meterReadingQueries } from '@/lib/queries'
-import { prisma } from '@/lib/prisma'
-import { 
-  withApiErrorHandler, 
+
+import {
   createSuccessResponse,
   parseRequestBody,
-  validateRequired
+  validateRequired,
+  withApiErrorHandler,
 } from '@/lib/api-error-handler'
-import { ErrorType, ErrorLogger } from '@/lib/error-logger'
+import { ErrorLogger, ErrorType } from '@/lib/error-logger'
+import { prisma } from '@/lib/prisma'
+import {
+  contractQueries,
+  meterQueries,
+  meterReadingQueries,
+  roomQueries,
+} from '@/lib/queries'
 
 /**
  * 合同退租API
  * POST /api/contracts/[id]/checkout
- * 
+ *
  * 根据moving_out_rental_chart.md设计实现退租功能
  * 复用现有的合同和账单管理逻辑
  */
@@ -22,13 +28,13 @@ async function handleCheckoutContract(
 ) {
   const { id: contractId } = await params
   const body = await parseRequestBody(request)
-  
+
   const {
     checkoutDate,
     checkoutReason,
     damageAssessment = 0,
     finalMeterReadings = {},
-    remarks
+    remarks,
   } = body
 
   // 基础字段验证
@@ -38,7 +44,7 @@ async function handleCheckoutContract(
   const checkoutDateObj = new Date(checkoutDate)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  
+
   if (checkoutDateObj < today) {
     throw new Error('退租日期不能早于当前日期')
   }
@@ -51,7 +57,7 @@ async function handleCheckoutContract(
   // 开始数据库事务
   return await prisma.$transaction(async (tx) => {
     const logger = ErrorLogger.getInstance()
-    
+
     // 记录退租操作开始
     logger.logInfo('退租操作开始', {
       module: 'checkout-contract-api',
@@ -60,7 +66,7 @@ async function handleCheckoutContract(
       checkoutDate: checkoutDateObj.toISOString(),
       checkoutReason,
       damageAssessment,
-      hasFinalMeterReadings: Object.keys(finalMeterReadings).length > 0
+      hasFinalMeterReadings: Object.keys(finalMeterReadings).length > 0,
     })
     // 1. 查询合同详情
     const contract = await tx.contract.findUnique({
@@ -70,10 +76,10 @@ async function handleCheckoutContract(
         renter: true,
         bills: {
           where: {
-            status: { in: ['PENDING', 'OVERDUE'] }
-          }
-        }
-      }
+            status: { in: ['PENDING', 'OVERDUE'] },
+          },
+        },
+      },
     })
 
     if (!contract) {
@@ -116,8 +122,8 @@ async function handleCheckoutContract(
           period: `退租结算-${checkoutDateObj.toISOString().split('T')[0]}`,
           status: 'PENDING',
           contractId: contractId,
-          remarks: `退租结算：${settlementResult.description}`
-        }
+          remarks: `退租结算：${settlementResult.description}`,
+        },
       })
     } else if (settlementResult.additionalAmount > 0) {
       // 生成补缴账单
@@ -132,21 +138,21 @@ async function handleCheckoutContract(
           period: `退租结算-${checkoutDateObj.toISOString().split('T')[0]}`,
           status: 'PENDING',
           contractId: contractId,
-          remarks: `退租结算：${settlementResult.description}`
-        }
+          remarks: `退租结算：${settlementResult.description}`,
+        },
       })
     }
 
     // 4.5. 自动结清所有未付账单
     // 退租时一次性结清所有权利和义务，将未付账单标记为已支付
     console.log(`[退租] 开始处理未付账单结清，合同ID: ${contractId}`)
-    
+
     // 获取所有未付账单（不依赖contract.bills，直接查询数据库）
     const unpaidBills = await tx.bill.findMany({
       where: {
         contractId: contractId,
-        status: { in: ['PENDING', 'OVERDUE'] }
-      }
+        status: { in: ['PENDING', 'OVERDUE'] },
+      },
     })
 
     console.log(`[退租] 发现${unpaidBills.length}个未付账单需要结清`)
@@ -163,8 +169,8 @@ async function handleCheckoutContract(
           paidDate: checkoutDateObj,
           paymentMethod: '退租结算',
           operator: '系统自动',
-          remarks: '退租时自动结清'
-        }
+          remarks: '退租时自动结清',
+        },
       })
     }
 
@@ -177,10 +183,10 @@ async function handleCheckoutContract(
         status: 'TERMINATED',
         businessStatus: 'CHECKED_OUT',
         updatedAt: new Date(),
-        remarks: remarks ? 
-          `${contract.remarks || ''}\n\n[退租记录 ${checkoutDateObj.toISOString().split('T')[0]}]\n退租原因: ${checkoutReason}\n${remarks}` :
-          `${contract.remarks || ''}\n\n[退租记录 ${checkoutDateObj.toISOString().split('T')[0]}]\n退租原因: ${checkoutReason}`
-      }
+        remarks: remarks
+          ? `${contract.remarks || ''}\n\n[退租记录 ${checkoutDateObj.toISOString().split('T')[0]}]\n退租原因: ${checkoutReason}\n${remarks}`
+          : `${contract.remarks || ''}\n\n[退租记录 ${checkoutDateObj.toISOString().split('T')[0]}]\n退租原因: ${checkoutReason}`,
+      },
     })
 
     // 6. 更新房间状态
@@ -190,25 +196,25 @@ async function handleCheckoutContract(
         status: 'VACANT',
         currentRenter: null,
         overdueDays: null,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     })
 
     // 7. 处理水电表状态和最终读数
     const roomMeters = await tx.meter.findMany({
-      where: { roomId: contract.roomId, isActive: true }
+      where: { roomId: contract.roomId, isActive: true },
     })
 
     const meterProcessingResults = []
     for (const meter of roomMeters) {
       const meterTypeKey = meter.meterType.toLowerCase()
       const finalReading = finalMeterReadings[meterTypeKey]
-      
+
       if (finalReading && finalReading > 0) {
         // 获取最新抄表记录
         const latestReading = await tx.meterReading.findFirst({
           where: { meterId: meter.id },
-          orderBy: { readingDate: 'desc' }
+          orderBy: { readingDate: 'desc' },
         })
 
         const previousReading = latestReading?.currentReading || 0
@@ -229,8 +235,8 @@ async function handleCheckoutContract(
             amount: amount,
             status: 'CONFIRMED',
             operator: '退租结算',
-            remarks: '退租时最终读数'
-          }
+            remarks: '退租时最终读数',
+          },
         })
 
         // 如果有用量，生成水电费账单
@@ -248,8 +254,8 @@ async function handleCheckoutContract(
               contractId: contractId,
               paymentMethod: '退租结算',
               operator: '系统自动',
-              remarks: `退租时${meter.displayName}用量结算：${usage}${meter.unit}`
-            }
+              remarks: `退租时${meter.displayName}用量结算：${usage}${meter.unit}`,
+            },
           })
         }
 
@@ -261,7 +267,7 @@ async function handleCheckoutContract(
           finalReading: finalReading,
           usage: usage,
           amount: amount,
-          readingId: finalMeterReading.id
+          readingId: finalMeterReading.id,
         })
       }
     }
@@ -271,8 +277,8 @@ async function handleCheckoutContract(
       where: { id: contract.renterId },
       data: {
         updatedAt: new Date(),
-        remarks: `${contract.renter.remarks || ''}\n[退租记录 ${checkoutDateObj.toISOString().split('T')[0]}] 合同${contract.contractNumber}正常退租`
-      }
+        remarks: `${contract.renter.remarks || ''}\n[退租记录 ${checkoutDateObj.toISOString().split('T')[0]}] 合同${contract.contractNumber}正常退租`,
+      },
     })
 
     // 9. 记录完整的退租操作日志
@@ -285,31 +291,44 @@ async function handleCheckoutContract(
         roomStatus: { from: 'OCCUPIED', to: 'VACANT' },
         billsProcessed: contract.bills.length,
         metersProcessed: meterProcessingResults.length,
-        totalMeterUsage: meterProcessingResults.reduce((sum, m) => sum + m.usage, 0),
-        totalMeterAmount: meterProcessingResults.reduce((sum, m) => sum + m.amount, 0),
-        settlementAmount: settlementResult.refundAmount || settlementResult.additionalAmount || 0,
-        settlementType: settlementResult.refundAmount > 0 ? 'REFUND' : 
-                       settlementResult.additionalAmount > 0 ? 'CHARGE' : 'BALANCED'
+        totalMeterUsage: meterProcessingResults.reduce(
+          (sum, m) => sum + m.usage,
+          0
+        ),
+        totalMeterAmount: meterProcessingResults.reduce(
+          (sum, m) => sum + m.amount,
+          0
+        ),
+        settlementAmount:
+          settlementResult.refundAmount ||
+          settlementResult.additionalAmount ||
+          0,
+        settlementType:
+          settlementResult.refundAmount > 0
+            ? 'REFUND'
+            : settlementResult.additionalAmount > 0
+              ? 'CHARGE'
+              : 'BALANCED',
       },
       affectedEntities: {
         contract: { id: contractId, status: 'TERMINATED' },
         room: { id: contract.roomId, status: 'VACANT' },
         renter: { id: contract.renterId, name: contract.renter.name },
-        bills: contract.bills.map(b => ({ id: b.id, status: 'PAID' })),
-        meters: meterProcessingResults.map(m => ({ 
-          id: m.meterId, 
-          type: m.meterType, 
+        bills: contract.bills.map((b) => ({ id: b.id, status: 'PAID' })),
+        meters: meterProcessingResults.map((m) => ({
+          id: m.meterId,
+          type: m.meterType,
           finalReading: m.finalReading,
           usage: m.usage,
-          amount: m.amount
-        }))
-      }
+          amount: m.amount,
+        })),
+      },
     })
 
     return {
       contract: updatedContract,
       settlement: settlementResult,
-      meterProcessing: meterProcessingResults
+      meterProcessing: meterProcessingResults,
     }
   })
 }
@@ -328,25 +347,31 @@ function calculateCheckoutSettlement(
   const deposit = Number(contract.deposit)
 
   // 计算实际居住天数
-  const actualDays = Math.ceil((checkoutDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-  
+  const actualDays =
+    Math.ceil(
+      (checkoutDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    ) + 1
+
   // 计算合同总天数
-  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-  
+  const totalDays =
+    Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    ) + 1
+
   // 计算应付租金（按日计算）
   const dailyRent = monthlyRent / 30 // 简化计算，按30天/月
   const shouldPayRent = Math.round(actualDays * dailyRent * 100) / 100
-  
+
   // 计算已付租金（从totalRent推算）
   const totalRent = Number(contract.totalRent)
   const paidRent = totalRent
-  
+
   // 计算租金差额
   const rentDifference = paidRent - shouldPayRent
-  
+
   // 计算押金退还（扣除损坏赔偿）
   const depositRefund = Math.max(0, deposit - damageAssessment)
-  
+
   // 计算最终结算
   let refundAmount = 0
   let additionalAmount = 0
@@ -393,7 +418,7 @@ function calculateCheckoutSettlement(
     refundAmount,
     additionalAmount,
     damageAssessment,
-    description
+    description,
   }
 }
 
@@ -406,14 +431,17 @@ async function handleCheckoutContractWithSettlement(
 ) {
   const logger = ErrorLogger.getInstance()
   const contractId = (await params).id
-  
+
   try {
     // 执行退租事务
     const result = await handleCheckoutContract(request, { params })
-    
+
     // 计算详细结算明细
-    const settlement = calculateDetailedSettlement(result.contract, result.settlement)
-    
+    const settlement = calculateDetailedSettlement(
+      result.contract,
+      result.settlement
+    )
+
     // 记录退租成功日志
     logger.logInfo('退租流程成功完成', {
       module: 'checkout-contract-api',
@@ -424,24 +452,31 @@ async function handleCheckoutContractWithSettlement(
         settlementCalculated: true,
         meterReadingsProcessed: result.meterProcessing?.length || 0,
         totalSettlementAmount: settlement.summary?.netAmount || 0,
-        settlementType: settlement.summary?.settlementType || 'BALANCED'
-      }
-    })
-    
-    // 返回退租成功信息
-    return createSuccessResponse({
-      contractId,
-      contract: {
-        ...result.contract,
-        monthlyRent: Number(result.contract.monthlyRent),
-        totalRent: Number(result.contract.totalRent),
-        deposit: Number(result.contract.deposit),
-        keyDeposit: result.contract.keyDeposit ? Number(result.contract.keyDeposit) : null,
-        cleaningFee: result.contract.cleaningFee ? Number(result.contract.cleaningFee) : null
+        settlementType: settlement.summary?.settlementType || 'BALANCED',
       },
-      settlement,
-      meterProcessing: result.meterProcessing
-    }, '退租成功')
+    })
+
+    // 返回退租成功信息
+    return createSuccessResponse(
+      {
+        contractId,
+        contract: {
+          ...result.contract,
+          monthlyRent: Number(result.contract.monthlyRent),
+          totalRent: Number(result.contract.totalRent),
+          deposit: Number(result.contract.deposit),
+          keyDeposit: result.contract.keyDeposit
+            ? Number(result.contract.keyDeposit)
+            : null,
+          cleaningFee: result.contract.cleaningFee
+            ? Number(result.contract.cleaningFee)
+            : null,
+        },
+        settlement,
+        meterProcessing: result.meterProcessing,
+      },
+      '退租成功'
+    )
   } catch (error) {
     // 记录退租失败日志
     await logger.logError(
@@ -452,15 +487,18 @@ async function handleCheckoutContractWithSettlement(
         module: 'checkout-contract-api',
         function: 'handleCheckoutContractWithSettlement',
         contractId,
-        error: error instanceof Error ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        } : error
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
       },
       error instanceof Error ? error : undefined
     )
-    
+
     throw error
   }
 }
@@ -470,32 +508,47 @@ async function handleCheckoutContractWithSettlement(
  */
 function calculateDetailedSettlement(contract: any, basicSettlement: any) {
   const keyDepositRefund = contract.keyDeposit ? Number(contract.keyDeposit) : 0
-  
+
   return {
     refundItems: {
       rentRefund: Math.max(0, basicSettlement.rentDifference),
       depositRefund: basicSettlement.depositRefund,
       keyDepositRefund,
-      subtotal: Math.max(0, basicSettlement.rentDifference) + basicSettlement.depositRefund + keyDepositRefund
+      subtotal:
+        Math.max(0, basicSettlement.rentDifference) +
+        basicSettlement.depositRefund +
+        keyDepositRefund,
     },
     chargeItems: {
       rentCharge: Math.max(0, -basicSettlement.rentDifference),
       damageCharge: basicSettlement.damageAssessment || 0,
       cleaningCharge: 0,
-      subtotal: Math.max(0, -basicSettlement.rentDifference) + (basicSettlement.damageAssessment || 0)
+      subtotal:
+        Math.max(0, -basicSettlement.rentDifference) +
+        (basicSettlement.damageAssessment || 0),
     },
     summary: {
-      totalRefund: Math.max(0, basicSettlement.rentDifference) + basicSettlement.depositRefund + keyDepositRefund,
-      totalCharge: Math.max(0, -basicSettlement.rentDifference) + (basicSettlement.damageAssessment || 0),
-      netAmount: basicSettlement.refundAmount - basicSettlement.additionalAmount,
-      settlementType: basicSettlement.refundAmount > basicSettlement.additionalAmount ? 'REFUND' : 
-                     basicSettlement.refundAmount < basicSettlement.additionalAmount ? 'CHARGE' : 'BALANCED'
-    }
+      totalRefund:
+        Math.max(0, basicSettlement.rentDifference) +
+        basicSettlement.depositRefund +
+        keyDepositRefund,
+      totalCharge:
+        Math.max(0, -basicSettlement.rentDifference) +
+        (basicSettlement.damageAssessment || 0),
+      netAmount:
+        basicSettlement.refundAmount - basicSettlement.additionalAmount,
+      settlementType:
+        basicSettlement.refundAmount > basicSettlement.additionalAmount
+          ? 'REFUND'
+          : basicSettlement.refundAmount < basicSettlement.additionalAmount
+            ? 'CHARGE'
+            : 'BALANCED',
+    },
   }
 }
 
 export const POST = withApiErrorHandler(handleCheckoutContractWithSettlement, {
   module: 'checkout-contract-api',
   errorType: ErrorType.VALIDATION_ERROR,
-  enableFallback: true
+  enableFallback: true,
 })

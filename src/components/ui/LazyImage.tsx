@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
-import { useLazyImage, type LazyImageOptions } from '@/hooks/useLazyImage'
+
 import { cn } from '@/lib/utils'
+import { useLazyImage, type LazyImageOptions } from '@/hooks/useLazyImage'
 
 /**
  * 懒加载图片组件属性接口
@@ -38,17 +39,17 @@ export interface LazyImageProps extends LazyImageOptions {
 
 /**
  * 懒加载图片组件
- * 
+ *
  * 基于useLazyImage Hook实现的图片懒加载组件，
  * 提供完整的加载状态管理和用户体验优化。
- * 
+ *
  * 特性：
  * - 自动懒加载，进入视口时才加载
  * - 占位符和加载状态显示
  * - 加载失败处理和重试
  * - 淡入动画效果
  * - 响应式设计支持
- * 
+ *
  * @example
  * ```tsx
  * <LazyImage
@@ -86,25 +87,19 @@ export function LazyImage({
   preloadDistance = 150,
   ...options
 }: LazyImageProps) {
-  const {
-    imageSrc,
-    isLoaded,
-    isError,
-    isLoading,
-    imgRef,
-    reload
-  } = useLazyImage(src, {
-    placeholder,
-    threshold,
-    rootMargin,
-    enableFadeIn,
-    retryCount,
-    retryDelay,
-    enableSmartPreload,
-    enablePriorityLoading,
-    preloadDistance,
-    ...options
-  })
+  const { imageSrc, isLoaded, isError, isLoading, imgRef, reload } =
+    useLazyImage(src, {
+      placeholder,
+      threshold,
+      rootMargin,
+      enableFadeIn,
+      retryCount,
+      retryDelay,
+      enableSmartPreload,
+      enablePriorityLoading,
+      preloadDistance,
+      ...options,
+    })
 
   // 处理加载完成
   React.useEffect(() => {
@@ -135,7 +130,7 @@ export function LazyImage({
           {
             'opacity-100': isLoaded,
             'opacity-0': !isLoaded && enableFadeIn,
-            'cursor-pointer': onClick
+            'cursor-pointer': onClick,
           },
           className
         )}
@@ -149,7 +144,7 @@ export function LazyImage({
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           {loadingIndicator || (
             <div className="flex flex-col items-center space-y-2">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
               <span className="text-sm text-gray-500">加载中...</span>
             </div>
           )}
@@ -161,7 +156,7 @@ export function LazyImage({
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           {errorIndicator || (
             <div className="flex flex-col items-center space-y-2 p-4">
-              <div className="w-12 h-12 text-gray-400">
+              <div className="h-12 w-12 text-gray-400">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -171,13 +166,15 @@ export function LazyImage({
                   />
                 </svg>
               </div>
-              <span className="text-sm text-gray-500 text-center">加载失败</span>
+              <span className="text-center text-sm text-gray-500">
+                加载失败
+              </span>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   reload()
                 }}
-                className="text-xs text-blue-500 hover:text-blue-600 underline"
+                className="text-xs text-blue-500 underline hover:text-blue-600"
               >
                 重试
               </button>
@@ -188,7 +185,7 @@ export function LazyImage({
 
       {/* 占位符背景（当没有占位符图片时） */}
       {!isLoaded && !isError && !placeholder && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+        <div className="absolute inset-0 animate-pulse bg-gray-200" />
       )}
     </div>
   )
@@ -213,14 +210,11 @@ export function LazyAvatar({
       src={src}
       alt={alt}
       placeholder={props.placeholder || '/default-avatar.svg'}
-      className={cn(
-        'rounded-full object-cover',
-        className
-      )}
+      className={cn('rounded-full object-cover', className)}
       style={{
         width: size,
         height: size,
-        ...props.style
+        ...props.style,
       }}
       {...props}
     />
@@ -249,13 +243,13 @@ export function LazyThumbnail({
       alt={alt}
       placeholder={props.placeholder || '/placeholder-thumbnail.svg'}
       className={cn(
-        'rounded-lg object-cover border border-gray-200',
+        'rounded-lg border border-gray-200 object-cover',
         className
       )}
       style={{
         width,
         height,
-        ...props.style
+        ...props.style,
       }}
       {...props}
     />
@@ -289,15 +283,15 @@ export function LazyBackgroundImage({
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        ...style
+        ...style,
       }}
     >
       {!isLoaded && !isError && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+        <div className="absolute inset-0 animate-pulse bg-gray-200" />
       )}
       {isError && (
-        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">背景加载失败</span>
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <span className="text-sm text-gray-400">背景加载失败</span>
         </div>
       )}
       {children}

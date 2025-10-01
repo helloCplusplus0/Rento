@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
+
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
 
 interface DataColumn<T = any> {
   key: keyof T
@@ -46,7 +47,7 @@ export function DataList<T extends Record<string, any>>({
   filters = [],
   pageSize = 10,
   onRowClick,
-  className
+  className,
 }: DataListProps<T>) {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
@@ -62,8 +63,8 @@ export function DataList<T extends Record<string, any>>({
 
     // 搜索过滤
     if (searchTerm) {
-      result = result.filter(item =>
-        Object.values(item).some(value =>
+      result = result.filter((item) =>
+        Object.values(item).some((value) =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       )
@@ -72,7 +73,7 @@ export function DataList<T extends Record<string, any>>({
     // 筛选器过滤
     Object.entries(activeFilters).forEach(([key, value]) => {
       if (value) {
-        result = result.filter(item => String(item[key]) === value)
+        result = result.filter((item) => String(item[key]) === value)
       }
     })
 
@@ -81,7 +82,7 @@ export function DataList<T extends Record<string, any>>({
       result.sort((a, b) => {
         const aValue = a[sortConfig.key!]
         const bValue = b[sortConfig.key!]
-        
+
         if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1
         }
@@ -113,19 +114,19 @@ export function DataList<T extends Record<string, any>>({
   }
 
   const handleSort = (key: keyof T) => {
-    const column = columns.find(col => col.key === key)
+    const column = columns.find((col) => col.key === key)
     if (!column?.sortable) return
 
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
     }))
   }
 
   const handleFilterChange = (filterKey: string, value: string) => {
-    setActiveFilters(prev => ({
+    setActiveFilters((prev) => ({
       ...prev,
-      [filterKey]: value
+      [filterKey]: value,
     }))
     setCurrentPage(1) // 重置到第一页
   }
@@ -141,11 +142,11 @@ export function DataList<T extends Record<string, any>>({
       {(title || searchable || filters.length > 0) && (
         <CardHeader className="pb-4">
           {title && <CardTitle>{title}</CardTitle>}
-          
+
           {/* 搜索和筛选区域 */}
           <div className="space-y-4">
             {searchable && (
-              <div className="flex-1 max-w-sm">
+              <div className="max-w-sm flex-1">
                 <Input
                   placeholder={searchPlaceholder}
                   value={searchTerm}
@@ -157,24 +158,29 @@ export function DataList<T extends Record<string, any>>({
                 />
               </div>
             )}
-            
+
             {filters.length > 0 && (
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2">
-                  {filters.map(filter => (
+                  {filters.map((filter) => (
                     <FilterSelect
                       key={filter.key}
                       filter={filter}
                       value={activeFilters[filter.key] || ''}
-                      onChange={(value) => handleFilterChange(filter.key, value)}
+                      onChange={(value) =>
+                        handleFilterChange(filter.key, value)
+                      }
                       data={data}
                     />
                   ))}
                 </div>
-                
-                {(Object.values(activeFilters).some(v => v) || searchTerm) && (
+
+                {(Object.values(activeFilters).some((v) => v) ||
+                  searchTerm) && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">已筛选:</span>
+                    <span className="text-muted-foreground text-sm">
+                      已筛选:
+                    </span>
                     {searchTerm && (
                       <Badge variant="secondary" className="text-xs">
                         搜索: {searchTerm}
@@ -182,9 +188,13 @@ export function DataList<T extends Record<string, any>>({
                     )}
                     {Object.entries(activeFilters).map(([key, value]) => {
                       if (!value) return null
-                      const filter = filters.find(f => f.key === key)
+                      const filter = filters.find((f) => f.key === key)
                       return (
-                        <Badge key={key} variant="secondary" className="text-xs">
+                        <Badge
+                          key={key}
+                          variant="secondary"
+                          className="text-xs"
+                        >
                           {filter?.label}: {value}
                         </Badge>
                       )
@@ -204,43 +214,55 @@ export function DataList<T extends Record<string, any>>({
           </div>
         </CardHeader>
       )}
-      
+
       <CardContent className="p-0">
         {/* 数据统计 */}
-        <div className="px-6 py-3 bg-muted/50 text-sm text-muted-foreground">
+        <div className="bg-muted/50 text-muted-foreground px-6 py-3 text-sm">
           共 {filteredData.length} 条记录
-          {filteredData.length !== data.length && ` (从 ${data.length} 条中筛选)`}
+          {filteredData.length !== data.length &&
+            ` (从 ${data.length} 条中筛选)`}
         </div>
-        
+
         {/* 表格头部 */}
-        <div className="px-6 py-3 bg-muted/30 border-b">
-          <div className="grid gap-4" style={{ gridTemplateColumns: getGridTemplate() }}>
-            {columns.map(column => (
+        <div className="bg-muted/30 border-b px-6 py-3">
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: getGridTemplate() }}
+          >
+            {columns.map((column) => (
               <div
                 key={String(column.key)}
                 className={cn(
                   'flex items-center justify-between',
-                  column.sortable && 'cursor-pointer hover:text-foreground'
+                  column.sortable && 'hover:text-foreground cursor-pointer'
                 )}
                 onClick={() => column.sortable && handleSort(column.key)}
               >
-                <span className="font-medium text-sm">{column.title}</span>
+                <span className="text-sm font-medium">{column.title}</span>
                 {column.sortable && (
-                  <div className="flex items-center ml-2">
-                    <span className={cn(
-                      'text-xs transition-colors',
-                      sortConfig.key === column.key 
-                        ? sortConfig.direction === 'asc' ? 'text-primary' : 'text-muted-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}>
+                  <div className="ml-2 flex items-center">
+                    <span
+                      className={cn(
+                        'text-xs transition-colors',
+                        sortConfig.key === column.key
+                          ? sortConfig.direction === 'asc'
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
                       ↑
                     </span>
-                    <span className={cn(
-                      'text-xs transition-colors ml-0.5',
-                      sortConfig.key === column.key 
-                        ? sortConfig.direction === 'desc' ? 'text-primary' : 'text-muted-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}>
+                    <span
+                      className={cn(
+                        'ml-0.5 text-xs transition-colors',
+                        sortConfig.key === column.key
+                          ? sortConfig.direction === 'desc'
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
                       ↓
                     </span>
                   </div>
@@ -249,11 +271,11 @@ export function DataList<T extends Record<string, any>>({
             ))}
           </div>
         </div>
-        
+
         {/* 数据行 */}
         <div className="divide-y">
           {paginatedData.length === 0 ? (
-            <div className="px-6 py-8 text-center text-muted-foreground">
+            <div className="text-muted-foreground px-6 py-8 text-center">
               暂无数据
             </div>
           ) : (
@@ -261,21 +283,23 @@ export function DataList<T extends Record<string, any>>({
               <div
                 key={index}
                 className={cn(
-                  'px-6 py-4 hover:bg-muted/50 transition-colors',
+                  'hover:bg-muted/50 px-6 py-4 transition-colors',
                   onRowClick && 'cursor-pointer'
                 )}
                 onClick={() => onRowClick?.(record)}
               >
-                <div className="grid gap-4" style={{ gridTemplateColumns: getGridTemplate() }}>
-                  {columns.map(column => (
+                <div
+                  className="grid gap-4"
+                  style={{ gridTemplateColumns: getGridTemplate() }}
+                >
+                  {columns.map((column) => (
                     <div
                       key={String(column.key)}
                       className="flex items-center text-sm"
                     >
                       {column.render
                         ? column.render(record[column.key], record)
-                        : String(record[column.key] || '-')
-                      }
+                        : String(record[column.key] || '-')}
                     </div>
                   ))}
                 </div>
@@ -283,20 +307,22 @@ export function DataList<T extends Record<string, any>>({
             ))
           )}
         </div>
-        
+
         {/* 分页 */}
         {totalPages > 1 && (
           <>
             <Separator />
             <div className="flex items-center justify-between px-6 py-4">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 第 {currentPage} 页，共 {totalPages} 页
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   上一页
@@ -304,7 +330,9 @@ export function DataList<T extends Record<string, any>>({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   下一页
@@ -325,7 +353,7 @@ function FilterSelect<T>({
   filter,
   value,
   onChange,
-  data
+  data,
 }: {
   filter: FilterOption
   value: string
@@ -334,7 +362,9 @@ function FilterSelect<T>({
 }) {
   // 从数据中提取唯一值作为选项
   const options = useMemo(() => {
-    const uniqueValues = [...new Set(data.map(item => String(item[filter.key as keyof T])))]
+    const uniqueValues = [
+      ...new Set(data.map((item) => String(item[filter.key as keyof T]))),
+    ]
     return uniqueValues.filter(Boolean).sort()
   }, [data, filter.key])
 
@@ -343,12 +373,12 @@ function FilterSelect<T>({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        'h-8 px-2 text-xs border rounded bg-background',
-        'focus:outline-none focus:ring-2 focus:ring-ring'
+        'bg-background h-8 rounded border px-2 text-xs',
+        'focus:ring-ring focus:ring-2 focus:outline-none'
       )}
     >
       <option value="">全部{filter.label}</option>
-      {options.map(option => (
+      {options.map((option) => (
         <option key={option} value={option}>
           {option}
         </option>
@@ -362,7 +392,7 @@ function FilterSelect<T>({
  */
 export function DataListSkeleton({
   rows = 5,
-  columns = 4
+  columns = 4,
 }: {
   rows?: number
   columns?: number
@@ -370,18 +400,25 @@ export function DataListSkeleton({
   return (
     <Card>
       <CardHeader>
-        <div className="h-6 bg-gray-200 rounded w-32 animate-pulse" />
-        <div className="h-10 bg-gray-200 rounded animate-pulse" />
+        <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
+        <div className="h-10 animate-pulse rounded bg-gray-200" />
       </CardHeader>
       <CardContent className="p-0">
-        <div className="px-6 py-3 bg-muted/50">
-          <div className="h-4 bg-gray-200 rounded w-24 animate-pulse" />
+        <div className="bg-muted/50 px-6 py-3">
+          <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
         </div>
         <div className="divide-y">
           {Array.from({ length: rows }).map((_, i) => (
-            <div key={i} className="grid gap-4 px-6 py-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+            <div
+              key={i}
+              className="grid gap-4 px-6 py-4"
+              style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+            >
               {Array.from({ length: columns }).map((_, j) => (
-                <div key={j} className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div
+                  key={j}
+                  className="h-4 animate-pulse rounded bg-gray-200"
+                />
               ))}
             </div>
           ))}

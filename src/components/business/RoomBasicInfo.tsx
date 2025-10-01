@@ -1,7 +1,7 @@
+import type { RoomWithBuildingForClient } from '@/types/database'
+import { formatDate } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoomStatusBadge } from '@/components/ui/status-badge'
-import { formatDate } from '@/lib/format'
-import type { RoomWithBuildingForClient } from '@/types/database'
 
 interface RoomBasicInfoProps {
   room: RoomWithBuildingForClient
@@ -37,57 +37,63 @@ export function RoomBasicInfo({ room }: RoomBasicInfoProps) {
         {/* 移动端优化：使用2列网格布局，减少空白 */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           <div>
-            <label className="text-sm text-muted-foreground">房间号</label>
-            <p className="font-medium text-lg">{room.roomNumber}</p>
+            <label className="text-muted-foreground text-sm">房间号</label>
+            <p className="text-lg font-medium">{room.roomNumber}</p>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground">楼栋</label>
+            <label className="text-muted-foreground text-sm">楼栋</label>
             <p className="font-medium">{room.building.name}</p>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground">楼层</label>
+            <label className="text-muted-foreground text-sm">楼层</label>
             <p className="font-medium">{room.floorNumber}层</p>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground">房间类型</label>
+            <label className="text-muted-foreground text-sm">房间类型</label>
             <p className="font-medium">{getRoomTypeText(room.roomType)}</p>
           </div>
           {room.area && (
             <div className="col-span-1">
-              <label className="text-sm text-muted-foreground">面积</label>
+              <label className="text-muted-foreground text-sm">面积</label>
               <p className="font-medium">{room.area}㎡</p>
             </div>
           )}
         </div>
-        
+
         {/* 楼栋地址信息 */}
         {room.building.address && (
-          <div className="pt-4 border-t">
-            <label className="text-sm text-muted-foreground">楼栋地址</label>
+          <div className="border-t pt-4">
+            <label className="text-muted-foreground text-sm">楼栋地址</label>
             <p className="font-medium">{room.building.address}</p>
           </div>
         )}
-        
+
         {/* 当前租客信息 */}
         {room.currentRenter && (
-          <div className="pt-4 border-t">
+          <div className="border-t pt-4">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm text-muted-foreground">当前租客</label>
+                <label className="text-muted-foreground text-sm">
+                  当前租客
+                </label>
                 <p className="font-medium">{room.currentRenter}</p>
               </div>
               {room.overdueDays && room.overdueDays > 0 && (
                 <div className="text-right">
-                  <label className="text-sm text-muted-foreground">逾期天数</label>
-                  <p className="font-medium text-red-600">{room.overdueDays}天</p>
+                  <label className="text-muted-foreground text-sm">
+                    逾期天数
+                  </label>
+                  <p className="font-medium text-red-600">
+                    {room.overdueDays}天
+                  </p>
                 </div>
               )}
             </div>
           </div>
         )}
-        
+
         {/* 时间信息 */}
-        <div className="pt-4 border-t">
+        <div className="border-t pt-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <label className="text-muted-foreground">创建时间</label>

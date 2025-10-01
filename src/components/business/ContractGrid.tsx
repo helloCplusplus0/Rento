@@ -1,7 +1,8 @@
 'use client'
 
-import { ContractCard } from './contract-card'
 import type { ContractWithDetails } from '@/types/database'
+
+import { ContractCard } from './contract-card'
 
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
 interface ContractWithDetailsForClient {
@@ -90,17 +91,17 @@ interface ContractGridProps {
   loading?: boolean
 }
 
-export function ContractGrid({ 
-  contracts, 
+export function ContractGrid({
+  contracts,
   onContractClick,
-  loading = false 
+  loading = false,
 }: ContractGridProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="animate-pulse">
-            <div className="bg-gray-200 rounded-lg h-48"></div>
+            <div className="h-48 rounded-lg bg-gray-200"></div>
           </div>
         ))}
       </div>
@@ -109,20 +110,30 @@ export function ContractGrid({
 
   if (contracts.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <div className="py-12 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+          <svg
+            className="h-8 w-8 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">暂无合同</h3>
+        <h3 className="mb-2 text-lg font-medium text-gray-900">暂无合同</h3>
         <p className="text-gray-500">还没有任何合同记录</p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {contracts.map((contract) => (
         <ContractCard
           key={contract.id}

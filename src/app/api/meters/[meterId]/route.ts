@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { meterQueries } from '@/lib/queries'
+
 import { validateDisplayName, validateUnitPrice } from '@/lib/meter-utils'
+import { meterQueries } from '@/lib/queries'
 
 /**
  * 获取仪表详情
@@ -12,29 +13,28 @@ export async function GET(
 ) {
   try {
     const { meterId } = await params
-    
+
     const meter = await meterQueries.findById(meterId)
     if (!meter) {
-      return NextResponse.json(
-        { error: 'Meter not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Meter not found' }, { status: 404 })
     }
-    
+
     // 转换Decimal类型为number
     const meterData = {
       ...meter,
       unitPrice: Number(meter.unitPrice),
       readings: meter.readings.map((reading: any) => ({
         ...reading,
-        previousReading: reading.previousReading ? Number(reading.previousReading) : null,
+        previousReading: reading.previousReading
+          ? Number(reading.previousReading)
+          : null,
         currentReading: Number(reading.currentReading),
         usage: Number(reading.usage),
         unitPrice: Number(reading.unitPrice),
-        amount: Number(reading.amount)
-      }))
+        amount: Number(reading.amount),
+      })),
     }
-    
+
     return NextResponse.json(meterData)
   } catch (error) {
     console.error('Failed to fetch meter:', error)
@@ -56,16 +56,13 @@ export async function PUT(
   try {
     const { meterId } = await params
     const data = await request.json()
-    
+
     // 获取现有仪表信息
     const existingMeter = await meterQueries.findById(meterId)
     if (!existingMeter) {
-      return NextResponse.json(
-        { error: 'Meter not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Meter not found' }, { status: 404 })
     }
-    
+
     // 数据验证
     const validationResult = validateMeterUpdateData(data)
     if (!validationResult.isValid) {
@@ -74,7 +71,7 @@ export async function PUT(
         { status: 400 }
       )
     }
-    
+
     // 业务规则检查（如果修改了显示名称）
     if (data.displayName && data.displayName !== existingMeter.displayName) {
       const isUnique = await checkDisplayNameUnique(
@@ -89,30 +86,33 @@ export async function PUT(
         )
       }
     }
-    
+
     // 更新仪表
     const updatedMeter = await meterQueries.update(meterId, {
       displayName: data.displayName,
       unitPrice: data.unitPrice,
       unit: data.unit,
       location: data.location,
-      remarks: data.remarks
+      remarks: data.remarks,
     })
-    
+
     // 转换返回数据
     const meterData = {
       ...updatedMeter,
       unitPrice: Number(updatedMeter.unitPrice),
-      readings: updatedMeter.readings?.map((reading: any) => ({
-        ...reading,
-        previousReading: reading.previousReading ? Number(reading.previousReading) : null,
-        currentReading: Number(reading.currentReading),
-        usage: Number(reading.usage),
-        unitPrice: Number(reading.unitPrice),
-        amount: Number(reading.amount)
-      })) || []
+      readings:
+        updatedMeter.readings?.map((reading: any) => ({
+          ...reading,
+          previousReading: reading.previousReading
+            ? Number(reading.previousReading)
+            : null,
+          currentReading: Number(reading.currentReading),
+          usage: Number(reading.usage),
+          unitPrice: Number(reading.unitPrice),
+          amount: Number(reading.amount),
+        })) || [],
     }
-    
+
     return NextResponse.json(meterData)
   } catch (error) {
     console.error('Failed to update meter:', error)
@@ -133,30 +133,28 @@ export async function DELETE(
 ) {
   try {
     const { meterId } = await params
-    
+
     // 检查仪表是否存在
     const existingMeter = await meterQueries.findById(meterId)
     if (!existingMeter) {
-      return NextResponse.json(
-        { error: 'Meter not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Meter not found' }, { status: 404 })
     }
-    
+
     // 检查是否有抄表记录
     if (existingMeter.readings && existingMeter.readings.length > 0) {
       // 有抄表记录时，只能软删除（设置为禁用状态）
       await meterQueries.softDelete(meterId)
-      return NextResponse.json({ 
-        message: 'Meter association removed successfully. Historical data preserved.',
-        action: 'soft_delete'
+      return NextResponse.json({
+        message:
+          'Meter association removed successfully. Historical data preserved.',
+        action: 'soft_delete',
       })
     } else {
       // 没有抄表记录时，可以硬删除
       await meterQueries.delete(meterId)
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Meter removed successfully.',
-        action: 'hard_delete'
+        action: 'hard_delete',
       })
     }
   } catch (error) {
@@ -171,7 +169,10 @@ export async function DELETE(
 /**
  * 验证仪表更新数据
  */
-function validateMeterUpdateData(data: any): { isValid: boolean; errors: string[] } {
+function validateMeterUpdateData(data: any): {
+  isValid: boolean
+  errors: string[]
+} {
   const errors: string[] = []
 
   // 显示名称验证
@@ -179,7 +180,9 @@ function validateMeterUpdateData(data: any): { isValid: boolean; errors: string[
     if (!data.displayName || typeof data.displayName !== 'string') {
       errors.push('显示名称不能为空')
     } else if (!validateDisplayName(data.displayName)) {
-      errors.push('显示名称格式不正确，最多50字符，支持中文、英文、数字、横线、下划线')
+      errors.push(
+        '显示名称格式不正确，最多50字符，支持中文、英文、数字、横线、下划线'
+      )
     }
   }
 
@@ -217,7 +220,7 @@ function validateMeterUpdateData(data: any): { isValid: boolean; errors: string[
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
@@ -231,8 +234,8 @@ async function checkDisplayNameUnique(
 ): Promise<boolean> {
   try {
     const existingMeters = await meterQueries.findByRoom(roomId)
-    const nameExists = existingMeters.some((m: any) => 
-      m.displayName === displayName && m.id !== excludeId
+    const nameExists = existingMeters.some(
+      (m: any) => m.displayName === displayName && m.id !== excludeId
     )
     return !nameExists
   } catch (error) {

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+
 import { BatchMeterReadingPage } from '@/components/pages/BatchMeterReadingPage'
 
 export const metadata: Metadata = {
   title: '批量抄表',
-  description: '批量录入多个房间的仪表读数，支持水电表统一管理'
+  description: '批量录入多个房间的仪表读数，支持水电表统一管理',
 }
 
 /**

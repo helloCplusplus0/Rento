@@ -1,8 +1,16 @@
 import { Suspense } from 'react'
-import { PageContainer } from '@/components/layout'
+
+import {
+  getDashboardAlerts,
+  getEnhancedDashboardStats,
+} from '@/lib/dashboard-queries'
+import {
+  DashboardHome,
+  DashboardHomeSkeleton,
+  defaultQuickActions,
+} from '@/components/business/dashboard-home'
 import { SearchBar, SearchBarSkeleton } from '@/components/business/SearchBar'
-import { DashboardHome, DashboardHomeSkeleton, defaultQuickActions } from '@/components/business/dashboard-home'
-import { getEnhancedDashboardStats, getDashboardAlerts } from '@/lib/dashboard-queries'
+import { PageContainer } from '@/components/layout'
 
 /**
  * 主页面组件
@@ -12,7 +20,7 @@ export async function DashboardPage() {
   // 获取统计数据和提醒数据
   const [enhancedStats, alerts] = await Promise.all([
     getEnhancedDashboardStats(),
-    getDashboardAlerts()
+    getDashboardAlerts(),
   ])
 
   // 转换为DashboardHome组件期望的格式
@@ -22,17 +30,15 @@ export async function DashboardPage() {
     todayReceivables: enhancedStats.todayReceivables.amount,
     todayPayables: enhancedStats.todayPayables.amount,
     monthlyReceivables: enhancedStats.monthlyReceivables.amount,
-    monthlyPayables: enhancedStats.monthlyPayables.amount
+    monthlyPayables: enhancedStats.monthlyPayables.amount,
   }
 
   return (
     <PageContainer className="space-y-6 pb-20 lg:pb-6">
       {/* 搜索栏区域 */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+      <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
         <Suspense fallback={<SearchBarSkeleton />}>
-          <SearchBar
-            placeholder="搜索房源、合同"
-          />
+          <SearchBar placeholder="搜索房源、合同" />
         </Suspense>
       </div>
 

@@ -1,19 +1,20 @@
 import { NextRequest } from 'next/server'
-import { contractQueries, roomQueries } from '@/lib/queries'
-import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
-import { prisma } from '@/lib/prisma'
-import { 
-  withApiErrorHandler, 
+
+import {
   createSuccessResponse,
   parseRequestBody,
-  validateRequired
+  validateRequired,
+  withApiErrorHandler,
 } from '@/lib/api-error-handler'
+import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import { ErrorType } from '@/lib/error-logger'
+import { prisma } from '@/lib/prisma'
+import { contractQueries, roomQueries } from '@/lib/queries'
 
 /**
  * 合同续租API
  * POST /api/contracts/[id]/renew
- * 
+ *
  * 根据renew_lease_chart.md设计实现续租功能
  * 复用现有的合同创建和账单生成逻辑
  */
@@ -23,7 +24,7 @@ async function handleRenewContract(
 ) {
   const { id: originalContractId } = await params
   const body = await parseRequestBody(request)
-  
+
   const {
     newStartDate,
     newEndDate,
@@ -35,7 +36,7 @@ async function handleRenewContract(
     paymentTiming,
     signedBy,
     signedDate,
-    remarks
+    remarks,
   } = body
 
   // 基础字段验证
@@ -61,8 +62,8 @@ async function handleRenewContract(
       include: {
         room: { include: { building: true } },
         renter: true,
-        bills: true
-      }
+        bills: true,
+      },
     })
 
     if (!originalContract) {
@@ -72,7 +73,9 @@ async function handleRenewContract(
     // 2. 业务验证阶段
     // 检查原合同状态
     if (!['ACTIVE', 'EXPIRED'].includes(originalContract.status)) {
-      throw new Error(`合同状态不允许续租，当前状态：${originalContract.status}`)
+      throw new Error(
+        `合同状态不允许续租，当前状态：${originalContract.status}`
+      )
     }
 
     // 检查房间可用性
@@ -81,20 +84,22 @@ async function handleRenewContract(
     }
 
     // 检查未结清账单 - 只检查PENDING和OVERDUE状态的账单
-    const unpaidBills = originalContract.bills.filter(bill => 
+    const unpaidBills = originalContract.bills.filter((bill) =>
       ['PENDING', 'OVERDUE'].includes(bill.status)
     )
     if (unpaidBills.length > 0) {
-      throw new Error(`存在${unpaidBills.length}个未结清账单，请先处理完毕再续租`)
+      throw new Error(
+        `存在${unpaidBills.length}个未结清账单，请先处理完毕再续租`
+      )
     }
 
     // 3. 更新原合同状态为EXPIRED
     await tx.contract.update({
       where: { id: originalContractId },
-      data: { 
+      data: {
         status: 'EXPIRED',
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     })
 
     // 4. 创建新续租合同(复用添加合同逻辑)
@@ -104,14 +109,17 @@ async function handleRenewContract(
     const contractNumber = `CT${year}${month}${String(Date.now()).slice(-6)}`
 
     // 计算总租金 - 修复月份计算逻辑
-    const calculateMonthsDifference = (startDate: Date, endDate: Date): number => {
+    const calculateMonthsDifference = (
+      startDate: Date,
+      endDate: Date
+    ): number => {
       const start = new Date(startDate)
       const end = new Date(endDate)
-      
+
       // 计算总天数
       const timeDiff = end.getTime() - start.getTime()
       const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1 // +1 包含结束日期当天
-      
+
       // 对于标准租期，按天数计算更准确
       if (daysDiff >= 365) {
         // 一年或以上，按年计算
@@ -140,19 +148,27 @@ async function handleRenewContract(
         monthlyRent: newMonthlyRent,
         totalRent,
         deposit: newDeposit || originalContract.deposit,
-        keyDeposit: newKeyDeposit !== undefined ? newKeyDeposit : originalContract.keyDeposit,
-        cleaningFee: newCleaningFee !== undefined ? newCleaningFee : originalContract.cleaningFee,
+        keyDeposit:
+          newKeyDeposit !== undefined
+            ? newKeyDeposit
+            : originalContract.keyDeposit,
+        cleaningFee:
+          newCleaningFee !== undefined
+            ? newCleaningFee
+            : originalContract.cleaningFee,
         paymentMethod: paymentMethod || originalContract.paymentMethod,
         paymentTiming: paymentTiming || originalContract.paymentTiming,
         signedBy: signedBy || originalContract.signedBy,
         signedDate: signedDate ? new Date(signedDate) : new Date(),
-        remarks: remarks ? `续租自合同${originalContract.contractNumber}。${remarks}` : `续租自合同${originalContract.contractNumber}`,
-        status: 'ACTIVE'
+        remarks: remarks
+          ? `续租自合同${originalContract.contractNumber}。${remarks}`
+          : `续租自合同${originalContract.contractNumber}`,
+        status: 'ACTIVE',
       },
       include: {
         room: { include: { building: true } },
-        renter: true
-      }
+        renter: true,
+      },
     })
 
     // 5. 更新房间租赁信息（保持OCCUPIED状态）
@@ -160,8 +176,8 @@ async function handleRenewContract(
       where: { id: originalContract.roomId },
       data: {
         currentRenter: originalContract.renter.name,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     })
 
     return newContract
@@ -178,7 +194,7 @@ async function handleRenewContractWithBills(
 ) {
   // 先执行续租事务
   const newContract = await handleRenewContract(request, { params })
-  
+
   // 5. 账单生成阶段(复用添加合同账单生成)
   try {
     await generateBillsOnContractSigned(newContract.id)
@@ -188,21 +204,28 @@ async function handleRenewContractWithBills(
   }
 
   // 返回续租成功信息
-  return createSuccessResponse({
-    originalContractId: (await params).id,
-    newContract: {
-      ...newContract,
-      monthlyRent: Number(newContract.monthlyRent),
-      totalRent: Number(newContract.totalRent),
-      deposit: Number(newContract.deposit),
-      keyDeposit: newContract.keyDeposit ? Number(newContract.keyDeposit) : null,
-      cleaningFee: newContract.cleaningFee ? Number(newContract.cleaningFee) : null
-    }
-  }, '续租成功')
+  return createSuccessResponse(
+    {
+      originalContractId: (await params).id,
+      newContract: {
+        ...newContract,
+        monthlyRent: Number(newContract.monthlyRent),
+        totalRent: Number(newContract.totalRent),
+        deposit: Number(newContract.deposit),
+        keyDeposit: newContract.keyDeposit
+          ? Number(newContract.keyDeposit)
+          : null,
+        cleaningFee: newContract.cleaningFee
+          ? Number(newContract.cleaningFee)
+          : null,
+      },
+    },
+    '续租成功'
+  )
 }
 
 export const POST = withApiErrorHandler(handleRenewContractWithBills, {
   module: 'renew-contract-api',
   errorType: ErrorType.VALIDATION_ERROR,
-  enableFallback: true
+  enableFallback: true,
 })

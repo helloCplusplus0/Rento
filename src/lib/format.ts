@@ -10,11 +10,11 @@
  */
 export function formatCurrency(amount: number | string): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  
+
   if (isNaN(num)) {
     return '¥0'
   }
-  
+
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
     currency: 'CNY',
@@ -30,11 +30,11 @@ export function formatCurrency(amount: number | string): string {
  */
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  
+
   if (isNaN(d.getTime())) {
     return '--'
   }
-  
+
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: '2-digit',
@@ -49,11 +49,11 @@ export function formatDate(date: Date | string): string {
  */
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  
+
   if (isNaN(d.getTime())) {
     return '--'
   }
-  
+
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: '2-digit',
@@ -70,15 +70,15 @@ export function formatDateTime(date: Date | string): string {
  */
 export function formatRelativeTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  
+
   if (isNaN(d.getTime())) {
     return '--'
   }
-  
+
   const now = new Date()
   const diffMs = d.getTime() - now.getTime()
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) {
     return '今天'
   } else if (diffDays === 1) {
@@ -99,11 +99,11 @@ export function formatRelativeTime(date: Date | string): string {
  */
 export function calculateOverdueDays(dueDate: Date | string): number {
   const due = typeof dueDate === 'string' ? new Date(dueDate) : dueDate
-  
+
   if (isNaN(due.getTime())) {
     return 0
   }
-  
+
   const now = new Date()
   const diffMs = now.getTime() - due.getTime()
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
@@ -129,7 +129,7 @@ export function formatPercentage(value: number, total: number): string {
   if (total === 0) {
     return '0%'
   }
-  
+
   const percentage = (value / total) * 100
   return `${percentage.toFixed(1)}%`
 }

@@ -1,5 +1,6 @@
+import type { BillStatus, ContractStatus, RoomStatus } from '@prisma/client'
+
 import { prisma } from './prisma'
-import type { RoomStatus, ContractStatus, BillStatus } from '@prisma/client'
 
 /**
  * 通用分页查询参数接口
@@ -72,39 +73,47 @@ export const optimizedRoomQueries = {
     filters: RoomQueryFilters = {}
   ): Promise<PaginatedResult<any>> {
     const { page, limit } = pagination
-    const { status, buildingId, floorNumber, search, roomType, rentRange, areaRange } = filters
+    const {
+      status,
+      buildingId,
+      floorNumber,
+      search,
+      roomType,
+      rentRange,
+      areaRange,
+    } = filters
     const skip = (page - 1) * limit
 
     // 构建查询条件
     const where: any = {}
-    
+
     // 基础筛选条件（使用索引）
     if (status) where.status = status
     if (buildingId) where.buildingId = buildingId
     if (floorNumber) where.floorNumber = floorNumber
     if (roomType) where.roomType = roomType
-    
+
     // 范围筛选
     if (rentRange) {
       where.monthlyRent = {
         gte: rentRange[0],
-        lte: rentRange[1]
+        lte: rentRange[1],
       }
     }
-    
+
     if (areaRange) {
       where.area = {
         gte: areaRange[0],
-        lte: areaRange[1]
+        lte: areaRange[1],
       }
     }
-    
+
     // 搜索条件
     if (search) {
       where.OR = [
         { roomNumber: { contains: search } },
         { currentRenter: { contains: search } },
-        { building: { name: { contains: search } } }
+        { building: { name: { contains: search } } },
       ]
     }
 
@@ -113,35 +122,35 @@ export const optimizedRoomQueries = {
       prisma.room.findMany({
         where,
         include: {
-          building: { 
-            select: { 
-              id: true, 
-              name: true 
-            } 
+          building: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
           contracts: {
             where: { status: 'ACTIVE' },
             select: {
               id: true,
-              renter: { 
-                select: { 
-                  id: true, 
-                  name: true, 
-                  phone: true 
-                } 
-              }
-            }
-          }
+              renter: {
+                select: {
+                  id: true,
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [
           { building: { name: 'asc' } },
           { floorNumber: 'asc' },
-          { roomNumber: 'asc' }
+          { roomNumber: 'asc' },
         ],
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.room.count({ where })
+      prisma.room.count({ where }),
     ])
 
     return {
@@ -151,14 +160,16 @@ export const optimizedRoomQueries = {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page < Math.ceil(total / limit),
-      hasPrev: page > 1
+      hasPrev: page > 1,
     }
   },
 
   /**
    * 获取房间状态统计（优化版）
    */
-  async getStatusStats(filters: Omit<RoomQueryFilters, 'status'> = {}): Promise<{
+  async getStatusStats(
+    filters: Omit<RoomQueryFilters, 'status'> = {}
+  ): Promise<{
     total: number
     vacant: number
     occupied: number
@@ -167,14 +178,14 @@ export const optimizedRoomQueries = {
   }> {
     const { buildingId, floorNumber, search } = filters
     const where: any = {}
-    
+
     if (buildingId) where.buildingId = buildingId
     if (floorNumber) where.floorNumber = floorNumber
     if (search) {
       where.OR = [
         { roomNumber: { contains: search } },
         { currentRenter: { contains: search } },
-        { building: { name: { contains: search } } }
+        { building: { name: { contains: search } } },
       ]
     }
 
@@ -182,8 +193,8 @@ export const optimizedRoomQueries = {
       by: ['status'],
       where,
       _count: {
-        status: true
-      }
+        status: true,
+      },
     })
 
     const result = {
@@ -191,10 +202,10 @@ export const optimizedRoomQueries = {
       vacant: 0,
       occupied: 0,
       overdue: 0,
-      maintenance: 0
+      maintenance: 0,
     }
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       result.total += stat._count.status
       switch (stat.status) {
         case 'VACANT':
@@ -213,7 +224,7 @@ export const optimizedRoomQueries = {
     })
 
     return result
-  }
+  },
 }
 
 /**
@@ -232,28 +243,28 @@ export const optimizedRenterQueries = {
     const skip = (page - 1) * limit
 
     const where: any = {}
-    
+
     // 搜索条件
     if (search) {
       where.OR = [
         { name: { contains: search } },
         { phone: { contains: search } },
-        { idNumber: { contains: search } }
+        { idNumber: { contains: search } },
       ]
     }
-    
+
     // 合同状态筛选
     if (contractStatus || hasActiveContract !== undefined || buildingId) {
       where.contracts = {
         some: {
           ...(contractStatus && { status: contractStatus }),
-          ...(hasActiveContract !== undefined && { 
-            status: hasActiveContract ? 'ACTIVE' : { not: 'ACTIVE' } 
+          ...(hasActiveContract !== undefined && {
+            status: hasActiveContract ? 'ACTIVE' : { not: 'ACTIVE' },
           }),
-          ...(buildingId && { 
-            room: { buildingId } 
-          })
-        }
+          ...(buildingId && {
+            room: { buildingId },
+          }),
+        },
       }
     }
 
@@ -274,20 +285,20 @@ export const optimizedRenterQueries = {
                   building: {
                     select: {
                       id: true,
-                      name: true
-                    }
-                  }
-                }
-              }
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
-            orderBy: { createdAt: 'desc' }
-          }
+            orderBy: { createdAt: 'desc' },
+          },
         },
         orderBy: { name: 'asc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.renter.count({ where })
+      prisma.renter.count({ where }),
     ])
 
     return {
@@ -297,7 +308,7 @@ export const optimizedRenterQueries = {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page < Math.ceil(total / limit),
-      hasPrev: page > 1
+      hasPrev: page > 1,
     }
   },
 
@@ -319,27 +330,27 @@ export const optimizedRenterQueries = {
         where: {
           contracts: {
             some: {
-              status: 'ACTIVE'
-            }
-          }
-        }
+              status: 'ACTIVE',
+            },
+          },
+        },
       }),
       prisma.renter.count({
         where: {
           createdAt: {
-            gte: startOfMonth
-          }
-        }
-      })
+            gte: startOfMonth,
+          },
+        },
+      }),
     ])
 
     return {
       total,
       withActiveContract,
       withoutActiveContract: total - withActiveContract,
-      newThisMonth
+      newThisMonth,
     }
-  }
+  },
 }
 
 /**
@@ -354,40 +365,48 @@ export const optimizedContractQueries = {
     filters: ContractQueryFilters = {}
   ): Promise<PaginatedResult<any>> {
     const { page, limit } = pagination
-    const { status, search, buildingId, renterId, startDate, endDate, expiringDays } = filters
+    const {
+      status,
+      search,
+      buildingId,
+      renterId,
+      startDate,
+      endDate,
+      expiringDays,
+    } = filters
     const skip = (page - 1) * limit
 
     const where: any = {}
-    
+
     // 基础筛选条件
     if (status) where.status = status
     if (renterId) where.renterId = renterId
     if (buildingId) where.room = { buildingId }
-    
+
     // 日期范围筛选
     if (startDate || endDate) {
       where.startDate = {}
       if (startDate) where.startDate.gte = startDate
       if (endDate) where.startDate.lte = endDate
     }
-    
+
     // 即将到期筛选
     if (expiringDays) {
       const expiryDate = new Date()
       expiryDate.setDate(expiryDate.getDate() + expiringDays)
       where.endDate = {
-        lte: expiryDate
+        lte: expiryDate,
       }
       where.status = 'ACTIVE'
     }
-    
+
     // 搜索条件
     if (search) {
       where.OR = [
         { contractNumber: { contains: search } },
         { renter: { name: { contains: search } } },
         { room: { roomNumber: { contains: search } } },
-        { room: { building: { name: { contains: search } } } }
+        { room: { building: { name: { contains: search } } } },
       ]
     }
 
@@ -399,8 +418,8 @@ export const optimizedContractQueries = {
             select: {
               id: true,
               name: true,
-              phone: true
-            }
+              phone: true,
+            },
           },
           room: {
             select: {
@@ -409,17 +428,17 @@ export const optimizedContractQueries = {
               building: {
                 select: {
                   id: true,
-                  name: true
-                }
-              }
-            }
-          }
+                  name: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.contract.count({ where })
+      prisma.contract.count({ where }),
     ])
 
     return {
@@ -429,14 +448,16 @@ export const optimizedContractQueries = {
       limit,
       totalPages: Math.ceil(total / limit),
       hasNext: page < Math.ceil(total / limit),
-      hasPrev: page > 1
+      hasPrev: page > 1,
     }
   },
 
   /**
    * 获取合同状态统计（优化版）
    */
-  async getStatusStats(filters: Omit<ContractQueryFilters, 'status'> = {}): Promise<{
+  async getStatusStats(
+    filters: Omit<ContractQueryFilters, 'status'> = {}
+  ): Promise<{
     total: number
     active: number
     expired: number
@@ -445,7 +466,7 @@ export const optimizedContractQueries = {
   }> {
     const { buildingId, renterId } = filters
     const where: any = {}
-    
+
     if (buildingId) where.room = { buildingId }
     if (renterId) where.renterId = renterId
 
@@ -453,22 +474,22 @@ export const optimizedContractQueries = {
       by: ['status'],
       where,
       _count: {
-        status: true
-      }
+        status: true,
+      },
     })
 
     // 计算30天内到期的合同
     const thirtyDaysFromNow = new Date()
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-    
+
     const expiringIn30Days = await prisma.contract.count({
       where: {
         ...where,
         status: 'ACTIVE',
         endDate: {
-          lte: thirtyDaysFromNow
-        }
-      }
+          lte: thirtyDaysFromNow,
+        },
+      },
     })
 
     const result = {
@@ -476,10 +497,10 @@ export const optimizedContractQueries = {
       active: 0,
       expired: 0,
       terminated: 0,
-      expiringIn30Days
+      expiringIn30Days,
     }
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       result.total += stat._count.status
       switch (stat.status) {
         case 'ACTIVE':
@@ -495,14 +516,14 @@ export const optimizedContractQueries = {
     })
 
     return result
-  }
+  },
 }
 
 // 导出所有优化查询
 export const optimizedQueries = {
   rooms: optimizedRoomQueries,
   renters: optimizedRenterQueries,
-  contracts: optimizedContractQueries
+  contracts: optimizedContractQueries,
 }
 
 export default optimizedQueries

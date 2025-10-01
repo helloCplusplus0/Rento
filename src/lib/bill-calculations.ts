@@ -4,29 +4,29 @@ import { globalSettings } from './global-settings'
  * 水电费计算结果 (增强版)
  */
 export interface UtilityBillResult {
-  electricityCost: number    // 电费
-  waterCost: number         // 水费
-  gasCost?: number          // 燃气费
-  totalCost: number         // 总费用
-  electricityUsage: number  // 用电量
-  waterUsage: number       // 用水量
-  gasUsage?: number        // 燃气用量
+  electricityCost: number // 电费
+  waterCost: number // 水费
+  gasCost?: number // 燃气费
+  totalCost: number // 总费用
+  electricityUsage: number // 用电量
+  waterUsage: number // 用水量
+  gasUsage?: number // 燃气用量
   electricityPrice: number // 电费单价
-  waterPrice: number       // 水费单价
-  gasPrice?: number        // 燃气单价
+  waterPrice: number // 水费单价
+  gasPrice?: number // 燃气单价
 }
 
 /**
  * 租金计算结果
  */
 export interface RentCalculationResult {
-  monthlyRent: number      // 月租金
-  totalRent: number        // 总租金
-  deposit: number          // 押金
-  keyDeposit: number       // 钥匙押金
-  cleaningFee: number      // 清洁费
-  totalAmount: number      // 总金额
-  paymentCycle: string     // 付款周期
+  monthlyRent: number // 月租金
+  totalRent: number // 总租金
+  deposit: number // 押金
+  keyDeposit: number // 钥匙押金
+  cleaningFee: number // 清洁费
+  totalAmount: number // 总金额
+  paymentCycle: string // 付款周期
 }
 
 /**
@@ -39,33 +39,33 @@ export async function calculateUtilityBill(
   waterUsage: number,
   gasUsage: number = 0,
   meterPrices?: {
-    electricityPrice?: number  // 来自仪表配置的单价
-    waterPrice?: number       // 来自仪表配置的单价
+    electricityPrice?: number // 来自仪表配置的单价
+    waterPrice?: number // 来自仪表配置的单价
     gasPrice?: number
   }
 ): Promise<UtilityBillResult> {
   let electricityPrice: number
   let waterPrice: number
   let gasPrice: number
-  
+
   try {
     // 获取全局设置作为回退值
     const billingSettings = await globalSettings.getBillingSettings()
-    
+
     // 优先使用仪表单价，回退到全局设置
-    electricityPrice = meterPrices?.electricityPrice ?? billingSettings.electricityPrice
+    electricityPrice =
+      meterPrices?.electricityPrice ?? billingSettings.electricityPrice
     waterPrice = meterPrices?.waterPrice ?? billingSettings.waterPrice
     gasPrice = meterPrices?.gasPrice ?? billingSettings.gasPrice
-    
   } catch (error) {
     console.error('[账单计算] 获取全局设置失败，使用硬编码默认值:', error)
-    
+
     // 最终回退到硬编码默认值
     electricityPrice = meterPrices?.electricityPrice ?? 0.6
     waterPrice = meterPrices?.waterPrice ?? 3.5
     gasPrice = meterPrices?.gasPrice ?? 2.5
   }
-  
+
   const electricityCost = electricityUsage * electricityPrice
   const waterCost = waterUsage * waterPrice
   const gasCost = gasUsage * gasPrice
@@ -81,7 +81,7 @@ export async function calculateUtilityBill(
     gasUsage: gasUsage > 0 ? gasUsage : undefined,
     electricityPrice,
     waterPrice,
-    gasPrice: gasUsage > 0 ? gasPrice : undefined
+    gasPrice: gasUsage > 0 ? gasPrice : undefined,
   }
 }
 
@@ -102,15 +102,16 @@ export function calculateUtilityBillSync(
   let electricityPrice: number
   let waterPrice: number
   let gasPrice: number
-  
+
   try {
     // 尝试从localStorage获取缓存的全局设置
     if (typeof window !== 'undefined') {
       const cachedSettings = localStorage.getItem('app_settings')
       if (cachedSettings) {
         const settings = JSON.parse(cachedSettings)
-        
-        electricityPrice = meterPrices?.electricityPrice ?? settings.electricityPrice ?? 0.6
+
+        electricityPrice =
+          meterPrices?.electricityPrice ?? settings.electricityPrice ?? 0.6
         waterPrice = meterPrices?.waterPrice ?? settings.waterPrice ?? 3.5
         gasPrice = meterPrices?.gasPrice ?? settings.gasPrice ?? 2.5
       } else {
@@ -125,7 +126,7 @@ export function calculateUtilityBillSync(
     waterPrice = meterPrices?.waterPrice ?? 3.5
     gasPrice = meterPrices?.gasPrice ?? 2.5
   }
-  
+
   const electricityCost = electricityUsage * electricityPrice
   const waterCost = waterUsage * waterPrice
   const gasCost = gasUsage * gasPrice
@@ -141,7 +142,7 @@ export function calculateUtilityBillSync(
     gasUsage: gasUsage > 0 ? gasUsage : undefined,
     electricityPrice,
     waterPrice,
-    gasPrice: gasUsage > 0 ? gasPrice : undefined
+    gasPrice: gasUsage > 0 ? gasPrice : undefined,
   }
 }
 
@@ -161,10 +162,10 @@ export function calculateRentBill(
 
   // 根据付款周期计算租金倍数
   const cycleMultiplier: Record<string, number> = {
-    monthly: 1,      // 月付
-    quarterly: 3,    // 季付
+    monthly: 1, // 月付
+    quarterly: 3, // 季付
     semi_annually: 6, // 半年付
-    annually: 12     // 年付
+    annually: 12, // 年付
   }
 
   const multiplier = cycleMultiplier[cycle] || 1
@@ -179,7 +180,7 @@ export function calculateRentBill(
     keyDeposit,
     cleaningFee,
     totalAmount: Math.round(totalAmount * 100) / 100,
-    paymentCycle: cycle
+    paymentCycle: cycle,
   }
 }
 
@@ -192,7 +193,7 @@ export function shouldShowReminder(dueDate: Date): boolean {
   const today = new Date()
   const timeDiff = dueDate.getTime() - today.getTime()
   const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24))
-  
+
   return daysDiff <= defaultReminderDays && daysDiff >= 0
 }
 
@@ -208,10 +209,10 @@ export function getReminderStatus(dueDate: Date): {
   const today = new Date()
   const timeDiff = dueDate.getTime() - today.getTime()
   const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24))
-  
+
   let status: 'urgent' | 'warning' | 'normal' | 'overdue' = 'normal'
   let message = ''
-  
+
   if (daysLeft < 0) {
     status = 'overdue'
     message = `已逾期 ${Math.abs(daysLeft)} 天`
@@ -228,12 +229,12 @@ export function getReminderStatus(dueDate: Date): {
     status = 'normal'
     message = `${daysLeft} 天后到期`
   }
-  
+
   return {
     shouldRemind: shouldShowReminder(dueDate),
     daysLeft,
     status,
-    message
+    message,
   }
 }
 
@@ -252,8 +253,8 @@ export function formatPaymentCycle(cycle: string): string {
     monthly: '月付',
     quarterly: '季付',
     semi_annually: '半年付',
-    annually: '年付'
+    annually: '年付',
   }
-  
+
   return cycleMap[cycle as keyof typeof cycleMap] || cycle
 }

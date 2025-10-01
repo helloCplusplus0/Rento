@@ -2,14 +2,28 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DetailPageTemplate } from '@/components/layout/DetailPageTemplate'
+import {
+  CheckCircle,
+  CreditCard,
+  Edit,
+  HelpCircle,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { BillBasicInfo } from '@/components/business/BillBasicInfo'
+import { BillStatusExplanation } from '@/components/business/BillStatusExplanation'
 import { ContractRenterInfo } from '@/components/business/ContractRenterInfo'
 import { PaymentConfirmDialog } from '@/components/business/PaymentConfirmDialog'
-import { BillStatusExplanation } from '@/components/business/BillStatusExplanation'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Edit, Trash2, CreditCard, CheckCircle, RotateCcw, HelpCircle } from 'lucide-react'
+import { DetailPageTemplate } from '@/components/layout/DetailPageTemplate'
 
 interface BillDetailPageProps {
   bill: any // 简化类型，避免复杂的类型转换
@@ -34,7 +48,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
         },
         body: JSON.stringify({
           status,
-          ...paymentData
+          ...paymentData,
         }),
       })
 
@@ -64,7 +78,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/bills/${bill.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       if (!response.ok) {
@@ -83,72 +97,95 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
   // 判断是否实际逾期
   const today = new Date()
   const dueDate = new Date(bill.dueDate)
-  const isActuallyOverdue = today > dueDate && bill.status !== 'PAID' && bill.status !== 'COMPLETED'
-  
+  const isActuallyOverdue =
+    today > dueDate && bill.status !== 'PAID' && bill.status !== 'COMPLETED'
+
   // 判断操作权限
-  const canConfirmPayment = (bill.status === 'PENDING' || bill.status === 'PAID' || isActuallyOverdue) && bill.pendingAmount > 0
+  const canConfirmPayment =
+    (bill.status === 'PENDING' ||
+      bill.status === 'PAID' ||
+      isActuallyOverdue) &&
+    bill.pendingAmount > 0
   const canMarkCompleted = bill.status === 'PAID' && bill.pendingAmount === 0
   const canRestorePending = bill.status === 'OVERDUE'
-  const canDelete = bill.status === 'PENDING' || (bill.status === 'PAID' && bill.receivedAmount === 0)
+  const canDelete =
+    bill.status === 'PENDING' ||
+    (bill.status === 'PAID' && bill.receivedAmount === 0)
 
   // 定义操作按钮 - 简化版，只保留核心功能
   const actions = [
     // 支付相关操作
-    ...(canConfirmPayment ? [{
-      label: bill.status === 'PAID' ? '继续收款' : '确认收款',
-      icon: <CreditCard className="w-4 h-4" />,
-      onClick: () => setShowPaymentDialog(true),
-      disabled: isLoading,
-      variant: 'default' as const,
-      className: 'bg-green-600 hover:bg-green-700 text-white'
-    }] : []),
-    ...(canMarkCompleted ? [{
-      label: '标记完成',
-      icon: <CheckCircle className="w-4 h-4" />,
-      onClick: () => handleStatusChange('COMPLETED'),
-      disabled: isLoading,
-      variant: 'outline' as const,
-      className: 'border-blue-300 text-blue-600 hover:bg-blue-50'
-    }] : []),
-    ...(canRestorePending ? [{
-      label: '恢复待付',
-      icon: <RotateCcw className="w-4 h-4" />,
-      onClick: () => handleStatusChange('PENDING'),
-      disabled: isLoading,
-      variant: 'outline' as const,
-      className: 'border-orange-300 text-orange-600 hover:bg-orange-50'
-    }] : []),
-    
+    ...(canConfirmPayment
+      ? [
+          {
+            label: bill.status === 'PAID' ? '继续收款' : '确认收款',
+            icon: <CreditCard className="h-4 w-4" />,
+            onClick: () => setShowPaymentDialog(true),
+            disabled: isLoading,
+            variant: 'default' as const,
+            className: 'bg-green-600 hover:bg-green-700 text-white',
+          },
+        ]
+      : []),
+    ...(canMarkCompleted
+      ? [
+          {
+            label: '标记完成',
+            icon: <CheckCircle className="h-4 w-4" />,
+            onClick: () => handleStatusChange('COMPLETED'),
+            disabled: isLoading,
+            variant: 'outline' as const,
+            className: 'border-blue-300 text-blue-600 hover:bg-blue-50',
+          },
+        ]
+      : []),
+    ...(canRestorePending
+      ? [
+          {
+            label: '恢复待付',
+            icon: <RotateCcw className="h-4 w-4" />,
+            onClick: () => handleStatusChange('PENDING'),
+            disabled: isLoading,
+            variant: 'outline' as const,
+            className: 'border-orange-300 text-orange-600 hover:bg-orange-50',
+          },
+        ]
+      : []),
+
     // 编辑操作
     {
       label: '编辑',
-      icon: <Edit className="w-4 h-4" />,
+      icon: <Edit className="h-4 w-4" />,
       onClick: handleEdit,
       disabled: isLoading || bill.status !== 'PENDING',
-      variant: 'outline' as const
+      variant: 'outline' as const,
     },
-    
+
     // 删除操作
-    ...(canDelete ? [{
-      label: '删除',
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: handleDelete,
-      disabled: isLoading,
-      variant: 'destructive' as const,
-      className: 'text-red-600 hover:text-red-700'
-    }] : [])
+    ...(canDelete
+      ? [
+          {
+            label: '删除',
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleDelete,
+            disabled: isLoading,
+            variant: 'destructive' as const,
+            className: 'text-red-600 hover:text-red-700',
+          },
+        ]
+      : []),
   ]
 
   // 状态说明按钮
   const statusHelpAction = {
     label: '状态说明',
-    icon: <HelpCircle className="w-4 h-4" />,
+    icon: <HelpCircle className="h-4 w-4" />,
     onClick: () => {}, // 由Dialog组件处理
     disabled: false,
     variant: 'ghost' as const,
-    className: 'text-gray-500 hover:text-gray-700'
+    className: 'text-gray-500 hover:text-gray-700',
   }
-  
+
   return (
     <>
       <DetailPageTemplate
@@ -162,11 +199,11 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
                 size="sm"
                 className="text-gray-500 hover:text-gray-700"
               >
-                <HelpCircle className="w-4 h-4 mr-1" />
+                <HelpCircle className="mr-1 h-4 w-4" />
                 状态说明
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>账单状态说明</DialogTitle>
               </DialogHeader>
@@ -176,19 +213,19 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
         }
       >
         {isLoading && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-4">
+          <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+            <div className="rounded-lg bg-white p-4">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600"></div>
                 <span>处理中...</span>
               </div>
             </div>
           </div>
         )}
-        
+
         {/* 基本信息 */}
         <BillBasicInfo bill={bill} />
-        
+
         {/* 合同和租客信息 - 简化布局 */}
         <ContractRenterInfo bill={bill} />
       </DetailPageTemplate>

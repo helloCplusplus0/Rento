@@ -1,7 +1,7 @@
 import { exec } from 'child_process'
-import { promisify } from 'util'
-import path from 'path'
 import fs from 'fs/promises'
+import path from 'path'
+import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
@@ -54,12 +54,12 @@ export class BackupManager {
 
       // 构建pg_dump命令
       let command = `pg_dump "${this.dbUrl}"`
-      
+
       // 添加选项
       if (options.includeSchema !== false) {
         command += ' --schema-only --data-only'
       }
-      
+
       if (options.excludeTables && options.excludeTables.length > 0) {
         for (const table of options.excludeTables) {
           command += ` --exclude-table=${table}`
@@ -78,20 +78,24 @@ export class BackupManager {
 
       // 获取文件信息
       const stats = await fs.stat(filepath)
-      
+
       const backupInfo: BackupInfo = {
         filename,
         filepath,
         size: stats.size,
         createdAt: new Date(),
-        compressed: options.compress || false
+        compressed: options.compress || false,
       }
 
-      console.log(`✅ 备份创建成功: ${filename} (${this.formatFileSize(stats.size)})`)
+      console.log(
+        `✅ 备份创建成功: ${filename} (${this.formatFileSize(stats.size)})`
+      )
       return backupInfo
     } catch (error) {
       console.error('❌ 备份创建失败:', error)
-      throw new Error(`备份创建失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      throw new Error(
+        `备份创建失败: ${error instanceof Error ? error.message : '未知错误'}`
+      )
     }
   }
 
@@ -102,7 +106,7 @@ export class BackupManager {
     try {
       // 检查备份文件是否存在
       await fs.access(backupPath)
-      
+
       const isCompressed = backupPath.endsWith('.gz')
       let command: string
 
@@ -114,11 +118,13 @@ export class BackupManager {
 
       console.log(`开始恢复数据库: ${path.basename(backupPath)}`)
       await execAsync(command)
-      
+
       console.log(`✅ 数据库恢复成功: ${path.basename(backupPath)}`)
     } catch (error) {
       console.error('❌ 数据库恢复失败:', error)
-      throw new Error(`数据库恢复失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      throw new Error(
+        `数据库恢复失败: ${error instanceof Error ? error.message : '未知错误'}`
+      )
     }
   }
 
@@ -128,27 +134,31 @@ export class BackupManager {
   async listBackups(): Promise<BackupInfo[]> {
     try {
       const files = await fs.readdir(this.backupDir)
-      const backupFiles = files.filter(file => 
-        file.startsWith('backup-') && (file.endsWith('.sql') || file.endsWith('.sql.gz'))
+      const backupFiles = files.filter(
+        (file) =>
+          file.startsWith('backup-') &&
+          (file.endsWith('.sql') || file.endsWith('.sql.gz'))
       )
 
       const backups: BackupInfo[] = []
-      
+
       for (const filename of backupFiles) {
         const filepath = path.join(this.backupDir, filename)
         const stats = await fs.stat(filepath)
-        
+
         backups.push({
           filename,
           filepath,
           size: stats.size,
           createdAt: stats.mtime,
-          compressed: filename.endsWith('.gz')
+          compressed: filename.endsWith('.gz'),
         })
       }
 
       // 按创建时间倒序排列
-      return backups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      return backups.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      )
     } catch (error) {
       console.error('获取备份列表失败:', error)
       return []
@@ -162,11 +172,13 @@ export class BackupManager {
     const days = retentionDays || this.maxRetentionDays
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - days)
-    
+
     try {
       const backups = await this.listBackups()
-      const oldBackups = backups.filter(backup => backup.createdAt < cutoffDate)
-      
+      const oldBackups = backups.filter(
+        (backup) => backup.createdAt < cutoffDate
+      )
+
       let deletedCount = 0
       for (const backup of oldBackups) {
         try {
@@ -226,19 +238,19 @@ export class BackupManager {
     newestBackup?: Date
   }> {
     const backups = await this.listBackups()
-    
+
     if (backups.length === 0) {
       return { totalBackups: 0, totalSize: 0 }
     }
 
     const totalSize = backups.reduce((sum, backup) => sum + backup.size, 0)
-    const dates = backups.map(b => b.createdAt)
-    
+    const dates = backups.map((b) => b.createdAt)
+
     return {
       totalBackups: backups.length,
       totalSize,
-      oldestBackup: new Date(Math.min(...dates.map(d => d.getTime()))),
-      newestBackup: new Date(Math.max(...dates.map(d => d.getTime())))
+      oldestBackup: new Date(Math.min(...dates.map((d) => d.getTime()))),
+      newestBackup: new Date(Math.max(...dates.map((d) => d.getTime()))),
     }
   }
 

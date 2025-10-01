@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  getAllMeterHistoryStats, 
-  getRemovedMeterStats, 
+
+import {
+  generateMeterHistoryReport,
+  getAllMeterHistoryStats,
   getMeterTypeHistorySummary,
-  generateMeterHistoryReport 
+  getRemovedMeterStats,
 } from '@/lib/meter-data-protection'
 import { meterReadingQueries } from '@/lib/queries'
 
 /**
  * 获取仪表历史数据统计
  * GET /api/meter-history-stats
- * 
+ *
  * 查询参数:
  * - includeInactive: boolean - 是否包含已移除的仪表 (默认: true)
  * - startDate: string - 开始日期
@@ -23,10 +24,14 @@ import { meterReadingQueries } from '@/lib/queries'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     const includeInactive = searchParams.get('includeInactive') !== 'false'
-    const startDate = searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined
-    const endDate = searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined
+    const startDate = searchParams.get('startDate')
+      ? new Date(searchParams.get('startDate')!)
+      : undefined
+    const endDate = searchParams.get('endDate')
+      ? new Date(searchParams.get('endDate')!)
+      : undefined
     const meterType = searchParams.get('meterType') as any
     const roomId = searchParams.get('roomId') || undefined
     const buildingId = searchParams.get('buildingId') || undefined
@@ -38,7 +43,7 @@ export async function GET(request: NextRequest) {
       endDate,
       meterType,
       roomId,
-      buildingId
+      buildingId,
     }
 
     let result: any
@@ -49,7 +54,7 @@ export async function GET(request: NextRequest) {
         result = await getRemovedMeterStats({
           startDate,
           endDate,
-          meterType
+          meterType,
         })
         break
 
@@ -58,7 +63,7 @@ export async function GET(request: NextRequest) {
         result = await getMeterTypeHistorySummary({
           startDate,
           endDate,
-          includeInactive
+          includeInactive,
         })
         break
 
@@ -67,18 +72,24 @@ export async function GET(request: NextRequest) {
         result = await generateMeterHistoryReport({
           startDate,
           endDate,
-          format: 'detailed'
+          format: 'detailed',
         })
         break
 
       case 'readings':
         // 获取抄表记录统计（包含已移除仪表数据）
-        result = await meterReadingQueries.getCompleteHistoryStats(startDate, endDate)
+        result = await meterReadingQueries.getCompleteHistoryStats(
+          startDate,
+          endDate
+        )
         break
 
       case 'active-only':
         // 仅获取活跃仪表的抄表统计
-        result = await meterReadingQueries.getActiveMetersStats(startDate, endDate)
+        result = await meterReadingQueries.getActiveMetersStats(
+          startDate,
+          endDate
+        )
         break
 
       default:
@@ -95,27 +106,26 @@ export async function GET(request: NextRequest) {
         includeInactive,
         dateRange: {
           startDate: startDate?.toISOString(),
-          endDate: endDate?.toISOString()
+          endDate: endDate?.toISOString(),
         },
         filters: {
           meterType,
           roomId,
-          buildingId
+          buildingId,
         },
         dataProtection: {
           message: '历史数据完整性已保护，包含已移除仪表的历史记录',
-          note: '移除仪表不会影响历史数据的统计分析'
-        }
-      }
+          note: '移除仪表不会影响历史数据的统计分析',
+        },
+      },
     })
-
   } catch (error) {
     console.error('Failed to fetch meter history stats:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to fetch meter history statistics',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )
@@ -129,7 +139,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { meterId } = await request.json()
-    
+
     if (!meterId) {
       return NextResponse.json(
         { error: 'meterId is required' },
@@ -137,24 +147,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { validateMeterDataIntegrity } = await import('@/lib/meter-data-protection')
+    const { validateMeterDataIntegrity } = await import(
+      '@/lib/meter-data-protection'
+    )
     const validation = await validateMeterDataIntegrity(meterId)
 
     return NextResponse.json({
       success: true,
       data: validation,
-      message: validation.isValid 
-        ? '数据完整性验证通过' 
-        : '发现数据完整性问题'
+      message: validation.isValid ? '数据完整性验证通过' : '发现数据完整性问题',
     })
-
   } catch (error) {
     console.error('Failed to validate meter data integrity:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to validate meter data integrity',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )

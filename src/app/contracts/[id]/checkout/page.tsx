@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+
 import { contractQueries } from '@/lib/queries'
 import { CheckoutContractPage } from '@/components/pages/CheckoutContractPage'
 
@@ -6,12 +7,14 @@ interface CheckoutContractRouteProps {
   params: Promise<{ id: string }>
 }
 
-export default async function CheckoutContractRoute({ params }: CheckoutContractRouteProps) {
+export default async function CheckoutContractRoute({
+  params,
+}: CheckoutContractRouteProps) {
   const { id } = await params
-  
+
   try {
     const contract = await contractQueries.findById(id)
-    
+
     if (!contract) {
       notFound()
     }
@@ -42,15 +45,15 @@ export default async function CheckoutContractRoute({ params }: CheckoutContract
         area: contract.room.area ? Number(contract.room.area) : null,
         building: {
           ...contract.room.building,
-          totalRooms: Number(contract.room.building.totalRooms)
-        }
+          totalRooms: Number(contract.room.building.totalRooms),
+        },
       },
-      bills: contract.bills.map(bill => ({
+      bills: contract.bills.map((bill) => ({
         ...bill,
         amount: Number(bill.amount),
         receivedAmount: Number(bill.receivedAmount),
-        pendingAmount: Number(bill.pendingAmount)
-      }))
+        pendingAmount: Number(bill.pendingAmount),
+      })),
     }
 
     return <CheckoutContractPage contract={contractForClient} />
@@ -62,10 +65,10 @@ export default async function CheckoutContractRoute({ params }: CheckoutContract
 
 export async function generateMetadata({ params }: CheckoutContractRouteProps) {
   const { id } = await params
-  
+
   try {
     const contract = await contractQueries.findById(id)
-    
+
     if (!contract) {
       return {
         title: '合同不存在 | Rento',
@@ -74,7 +77,7 @@ export async function generateMetadata({ params }: CheckoutContractRouteProps) {
 
     return {
       title: `退租 - ${contract.contractNumber} | Rento`,
-      description: `退租合同 ${contract.contractNumber}，租客：${contract.renter.name}，房间：${contract.room.building.name}${contract.room.roomNumber}`
+      description: `退租合同 ${contract.contractNumber}，租客：${contract.renter.name}，房间：${contract.room.building.name}${contract.room.roomNumber}`,
     }
   } catch (error) {
     return {

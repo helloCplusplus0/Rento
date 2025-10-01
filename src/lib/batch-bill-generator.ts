@@ -1,7 +1,7 @@
+import { generateUtilityBillOnReading } from './auto-bill-generator'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { prisma } from './prisma'
 import { transactionManager, TransactionType } from './transaction-manager'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
-import { generateUtilityBillOnReading } from './auto-bill-generator'
 
 /**
  * 批量账单生成结果接口
@@ -22,11 +22,15 @@ export interface BatchBillGenerationResult {
  * 批量账单生成选项
  */
 export interface BatchGenerationOptions {
-  batchSize?: number        // 批处理大小，默认50
-  maxConcurrent?: number    // 最大并发数，默认5
-  skipExisting?: boolean    // 跳过已有账单的抄表记录，默认true
-  dryRun?: boolean         // 仅预览不实际生成，默认false
-  onProgress?: (progress: { processed: number; total: number; current: string }) => void
+  batchSize?: number // 批处理大小，默认50
+  maxConcurrent?: number // 最大并发数，默认5
+  skipExisting?: boolean // 跳过已有账单的抄表记录，默认true
+  dryRun?: boolean // 仅预览不实际生成，默认false
+  onProgress?: (progress: {
+    processed: number
+    total: number
+    current: string
+  }) => void
 }
 
 /**
@@ -51,7 +55,7 @@ export class BatchBillGenerator {
       maxConcurrent = this.DEFAULT_MAX_CONCURRENT,
       skipExisting = true,
       dryRun = false,
-      onProgress
+      onProgress,
     } = options
 
     const result: BatchBillGenerationResult = {
@@ -60,7 +64,7 @@ export class BatchBillGenerator {
       skipped: 0,
       errors: [],
       duration: 0,
-      totalProcessed: 0
+      totalProcessed: 0,
     }
 
     try {
@@ -71,7 +75,7 @@ export class BatchBillGenerator {
         totalReadings: readingIds.length,
         batchSize,
         maxConcurrent,
-        dryRun
+        dryRun,
       })
 
       // 预处理：过滤已有账单的抄表记录
@@ -85,7 +89,7 @@ export class BatchBillGenerator {
         await this.logger.logInfo('无需处理的抄表记录', {
           module: 'BatchBillGenerator',
           totalReadings: readingIds.length,
-          skipped: result.skipped
+          skipped: result.skipped,
         })
         result.duration = Date.now() - startTime
         return result
@@ -97,25 +101,29 @@ export class BatchBillGenerator {
 
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i]
-        
+
         try {
           // 报告进度
           if (onProgress) {
             onProgress({
               processed: processedCount,
               total: validReadingIds.length,
-              current: `处理批次 ${i + 1}/${batches.length}`
+              current: `处理批次 ${i + 1}/${batches.length}`,
             })
           }
 
           // 并发处理批次内的账单生成
-          const batchResult = await this.processBatch(batch, maxConcurrent, dryRun)
-          
+          const batchResult = await this.processBatch(
+            batch,
+            maxConcurrent,
+            dryRun
+          )
+
           // 累计结果
           result.success += batchResult.success
           result.failed += batchResult.failed
           result.errors.push(...batchResult.errors)
-          
+
           processedCount += batch.length
           result.totalProcessed = processedCount
 
@@ -123,14 +131,15 @@ export class BatchBillGenerator {
           if (i < batches.length - 1) {
             await this.delay(100)
           }
-
         } catch (error) {
           // 整个批次失败
           result.failed += batch.length
-          result.errors.push(...batch.map(readingId => ({
-            readingId,
-            error: `批次处理失败: ${error instanceof Error ? error.message : 'Unknown error'}`
-          })))
+          result.errors.push(
+            ...batch.map((readingId) => ({
+              readingId,
+              error: `批次处理失败: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            }))
+          )
 
           await this.logger.logError(
             ErrorType.BILL_GENERATION,
@@ -140,7 +149,7 @@ export class BatchBillGenerator {
               module: 'BatchBillGenerator',
               function: 'generateUtilityBillsBatch',
               batchIndex: i,
-              batchSize: batch.length
+              batchSize: batch.length,
             },
             error instanceof Error ? error : undefined
           )
@@ -152,10 +161,9 @@ export class BatchBillGenerator {
         onProgress({
           processed: processedCount,
           total: validReadingIds.length,
-          current: '处理完成'
+          current: '处理完成',
         })
       }
-
     } catch (error) {
       await this.logger.logError(
         ErrorType.BILL_GENERATION,
@@ -164,7 +172,7 @@ export class BatchBillGenerator {
         {
           module: 'BatchBillGenerator',
           function: 'generateUtilityBillsBatch',
-          totalReadings: readingIds.length
+          totalReadings: readingIds.length,
         },
         error instanceof Error ? error : undefined
       )
@@ -172,7 +180,7 @@ export class BatchBillGenerator {
       result.failed = readingIds.length
       result.errors.push({
         readingId: 'ALL',
-        error: `批量处理失败: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `批量处理失败: ${error instanceof Error ? error.message : 'Unknown error'}`,
       })
     }
 
@@ -186,8 +194,8 @@ export class BatchBillGenerator {
         success: result.success,
         failed: result.failed,
         skipped: result.skipped,
-        duration: result.duration
-      }
+        duration: result.duration,
+      },
     })
 
     return result
@@ -215,9 +223,9 @@ export class BatchBillGenerator {
     const semaphore: (string | null)[] = new Array(maxConcurrent).fill(null)
     const promises = readingIds.map(async (readingId) => {
       // 等待可用的并发槽位
-      const slotIndex = await new Promise<number>(resolve => {
+      const slotIndex = await new Promise<number>((resolve) => {
         const tryAcquire = () => {
-          const index = semaphore.findIndex(slot => slot === null)
+          const index = semaphore.findIndex((slot) => slot === null)
           if (index !== -1) {
             semaphore[index] = readingId
             resolve(index)
@@ -241,7 +249,7 @@ export class BatchBillGenerator {
         result.failed++
         result.errors.push({
           readingId,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
       } finally {
         // 释放并发槽位
@@ -264,12 +272,12 @@ export class BatchBillGenerator {
           where: { id: readingId },
           include: {
             meter: {
-              include: { room: { include: { building: true } } }
+              include: { room: { include: { building: true } } },
             },
             contract: {
-              include: { renter: true }
-            }
-          }
+              include: { renter: true },
+            },
+          },
         })
 
         if (!reading) {
@@ -286,26 +294,47 @@ export class BatchBillGenerator {
 
         // 构造抄表数据格式
         const readingData = {
-          electricityUsage: reading.meter.meterType === 'ELECTRICITY' ? Number(reading.usage) : 0,
-          waterUsage: reading.meter.meterType === 'COLD_WATER' || reading.meter.meterType === 'HOT_WATER' ? Number(reading.usage) : 0,
-          gasUsage: reading.meter.meterType === 'GAS' ? Number(reading.usage) : 0,
+          electricityUsage:
+            reading.meter.meterType === 'ELECTRICITY'
+              ? Number(reading.usage)
+              : 0,
+          waterUsage:
+            reading.meter.meterType === 'COLD_WATER' ||
+            reading.meter.meterType === 'HOT_WATER'
+              ? Number(reading.usage)
+              : 0,
+          gasUsage:
+            reading.meter.meterType === 'GAS' ? Number(reading.usage) : 0,
           readingDate: reading.readingDate,
           meterReadingIds: [readingId],
           aggregationStrategy: 'SINGLE' as const,
           meterPrices: {
-            electricityPrice: reading.meter.meterType === 'ELECTRICITY' ? Number(reading.meter.unitPrice) : undefined,
-            waterPrice: reading.meter.meterType === 'COLD_WATER' || reading.meter.meterType === 'HOT_WATER' ? Number(reading.meter.unitPrice) : undefined,
-            gasPrice: reading.meter.meterType === 'GAS' ? Number(reading.meter.unitPrice) : undefined
-          }
+            electricityPrice:
+              reading.meter.meterType === 'ELECTRICITY'
+                ? Number(reading.meter.unitPrice)
+                : undefined,
+            waterPrice:
+              reading.meter.meterType === 'COLD_WATER' ||
+              reading.meter.meterType === 'HOT_WATER'
+                ? Number(reading.meter.unitPrice)
+                : undefined,
+            gasPrice:
+              reading.meter.meterType === 'GAS'
+                ? Number(reading.meter.unitPrice)
+                : undefined,
+          },
         }
 
         // 调用现有的账单生成逻辑
-        return await generateUtilityBillOnReading(reading.contractId, readingData)
+        return await generateUtilityBillOnReading(
+          reading.contractId,
+          readingData
+        )
       },
       {
         type: TransactionType.BILL_GENERATION,
         description: `批量生成账单 - 抄表记录: ${readingId}`,
-        metadata: { readingId, source: 'batch_generation' }
+        metadata: { readingId, source: 'batch_generation' },
       }
     )
 
@@ -322,8 +351,8 @@ export class BatchBillGenerator {
       where: { id: readingId },
       include: {
         meter: true,
-        contract: true
-      }
+        contract: true,
+      },
     })
 
     if (!reading) {
@@ -349,16 +378,16 @@ export class BatchBillGenerator {
   private async filterExistingBills(readingIds: string[]): Promise<string[]> {
     const existingBills = await prisma.bill.findMany({
       where: {
-        meterReadingId: { in: readingIds }
+        meterReadingId: { in: readingIds },
       },
-      select: { meterReadingId: true }
+      select: { meterReadingId: true },
     })
 
     const existingReadingIds = new Set(
-      existingBills.map(bill => bill.meterReadingId).filter(Boolean)
+      existingBills.map((bill) => bill.meterReadingId).filter(Boolean)
     )
 
-    return readingIds.filter(id => !existingReadingIds.has(id))
+    return readingIds.filter((id) => !existingReadingIds.has(id))
   }
 
   /**
@@ -376,7 +405,7 @@ export class BatchBillGenerator {
    * 延迟函数
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }
 

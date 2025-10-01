@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server'
-import { withApiErrorHandler, createSuccessResponse } from '@/lib/api-error-handler'
+
+import {
+  createSuccessResponse,
+  withApiErrorHandler,
+} from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { prisma } from '@/lib/prisma'
 
@@ -8,43 +12,46 @@ import { prisma } from '@/lib/prisma'
  */
 async function handleGetContractAlerts(_request: NextRequest) {
   const today = new Date()
-  
+
   // 查询已到期但未处理的合同
   const expiredContracts = await prisma.contract.findMany({
     where: {
       status: 'ACTIVE',
       endDate: {
-        lt: today
-      }
+        lt: today,
+      },
     },
     include: {
       renter: {
         select: {
           id: true,
           name: true,
-          phone: true
-        }
+          phone: true,
+        },
       },
       room: {
         include: {
           building: {
             select: {
               id: true,
-              name: true
-            }
-          }
-        }
-      }
+              name: true,
+            },
+          },
+        },
+      },
     },
     orderBy: {
-      endDate: 'desc'
-    }
+      endDate: 'desc',
+    },
   })
 
   // 转换数据类型并计算逾期天数
-  const alertsData = expiredContracts.map(contract => {
-    const daysOverdue = Math.ceil((today.getTime() - new Date(contract.endDate).getTime()) / (1000 * 60 * 60 * 24))
-    
+  const alertsData = expiredContracts.map((contract) => {
+    const daysOverdue = Math.ceil(
+      (today.getTime() - new Date(contract.endDate).getTime()) /
+        (1000 * 60 * 60 * 24)
+    )
+
     return {
       id: contract.id,
       contractId: contract.id,
@@ -54,7 +61,7 @@ async function handleGetContractAlerts(_request: NextRequest) {
       endDate: contract.endDate,
       daysUntilExpiry: -daysOverdue, // 负数表示已逾期
       monthlyRent: Number(contract.monthlyRent),
-      alertLevel: 'danger' as const
+      alertLevel: 'danger' as const,
     }
   })
 
@@ -65,12 +72,12 @@ async function handleGetContractAlerts(_request: NextRequest) {
       total: alertsData.length,
       warning: 0,
       danger: alertsData.length,
-      expired: alertsData.length
-    }
+      expired: alertsData.length,
+    },
   })
 }
 
 export const GET = withApiErrorHandler(handleGetContractAlerts, {
   module: 'contract-alerts-api',
-  errorType: ErrorType.DATABASE_ERROR
+  errorType: ErrorType.DATABASE_ERROR,
 })

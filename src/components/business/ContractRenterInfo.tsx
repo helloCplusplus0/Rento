@@ -1,7 +1,7 @@
 'use client'
 
+import { formatCurrency, formatDate } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDate, formatCurrency } from '@/lib/format'
 
 interface ContractRenterInfoProps {
   bill: any
@@ -15,7 +15,7 @@ export function ContractRenterInfo({ bill }: ContractRenterInfoProps) {
   const { contract } = bill
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* 合同信息 */}
       <Card>
         <CardHeader>
@@ -25,41 +25,67 @@ export function ContractRenterInfo({ bill }: ContractRenterInfoProps) {
           {/* 移动端优化：使用更紧凑的两列布局 */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-600">合同编号</label>
-              <p className="text-sm font-mono truncate">{contract.contractNumber}</p>
+              <label className="text-xs font-medium text-gray-600">
+                合同编号
+              </label>
+              <p className="truncate font-mono text-sm">
+                {contract.contractNumber}
+              </p>
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-600">房间信息</label>
+              <label className="text-xs font-medium text-gray-600">
+                房间信息
+              </label>
               <p className="text-sm">
                 {contract.room.building.name} - {contract.room.roomNumber}
               </p>
               <p className="text-xs text-gray-500">
-                {contract.room.floorNumber}楼 · {contract.room.roomType === 'SHARED' ? '合租' : contract.room.roomType === 'WHOLE' ? '整租' : '单间'}
+                {contract.room.floorNumber}楼 ·{' '}
+                {contract.room.roomType === 'SHARED'
+                  ? '合租'
+                  : contract.room.roomType === 'WHOLE'
+                    ? '整租'
+                    : '单间'}
                 {contract.room.area && ` · ${contract.room.area}㎡`}
               </p>
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-600">合同期限</label>
+              <label className="text-xs font-medium text-gray-600">
+                合同期限
+              </label>
               <p className="text-sm">
-                {formatDate(contract.startDate)} 至 {formatDate(contract.endDate)}
+                {formatDate(contract.startDate)} 至{' '}
+                {formatDate(contract.endDate)}
               </p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">合同状态</label>
+              <label className="text-xs font-medium text-gray-600">
+                合同状态
+              </label>
               <p className="text-sm">
-                <span className={`inline-block px-2 py-1 rounded text-xs ${
-                  contract.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                  contract.status === 'EXPIRED' ? 'bg-red-100 text-red-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {contract.status === 'ACTIVE' ? '生效中' : 
-                   contract.status === 'EXPIRED' ? '已到期' : 
-                   contract.status === 'TERMINATED' ? '已终止' : contract.status}
+                <span
+                  className={`inline-block rounded px-2 py-1 text-xs ${
+                    contract.status === 'ACTIVE'
+                      ? 'bg-green-100 text-green-700'
+                      : contract.status === 'EXPIRED'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {contract.status === 'ACTIVE'
+                    ? '生效中'
+                    : contract.status === 'EXPIRED'
+                      ? '已到期'
+                      : contract.status === 'TERMINATED'
+                        ? '已终止'
+                        : contract.status}
                 </span>
               </p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">月租金</label>
+              <label className="text-xs font-medium text-gray-600">
+                月租金
+              </label>
               <p className="text-sm font-semibold">
                 {formatCurrency(contract.monthlyRent)}
               </p>
@@ -70,26 +96,36 @@ export function ContractRenterInfo({ bill }: ContractRenterInfoProps) {
             </div>
             {contract.keyDeposit && (
               <div>
-                <label className="text-xs font-medium text-gray-600">钥匙押金</label>
+                <label className="text-xs font-medium text-gray-600">
+                  钥匙押金
+                </label>
                 <p className="text-sm">{formatCurrency(contract.keyDeposit)}</p>
               </div>
             )}
             {contract.cleaningFee && (
               <div>
-                <label className="text-xs font-medium text-gray-600">清洁费</label>
-                <p className="text-sm">{formatCurrency(contract.cleaningFee)}</p>
+                <label className="text-xs font-medium text-gray-600">
+                  清洁费
+                </label>
+                <p className="text-sm">
+                  {formatCurrency(contract.cleaningFee)}
+                </p>
               </div>
             )}
           </div>
           {contract.paymentMethod && (
             <div>
-              <label className="text-sm font-medium text-gray-600">付款方式</label>
+              <label className="text-sm font-medium text-gray-600">
+                付款方式
+              </label>
               <p className="text-sm">{contract.paymentMethod}</p>
             </div>
           )}
           {contract.paymentTiming && (
             <div>
-              <label className="text-sm font-medium text-gray-600">付款时间</label>
+              <label className="text-sm font-medium text-gray-600">
+                付款时间
+              </label>
               <p className="text-sm">{contract.paymentTiming}</p>
             </div>
           )}
@@ -109,61 +145,90 @@ export function ContractRenterInfo({ bill }: ContractRenterInfoProps) {
               <p className="text-sm font-medium">{contract.renter.name}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">联系电话</label>
-              <p className="text-sm font-mono">
-                <a href={`tel:${contract.renter.phone}`} className="text-blue-600 hover:underline">
+              <label className="text-xs font-medium text-gray-600">
+                联系电话
+              </label>
+              <p className="font-mono text-sm">
+                <a
+                  href={`tel:${contract.renter.phone}`}
+                  className="text-blue-600 hover:underline"
+                >
                   {contract.renter.phone}
                 </a>
               </p>
             </div>
             {contract.renter.gender && (
               <div>
-                <label className="text-xs font-medium text-gray-600">性别</label>
+                <label className="text-xs font-medium text-gray-600">
+                  性别
+                </label>
                 <p className="text-sm">{contract.renter.gender}</p>
               </div>
             )}
             {contract.renter.occupation && (
               <div>
-                <label className="text-xs font-medium text-gray-600">职业</label>
+                <label className="text-xs font-medium text-gray-600">
+                  职业
+                </label>
                 <p className="text-sm">{contract.renter.occupation}</p>
               </div>
             )}
             {contract.renter.company && (
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">公司</label>
+                <label className="text-xs font-medium text-gray-600">
+                  公司
+                </label>
                 <p className="text-sm">{contract.renter.company}</p>
               </div>
             )}
             {contract.renter.moveInDate && (
               <div>
-                <label className="text-xs font-medium text-gray-600">入住日期</label>
-                <p className="text-sm">{formatDate(contract.renter.moveInDate)}</p>
+                <label className="text-xs font-medium text-gray-600">
+                  入住日期
+                </label>
+                <p className="text-sm">
+                  {formatDate(contract.renter.moveInDate)}
+                </p>
               </div>
             )}
             {contract.renter.tenantCount && (
               <div>
-                <label className="text-xs font-medium text-gray-600">入住人数</label>
+                <label className="text-xs font-medium text-gray-600">
+                  入住人数
+                </label>
                 <p className="text-sm">{contract.renter.tenantCount}人</p>
               </div>
             )}
             {contract.renter.idCard && (
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">身份证号</label>
-                <p className="text-sm font-mono">
-                  {contract.renter.idCard.replace(/(\d{6})\d{8}(\d{4})/, '$1********$2')}
+                <label className="text-xs font-medium text-gray-600">
+                  身份证号
+                </label>
+                <p className="font-mono text-sm">
+                  {contract.renter.idCard.replace(
+                    /(\d{6})\d{8}(\d{4})/,
+                    '$1********$2'
+                  )}
                 </p>
               </div>
             )}
             {contract.renter.emergencyContact && (
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">紧急联系人</label>
+                <label className="text-xs font-medium text-gray-600">
+                  紧急联系人
+                </label>
                 <p className="text-sm">
                   {contract.renter.emergencyContact}
                   {contract.renter.emergencyPhone && (
-                    <span className="text-gray-500 ml-2">
-                      (<a href={`tel:${contract.renter.emergencyPhone}`} className="text-blue-600 hover:underline">
+                    <span className="ml-2 text-gray-500">
+                      (
+                      <a
+                        href={`tel:${contract.renter.emergencyPhone}`}
+                        className="text-blue-600 hover:underline"
+                      >
                         {contract.renter.emergencyPhone}
-                      </a>)
+                      </a>
+                      )
                     </span>
                   )}
                 </p>
@@ -173,7 +238,7 @@ export function ContractRenterInfo({ bill }: ContractRenterInfoProps) {
           {contract.renter.remarks && (
             <div>
               <label className="text-xs font-medium text-gray-600">备注</label>
-              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+              <p className="rounded bg-gray-50 p-2 text-sm text-gray-700">
                 {contract.renter.remarks}
               </p>
             </div>

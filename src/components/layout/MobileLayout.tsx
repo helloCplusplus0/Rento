@@ -12,12 +12,10 @@ interface MobileLayoutProps {
  */
 export function MobileLayout({ children }: MobileLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-gray-50">
       {/* 主内容区域 */}
-      <main className="flex-1 overflow-y-auto pb-16">
-        {children}
-      </main>
-      
+      <main className="flex-1 overflow-y-auto pb-16">{children}</main>
+
       {/* 统一导航栏 - 移动端样式 */}
       <UnifiedNavigation variant="mobile" />
     </div>

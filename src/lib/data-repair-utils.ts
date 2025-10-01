@@ -1,5 +1,5 @@
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { prisma } from './prisma'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
 
 /**
  * 数据修复工具
@@ -23,34 +23,36 @@ export class DataRepairUtils {
     let repairedRooms = 0
 
     try {
-      this.logger.logInfo('开始修复房间-合同状态不一致问题', { 
+      this.logger.logInfo('开始修复房间-合同状态不一致问题', {
         module: 'data-repair-utils',
-        function: 'repairRoomContractInconsistency'
+        function: 'repairRoomContractInconsistency',
       })
 
       // 查找状态为OCCUPIED但无活跃合同的房间
       const inconsistentRooms = await prisma.room.findMany({
         where: {
-          status: 'OCCUPIED'
+          status: 'OCCUPIED',
         },
         include: {
           contracts: {
-            where: { status: 'ACTIVE' }
-          }
-        }
+            where: { status: 'ACTIVE' },
+          },
+        },
       })
 
       for (const room of inconsistentRooms) {
-        const activeContracts = room.contracts.filter(c => c.status === 'ACTIVE')
-        
+        const activeContracts = room.contracts.filter(
+          (c) => c.status === 'ACTIVE'
+        )
+
         if (activeContracts.length === 0) {
           // 房间状态为OCCUPIED但无活跃合同，修复为VACANT
           await prisma.room.update({
             where: { id: room.id },
             data: {
               status: 'VACANT',
-              currentRenter: null
-            }
+              currentRenter: null,
+            },
           })
 
           repairedRooms++
@@ -59,7 +61,7 @@ export class DataRepairUtils {
             roomId: room.id,
             roomNumber: room.roomNumber,
             oldStatus: 'OCCUPIED',
-            newStatus: 'VACANT'
+            newStatus: 'VACANT',
           })
         }
       }
@@ -67,18 +69,20 @@ export class DataRepairUtils {
       // 查找状态为VACANT但有活跃合同的房间
       const vacantRoomsWithContracts = await prisma.room.findMany({
         where: {
-          status: 'VACANT'
+          status: 'VACANT',
         },
         include: {
           contracts: {
-            where: { status: 'ACTIVE' }
-          }
-        }
+            where: { status: 'ACTIVE' },
+          },
+        },
       })
 
       for (const room of vacantRoomsWithContracts) {
-        const activeContracts = room.contracts.filter(c => c.status === 'ACTIVE')
-        
+        const activeContracts = room.contracts.filter(
+          (c) => c.status === 'ACTIVE'
+        )
+
         if (activeContracts.length > 0) {
           // 房间状态为VACANT但有活跃合同，修复为OCCUPIED
           const activeContract = activeContracts[0]
@@ -86,8 +90,8 @@ export class DataRepairUtils {
             where: { id: room.id },
             data: {
               status: 'OCCUPIED',
-              currentRenter: activeContract.renterId
-            }
+              currentRenter: activeContract.renterId,
+            },
           })
 
           repairedRooms++
@@ -97,7 +101,7 @@ export class DataRepairUtils {
             roomNumber: room.roomNumber,
             oldStatus: 'VACANT',
             newStatus: 'OCCUPIED',
-            contractId: activeContract.id
+            contractId: activeContract.id,
           })
         }
       }
@@ -105,15 +109,14 @@ export class DataRepairUtils {
       this.logger.logInfo('房间-合同状态修复完成', {
         module: 'data-repair-utils',
         repairedRooms,
-        errors: errors.length
+        errors: errors.length,
       })
 
       return { repairedRooms, errors }
-
     } catch (error) {
       const errorMessage = `房间-合同状态修复失败: ${(error as Error).message}`
       errors.push(errorMessage)
-      
+
       await this.logger.logError(
         ErrorType.DATA_CONSISTENCY,
         ErrorSeverity.HIGH,
@@ -137,9 +140,9 @@ export class DataRepairUtils {
     let repairedBills = 0
 
     try {
-      this.logger.logInfo('开始修复孤立账单问题', { 
+      this.logger.logInfo('开始修复孤立账单问题', {
         module: 'data-repair-utils',
-        function: 'repairOrphanBills'
+        function: 'repairOrphanBills',
       })
 
       // 查找没有关联合同的账单
@@ -147,12 +150,14 @@ export class DataRepairUtils {
         where: {
           contractId: {
             not: {
-              in: await prisma.contract.findMany({
-                select: { id: true }
-              }).then(contracts => contracts.map(c => c.id))
-            }
-          }
-        }
+              in: await prisma.contract
+                .findMany({
+                  select: { id: true },
+                })
+                .then((contracts) => contracts.map((c) => c.id)),
+            },
+          },
+        },
       })
 
       for (const bill of orphanBills) {
@@ -162,19 +167,18 @@ export class DataRepairUtils {
           module: 'data-repair-utils',
           billId: bill.id,
           billNumber: bill.billNumber,
-          contractId: bill.contractId
+          contractId: bill.contractId,
         })
-        
+
         // 这里可以添加更复杂的修复逻辑
         // 暂时只记录，不自动删除
       }
 
       return { repairedBills, errors }
-
     } catch (error) {
       const errorMessage = `孤立账单修复失败: ${(error as Error).message}`
       errors.push(errorMessage)
-      
+
       await this.logger.logError(
         ErrorType.DATA_CONSISTENCY,
         ErrorSeverity.MEDIUM,
@@ -198,20 +202,20 @@ export class DataRepairUtils {
     let repairedReadings = 0
 
     try {
-      this.logger.logInfo('开始修复抄表记录状态不一致问题', { 
+      this.logger.logInfo('开始修复抄表记录状态不一致问题', {
         module: 'data-repair-utils',
-        function: 'repairMeterReadingInconsistency'
+        function: 'repairMeterReadingInconsistency',
       })
 
       // 查找状态为CONFIRMED但未生成账单的抄表记录
       const unbilledReadings = await prisma.meterReading.findMany({
         where: {
           status: 'CONFIRMED',
-          isBilled: false
+          isBilled: false,
         },
         include: {
-          bills: true
-        }
+          bills: true,
+        },
       })
 
       for (const reading of unbilledReadings) {
@@ -221,8 +225,8 @@ export class DataRepairUtils {
             where: { id: reading.id },
             data: {
               isBilled: true,
-              status: 'BILLED'
-            }
+              status: 'BILLED',
+            },
           })
 
           repairedReadings++
@@ -231,17 +235,16 @@ export class DataRepairUtils {
             readingId: reading.id,
             oldStatus: reading.status,
             newStatus: 'BILLED',
-            billCount: reading.bills.length
+            billCount: reading.bills.length,
           })
         }
       }
 
       return { repairedReadings, errors }
-
     } catch (error) {
       const errorMessage = `抄表记录状态修复失败: ${(error as Error).message}`
       errors.push(errorMessage)
-      
+
       await this.logger.logError(
         ErrorType.DATA_CONSISTENCY,
         ErrorSeverity.MEDIUM,
@@ -280,7 +283,10 @@ export class DataRepairUtils {
     const readingResult = await this.repairMeterReadingInconsistency()
     allErrors.push(...readingResult.errors)
 
-    const totalRepaired = roomResult.repairedRooms + billResult.repairedBills + readingResult.repairedReadings
+    const totalRepaired =
+      roomResult.repairedRooms +
+      billResult.repairedBills +
+      readingResult.repairedReadings
 
     this.logger.logInfo('全面数据修复完成', {
       module: 'data-repair-utils',
@@ -288,9 +294,9 @@ export class DataRepairUtils {
       details: {
         rooms: roomResult.repairedRooms,
         bills: billResult.repairedBills,
-        readings: readingResult.repairedReadings
+        readings: readingResult.repairedReadings,
       },
-      errorCount: allErrors.length
+      errorCount: allErrors.length,
     })
 
     return {
@@ -298,9 +304,9 @@ export class DataRepairUtils {
       details: {
         rooms: roomResult.repairedRooms,
         bills: billResult.repairedBills,
-        readings: readingResult.repairedReadings
+        readings: readingResult.repairedReadings,
       },
-      errors: allErrors
+      errors: allErrors,
     }
   }
 }

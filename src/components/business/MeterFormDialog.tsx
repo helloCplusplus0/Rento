@@ -1,12 +1,20 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { useCallback, useState } from 'react'
 import { AlertCircle, CheckCircle, X } from 'lucide-react'
 import { toast } from 'sonner'
+
+import type { MeterFormData, MeterWithReadingsForClient } from '@/types/meter'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
 import { MeterForm } from './MeterForm'
-import type { MeterWithReadingsForClient, MeterFormData } from '@/types/meter'
 
 /**
  * 弹框状态类型
@@ -36,7 +44,7 @@ interface MeterFormDialogProps {
 
 /**
  * 仪表配置表单弹框组件
- * 
+ *
  * 特性：
  * 1. 统一的错误处理和用户反馈
  * 2. 优雅的加载状态管理
@@ -49,86 +57,83 @@ export function MeterFormDialog({
   meter,
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }: MeterFormDialogProps) {
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
     isSubmitting: false,
     hasError: false,
-    errorMessage: ''
+    errorMessage: '',
   })
 
   /**
    * 处理表单提交
    */
-  const handleSubmit = useCallback(async (formData: MeterFormData) => {
-    setDialogState(prev => ({ 
-      ...prev, 
-      isSubmitting: true, 
-      hasError: false, 
-      errorMessage: '' 
-    }))
-
-    try {
-      let response: Response
-      
-      if (meter) {
-        // 更新仪表
-        response = await fetch(`/api/meters/${meter.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        })
-      } else {
-        // 添加仪表
-        response = await fetch(`/api/rooms/${roomId}/meters`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        })
-      }
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || `${meter ? '更新' : '添加'}仪表失败`)
-      }
-
-      // 成功提示
-      toast.success(
-        meter ? '仪表配置更新成功' : '仪表配置添加成功',
-        {
-          description: `${formData.displayName} 已成功${meter ? '更新' : '添加'}`,
-          duration: 3000,
-          icon: <CheckCircle className="w-4 h-4 text-green-600" />
-        }
-      )
-
-      // 关闭弹框并触发成功回调
-      onClose()
-      onSuccess()
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '操作失败，请重试'
-      
-      setDialogState(prev => ({
+  const handleSubmit = useCallback(
+    async (formData: MeterFormData) => {
+      setDialogState((prev) => ({
         ...prev,
-        hasError: true,
-        errorMessage
+        isSubmitting: true,
+        hasError: false,
+        errorMessage: '',
       }))
 
-      // 错误提示
-      toast.error(
-        meter ? '仪表更新失败' : '仪表添加失败',
-        {
+      try {
+        let response: Response
+
+        if (meter) {
+          // 更新仪表
+          response = await fetch(`/api/meters/${meter.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          })
+        } else {
+          // 添加仪表
+          response = await fetch(`/api/rooms/${roomId}/meters`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          })
+        }
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || `${meter ? '更新' : '添加'}仪表失败`)
+        }
+
+        // 成功提示
+        toast.success(meter ? '仪表配置更新成功' : '仪表配置添加成功', {
+          description: `${formData.displayName} 已成功${meter ? '更新' : '添加'}`,
+          duration: 3000,
+          icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+        })
+
+        // 关闭弹框并触发成功回调
+        onClose()
+        onSuccess()
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : '操作失败，请重试'
+
+        setDialogState((prev) => ({
+          ...prev,
+          hasError: true,
+          errorMessage,
+        }))
+
+        // 错误提示
+        toast.error(meter ? '仪表更新失败' : '仪表添加失败', {
           description: errorMessage,
           duration: 5000,
-          icon: <AlertCircle className="w-4 h-4 text-red-600" />
-        }
-      )
-    } finally {
-      setDialogState(prev => ({ ...prev, isSubmitting: false }))
-    }
-  }, [roomId, meter, onClose, onSuccess])
+          icon: <AlertCircle className="h-4 w-4 text-red-600" />,
+        })
+      } finally {
+        setDialogState((prev) => ({ ...prev, isSubmitting: false }))
+      }
+    },
+    [roomId, meter, onClose, onSuccess]
+  )
 
   /**
    * 处理弹框关闭
@@ -143,19 +148,19 @@ export function MeterFormDialog({
   /**
    * 处理键盘事件
    */
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape' && !dialogState.isSubmitting) {
-      handleClose()
-    }
-  }, [dialogState.isSubmitting, handleClose])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape' && !dialogState.isSubmitting) {
+        handleClose()
+      }
+    },
+    [dialogState.isSubmitting, handleClose]
+  )
 
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={handleClose}
-    >
-      <DialogContent 
-        className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent
+        className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden"
         onKeyDown={handleKeyDown}
       >
         {/* 弹框头部 */}
@@ -166,13 +171,12 @@ export function MeterFormDialog({
                 {meter ? '编辑仪表配置' : '添加仪表配置'}
               </DialogTitle>
               <DialogDescription className="mt-1 text-sm text-gray-600">
-                {meter 
-                  ? '修改仪表的配置信息，包括显示名称、单价设置等。' 
-                  : '为房间添加新的仪表配置，设置仪表类型、单价和其他相关信息。'
-                }
+                {meter
+                  ? '修改仪表的配置信息，包括显示名称、单价设置等。'
+                  : '为房间添加新的仪表配置，设置仪表类型、单价和其他相关信息。'}
               </DialogDescription>
             </div>
-            
+
             {/* 关闭按钮 */}
             <Button
               variant="ghost"
@@ -184,13 +188,15 @@ export function MeterFormDialog({
               <X className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {/* 错误提示 */}
           {dialogState.hasError && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                <p className="text-sm text-red-800">{dialogState.errorMessage}</p>
+                <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600" />
+                <p className="text-sm text-red-800">
+                  {dialogState.errorMessage}
+                </p>
               </div>
             </div>
           )}
@@ -210,9 +216,9 @@ export function MeterFormDialog({
 
         {/* 提交状态遮罩 */}
         {dialogState.isSubmitting && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 flex items-center gap-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50">
+            <div className="flex items-center gap-3 rounded-lg bg-white p-6 shadow-lg">
+              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-blue-600"></div>
               <span className="text-sm font-medium">
                 {meter ? '正在更新仪表配置...' : '正在添加仪表配置...'}
               </span>

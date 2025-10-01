@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
+import type { Building } from '@prisma/client'
+
 import { BuildingSelector } from '@/components/business/BuildingSelector'
 import { RoomBatchForm } from '@/components/business/RoomBatchForm'
 import { RoomPreviewList } from '@/components/business/RoomPreviewList'
-import type { Building } from '@prisma/client'
+import { PageContainer } from '@/components/layout'
 
 interface AddRoomPageProps {
   initialBuildings: (Building & { totalRooms: number })[]
@@ -27,7 +28,9 @@ interface RoomData {
 export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
   const router = useRouter()
   const [buildings, setBuildings] = useState(initialBuildings)
-  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
+  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(
+    null
+  )
   const [generatedRooms, setGeneratedRooms] = useState<RoomData[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -39,16 +42,20 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
 
   // 处理新建楼栋
   const handleNewBuilding = (building: Building) => {
-    setBuildings(prev => [...prev, { ...building, totalRooms: 0 }])
+    setBuildings((prev) => [...prev, { ...building, totalRooms: 0 }])
     setSelectedBuilding(building)
     setGeneratedRooms([])
   }
 
   // 处理楼栋更新
-  const handleBuildingUpdate = (updatedBuilding: Building & { totalRooms: number }) => {
-    setBuildings(prev => prev.map(building => 
-      building.id === updatedBuilding.id ? updatedBuilding : building
-    ))
+  const handleBuildingUpdate = (
+    updatedBuilding: Building & { totalRooms: number }
+  ) => {
+    setBuildings((prev) =>
+      prev.map((building) =>
+        building.id === updatedBuilding.id ? updatedBuilding : building
+      )
+    )
     // 如果当前选中的楼栋被更新，也要更新选中状态
     if (selectedBuilding?.id === updatedBuilding.id) {
       setSelectedBuilding(updatedBuilding)
@@ -57,7 +64,9 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
 
   // 处理楼栋删除
   const handleBuildingDelete = (buildingId: string) => {
-    setBuildings(prev => prev.filter(building => building.id !== buildingId))
+    setBuildings((prev) =>
+      prev.filter((building) => building.id !== buildingId)
+    )
     // 如果删除的是当前选中的楼栋，清空选中状态
     if (selectedBuilding?.id === buildingId) {
       setSelectedBuilding(null)
@@ -81,8 +90,8 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           buildingId: selectedBuilding.id,
-          rooms: generatedRooms
-        })
+          rooms: generatedRooms,
+        }),
       })
 
       if (response.ok) {

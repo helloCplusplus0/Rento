@@ -1,28 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  DollarSign,
+  FileText,
+  RefreshCw,
+} from 'lucide-react'
+
+import { formatCurrency, formatDate } from '@/lib/format'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { SimpleErrorAlert } from '@/components/business/ErrorAlert'
-import { EnhancedErrorAlert } from '@/components/business/EnhancedErrorAlert'
-import { ContractBillPreview } from '@/components/business/ContractBillPreview'
-import { formatDate, formatCurrency } from '@/lib/format'
 import { ContractStatusBadge } from '@/components/ui/status-badge'
-import { 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  RefreshCw,
-  AlertCircle,
-  CheckCircle
-} from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { ContractBillPreview } from '@/components/business/ContractBillPreview'
+import { EnhancedErrorAlert } from '@/components/business/EnhancedErrorAlert'
+import { SimpleErrorAlert } from '@/components/business/ErrorAlert'
+import { PageContainer } from '@/components/layout'
 
 interface RenewContractFormData {
   newStartDate: string
@@ -80,13 +81,15 @@ interface RenewContractPageProps {
  */
 export function RenewContractPage({ contractId }: RenewContractPageProps) {
   const router = useRouter()
-  const [contract, setContract] = useState<ContractWithDetailsForClient | null>(null)
+  const [contract, setContract] = useState<ContractWithDetailsForClient | null>(
+    null
+  )
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errorType, setErrorType] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  
+
   const [formData, setFormData] = useState<RenewContractFormData>({
     newStartDate: '',
     newEndDate: '',
@@ -98,7 +101,7 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
     paymentTiming: '',
     signedBy: '',
     signedDate: '',
-    remarks: ''
+    remarks: '',
   })
 
   // 1. 续租申请阶段 - 获取原合同详情
@@ -107,31 +110,31 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
       try {
         setLoading(true)
         setError(null)
-    setErrorType(null)
-        
+        setErrorType(null)
+
         const response = await fetch(`/api/contracts/${contractId}`)
         if (!response.ok) {
           throw new Error('获取合同信息失败')
         }
-        
+
         const result = await response.json()
         // 提取data字段中的合同数据
         const contractData = result.success ? result.data : result
         setContract(contractData)
-        
+
         // 预填原合同信息
         const originalEndDate = new Date(contractData.endDate)
         const newStartDate = new Date(originalEndDate)
         // 修正：新合同从原合同结束日期的第二天开始，避免日期后移
         // 如果原合同是2026-09-26结束，新合同应该从2026-09-27开始
         newStartDate.setDate(newStartDate.getDate() + 1)
-        
+
         const newEndDate = new Date(newStartDate)
         // 默认续租一年，但结束日期要减一天，保持租期的正确性
         // 例如：2026-09-27开始，应该到2027-09-26结束（正好一年）
         newEndDate.setFullYear(newEndDate.getFullYear() + 1)
         newEndDate.setDate(newEndDate.getDate() - 1)
-        
+
         setFormData({
           newStartDate: newStartDate.toISOString().split('T')[0],
           newEndDate: newEndDate.toISOString().split('T')[0],
@@ -142,8 +145,10 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
           paymentMethod: contractData.paymentMethod || '',
           paymentTiming: contractData.paymentTiming || '',
           signedBy: contractData.signedBy || '',
-          signedDate: contractData.signedDate ? new Date(contractData.signedDate).toISOString().split('T')[0] : '',
-          remarks: contractData.remarks || '' // 预填充原合同备注，用户可以在此基础上修改
+          signedDate: contractData.signedDate
+            ? new Date(contractData.signedDate).toISOString().split('T')[0]
+            : '',
+          remarks: contractData.remarks || '', // 预填充原合同备注，用户可以在此基础上修改
         })
       } catch (err) {
         setError(err instanceof Error ? err.message : '获取合同信息失败')
@@ -160,19 +165,19 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
     if (!formData.newStartDate) return '请选择新合同开始日期'
     if (!formData.newEndDate) return '请选择新合同结束日期'
     if (formData.newMonthlyRent <= 0) return '月租金必须大于0'
-    
+
     const startDate = new Date(formData.newStartDate)
     const endDate = new Date(formData.newEndDate)
-    
+
     if (endDate <= startDate) return '结束日期必须晚于开始日期'
-    
+
     return null
   }
 
   // 3. 提交续租申请
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validationError = validateForm()
     if (validationError) {
       setError(validationError)
@@ -189,7 +194,7 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       })
 
       if (!response.ok) {
@@ -202,12 +207,11 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
       const result = await response.json()
       setSuccess(true)
-      
+
       // 显示成功弹框提示
       setTimeout(() => {
         router.push(`/contracts/${result.data.newContract.id}`)
       }, 2000)
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : '续租失败，请重试')
     } finally {
@@ -215,10 +219,13 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
     }
   }
 
-  const handleInputChange = (field: keyof RenewContractFormData, value: string | number) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof RenewContractFormData,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
     setError(null)
     setErrorType(null)
@@ -228,7 +235,7 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
     return (
       <PageContainer title="续租合同" showBackButton>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <span className="ml-2 text-gray-600">加载中...</span>
         </div>
       </PageContainer>
@@ -238,9 +245,11 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
   if (!contract) {
     return (
       <PageContainer title="续租合同" showBackButton>
-        <div className="text-center py-12">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">合同不存在</h2>
+        <div className="py-12 text-center">
+          <AlertCircle className="mx-auto mb-4 h-16 w-16 text-red-500" />
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">
+            合同不存在
+          </h2>
           <p className="text-gray-600">无法找到指定的合同信息</p>
         </div>
       </PageContainer>
@@ -250,11 +259,13 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
   if (success) {
     return (
       <PageContainer title="续租合同" showBackButton>
-        <div className="text-center py-12">
-          <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">续租成功</h2>
-          <p className="text-gray-600 mb-4">新合同已创建，正在跳转到合同详情页...</p>
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
+        <div className="py-12 text-center">
+          <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">续租成功</h2>
+          <p className="mb-4 text-gray-600">
+            新合同已创建，正在跳转到合同详情页...
+          </p>
+          <div className="mx-auto h-6 w-6 animate-spin rounded-full border-b-2 border-green-500"></div>
         </div>
       </PageContainer>
     )
@@ -262,20 +273,22 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
   return (
     <PageContainer title="续租合同" showBackButton>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         {/* 原合同信息展示 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
+              <FileText className="h-5 w-5 text-blue-600" />
               原合同信息
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <Label className="text-sm text-gray-600">合同编号</Label>
-                <p className="font-mono text-sm font-medium">{contract.contractNumber}</p>
+                <p className="font-mono text-sm font-medium">
+                  {contract.contractNumber}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">合同状态</Label>
@@ -285,43 +298,63 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
               </div>
               <div>
                 <Label className="text-sm text-gray-600">租客</Label>
-                <p className="font-medium">{contract.renter?.name || '未知租客'}</p>
+                <p className="font-medium">
+                  {contract.renter?.name || '未知租客'}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">房间</Label>
-                <p className="font-medium">{contract.room?.building?.name || '未知楼栋'} - {contract.room?.roomNumber || '未知房间'}</p>
+                <p className="font-medium">
+                  {contract.room?.building?.name || '未知楼栋'} -{' '}
+                  {contract.room?.roomNumber || '未知房间'}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">合同期限</Label>
-                <p className="text-sm">{formatDate(contract.startDate)} - {formatDate(contract.endDate)}</p>
+                <p className="text-sm">
+                  {formatDate(contract.startDate)} -{' '}
+                  {formatDate(contract.endDate)}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">月租金</Label>
-                <p className="font-medium text-green-600">{formatCurrency(Number(contract.monthlyRent) || 0)}</p>
+                <p className="font-medium text-green-600">
+                  {formatCurrency(Number(contract.monthlyRent) || 0)}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">总租金</Label>
-                <p className="font-medium text-green-600">{formatCurrency(Number(contract.totalRent) || 0)}</p>
+                <p className="font-medium text-green-600">
+                  {formatCurrency(Number(contract.totalRent) || 0)}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">押金</Label>
-                <p className="font-medium">{formatCurrency(Number(contract.deposit) || 0)}</p>
+                <p className="font-medium">
+                  {formatCurrency(Number(contract.deposit) || 0)}
+                </p>
               </div>
               {contract.keyDeposit && (
                 <div>
                   <Label className="text-sm text-gray-600">钥匙押金</Label>
-                  <p className="font-medium">{formatCurrency(Number(contract.keyDeposit))}</p>
+                  <p className="font-medium">
+                    {formatCurrency(Number(contract.keyDeposit))}
+                  </p>
                 </div>
               )}
               {contract.cleaningFee && (
                 <div>
                   <Label className="text-sm text-gray-600">清洁费</Label>
-                  <p className="font-medium">{formatCurrency(Number(contract.cleaningFee))}</p>
+                  <p className="font-medium">
+                    {formatCurrency(Number(contract.cleaningFee))}
+                  </p>
                 </div>
               )}
               <div>
                 <Label className="text-sm text-gray-600">付款方式</Label>
-                <p className="font-medium">{contract.paymentMethod || '月付'}</p>
+                <p className="font-medium">
+                  {contract.paymentMethod || '月付'}
+                </p>
               </div>
               {contract.paymentTiming && (
                 <div>
@@ -338,7 +371,9 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
               {contract.signedDate && (
                 <div>
                   <Label className="text-sm text-gray-600">签约日期</Label>
-                  <p className="font-medium">{formatDate(contract.signedDate)}</p>
+                  <p className="font-medium">
+                    {formatDate(contract.signedDate)}
+                  </p>
                 </div>
               )}
               {contract.businessStatus && (
@@ -354,13 +389,17 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                 </div>
               )}
             </div>
-            
+
             {/* 原合同备注信息 */}
             {contract.remarks && (
-              <div className="mt-6 pt-4 border-t">
-                <Label className="text-sm text-gray-600 mb-2 block">原合同备注</Label>
-                <div className="bg-gray-50 p-3 rounded-lg border">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{contract.remarks}</p>
+              <div className="mt-6 border-t pt-4">
+                <Label className="mb-2 block text-sm text-gray-600">
+                  原合同备注
+                </Label>
+                <div className="rounded-lg border bg-gray-50 p-3">
+                  <p className="text-sm whitespace-pre-wrap text-gray-700">
+                    {contract.remarks}
+                  </p>
                 </div>
               </div>
             )}
@@ -371,7 +410,7 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-green-600" />
+              <RefreshCw className="h-5 w-5 text-green-600" />
               续租信息
             </CardTitle>
           </CardHeader>
@@ -379,7 +418,7 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* 错误提示 */}
               {error && (
-                <EnhancedErrorAlert 
+                <EnhancedErrorAlert
                   title="续租失败"
                   message={error}
                   errorType={errorType || undefined}
@@ -391,31 +430,41 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
               )}
 
               {/* 续租期限 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="newStartDate" className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
+                  <Label
+                    htmlFor="newStartDate"
+                    className="flex items-center gap-2"
+                  >
+                    <Calendar className="h-4 w-4" />
                     新合同开始日期 <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="newStartDate"
                     type="date"
                     value={formData.newStartDate}
-                    onChange={(e) => handleInputChange('newStartDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange('newStartDate', e.target.value)
+                    }
                     disabled={submitting}
                     className="mt-1"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="newEndDate" className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
+                  <Label
+                    htmlFor="newEndDate"
+                    className="flex items-center gap-2"
+                  >
+                    <Calendar className="h-4 w-4" />
                     新合同结束日期 <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="newEndDate"
                     type="date"
                     value={formData.newEndDate}
-                    onChange={(e) => handleInputChange('newEndDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange('newEndDate', e.target.value)
+                    }
                     disabled={submitting}
                     className="mt-1"
                   />
@@ -424,11 +473,14 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
               {/* 租金信息 */}
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900 mb-3">租金信息</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h4 className="mb-3 font-medium text-gray-900">租金信息</h4>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <Label htmlFor="newMonthlyRent" className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
+                    <Label
+                      htmlFor="newMonthlyRent"
+                      className="flex items-center gap-2"
+                    >
+                      <DollarSign className="h-4 w-4" />
                       月租金 <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -437,7 +489,12 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                       min="0"
                       step="0.01"
                       value={formData.newMonthlyRent}
-                      onChange={(e) => handleInputChange('newMonthlyRent', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'newMonthlyRent',
+                          parseFloat(e.target.value) || 0
+                        )
+                      }
                       disabled={submitting}
                       className="mt-1"
                     />
@@ -450,15 +507,22 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                       min="0"
                       step="0.01"
                       value={formData.newDeposit || 0}
-                      onChange={(e) => handleInputChange('newDeposit', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'newDeposit',
+                          parseFloat(e.target.value) || 0
+                        )
+                      }
                       disabled={submitting}
                       className="mt-1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">续租时押金可调整，退租时需退还</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      续租时押金可调整，退租时需退还
+                    </p>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <Label htmlFor="newKeyDeposit">钥匙押金</Label>
                     <Input
@@ -467,11 +531,18 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                       min="0"
                       step="0.01"
                       value={formData.newKeyDeposit || 0}
-                      onChange={(e) => handleInputChange('newKeyDeposit', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'newKeyDeposit',
+                          parseFloat(e.target.value) || 0
+                        )
+                      }
                       disabled={submitting}
                       className="mt-1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">续租时钥匙押金可调整，退租时需退还</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      续租时钥匙押金可调整，退租时需退还
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="newCleaningFee">清洁费</Label>
@@ -481,27 +552,36 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                       min="0"
                       step="0.01"
                       value={formData.newCleaningFee || 0}
-                      onChange={(e) => handleInputChange('newCleaningFee', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'newCleaningFee',
+                          parseFloat(e.target.value) || 0
+                        )
+                      }
                       disabled={submitting}
                       className="mt-1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">清洁费为一次性费用，收取后不退还</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      清洁费为一次性费用，收取后不退还
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* 支付信息 */}
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900 mb-3">支付信息</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h4 className="mb-3 font-medium text-gray-900">支付信息</h4>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <Label htmlFor="paymentMethod">支付方式</Label>
                     <select
                       id="paymentMethod"
                       value={formData.paymentMethod}
-                      onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange('paymentMethod', e.target.value)
+                      }
                       disabled={submitting}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="月付">月付</option>
                       <option value="季付">季付</option>
@@ -514,7 +594,9 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                     <Input
                       id="paymentTiming"
                       value={formData.paymentTiming}
-                      onChange={(e) => handleInputChange('paymentTiming', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange('paymentTiming', e.target.value)
+                      }
                       placeholder="如：每月1号前"
                       disabled={submitting}
                       className="mt-1"
@@ -525,14 +607,16 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
               {/* 签约信息 */}
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900 mb-3">签约信息</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h4 className="mb-3 font-medium text-gray-900">签约信息</h4>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <Label htmlFor="signedBy">签约人</Label>
                     <Input
                       id="signedBy"
                       value={formData.signedBy}
-                      onChange={(e) => handleInputChange('signedBy', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange('signedBy', e.target.value)
+                      }
                       placeholder="签约人姓名"
                       disabled={submitting}
                       className="mt-1"
@@ -544,7 +628,9 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                       id="signedDate"
                       type="date"
                       value={formData.signedDate}
-                      onChange={(e) => handleInputChange('signedDate', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange('signedDate', e.target.value)
+                      }
                       disabled={submitting}
                       className="mt-1"
                     />
@@ -564,25 +650,27 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                   rows={4}
                   className="mt-1"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-1 text-xs text-gray-500">
                   已预填充原合同备注信息，您可以在此基础上修改或添加续租相关备注
                 </p>
               </div>
 
               {/* 续租账单预览 */}
-              {formData.newStartDate && formData.newEndDate && formData.newMonthlyRent > 0 && (
-                <ContractBillPreview
-                  contractData={{
-                    startDate: formData.newStartDate,
-                    endDate: formData.newEndDate,
-                    monthlyRent: formData.newMonthlyRent,
-                    deposit: formData.newDeposit || 0,
-                    keyDeposit: formData.newKeyDeposit,
-                    cleaningFee: formData.newCleaningFee,
-                    paymentMethod: formData.paymentMethod
-                  }}
-                />
-              )}
+              {formData.newStartDate &&
+                formData.newEndDate &&
+                formData.newMonthlyRent > 0 && (
+                  <ContractBillPreview
+                    contractData={{
+                      startDate: formData.newStartDate,
+                      endDate: formData.newEndDate,
+                      monthlyRent: formData.newMonthlyRent,
+                      deposit: formData.newDeposit || 0,
+                      keyDeposit: formData.newKeyDeposit,
+                      cleaningFee: formData.newCleaningFee,
+                      paymentMethod: formData.paymentMethod,
+                    }}
+                  />
+                )}
 
               <Separator />
 
@@ -603,12 +691,12 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                       续租中...
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
+                      <RefreshCw className="mr-2 h-4 w-4" />
                       确认续租
                     </>
                   )}

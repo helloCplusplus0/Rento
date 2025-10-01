@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+
 import { MeterReadingHistoryPage } from '@/components/pages/MeterReadingHistoryPage'
 
 export const metadata: Metadata = {
   title: '抄表历史',
-  description: '查看和管理历史抄表记录，支持编辑和修正'
+  description: '查看和管理历史抄表记录，支持编辑和修正',
 }
 
 /**

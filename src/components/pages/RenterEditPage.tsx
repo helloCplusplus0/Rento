@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
+
 import { RenterForm } from '@/components/business/RenterForm'
+import { PageContainer } from '@/components/layout'
 
 interface RenterEditPageProps {
   renter: any
@@ -12,18 +13,18 @@ interface RenterEditPageProps {
 export function RenterEditPage({ renter }: RenterEditPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  
+
   const handleSubmit = async (data: any) => {
     try {
       setLoading(true)
       const response = await fetch(`/api/renters/${renter.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
-      
+
       if (response.ok) {
         router.push(`/renters/${renter.id}`)
       } else {
@@ -37,13 +38,13 @@ export function RenterEditPage({ renter }: RenterEditPageProps) {
       setLoading(false)
     }
   }
-  
+
   const handleCancel = () => {
     router.back()
   }
-  
+
   return (
-    <PageContainer 
+    <PageContainer
       title={`编辑 ${renter.name}`}
       subtitle="修改租客信息"
       showBackButton

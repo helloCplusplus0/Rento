@@ -5,22 +5,23 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  CheckCircle, 
-  AlertTriangle, 
-  XCircle, 
-  RefreshCw, 
+import { useEffect, useState } from 'react'
+import {
   Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   Database,
   FileText,
+  RefreshCw,
   TrendingUp,
-  Clock
+  XCircle,
 } from 'lucide-react'
+
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface HealthCheck {
   name: string
@@ -53,25 +54,27 @@ export function SystemHealthDashboard() {
       setError(null)
 
       console.log('开始获取系统健康数据...')
-      
+
       // 获取系统整体健康状态
       const systemResponse = await fetch('/api/health/system')
       console.log('系统健康检查响应状态:', systemResponse.status)
-      
+
       // 即使是503状态码，也可能包含有效的健康数据
       if (systemResponse.ok || systemResponse.status === 503) {
         const systemData = await systemResponse.json()
         console.log('系统健康数据:', systemData)
         setSystemHealth(systemData)
       } else {
-        throw new Error(`系统健康检查失败: ${systemResponse.status} ${systemResponse.statusText}`)
+        throw new Error(
+          `系统健康检查失败: ${systemResponse.status} ${systemResponse.statusText}`
+        )
       }
 
       // 获取账单系统详细健康状态
       try {
         const billResponse = await fetch('/api/health/bills')
         console.log('账单系统健康检查响应状态:', billResponse.status)
-        
+
         if (billResponse.ok || billResponse.status === 503) {
           const billData = await billResponse.json()
           console.log('账单系统健康数据:', billData)
@@ -94,7 +97,7 @@ export function SystemHealthDashboard() {
 
   useEffect(() => {
     fetchHealthData()
-    
+
     // 每30秒自动刷新
     const interval = setInterval(fetchHealthData, 30000)
     return () => clearInterval(interval)
@@ -145,15 +148,15 @@ export function SystemHealthDashboard() {
           <h2 className="text-2xl font-bold">系统健康监控</h2>
           <RefreshCw className="h-5 w-5 animate-spin" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 w-3/4 rounded bg-gray-200"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div className="mb-2 h-8 rounded bg-gray-200"></div>
+                <div className="h-3 w-1/2 rounded bg-gray-200"></div>
               </CardContent>
             </Card>
           ))}
@@ -168,7 +171,9 @@ export function SystemHealthDashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">系统健康监控</h2>
           <Button onClick={fetchHealthData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+            />
             重试
           </Button>
         </div>
@@ -183,17 +188,24 @@ export function SystemHealthDashboard() {
   return (
     <div className="space-y-6">
       {/* 标题和刷新按钮 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold">系统健康监控</h2>
+          <h2 className="text-xl font-bold sm:text-2xl">系统健康监控</h2>
           {lastUpdate && (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-sm text-gray-500">
               最后更新: {lastUpdate.toLocaleString()}
             </p>
           )}
         </div>
-        <Button onClick={fetchHealthData} disabled={loading} variant="outline" size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+        <Button
+          onClick={fetchHealthData}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+          />
           刷新
         </Button>
       </div>
@@ -206,28 +218,39 @@ export function SystemHealthDashboard() {
               {getStatusIcon(systemHealth.overall)}
               系统整体状态
               <Badge variant="outline" className="ml-auto text-xs">
-                {systemHealth.overall === 'healthy' ? '正常' :
-                 systemHealth.overall === 'degraded' ? '降级' : '异常'}
+                {systemHealth.overall === 'healthy'
+                  ? '正常'
+                  : systemHealth.overall === 'degraded'
+                    ? '降级'
+                    : '异常'}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-3 text-sm sm:gap-4 lg:grid-cols-4">
               <div>
-                <p className="text-gray-600 text-xs sm:text-sm">运行时间</p>
-                <p className="font-medium text-sm sm:text-base">{formatUptime(systemHealth.uptime)}</p>
+                <p className="text-xs text-gray-600 sm:text-sm">运行时间</p>
+                <p className="text-sm font-medium sm:text-base">
+                  {formatUptime(systemHealth.uptime)}
+                </p>
               </div>
               <div>
-                <p className="text-gray-600 text-xs sm:text-sm">版本</p>
-                <p className="font-medium text-sm sm:text-base">{systemHealth.version}</p>
+                <p className="text-xs text-gray-600 sm:text-sm">版本</p>
+                <p className="text-sm font-medium sm:text-base">
+                  {systemHealth.version}
+                </p>
               </div>
               <div>
-                <p className="text-gray-600 text-xs sm:text-sm">响应时间</p>
-                <p className="font-medium text-sm sm:text-base">{systemHealth.responseTime}ms</p>
+                <p className="text-xs text-gray-600 sm:text-sm">响应时间</p>
+                <p className="text-sm font-medium sm:text-base">
+                  {systemHealth.responseTime}ms
+                </p>
               </div>
               <div>
-                <p className="text-gray-600 text-xs sm:text-sm">检查项目</p>
-                <p className="font-medium text-sm sm:text-base">{systemHealth.checks.length}个</p>
+                <p className="text-xs text-gray-600 sm:text-sm">检查项目</p>
+                <p className="text-sm font-medium sm:text-base">
+                  {systemHealth.checks.length}个
+                </p>
               </div>
             </div>
           </CardContent>
@@ -235,33 +258,52 @@ export function SystemHealthDashboard() {
       )}
 
       {/* 详细健康检查项目 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {systemHealth?.checks.map((check) => (
           <Card key={check.name} className="relative">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                {check.name === 'database_connection' && <Database className="h-4 w-4" />}
-                {check.name === 'bill_system' && <FileText className="h-4 w-4" />}
-                {check.name === 'data_consistency' && <CheckCircle className="h-4 w-4" />}
-                {check.name === 'error_rate' && <AlertTriangle className="h-4 w-4" />}
-                {check.name === 'performance' && <TrendingUp className="h-4 w-4" />}
-                
-                <span className="flex-1 min-w-0">
-                  {check.name === 'database_connection' ? '数据库连接' :
-                   check.name === 'bill_system' ? '账单系统' :
-                   check.name === 'data_consistency' ? '数据一致性' :
-                   check.name === 'error_rate' ? '错误率' :
-                   check.name === 'performance' ? '系统性能' : check.name}
+                {check.name === 'database_connection' && (
+                  <Database className="h-4 w-4" />
+                )}
+                {check.name === 'bill_system' && (
+                  <FileText className="h-4 w-4" />
+                )}
+                {check.name === 'data_consistency' && (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                {check.name === 'error_rate' && (
+                  <AlertTriangle className="h-4 w-4" />
+                )}
+                {check.name === 'performance' && (
+                  <TrendingUp className="h-4 w-4" />
+                )}
+
+                <span className="min-w-0 flex-1">
+                  {check.name === 'database_connection'
+                    ? '数据库连接'
+                    : check.name === 'bill_system'
+                      ? '账单系统'
+                      : check.name === 'data_consistency'
+                        ? '数据一致性'
+                        : check.name === 'error_rate'
+                          ? '错误率'
+                          : check.name === 'performance'
+                            ? '系统性能'
+                            : check.name}
                 </span>
-                
-                <Badge 
-                  variant="outline" 
+
+                <Badge
+                  variant="outline"
                   className={`ml-auto ${getStatusColor(check.status)} text-xs`}
                 >
                   {getStatusIcon(check.status)}
                   <span className="ml-1 hidden sm:inline">
-                    {check.status === 'healthy' ? '正常' :
-                     check.status === 'degraded' ? '降级' : '异常'}
+                    {check.status === 'healthy'
+                      ? '正常'
+                      : check.status === 'degraded'
+                        ? '降级'
+                        : '异常'}
                   </span>
                 </Badge>
               </CardTitle>
@@ -272,25 +314,29 @@ export function SystemHealthDashboard() {
                   <span className="text-gray-600">响应时间</span>
                   <span className="font-medium">{check.responseTime}ms</span>
                 </div>
-                
+
                 {check.error && (
-                  <div className="text-red-600 text-xs bg-red-50 p-2 rounded">
+                  <div className="rounded bg-red-50 p-2 text-xs text-red-600">
                     {check.error}
                   </div>
                 )}
-                
+
                 {check.details && (
                   <div className="mt-3 space-y-1">
-                    {Object.entries(check.details).slice(0, 4).map(([key, value]) => (
-                      <div key={key} className="flex justify-between text-xs">
-                        <span className="text-gray-500 capitalize truncate flex-1 mr-2">
-                          {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                        </span>
-                        <span className="font-mono text-right">
-                          {typeof value === 'object' ? JSON.stringify(value).slice(0, 20) + '...' : String(value)}
-                        </span>
-                      </div>
-                    ))}
+                    {Object.entries(check.details)
+                      .slice(0, 4)
+                      .map(([key, value]) => (
+                        <div key={key} className="flex justify-between text-xs">
+                          <span className="mr-2 flex-1 truncate text-gray-500 capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                          </span>
+                          <span className="text-right font-mono">
+                            {typeof value === 'object'
+                              ? JSON.stringify(value).slice(0, 20) + '...'
+                              : String(value)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 )}
               </div>
@@ -306,59 +352,78 @@ export function SystemHealthDashboard() {
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <FileText className="h-5 w-5" />
               账单系统详细状态
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`ml-auto ${getStatusColor(billSystemHealth.status)} text-xs`}
               >
                 {getStatusIcon(billSystemHealth.status)}
                 <span className="ml-1">
-                  {billSystemHealth.status === 'healthy' ? '正常' :
-                   billSystemHealth.status === 'degraded' ? '降级' : '异常'}
+                  {billSystemHealth.status === 'healthy'
+                    ? '正常'
+                    : billSystemHealth.status === 'degraded'
+                      ? '降级'
+                      : '异常'}
                 </span>
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(billSystemHealth.details.checks).map(([checkName, checkData]: [string, any]) => (
-                <div key={checkName} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-xs sm:text-sm">
-                      {checkName === 'recent_bill_generation' ? '最近账单生成' :
-                       checkName === 'bill_data_integrity' ? '账单数据完整性' :
-                       checkName === 'meter_reading_status' ? '抄表记录状态' :
-                       checkName === 'bill_processing_queue' ? '账单处理队列' : checkName}
-                    </h4>
-                    <Badge 
-                      variant="outline" 
-                      className={`${getStatusColor(checkData.status)} text-xs`}
-                    >
-                      {getStatusIcon(checkData.status)}
-                    </Badge>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {Object.entries(billSystemHealth.details.checks).map(
+                ([checkName, checkData]: [string, any]) => (
+                  <div key={checkName} className="rounded-lg border p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-xs font-medium sm:text-sm">
+                        {checkName === 'recent_bill_generation'
+                          ? '最近账单生成'
+                          : checkName === 'bill_data_integrity'
+                            ? '账单数据完整性'
+                            : checkName === 'meter_reading_status'
+                              ? '抄表记录状态'
+                              : checkName === 'bill_processing_queue'
+                                ? '账单处理队列'
+                                : checkName}
+                      </h4>
+                      <Badge
+                        variant="outline"
+                        className={`${getStatusColor(checkData.status)} text-xs`}
+                      >
+                        {getStatusIcon(checkData.status)}
+                      </Badge>
+                    </div>
+
+                    {checkData.details && (
+                      <div className="space-y-1">
+                        {Object.entries(checkData.details)
+                          .slice(0, 3)
+                          .map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex justify-between text-xs"
+                            >
+                              <span className="mr-2 flex-1 truncate text-gray-500">
+                                {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                              </span>
+                              <span className="text-right font-mono">
+                                {typeof value === 'boolean'
+                                  ? value
+                                    ? '是'
+                                    : '否'
+                                  : String(value)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {checkData.error && (
+                      <div className="mt-2 rounded bg-red-50 p-2 text-xs text-red-600">
+                        {checkData.error}
+                      </div>
+                    )}
                   </div>
-                  
-                  {checkData.details && (
-                    <div className="space-y-1">
-                      {Object.entries(checkData.details).slice(0, 3).map(([key, value]) => (
-                        <div key={key} className="flex justify-between text-xs">
-                          <span className="text-gray-500 truncate flex-1 mr-2">
-                            {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                          </span>
-                          <span className="font-mono text-right">
-                            {typeof value === 'boolean' ? (value ? '是' : '否') : String(value)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {checkData.error && (
-                    <div className="text-red-600 text-xs bg-red-50 p-2 rounded mt-2">
-                      {checkData.error}
-                    </div>
-                  )}
-                </div>
-              ))}
+                )
+              )}
             </div>
           </CardContent>
         </Card>
@@ -368,25 +433,32 @@ export function SystemHealthDashboard() {
       {systemHealth && systemHealth.overall !== 'healthy' && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-800 text-base sm:text-lg">
+            <CardTitle className="flex items-center gap-2 text-base text-yellow-800 sm:text-lg">
               <AlertTriangle className="h-5 w-5" />
               系统状态建议
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 text-xs sm:text-sm text-yellow-700">
+            <div className="space-y-2 text-xs text-yellow-700 sm:text-sm">
               {systemHealth.checks
-                .filter(check => check.status !== 'healthy')
-                .map(check => (
+                .filter((check) => check.status !== 'healthy')
+                .map((check) => (
                   <div key={check.name} className="flex items-start gap-2">
                     <span>•</span>
                     <div className="flex-1">
                       <span className="font-medium">
-                        {check.name === 'database_connection' ? '数据库连接异常' :
-                         check.name === 'bill_system' ? '账单系统异常' :
-                         check.name === 'data_consistency' ? '数据一致性问题' :
-                         check.name === 'error_rate' ? '错误率过高' :
-                         check.name === 'performance' ? '系统性能问题' : check.name}:
+                        {check.name === 'database_connection'
+                          ? '数据库连接异常'
+                          : check.name === 'bill_system'
+                            ? '账单系统异常'
+                            : check.name === 'data_consistency'
+                              ? '数据一致性问题'
+                              : check.name === 'error_rate'
+                                ? '错误率过高'
+                                : check.name === 'performance'
+                                  ? '系统性能问题'
+                                  : check.name}
+                        :
                       </span>
                       <span className="ml-1">
                         {check.error || '建议检查相关配置和日志'}

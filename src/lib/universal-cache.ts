@@ -1,5 +1,5 @@
 import { BillCache } from './bill-cache'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 
 /**
  * 缓存模块配置接口
@@ -15,7 +15,7 @@ interface CacheModuleConfig {
 
 /**
  * 通用缓存管理器
- * 
+ *
  * 为不同模块提供统一的缓存管理，支持：
  * - 模块化缓存实例管理
  * - 统一的缓存策略配置
@@ -26,57 +26,57 @@ class UniversalCacheManager {
   private static instance: UniversalCacheManager
   private caches = new Map<string, BillCache>()
   private logger = ErrorLogger.getInstance()
-  
+
   // 默认配置
   private defaultConfig: CacheModuleConfig = {
-    defaultTTL: 5 * 60 * 1000,      // 5分钟
-    maxSize: 500,                   // 500个缓存项
-    cleanupInterval: 60 * 1000      // 1分钟清理间隔
+    defaultTTL: 5 * 60 * 1000, // 5分钟
+    maxSize: 500, // 500个缓存项
+    cleanupInterval: 60 * 1000, // 1分钟清理间隔
   }
-  
+
   // 模块特定配置
   private moduleConfigs: Record<string, Partial<CacheModuleConfig>> = {
     // 账单模块 - 高频访问，较长缓存时间
     bills: {
-      defaultTTL: 10 * 60 * 1000,   // 10分钟
-      maxSize: 1000
+      defaultTTL: 10 * 60 * 1000, // 10分钟
+      maxSize: 1000,
     },
-    
+
     // 房间模块 - 中频访问，中等缓存时间
     rooms: {
-      defaultTTL: 5 * 60 * 1000,    // 5分钟
-      maxSize: 500
+      defaultTTL: 5 * 60 * 1000, // 5分钟
+      maxSize: 500,
     },
-    
+
     // 租客模块 - 低频访问，较短缓存时间
     renters: {
-      defaultTTL: 3 * 60 * 1000,    // 3分钟
-      maxSize: 300
+      defaultTTL: 3 * 60 * 1000, // 3分钟
+      maxSize: 300,
     },
-    
+
     // 合同模块 - 中频访问，中等缓存时间
     contracts: {
-      defaultTTL: 5 * 60 * 1000,    // 5分钟
-      maxSize: 500
+      defaultTTL: 5 * 60 * 1000, // 5分钟
+      maxSize: 500,
     },
-    
+
     // 统计模块 - 高频访问，较长缓存时间
     stats: {
-      defaultTTL: 15 * 60 * 1000,   // 15分钟
-      maxSize: 200
+      defaultTTL: 15 * 60 * 1000, // 15分钟
+      maxSize: 200,
     },
-    
+
     // 搜索模块 - 短期缓存，快速过期
     search: {
-      defaultTTL: 2 * 60 * 1000,    // 2分钟
-      maxSize: 100
-    }
+      defaultTTL: 2 * 60 * 1000, // 2分钟
+      maxSize: 100,
+    },
   }
 
   private constructor() {
     this.logger.logInfo('UniversalCache initialized', {
       modules: Object.keys(this.moduleConfigs),
-      defaultConfig: this.defaultConfig
+      defaultConfig: this.defaultConfig,
     })
   }
 
@@ -97,15 +97,15 @@ class UniversalCacheManager {
     if (!this.caches.has(module)) {
       const moduleConfig = this.moduleConfigs[module] || {}
       const config = { ...this.defaultConfig, ...moduleConfig }
-      
+
       this.caches.set(module, new BillCache(config))
-      
+
       this.logger.logInfo(`Cache instance created for module: ${module}`, {
         module,
-        config
+        config,
       })
     }
-    
+
     return this.caches.get(module)!
   }
 
@@ -124,11 +124,13 @@ class UniversalCacheManager {
    * 清理所有模块的缓存
    */
   async invalidateAll(): Promise<void> {
-    const promises = Array.from(this.caches.entries()).map(async ([module, cache]) => {
-      await cache.clear()
-      this.logger.logInfo(`Cache cleared for module: ${module}`, { module })
-    })
-    
+    const promises = Array.from(this.caches.entries()).map(
+      async ([module, cache]) => {
+        await cache.clear()
+        this.logger.logInfo(`Cache cleared for module: ${module}`, { module })
+      }
+    )
+
     await Promise.all(promises)
     this.logger.logInfo('All caches cleared', {})
   }
@@ -136,18 +138,21 @@ class UniversalCacheManager {
   /**
    * 获取所有模块的缓存统计
    */
-  getAllStats(): Record<string, {
-    size: number
-    maxSize: number
-    hitRate: number
-    memoryUsage: number
-  }> {
+  getAllStats(): Record<
+    string,
+    {
+      size: number
+      maxSize: number
+      hitRate: number
+      memoryUsage: number
+    }
+  > {
     const stats: Record<string, any> = {}
-    
+
     this.caches.forEach((cache, module) => {
       stats[module] = cache.getStats()
     })
-    
+
     return stats
   }
 
@@ -163,28 +168,39 @@ class UniversalCacheManager {
   } {
     const allStats = this.getAllStats()
     const modules = Object.keys(allStats)
-    
+
     if (modules.length === 0) {
       return {
         totalModules: 0,
         totalSize: 0,
         totalMaxSize: 0,
         averageHitRate: 0,
-        totalMemoryUsage: 0
+        totalMemoryUsage: 0,
       }
     }
-    
-    const totalSize = modules.reduce((sum, module) => sum + allStats[module].size, 0)
-    const totalMaxSize = modules.reduce((sum, module) => sum + allStats[module].maxSize, 0)
-    const averageHitRate = modules.reduce((sum, module) => sum + allStats[module].hitRate, 0) / modules.length
-    const totalMemoryUsage = modules.reduce((sum, module) => sum + allStats[module].memoryUsage, 0)
-    
+
+    const totalSize = modules.reduce(
+      (sum, module) => sum + allStats[module].size,
+      0
+    )
+    const totalMaxSize = modules.reduce(
+      (sum, module) => sum + allStats[module].maxSize,
+      0
+    )
+    const averageHitRate =
+      modules.reduce((sum, module) => sum + allStats[module].hitRate, 0) /
+      modules.length
+    const totalMemoryUsage = modules.reduce(
+      (sum, module) => sum + allStats[module].memoryUsage,
+      0
+    )
+
     return {
       totalModules: modules.length,
       totalSize,
       totalMaxSize,
       averageHitRate,
-      totalMemoryUsage
+      totalMemoryUsage,
     }
   }
 
@@ -196,7 +212,7 @@ class UniversalCacheManager {
       cache.destroy()
       this.logger.logInfo(`Cache destroyed for module: ${module}`, { module })
     })
-    
+
     this.caches.clear()
     this.logger.logInfo('UniversalCache destroyed', {})
   }
@@ -206,14 +222,14 @@ class UniversalCacheManager {
    */
   setModuleConfig(module: string, config: Partial<CacheModuleConfig>): void {
     this.moduleConfigs[module] = { ...this.moduleConfigs[module], ...config }
-    
+
     // 如果缓存实例已存在，需要重新创建
     if (this.caches.has(module)) {
       const cache = this.caches.get(module)!
       cache.destroy()
       this.caches.delete(module)
     }
-    
+
     this.logger.logInfo(`Module config updated: ${module}`, { config })
   }
 
@@ -248,7 +264,7 @@ export class QueryCache extends BillCache {
   }): string {
     const { type, page, limit, filters, search, id } = params
     const parts: string[] = [type]
-    
+
     if (id) parts.push(`id-${id}`)
     if (page) parts.push(`page-${page}`)
     if (limit) parts.push(`limit-${limit}`)
@@ -261,7 +277,7 @@ export class QueryCache extends BillCache {
         .join(',')
       if (filterStr) parts.push(`filters-${filterStr}`)
     }
-    
+
     return parts.join('|')
   }
 
@@ -289,10 +305,12 @@ export class QueryCache extends BillCache {
  */
 export class StatsCache extends BillCache {
   constructor(module: string) {
-    const config = UniversalCacheManager.getInstance().getModuleConfig(`${module}-stats`)
+    const config = UniversalCacheManager.getInstance().getModuleConfig(
+      `${module}-stats`
+    )
     super({
       ...config,
-      defaultTTL: 15 * 60 * 1000  // 统计数据缓存15分钟
+      defaultTTL: 15 * 60 * 1000, // 统计数据缓存15分钟
     })
   }
 
@@ -308,7 +326,7 @@ export class StatsCache extends BillCache {
   }): string {
     const { type, startDate, endDate, groupBy, filters } = params
     const parts = [`stats-${type}`]
-    
+
     if (startDate) parts.push(`start-${startDate}`)
     if (endDate) parts.push(`end-${endDate}`)
     if (groupBy) parts.push(`group-${groupBy}`)
@@ -320,7 +338,7 @@ export class StatsCache extends BillCache {
         .join(',')
       if (filterStr) parts.push(`filters-${filterStr}`)
     }
-    
+
     return parts.join('|')
   }
 
@@ -366,7 +384,7 @@ export async function invalidateRelatedCaches(
   entityId?: string
 ): Promise<void> {
   const logger = ErrorLogger.getInstance()
-  
+
   try {
     switch (entity) {
       case 'room':
@@ -374,38 +392,38 @@ export async function invalidateRelatedCaches(
           roomCache.clear(),
           roomStatsCache.clear(),
           contractCache.deletePattern('*room*'),
-          searchCache.clear()
+          searchCache.clear(),
         ])
         break
-        
+
       case 'renter':
         await Promise.all([
           renterCache.clear(),
           renterStatsCache.clear(),
           contractCache.deletePattern('*renter*'),
-          searchCache.clear()
+          searchCache.clear(),
         ])
         break
-        
+
       case 'contract':
         await Promise.all([
           contractCache.clear(),
           contractStatsCache.clear(),
           roomCache.deletePattern('*contract*'),
           renterCache.deletePattern('*contract*'),
-          searchCache.clear()
+          searchCache.clear(),
         ])
         break
-        
+
       case 'bill':
         await Promise.all([
           universalCache.invalidateModule('bills'),
           contractCache.deletePattern('*bill*'),
-          searchCache.clear()
+          searchCache.clear(),
         ])
         break
     }
-    
+
     logger.logInfo(`Related caches invalidated for ${entity}`, { entityId })
   } catch (error) {
     await logger.logError(

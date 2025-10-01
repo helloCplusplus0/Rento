@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
 /**
  * Next.js 中间件
  * 用于处理路由守卫、身份验证和权限控制
- * 
+ *
  * 当前为预留接口，后期可扩展以下功能：
  * 1. 用户身份验证检查
  * 2. 基于角色的权限验证
@@ -17,7 +16,10 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 开发环境日志 (可选)
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
+  if (
+    typeof process !== 'undefined' &&
+    process.env?.NODE_ENV === 'development'
+  ) {
     console.log(`[Middleware] ${request.method} ${pathname}`)
   }
 
@@ -40,7 +42,7 @@ export function middleware(request: NextRequest) {
 
   // 添加安全头 (可选)
   const response = NextResponse.next()
-  
+
   // 预留：添加安全相关的响应头
   // response.headers.set('X-Frame-Options', 'DENY')
   // response.headers.set('X-Content-Type-Options', 'nosniff')

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { PageContainer } from '@/components/layout/PageContainer'
+
 import { DataConsistencyManager } from '@/components/business/DataConsistencyManager'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 export const metadata: Metadata = {
   title: '数据一致性管理',
-  description: '检查和修复系统数据一致性问题，确保数据完整性和准确性'
+  description: '检查和修复系统数据一致性问题，确保数据完整性和准确性',
 }
 
 /**

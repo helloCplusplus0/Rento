@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
-import { buildingQueries } from './queries'
+
 import { prisma } from './prisma'
+import { buildingQueries } from './queries'
 
 export interface ValidationRule {
   required?: boolean
@@ -28,93 +29,99 @@ export interface ValidationError {
  * 数据验证函数
  * 根据验证规则验证数据对象
  */
-export function validateData(data: any, rules: ValidationRules): ValidationError[] {
+export function validateData(
+  data: any,
+  rules: ValidationRules
+): ValidationError[] {
   const errors: ValidationError[] = []
-  
+
   for (const [field, rule] of Object.entries(rules)) {
     const value = data[field]
-    
+
     // 检查必填字段
-    if (rule.required && (value === undefined || value === null || value === '')) {
+    if (
+      rule.required &&
+      (value === undefined || value === null || value === '')
+    ) {
       errors.push({
         field,
         message: `${field} is required`,
-        value
+        value,
       })
       continue
     }
-    
+
     // 如果字段为空且非必填，跳过其他验证
     if (value === undefined || value === null || value === '') {
       continue
     }
-    
+
     // 类型验证
     if (rule.type && typeof value !== rule.type) {
       errors.push({
         field,
         message: `${field} must be of type ${rule.type}`,
-        value
+        value,
       })
       continue
     }
-    
+
     // 字符串长度验证
     if (rule.type === 'string') {
       if (rule.minLength && value.length < rule.minLength) {
         errors.push({
           field,
           message: `${field} must be at least ${rule.minLength} characters`,
-          value
+          value,
         })
       }
-      
+
       if (rule.maxLength && value.length > rule.maxLength) {
         errors.push({
           field,
           message: `${field} must be at most ${rule.maxLength} characters`,
-          value
+          value,
         })
       }
-      
+
       if (rule.pattern && !rule.pattern.test(value)) {
         errors.push({
           field,
           message: `${field} format is invalid`,
-          value
+          value,
         })
       }
     }
-    
+
     // 数值范围验证
     if (rule.type === 'number') {
       if (rule.min !== undefined && value < rule.min) {
         errors.push({
           field,
           message: `${field} must be at least ${rule.min}`,
-          value
+          value,
         })
       }
-      
+
       if (rule.max !== undefined && value > rule.max) {
         errors.push({
           field,
           message: `${field} must be at most ${rule.max}`,
-          value
+          value,
         })
       }
     }
-    
+
     // 枚举值验证
     if (rule.enum && !rule.enum.includes(value)) {
       errors.push({
         field,
         message: `${field} must be one of: ${rule.enum.join(', ')}`,
-        value
+        value,
       })
     }
   }
-  
+
   return errors
 }
 
@@ -127,35 +134,35 @@ export const roomValidationRules: ValidationRules = {
     type: 'string',
     minLength: 1,
     maxLength: 20,
-    pattern: /^[A-Z0-9]+$/
+    pattern: /^[A-Z0-9]+$/,
   },
   floorNumber: {
     required: true,
     type: 'number',
     min: 1,
-    max: 50
+    max: 50,
   },
   roomType: {
     required: true,
     type: 'string',
-    enum: ['SHARED', 'WHOLE', 'SINGLE']
+    enum: ['SHARED', 'WHOLE', 'SINGLE'],
   },
   area: {
     required: false,
     type: 'number',
     min: 10,
-    max: 200
+    max: 200,
   },
   rent: {
     required: true,
     type: 'number',
     min: 100,
-    max: 50000
+    max: 50000,
   },
   buildingId: {
     required: true,
-    type: 'string'
-  }
+    type: 'string',
+  },
 }
 
 /**
@@ -165,8 +172,8 @@ export const roomStatusValidationRules: ValidationRules = {
   status: {
     required: true,
     type: 'string',
-    enum: ['VACANT', 'OCCUPIED', 'OVERDUE', 'MAINTENANCE']
-  }
+    enum: ['VACANT', 'OCCUPIED', 'OVERDUE', 'MAINTENANCE'],
+  },
 }
 
 /**
@@ -175,18 +182,18 @@ export const roomStatusValidationRules: ValidationRules = {
 export const batchUpdateValidationRules: ValidationRules = {
   roomIds: {
     required: true,
-    type: 'object' // array
+    type: 'object', // array
   },
   status: {
     required: true,
     type: 'string',
-    enum: ['VACANT', 'OCCUPIED', 'OVERDUE', 'MAINTENANCE']
+    enum: ['VACANT', 'OCCUPIED', 'OVERDUE', 'MAINTENANCE'],
   },
   operator: {
     required: false,
     type: 'string',
-    maxLength: 100
-  }
+    maxLength: 100,
+  },
 }
 
 /**
@@ -198,23 +205,20 @@ export function validateRoomData(rules: ValidationRules) {
     try {
       const body = await request.json()
       const errors = validateData(body, rules)
-      
+
       if (errors.length > 0) {
         return Response.json(
-          { 
-            error: 'Validation failed', 
-            details: errors 
+          {
+            error: 'Validation failed',
+            details: errors,
           },
           { status: 400 }
         )
       }
-      
+
       return null // 验证通过
     } catch (error) {
-      return Response.json(
-        { error: 'Invalid JSON data' },
-        { status: 400 }
-      )
+      return Response.json({ error: 'Invalid JSON data' }, { status: 400 })
     }
   }
 }
@@ -229,28 +233,25 @@ export function validateBusinessRules() {
       // 检查楼栋是否存在
       const building = await buildingQueries.findById(roomData.buildingId)
       if (!building) {
-        return Response.json(
-          { error: 'Building not found' },
-          { status: 404 }
-        )
+        return Response.json({ error: 'Building not found' }, { status: 404 })
       }
-      
+
       // 检查房间号唯一性（排除当前房间）
       const existingRooms = await prisma.room.findMany({
         where: {
           buildingId: roomData.buildingId,
           roomNumber: roomData.roomNumber,
-          ...(roomData.id && { id: { not: roomData.id } })
-        }
+          ...(roomData.id && { id: { not: roomData.id } }),
+        },
       })
-      
+
       if (existingRooms.length > 0) {
         return Response.json(
           { error: 'Room number already exists in this building' },
           { status: 409 }
         )
       }
-      
+
       return null // 验证通过
     } catch (error) {
       console.error('Business validation error:', error)
@@ -269,7 +270,7 @@ export function validateBatchUpdateData() {
   return async (request: NextRequest) => {
     try {
       const body = await request.json()
-      
+
       // 基础数据验证
       const errors = validateData(body, batchUpdateValidationRules)
       if (errors.length > 0) {
@@ -278,7 +279,7 @@ export function validateBatchUpdateData() {
           { status: 400 }
         )
       }
-      
+
       // 验证房间ID数组
       if (!Array.isArray(body.roomIds) || body.roomIds.length === 0) {
         return Response.json(
@@ -286,7 +287,7 @@ export function validateBatchUpdateData() {
           { status: 400 }
         )
       }
-      
+
       // 限制批量操作数量
       if (body.roomIds.length > 100) {
         return Response.json(
@@ -294,22 +295,21 @@ export function validateBatchUpdateData() {
           { status: 400 }
         )
       }
-      
+
       // 验证房间ID格式
-      const invalidIds = body.roomIds.filter((id: any) => typeof id !== 'string' || !id.trim())
+      const invalidIds = body.roomIds.filter(
+        (id: any) => typeof id !== 'string' || !id.trim()
+      )
       if (invalidIds.length > 0) {
         return Response.json(
           { error: 'All room IDs must be valid strings' },
           { status: 400 }
         )
       }
-      
+
       return null // 验证通过
     } catch (error) {
-      return Response.json(
-        { error: 'Invalid JSON data' },
-        { status: 400 }
-      )
+      return Response.json({ error: 'Invalid JSON data' }, { status: 400 })
     }
   }
 }
@@ -325,21 +325,22 @@ export async function performDeleteSafetyCheck(roomId: string) {
         include: {
           bills: {
             where: {
-              status: { not: 'PAID' }
-            }
-          }
-        }
-      }
-    }
+              status: { not: 'PAID' },
+            },
+          },
+        },
+      },
+    },
   })
-  
+
   if (!room) {
     throw new Error('Room not found')
   }
-  
-  const activeContracts = room.contracts?.filter(c => c.status === 'ACTIVE') || []
-  const unpaidBills = room.contracts?.flatMap(c => c.bills || []) || []
-  
+
+  const activeContracts =
+    room.contracts?.filter((c) => c.status === 'ACTIVE') || []
+  const unpaidBills = room.contracts?.flatMap((c) => c.bills || []) || []
+
   return {
     hasActiveContracts: activeContracts.length > 0,
     activeContractCount: activeContracts.length,
@@ -348,8 +349,8 @@ export async function performDeleteSafetyCheck(roomId: string) {
     hasRelatedData: activeContracts.length > 0 || unpaidBills.length > 0,
     relatedDataTypes: [
       ...(activeContracts.length > 0 ? ['contracts'] : []),
-      ...(unpaidBills.length > 0 ? ['bills'] : [])
-    ]
+      ...(unpaidBills.length > 0 ? ['bills'] : []),
+    ],
   }
 }
 
@@ -361,23 +362,26 @@ export async function performContractDeleteSafetyCheck(contractId: string) {
     where: { id: contractId },
     include: {
       bills: true,
-      meterReadings: true
-    }
+      meterReadings: true,
+    },
   })
-  
+
   if (!contract) {
     throw new Error('Contract not found')
   }
-  
+
   // 检查合同状态 - 只有PENDING状态的合同才能删除
   const canDelete = contract.status === 'PENDING'
-  
+
   // 检查已支付账单
-  const paidBills = contract.bills?.filter(b => b.status === 'PAID' && Number(b.receivedAmount) > 0) || []
-  
+  const paidBills =
+    contract.bills?.filter(
+      (b) => b.status === 'PAID' && Number(b.receivedAmount) > 0
+    ) || []
+
   // 检查未支付账单
-  const unpaidBills = contract.bills?.filter(b => b.status !== 'PAID') || []
-  
+  const unpaidBills = contract.bills?.filter((b) => b.status !== 'PAID') || []
+
   return {
     canDelete,
     contractStatus: contract.status,
@@ -387,15 +391,23 @@ export async function performContractDeleteSafetyCheck(contractId: string) {
     unpaidBillCount: unpaidBills.length,
     hasMeterReadings: (contract.meterReadings?.length || 0) > 0,
     meterReadingCount: contract.meterReadings?.length || 0,
-    errorCode: !canDelete ? (
-      contract.status === 'ACTIVE' ? 'INVALID_STATUS_ACTIVE' :
-      contract.status === 'EXPIRED' ? 'INVALID_STATUS_EXPIRED' :
-      contract.status === 'TERMINATED' ? 'INVALID_STATUS_TERMINATED' :
-      'INVALID_STATUS'
-    ) : (paidBills.length > 0 ? 'HAS_PAID_BILLS' : null),
-    suggestion: !canDelete ? (
-      contract.status === 'ACTIVE' ? '请使用退租功能处理生效中的合同' :
-      '已完成的合同不能删除，用于保护历史记录'
-    ) : (paidBills.length > 0 ? '不能删除有已支付账单的合同' : null)
+    errorCode: !canDelete
+      ? contract.status === 'ACTIVE'
+        ? 'INVALID_STATUS_ACTIVE'
+        : contract.status === 'EXPIRED'
+          ? 'INVALID_STATUS_EXPIRED'
+          : contract.status === 'TERMINATED'
+            ? 'INVALID_STATUS_TERMINATED'
+            : 'INVALID_STATUS'
+      : paidBills.length > 0
+        ? 'HAS_PAID_BILLS'
+        : null,
+    suggestion: !canDelete
+      ? contract.status === 'ACTIVE'
+        ? '请使用退租功能处理生效中的合同'
+        : '已完成的合同不能删除，用于保护历史记录'
+      : paidBills.length > 0
+        ? '不能删除有已支付账单的合同'
+        : null,
   }
 }

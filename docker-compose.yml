@@ -11,7 +11,7 @@ services:
     image: ghcr.io/hellocplusplus0/rento:latest
     container_name: rento-app-1
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - DATABASE_URL=postgresql://rento:${POSTGRES_PASSWORD}@postgres:5432/rento_production
@@ -35,7 +35,7 @@ services:
     networks:
       - rento-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/api/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,9 +55,13 @@ services:
       - ./backups:/backups
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - '${POSTGRES_PORT:-5432}:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rento} -d ${POSTGRES_DB:-rento_production}"]
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-rento} -d ${POSTGRES_DB:-rento_production}',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -85,8 +89,8 @@ services:
     image: nginx:alpine
     container_name: rento-nginx-1
     ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
@@ -106,7 +110,7 @@ services:
     image: redis:7-alpine
     container_name: rento-redis-1
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - '${REDIS_PORT:-6379}:6379'
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -115,7 +119,7 @@ services:
     # Redis 配置优化
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 3

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+
 import { prisma } from '@/lib/prisma'
 
 export interface HealthStatus {
@@ -43,27 +44,31 @@ interface DatabaseMetrics {
  */
 export async function GET() {
   const startTime = Date.now()
-  
+
   try {
     // 数据库健康检查
     const dbCheck = await checkDatabase()
-    
+
     // 内存健康检查
     const memoryCheck = await checkMemory()
-    
+
     // 磁盘健康检查（可选）
     const diskCheck = await checkDisk()
-    
+
     // 收集指标
     const memoryMetrics = getMemoryMetrics()
     const databaseMetrics = {
       responseTime: dbCheck.responseTime || 0,
-      status: dbCheck.status
+      status: dbCheck.status,
     }
-    
+
     // 确定整体健康状态
-    const overallStatus = determineOverallStatus([dbCheck, memoryCheck, diskCheck])
-    
+    const overallStatus = determineOverallStatus([
+      dbCheck,
+      memoryCheck,
+      diskCheck,
+    ])
+
     const healthStatus: HealthStatus = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
@@ -72,20 +77,23 @@ export async function GET() {
       checks: {
         database: dbCheck,
         memory: memoryCheck,
-        ...(diskCheck && { disk: diskCheck })
+        ...(diskCheck && { disk: diskCheck }),
       },
       metrics: {
         memory: memoryMetrics,
-        database: databaseMetrics
-      }
+        database: databaseMetrics,
+      },
     }
-    
+
     // 根据健康状态返回相应的HTTP状态码
-    const httpStatus = overallStatus === 'healthy' ? 200 : 
-                      overallStatus === 'degraded' ? 200 : 503
-    
+    const httpStatus =
+      overallStatus === 'healthy'
+        ? 200
+        : overallStatus === 'degraded'
+          ? 200
+          : 503
+
     return NextResponse.json(healthStatus, { status: httpStatus })
-    
   } catch (error) {
     const errorStatus: HealthStatus = {
       status: 'unhealthy',
@@ -94,14 +102,14 @@ export async function GET() {
       version: process.env.npm_package_version || '1.0.0',
       checks: {
         database: { status: 'fail', message: 'Health check failed' },
-        memory: { status: 'fail', message: 'Health check failed' }
+        memory: { status: 'fail', message: 'Health check failed' },
       },
       metrics: {
         memory: getMemoryMetrics(),
-        database: { responseTime: Date.now() - startTime, status: 'fail' }
-      }
+        database: { responseTime: Date.now() - startTime, status: 'fail' },
+      },
     }
-    
+
     return NextResponse.json(errorStatus, { status: 503 })
   }
 }
@@ -111,34 +119,34 @@ export async function GET() {
  */
 async function checkDatabase(): Promise<HealthCheck> {
   const startTime = Date.now()
-  
+
   try {
     // 执行简单查询测试连接
     await prisma.$queryRaw`SELECT 1 as test`
-    
+
     const responseTime = Date.now() - startTime
-    
+
     // 检查响应时间
     if (responseTime > 5000) {
       return {
         status: 'warn',
         responseTime,
         message: '数据库响应较慢',
-        details: { threshold: '5000ms', actual: `${responseTime}ms` }
+        details: { threshold: '5000ms', actual: `${responseTime}ms` },
       }
     } else if (responseTime > 1000) {
       return {
         status: 'warn',
         responseTime,
         message: '数据库响应时间偏高',
-        details: { threshold: '1000ms', actual: `${responseTime}ms` }
+        details: { threshold: '1000ms', actual: `${responseTime}ms` },
       }
     }
-    
+
     return {
       status: 'pass',
       responseTime,
-      message: '数据库连接正常'
+      message: '数据库连接正常',
     }
   } catch (error) {
     return {
@@ -146,8 +154,8 @@ async function checkDatabase(): Promise<HealthCheck> {
       responseTime: Date.now() - startTime,
       message: '数据库连接失败',
       details: {
-        error: error instanceof Error ? error.message : '未知错误'
-      }
+        error: error instanceof Error ? error.message : '未知错误',
+      },
     }
   }
 }
@@ -161,7 +169,7 @@ async function checkMemory(): Promise<HealthCheck> {
     const totalMemory = memoryUsage.heapTotal
     const usedMemory = memoryUsage.heapUsed
     const memoryPercentage = (usedMemory / totalMemory) * 100
-    
+
     // 内存使用率阈值检查
     if (memoryPercentage > 90) {
       return {
@@ -170,8 +178,8 @@ async function checkMemory(): Promise<HealthCheck> {
         details: {
           used: `${Math.round(usedMemory / 1024 / 1024)}MB`,
           total: `${Math.round(totalMemory / 1024 / 1024)}MB`,
-          percentage: `${memoryPercentage.toFixed(1)}%`
-        }
+          percentage: `${memoryPercentage.toFixed(1)}%`,
+        },
       }
     } else if (memoryPercentage > 80) {
       return {
@@ -180,27 +188,27 @@ async function checkMemory(): Promise<HealthCheck> {
         details: {
           used: `${Math.round(usedMemory / 1024 / 1024)}MB`,
           total: `${Math.round(totalMemory / 1024 / 1024)}MB`,
-          percentage: `${memoryPercentage.toFixed(1)}%`
-        }
+          percentage: `${memoryPercentage.toFixed(1)}%`,
+        },
       }
     }
-    
+
     return {
       status: 'pass',
       message: '内存使用正常',
       details: {
         used: `${Math.round(usedMemory / 1024 / 1024)}MB`,
         total: `${Math.round(totalMemory / 1024 / 1024)}MB`,
-        percentage: `${memoryPercentage.toFixed(1)}%`
-      }
+        percentage: `${memoryPercentage.toFixed(1)}%`,
+      },
     }
   } catch (error) {
     return {
       status: 'fail',
       message: '内存检查失败',
       details: {
-        error: error instanceof Error ? error.message : '未知错误'
-      }
+        error: error instanceof Error ? error.message : '未知错误',
+      },
     }
   }
 }
@@ -213,25 +221,25 @@ async function checkDisk(): Promise<HealthCheck | null> {
     // 在容器环境中，磁盘检查可能不太准确
     // 这里提供一个基础实现
     const fs = await import('fs/promises')
-    
+
     // 检查日志目录是否可写
     const logDir = process.env.LOG_DIR || './logs'
     const testFile = `${logDir}/.health-check-${Date.now()}`
-    
+
     await fs.writeFile(testFile, 'health check')
     await fs.unlink(testFile)
-    
+
     return {
       status: 'pass',
-      message: '磁盘访问正常'
+      message: '磁盘访问正常',
     }
   } catch (error) {
     return {
       status: 'fail',
       message: '磁盘访问失败',
       details: {
-        error: error instanceof Error ? error.message : '未知错误'
-      }
+        error: error instanceof Error ? error.message : '未知错误',
+      },
     }
   }
 }
@@ -241,24 +249,28 @@ async function checkDisk(): Promise<HealthCheck | null> {
  */
 function getMemoryMetrics(): MemoryMetrics {
   const memoryUsage = process.memoryUsage()
-  
+
   return {
     used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
     total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
     external: Math.round(memoryUsage.external / 1024 / 1024),
-    percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)
+    percentage: Math.round(
+      (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100
+    ),
   }
 }
 
 /**
  * 确定整体健康状态
  */
-function determineOverallStatus(checks: (HealthCheck | null)[]): 'healthy' | 'unhealthy' | 'degraded' {
-  const validChecks = checks.filter(check => check !== null) as HealthCheck[]
-  
-  const hasFailure = validChecks.some(check => check.status === 'fail')
-  const hasWarning = validChecks.some(check => check.status === 'warn')
-  
+function determineOverallStatus(
+  checks: (HealthCheck | null)[]
+): 'healthy' | 'unhealthy' | 'degraded' {
+  const validChecks = checks.filter((check) => check !== null) as HealthCheck[]
+
+  const hasFailure = validChecks.some((check) => check.status === 'fail')
+  const hasWarning = validChecks.some((check) => check.status === 'warn')
+
   if (hasFailure) {
     return 'unhealthy'
   } else if (hasWarning) {

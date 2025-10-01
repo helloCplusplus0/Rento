@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { errorTracker } from './error-tracker'
 
 export interface PerformanceMetrics {
@@ -38,7 +39,9 @@ export class PerformanceMonitor {
 
   constructor() {
     this.maxMetrics = parseInt(process.env.MAX_PERFORMANCE_METRICS || '1000')
-    this.slowRequestThreshold = parseInt(process.env.SLOW_REQUEST_THRESHOLD || '2000')
+    this.slowRequestThreshold = parseInt(
+      process.env.SLOW_REQUEST_THRESHOLD || '2000'
+    )
   }
 
   /**
@@ -46,12 +49,12 @@ export class PerformanceMonitor {
    */
   recordMetric(metric: PerformanceMetrics): void {
     this.metrics.push(metric)
-    
+
     // 保持最近N条记录
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics)
     }
-    
+
     // 慢请求告警
     if (metric.duration > this.slowRequestThreshold) {
       this.handleSlowRequest(metric)
@@ -84,7 +87,7 @@ export class PerformanceMonitor {
         // 记录性能指标
         const endTime = Date.now()
         const endMemory = process.memoryUsage()
-        
+
         const metric: PerformanceMetrics = {
           path,
           method,
@@ -95,12 +98,12 @@ export class PerformanceMonitor {
           ip,
           memoryUsage: {
             heapUsed: endMemory.heapUsed - startMemory.heapUsed,
-            heapTotal: endMemory.heapTotal
-          }
+            heapTotal: endMemory.heapTotal,
+          },
         }
 
         this.recordMetric(metric)
-        
+
         return result
       } catch (error) {
         // 记录错误请求
@@ -111,7 +114,7 @@ export class PerformanceMonitor {
           statusCode: 500,
           timestamp: new Date(),
           userAgent,
-          ip
+          ip,
         }
 
         this.recordMetric(metric)
@@ -129,7 +132,7 @@ export class PerformanceMonitor {
     // 时间范围过滤
     if (timeRange) {
       filteredMetrics = this.metrics.filter(
-        m => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end
+        (m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end
       )
     }
 
@@ -142,26 +145,30 @@ export class PerformanceMonitor {
         slowRequests: 0,
         errorRate: 0,
         requestsByPath: {},
-        requestsByStatus: {}
+        requestsByStatus: {},
       }
     }
 
-    const durations = filteredMetrics.map(m => m.duration)
+    const durations = filteredMetrics.map((m) => m.duration)
     const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length
     const maxDuration = Math.max(...durations)
     const minDuration = Math.min(...durations)
-    const slowRequests = filteredMetrics.filter(m => m.duration > this.slowRequestThreshold).length
-    const errorRequests = filteredMetrics.filter(m => m.statusCode >= 400).length
+    const slowRequests = filteredMetrics.filter(
+      (m) => m.duration > this.slowRequestThreshold
+    ).length
+    const errorRequests = filteredMetrics.filter(
+      (m) => m.statusCode >= 400
+    ).length
 
     // 按路径统计
     const requestsByPath: Record<string, number> = {}
-    filteredMetrics.forEach(m => {
+    filteredMetrics.forEach((m) => {
       requestsByPath[m.path] = (requestsByPath[m.path] || 0) + 1
     })
 
     // 按状态码统计
     const requestsByStatus: Record<number, number> = {}
-    filteredMetrics.forEach(m => {
+    filteredMetrics.forEach((m) => {
       requestsByStatus[m.statusCode] = (requestsByStatus[m.statusCode] || 0) + 1
     })
 
@@ -173,7 +180,7 @@ export class PerformanceMonitor {
       slowRequests,
       errorRate: Math.round((errorRequests / filteredMetrics.length) * 100),
       requestsByPath,
-      requestsByStatus
+      requestsByStatus,
     }
   }
 
@@ -182,7 +189,7 @@ export class PerformanceMonitor {
    */
   getSlowRequests(limit: number = 10): PerformanceMetrics[] {
     return this.metrics
-      .filter(m => m.duration > this.slowRequestThreshold)
+      .filter((m) => m.duration > this.slowRequestThreshold)
       .sort((a, b) => b.duration - a.duration)
       .slice(0, limit)
   }
@@ -192,7 +199,7 @@ export class PerformanceMonitor {
    */
   getErrorRequests(limit: number = 10): PerformanceMetrics[] {
     return this.metrics
-      .filter(m => m.statusCode >= 400)
+      .filter((m) => m.statusCode >= 400)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit)
   }
@@ -200,14 +207,22 @@ export class PerformanceMonitor {
   /**
    * 获取热门路径
    */
-  getPopularPaths(limit: number = 10): Array<{ path: string; count: number; avgDuration: number }> {
-    const pathStats = new Map<string, { count: number; totalDuration: number }>()
+  getPopularPaths(
+    limit: number = 10
+  ): Array<{ path: string; count: number; avgDuration: number }> {
+    const pathStats = new Map<
+      string,
+      { count: number; totalDuration: number }
+    >()
 
-    this.metrics.forEach(metric => {
-      const existing = pathStats.get(metric.path) || { count: 0, totalDuration: 0 }
+    this.metrics.forEach((metric) => {
+      const existing = pathStats.get(metric.path) || {
+        count: 0,
+        totalDuration: 0,
+      }
       pathStats.set(metric.path, {
         count: existing.count + 1,
-        totalDuration: existing.totalDuration + metric.duration
+        totalDuration: existing.totalDuration + metric.duration,
       })
     })
 
@@ -215,7 +230,7 @@ export class PerformanceMonitor {
       .map(([path, stats]) => ({
         path,
         count: stats.count,
-        avgDuration: Math.round(stats.totalDuration / stats.count)
+        avgDuration: Math.round(stats.totalDuration / stats.count),
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)
@@ -226,7 +241,7 @@ export class PerformanceMonitor {
    */
   cleanup(olderThan: Date): number {
     const initialLength = this.metrics.length
-    this.metrics = this.metrics.filter(m => m.timestamp > olderThan)
+    this.metrics = this.metrics.filter((m) => m.timestamp > olderThan)
     return initialLength - this.metrics.length
   }
 
@@ -234,18 +249,23 @@ export class PerformanceMonitor {
    * 处理慢请求
    */
   private async handleSlowRequest(metric: PerformanceMetrics): Promise<void> {
-    console.warn(`🐌 慢请求检测: ${metric.method} ${metric.path} - ${metric.duration}ms`)
-    
+    console.warn(
+      `🐌 慢请求检测: ${metric.method} ${metric.path} - ${metric.duration}ms`
+    )
+
     // 记录慢请求日志
-    await errorTracker.logWarning(`慢请求检测: ${metric.method} ${metric.path}`, {
-      duration: metric.duration,
-      threshold: this.slowRequestThreshold,
-      path: metric.path,
-      method: metric.method,
-      statusCode: metric.statusCode,
-      userAgent: metric.userAgent,
-      ip: metric.ip
-    })
+    await errorTracker.logWarning(
+      `慢请求检测: ${metric.method} ${metric.path}`,
+      {
+        duration: metric.duration,
+        threshold: this.slowRequestThreshold,
+        path: metric.path,
+        method: metric.method,
+        statusCode: metric.statusCode,
+        userAgent: metric.userAgent,
+        ip: metric.ip,
+      }
+    )
   }
 
   /**
@@ -264,8 +284,8 @@ export class PerformanceMonitor {
         duration: metric.duration,
         userAgent: metric.userAgent,
         ip: metric.ip,
-        memoryUsage: metric.memoryUsage
-      }
+        memoryUsage: metric.memoryUsage,
+      },
     })
   }
 
@@ -310,7 +330,7 @@ export function withPerformanceMonitoring<T extends any[], R>(
 
     try {
       const result = await handler(...args)
-      
+
       // 记录成功请求
       const metric: PerformanceMetrics = {
         path: context.path,
@@ -320,8 +340,8 @@ export function withPerformanceMonitoring<T extends any[], R>(
         timestamp: new Date(),
         memoryUsage: {
           heapUsed: process.memoryUsage().heapUsed - startMemory.heapUsed,
-          heapTotal: process.memoryUsage().heapTotal
-        }
+          heapTotal: process.memoryUsage().heapTotal,
+        },
       }
 
       performanceMonitor.recordMetric(metric)
@@ -336,8 +356,8 @@ export function withPerformanceMonitoring<T extends any[], R>(
         timestamp: new Date(),
         memoryUsage: {
           heapUsed: process.memoryUsage().heapUsed - startMemory.heapUsed,
-          heapTotal: process.memoryUsage().heapTotal
-        }
+          heapTotal: process.memoryUsage().heapTotal,
+        },
       }
 
       performanceMonitor.recordMetric(metric)

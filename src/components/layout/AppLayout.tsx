@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MobileLayout } from './MobileLayout'
+
 import { DesktopLayout } from './DesktopLayout'
+import { MobileLayout } from './MobileLayout'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -28,7 +29,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // 监听窗口大小变化
     window.addEventListener('resize', checkScreenSize)
-    
+
     return () => {
       window.removeEventListener('resize', checkScreenSize)
     }
@@ -37,8 +38,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   // 避免服务端渲染和客户端渲染不一致
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
       </div>
     )
   }

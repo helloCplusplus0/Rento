@@ -12,17 +12,17 @@ export enum ErrorType {
   DATABASE_ERROR = 'DATABASE_ERROR',
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   EXTERNAL_SERVICE = 'EXTERNAL_SERVICE',
-  SYSTEM_ERROR = 'SYSTEM_ERROR'
+  SYSTEM_ERROR = 'SYSTEM_ERROR',
 }
 
 /**
  * 错误严重程度枚举
  */
 export enum ErrorSeverity {
-  CRITICAL = 'CRITICAL',  // 系统无法正常工作
-  HIGH = 'HIGH',          // 核心功能受影响
-  MEDIUM = 'MEDIUM',      // 部分功能受影响
-  LOW = 'LOW'             // 轻微影响
+  CRITICAL = 'CRITICAL', // 系统无法正常工作
+  HIGH = 'HIGH', // 核心功能受影响
+  MEDIUM = 'MEDIUM', // 部分功能受影响
+  LOW = 'LOW', // 轻微影响
 }
 
 /**
@@ -53,7 +53,7 @@ export enum LogLevel {
   ERROR = 'ERROR',
   WARN = 'WARN',
   INFO = 'INFO',
-  DEBUG = 'DEBUG'
+  DEBUG = 'DEBUG',
 }
 
 /**
@@ -97,10 +97,10 @@ export class ErrorLogger {
       context: {
         module: context.module || 'unknown',
         function: context.function || 'unknown',
-        ...context
+        ...context,
       },
       stack: error?.stack,
-      metadata: this.extractMetadata(error)
+      metadata: this.extractMetadata(error),
     }
 
     // 存储错误记录
@@ -110,7 +110,10 @@ export class ErrorLogger {
     this.logToConsole(errorRecord)
 
     // 关键错误触发告警
-    if (severity === ErrorSeverity.CRITICAL || severity === ErrorSeverity.HIGH) {
+    if (
+      severity === ErrorSeverity.CRITICAL ||
+      severity === ErrorSeverity.HIGH
+    ) {
       this.triggerAlert(errorRecord)
     }
   }
@@ -135,10 +138,13 @@ export class ErrorLogger {
       level: LogLevel.INFO,
       timestamp: new Date(),
       message,
-      context
+      context,
     }
 
-    console.log(`[${logEntry.level}] ${logEntry.timestamp.toISOString()} - ${message}`, context)
+    console.log(
+      `[${logEntry.level}] ${logEntry.timestamp.toISOString()} - ${message}`,
+      context
+    )
   }
 
   /**
@@ -150,10 +156,13 @@ export class ErrorLogger {
         level: LogLevel.DEBUG,
         timestamp: new Date(),
         message,
-        context
+        context,
       }
 
-      console.debug(`[${logEntry.level}] ${logEntry.timestamp.toISOString()} - ${message}`, context)
+      console.debug(
+        `[${logEntry.level}] ${logEntry.timestamp.toISOString()} - ${message}`,
+        context
+      )
     }
   }
 
@@ -169,25 +178,33 @@ export class ErrorLogger {
     const now = Date.now()
     const last24h = now - 24 * 60 * 60 * 1000
 
-    const bySeverity = Object.values(ErrorSeverity).reduce((acc, severity) => {
-      acc[severity] = this.errorStore.filter(e => e.severity === severity).length
-      return acc
-    }, {} as Record<ErrorSeverity, number>)
+    const bySeverity = Object.values(ErrorSeverity).reduce(
+      (acc, severity) => {
+        acc[severity] = this.errorStore.filter(
+          (e) => e.severity === severity
+        ).length
+        return acc
+      },
+      {} as Record<ErrorSeverity, number>
+    )
 
-    const byType = Object.values(ErrorType).reduce((acc, type) => {
-      acc[type] = this.errorStore.filter(e => e.type === type).length
-      return acc
-    }, {} as Record<ErrorType, number>)
+    const byType = Object.values(ErrorType).reduce(
+      (acc, type) => {
+        acc[type] = this.errorStore.filter((e) => e.type === type).length
+        return acc
+      },
+      {} as Record<ErrorType, number>
+    )
 
-    const recent24h = this.errorStore.filter(e => 
-      e.timestamp.getTime() > last24h
+    const recent24h = this.errorStore.filter(
+      (e) => e.timestamp.getTime() > last24h
     ).length
 
     return {
       total: this.errorStore.length,
       bySeverity,
       byType,
-      recent24h
+      recent24h,
     }
   }
 
@@ -205,8 +222,8 @@ export class ErrorLogger {
    */
   cleanup(): void {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000 // 保留7天
-    this.errorStore = this.errorStore.filter(e => 
-      e.timestamp.getTime() > cutoff
+    this.errorStore = this.errorStore.filter(
+      (e) => e.timestamp.getTime() > cutoff
     )
   }
 
@@ -241,7 +258,7 @@ export class ErrorLogger {
       case ErrorSeverity.HIGH:
         console.error(message, {
           context: errorRecord.context,
-          stack: errorRecord.stack
+          stack: errorRecord.stack,
         })
         break
       case ErrorSeverity.MEDIUM:
@@ -257,7 +274,7 @@ export class ErrorLogger {
    * 触发告警
    */
   private triggerAlert(errorRecord: ErrorRecord): void {
-    this.alertCallbacks.forEach(callback => {
+    this.alertCallbacks.forEach((callback) => {
       try {
         callback(errorRecord)
       } catch (error) {
@@ -303,14 +320,19 @@ export function withErrorLogging(
   severity: ErrorSeverity,
   module: string
 ) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const method = descriptor.value
 
     descriptor.value = async function (...args: any[]) {
       try {
         return await method.apply(this, args)
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
         await logger.logError(
           type,
           severity,
@@ -318,7 +340,7 @@ export function withErrorLogging(
           {
             module,
             function: propertyName,
-            args: args.length > 0 ? 'provided' : 'none'
+            args: args.length > 0 ? 'provided' : 'none',
           },
           error instanceof Error ? error : undefined
         )

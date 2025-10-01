@@ -1,5 +1,5 @@
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { prisma } from './prisma'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
 
 /**
  * 合同激活服务
@@ -23,15 +23,15 @@ export class ContractActivationService {
     const today = new Date()
     today.setHours(0, 0, 0, 0) // 设置为当天开始时间
 
-    this.logger.logInfo('开始检查待激活合同', { 
+    this.logger.logInfo('开始检查待激活合同', {
       module: 'contract-activation',
       function: 'activatePendingContracts',
-      date: today.toISOString() 
+      date: today.toISOString(),
     })
 
     const result = {
       activated: 0,
-      errors: [] as Array<{ contractId: string; error: string }>
+      errors: [] as Array<{ contractId: string; error: string }>,
     }
 
     try {
@@ -40,19 +40,19 @@ export class ContractActivationService {
         where: {
           status: 'PENDING',
           startDate: {
-            lte: today // 开始日期小于等于今天
-          }
+            lte: today, // 开始日期小于等于今天
+          },
         },
         include: {
           room: true,
-          renter: true
-        }
+          renter: true,
+        },
       })
 
       this.logger.logInfo(`找到 ${pendingContracts.length} 个待激活合同`, {
         module: 'contract-activation',
         function: 'activatePendingContracts',
-        count: pendingContracts.length
+        count: pendingContracts.length,
       })
 
       // 逐个激活合同
@@ -60,18 +60,19 @@ export class ContractActivationService {
         try {
           await this.activateContract(contract.id)
           result.activated++
-          this.logger.logInfo(`合同激活成功`, { 
+          this.logger.logInfo(`合同激活成功`, {
             module: 'contract-activation',
             function: 'activatePendingContracts',
             contractId: contract.id,
             contractNumber: contract.contractNumber,
-            roomId: contract.roomId
+            roomId: contract.roomId,
           })
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '未知错误'
+          const errorMessage =
+            error instanceof Error ? error.message : '未知错误'
           result.errors.push({
             contractId: contract.id,
-            error: errorMessage
+            error: errorMessage,
           })
           await this.logger.logError(
             ErrorType.SYSTEM_ERROR,
@@ -81,7 +82,7 @@ export class ContractActivationService {
               module: 'contract-activation',
               function: 'activatePendingContracts',
               contractId: contract.id,
-              contractNumber: contract.contractNumber
+              contractNumber: contract.contractNumber,
             },
             error instanceof Error ? error : undefined
           )
@@ -93,7 +94,7 @@ export class ContractActivationService {
         function: 'activatePendingContracts',
         total: pendingContracts.length,
         activated: result.activated,
-        errors: result.errors.length
+        errors: result.errors.length,
       })
 
       return result
@@ -104,7 +105,7 @@ export class ContractActivationService {
         '合同激活任务执行失败',
         {
           module: 'contract-activation',
-          function: 'activatePendingContracts'
+          function: 'activatePendingContracts',
         },
         error instanceof Error ? error : undefined
       )
@@ -121,7 +122,7 @@ export class ContractActivationService {
       // 获取合同信息
       const contract = await tx.contract.findUnique({
         where: { id: contractId },
-        include: { room: true }
+        include: { room: true },
       })
 
       if (!contract) {
@@ -140,7 +141,7 @@ export class ContractActivationService {
       // 激活合同
       await tx.contract.update({
         where: { id: contractId },
-        data: { status: 'ACTIVE' }
+        data: { status: 'ACTIVE' },
       })
 
       // 更新房间状态
@@ -148,8 +149,8 @@ export class ContractActivationService {
         where: { id: contract.roomId },
         data: {
           status: 'OCCUPIED',
-          currentRenter: contract.renterId
-        }
+          currentRenter: contract.renterId,
+        },
       })
     })
   }
@@ -165,7 +166,7 @@ export class ContractActivationService {
       await this.activateContract(contractId)
       return {
         success: true,
-        message: '合同激活成功'
+        message: '合同激活成功',
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '激活失败'
@@ -176,13 +177,13 @@ export class ContractActivationService {
         {
           module: 'contract-activation',
           function: 'manualActivateContract',
-          contractId
+          contractId,
         },
         error instanceof Error ? error : undefined
       )
       return {
         success: false,
-        message: errorMessage
+        message: errorMessage,
       }
     }
   }

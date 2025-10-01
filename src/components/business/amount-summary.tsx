@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 
 interface AmountItem {
   id: string
@@ -38,12 +38,16 @@ export function AmountSummary({
   title,
   totalAmount,
   showGrandTotal = true,
-  className
+  className,
 }: AmountSummaryProps) {
-  const calculatedTotal = totalAmount ?? sections.reduce((sum, section) => {
-    const sectionTotal = section.total ?? section.items.reduce((itemSum, item) => itemSum + item.amount, 0)
-    return sum + sectionTotal
-  }, 0)
+  const calculatedTotal =
+    totalAmount ??
+    sections.reduce((sum, section) => {
+      const sectionTotal =
+        section.total ??
+        section.items.reduce((itemSum, item) => itemSum + item.amount, 0)
+      return sum + sectionTotal
+    }, 0)
 
   return (
     <Card className={className}>
@@ -52,9 +56,9 @@ export function AmountSummary({
           <CardTitle className="flex items-center justify-between">
             <span>{title}</span>
             {showGrandTotal && (
-              <Badge 
+              <Badge
                 variant={calculatedTotal >= 0 ? 'default' : 'destructive'}
-                className="text-base font-semibold px-3 py-1"
+                className="px-3 py-1 text-base font-semibold"
               >
                 {formatCurrency(calculatedTotal)}
               </Badge>
@@ -62,7 +66,7 @@ export function AmountSummary({
           </CardTitle>
         </CardHeader>
       )}
-      
+
       <CardContent className={cn('space-y-4', !title && 'pt-6')}>
         {sections.map((section, sectionIndex) => (
           <div key={section.id}>
@@ -72,16 +76,18 @@ export function AmountSummary({
             )}
           </div>
         ))}
-        
+
         {showGrandTotal && sections.length > 1 && (
           <>
             <Separator />
             <div className="flex items-center justify-between pt-2">
-              <span className="font-semibold text-lg">总计</span>
-              <span className={cn(
-                'font-bold text-xl',
-                calculatedTotal >= 0 ? 'text-green-600' : 'text-red-600'
-              )}>
+              <span className="text-lg font-semibold">总计</span>
+              <span
+                className={cn(
+                  'text-xl font-bold',
+                  calculatedTotal >= 0 ? 'text-green-600' : 'text-red-600'
+                )}
+              >
                 {formatCurrency(calculatedTotal)}
               </span>
             </div>
@@ -96,26 +102,29 @@ export function AmountSummary({
  * 金额分组组件
  */
 function AmountSection({ section }: { section: AmountSection }) {
-  const sectionTotal = section.total ?? section.items.reduce((sum, item) => sum + item.amount, 0)
+  const sectionTotal =
+    section.total ?? section.items.reduce((sum, item) => sum + item.amount, 0)
 
   return (
     <div className="space-y-3">
       {/* 分组标题 */}
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-base">{section.title}</h4>
+        <h4 className="text-base font-medium">{section.title}</h4>
         {section.showTotal !== false && (
-          <span className={cn(
-            'font-semibold',
-            sectionTotal >= 0 ? 'text-green-600' : 'text-red-600'
-          )}>
+          <span
+            className={cn(
+              'font-semibold',
+              sectionTotal >= 0 ? 'text-green-600' : 'text-red-600'
+            )}
+          >
             {formatCurrency(sectionTotal)}
           </span>
         )}
       </div>
-      
+
       {/* 金额项列表 */}
       <div className="space-y-2">
-        {section.items.map(item => (
+        {section.items.map((item) => (
           <AmountItem key={item.id} item={item} />
         ))}
       </div>
@@ -140,7 +149,7 @@ function AmountItem({ item }: { item: AmountItem }) {
   }
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+    <div className="bg-muted/30 hover:bg-muted/50 flex items-center justify-between rounded-lg px-3 py-2 transition-colors">
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{item.label}</span>
@@ -151,10 +160,12 @@ function AmountItem({ item }: { item: AmountItem }) {
           )}
         </div>
         {item.description && (
-          <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {item.description}
+          </p>
         )}
       </div>
-      
+
       <div className="text-right">
         <span className={cn('font-semibold', getStatusColor(item.status))}>
           {formatCurrency(item.amount)}
@@ -170,7 +181,7 @@ function AmountItem({ item }: { item: AmountItem }) {
 export function SimpleAmountSummary({
   items,
   title,
-  className
+  className,
 }: {
   items: AmountItem[]
   title?: string
@@ -186,28 +197,35 @@ export function SimpleAmountSummary({
         </CardHeader>
       )}
       <CardContent className={cn('space-y-2', !title && 'pt-6')}>
-        {items.map(item => (
+        {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between">
             <span className="text-sm">{item.label}</span>
-            <span className={cn(
-              'font-medium text-sm',
-              item.status === 'positive' ? 'text-green-600' :
-              item.status === 'negative' ? 'text-red-600' : 'text-foreground'
-            )}>
+            <span
+              className={cn(
+                'text-sm font-medium',
+                item.status === 'positive'
+                  ? 'text-green-600'
+                  : item.status === 'negative'
+                    ? 'text-red-600'
+                    : 'text-foreground'
+              )}
+            >
               {formatCurrency(item.amount)}
             </span>
           </div>
         ))}
-        
+
         {items.length > 1 && (
           <>
             <Separator />
             <div className="flex items-center justify-between pt-2">
               <span className="font-medium">合计</span>
-              <span className={cn(
-                'font-semibold',
-                total >= 0 ? 'text-green-600' : 'text-red-600'
-              )}>
+              <span
+                className={cn(
+                  'font-semibold',
+                  total >= 0 ? 'text-green-600' : 'text-red-600'
+                )}
+              >
                 {formatCurrency(total)}
               </span>
             </div>
@@ -228,7 +246,7 @@ export function AmountStatCard({
   count,
   trend,
   status = 'neutral',
-  className
+  className,
 }: {
   title: string
   amount: number
@@ -244,21 +262,21 @@ export function AmountStatCard({
           bg: 'bg-gradient-to-br from-green-50 to-green-100 border-green-200',
           text: 'text-green-700',
           amount: 'text-green-600',
-          accent: 'bg-green-500'
+          accent: 'bg-green-500',
         }
       case 'negative':
         return {
           bg: 'bg-gradient-to-br from-red-50 to-red-100 border-red-200',
           text: 'text-red-700',
           amount: 'text-red-600',
-          accent: 'bg-red-500'
+          accent: 'bg-red-500',
         }
       default:
         return {
           bg: 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200',
           text: 'text-blue-700',
           amount: 'text-blue-600',
-          accent: 'bg-blue-500'
+          accent: 'bg-blue-500',
         }
     }
   }
@@ -266,37 +284,46 @@ export function AmountStatCard({
   const styles = getStatusStyles()
 
   return (
-    <Card className={cn(styles.bg, 'border-2 overflow-hidden', className)}>
+    <Card className={cn(styles.bg, 'overflow-hidden border-2', className)}>
       <CardContent className="p-0">
         {/* 使用黄金比例布局 */}
-        <div className="aspect-[1.618/1] flex flex-col">
+        <div className="flex aspect-[1.618/1] flex-col">
           {/* 头部区域 - 38.2% */}
-          <div className="flex-[0.382] p-3 flex items-center justify-between">
+          <div className="flex flex-[0.382] items-center justify-between p-3">
             <span className={cn('text-sm font-medium', styles.text)}>
               {title}
             </span>
             {trend !== undefined && (
               <div className="flex items-center gap-1">
-                <div className={cn('w-1 h-4 rounded-full', styles.accent)}></div>
-                <span className={cn(
-                  'text-xs font-semibold',
-                  trend >= 0 ? 'text-green-600' : 'text-red-600'
-                )}>
-                  {trend >= 0 ? '+' : ''}{trend}%
+                <div
+                  className={cn('h-4 w-1 rounded-full', styles.accent)}
+                ></div>
+                <span
+                  className={cn(
+                    'text-xs font-semibold',
+                    trend >= 0 ? 'text-green-600' : 'text-red-600'
+                  )}
+                >
+                  {trend >= 0 ? '+' : ''}
+                  {trend}%
                 </span>
               </div>
             )}
           </div>
-          
+
           {/* 主要内容区域 - 61.8% */}
-          <div className="flex-[0.618] px-3 pb-3 flex flex-col justify-center">
-            <div className={cn('text-2xl font-bold leading-tight', styles.amount)}>
+          <div className="flex flex-[0.618] flex-col justify-center px-3 pb-3">
+            <div
+              className={cn('text-2xl leading-tight font-bold', styles.amount)}
+            >
               {formatCurrency(amount)}
             </div>
-            
+
             {count !== undefined && (
-              <div className="flex items-center gap-1 mt-1">
-                <div className={cn('w-1.5 h-1.5 rounded-full', styles.accent)}></div>
+              <div className="mt-1 flex items-center gap-1">
+                <div
+                  className={cn('h-1.5 w-1.5 rounded-full', styles.accent)}
+                ></div>
                 <span className={cn('text-xs', styles.text)}>
                   共 {count} 笔
                 </span>
@@ -314,7 +341,7 @@ export function AmountStatCard({
  */
 export function AmountSummarySkeleton({
   sections = 2,
-  itemsPerSection = 3
+  itemsPerSection = 3,
 }: {
   sections?: number
   itemsPerSection?: number
@@ -323,24 +350,27 @@ export function AmountSummarySkeleton({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="h-6 bg-gray-200 rounded w-24 animate-pulse" />
-          <div className="h-6 bg-gray-200 rounded w-20 animate-pulse" />
+          <div className="h-6 w-24 animate-pulse rounded bg-gray-200" />
+          <div className="h-6 w-20 animate-pulse rounded bg-gray-200" />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {Array.from({ length: sections }).map((_, sectionIndex) => (
           <div key={sectionIndex}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-5 bg-gray-200 rounded w-20 animate-pulse" />
-              <div className="h-5 bg-gray-200 rounded w-16 animate-pulse" />
+            <div className="mb-3 flex items-center justify-between">
+              <div className="h-5 w-20 animate-pulse rounded bg-gray-200" />
+              <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
             </div>
             <div className="space-y-2">
               {Array.from({ length: itemsPerSection }).map((_, itemIndex) => (
-                <div key={itemIndex} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30">
+                <div
+                  key={itemIndex}
+                  className="bg-muted/30 flex items-center justify-between rounded-lg px-3 py-2"
+                >
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-24 animate-pulse" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
                   </div>
-                  <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
                 </div>
               ))}
             </div>

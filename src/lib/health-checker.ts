@@ -3,8 +3,8 @@
  * 提供系统健康状态检查和监控功能
  */
 
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { prisma } from './prisma'
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
 
 /**
  * 健康检查状态枚举
@@ -12,7 +12,7 @@ import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
 export enum HealthStatus {
   HEALTHY = 'healthy',
   DEGRADED = 'degraded',
-  UNHEALTHY = 'unhealthy'
+  UNHEALTHY = 'unhealthy',
 }
 
 /**
@@ -54,7 +54,7 @@ export class SystemHealthChecker {
       this.checkBillSystemHealth(),
       this.checkDataConsistency(),
       this.checkErrorRate(),
-      this.checkPerformance()
+      this.checkPerformance(),
     ])
 
     const overallStatus = this.determineOverallStatus(checks)
@@ -64,7 +64,7 @@ export class SystemHealthChecker {
       checks,
       uptime: Date.now() - this.startTime,
       version: process.env.npm_package_version || '1.0.0',
-      timestamp: new Date()
+      timestamp: new Date(),
     }
   }
 
@@ -73,10 +73,10 @@ export class SystemHealthChecker {
    */
   private async checkDatabaseConnection(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       await prisma.$queryRaw`SELECT 1`
-      
+
       return {
         name: 'database_connection',
         status: HealthStatus.HEALTHY,
@@ -84,8 +84,8 @@ export class SystemHealthChecker {
         responseTime: Date.now() - startTime,
         details: {
           provider: 'sqlite',
-          connected: true
-        }
+          connected: true,
+        },
       }
     } catch (error) {
       await this.logger.logError(
@@ -101,7 +101,7 @@ export class SystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -111,15 +111,15 @@ export class SystemHealthChecker {
    */
   private async checkBillSystemHealth(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       // 检查最近24小时的账单生成情况
       const recentBills = await prisma.bill.count({
         where: {
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
-        }
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          },
+        },
       })
 
       // 检查失败的账单生成 - 移除FAILED状态检查，因为数据库中没有此状态
@@ -129,21 +129,22 @@ export class SystemHealthChecker {
           OR: [
             {
               // 检查金额异常的账单
-              amount: { lte: 0 }
+              amount: { lte: 0 },
             },
             {
               // 检查水电费账单但没有明细的情况
               type: 'UTILITIES',
-              billDetails: { none: {} }
-            }
+              billDetails: { none: {} },
+            },
           ],
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
-        }
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          },
+        },
       })
 
-      const successRate = recentBills > 0 ? (recentBills - problemBills) / recentBills : 1
+      const successRate =
+        recentBills > 0 ? (recentBills - problemBills) / recentBills : 1
       let status = HealthStatus.HEALTHY
 
       if (successRate < 0.9) {
@@ -161,8 +162,8 @@ export class SystemHealthChecker {
         details: {
           recentBillCount: recentBills,
           problemBillCount: problemBills,
-          successRate: Math.round(successRate * 100) / 100
-        }
+          successRate: Math.round(successRate * 100) / 100,
+        },
       }
     } catch (error) {
       return {
@@ -170,7 +171,7 @@ export class SystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -180,14 +181,14 @@ export class SystemHealthChecker {
    */
   private async checkDataConsistency(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       // 检查账单和明细的一致性
       const billsWithoutDetails = await prisma.bill.count({
         where: {
           type: 'UTILITIES',
-          billDetails: { none: {} }
-        }
+          billDetails: { none: {} },
+        },
       })
 
       // 检查抄表状态一致性
@@ -196,14 +197,14 @@ export class SystemHealthChecker {
           OR: [
             {
               status: 'BILLED',
-              isBilled: false
+              isBilled: false,
             },
             {
               status: 'PENDING',
-              isBilled: true
-            }
-          ]
-        }
+              isBilled: true,
+            },
+          ],
+        },
       })
 
       const totalIssues = billsWithoutDetails + inconsistentReadings
@@ -224,8 +225,8 @@ export class SystemHealthChecker {
         details: {
           billsWithoutDetails,
           inconsistentReadings,
-          totalIssues
-        }
+          totalIssues,
+        },
       }
     } catch (error) {
       return {
@@ -233,7 +234,7 @@ export class SystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -243,17 +244,19 @@ export class SystemHealthChecker {
    */
   private async checkErrorRate(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       const errorStats = this.logger.getErrorStats()
       const errorRate = errorStats.recent24h / Math.max(1, errorStats.total)
-      
+
       let status = HealthStatus.HEALTHY
-      
-      if (errorRate > 0.05) { // 5%错误率
+
+      if (errorRate > 0.05) {
+        // 5%错误率
         status = HealthStatus.DEGRADED
       }
-      if (errorRate > 0.1) { // 10%错误率
+      if (errorRate > 0.1) {
+        // 10%错误率
         status = HealthStatus.UNHEALTHY
       }
 
@@ -266,8 +269,8 @@ export class SystemHealthChecker {
           totalErrors: errorStats.total,
           recent24hErrors: errorStats.recent24h,
           errorRate: Math.round(errorRate * 10000) / 100, // 百分比
-          bySeverity: errorStats.bySeverity
-        }
+          bySeverity: errorStats.bySeverity,
+        },
       }
     } catch (error) {
       return {
@@ -275,7 +278,7 @@ export class SystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -285,7 +288,7 @@ export class SystemHealthChecker {
    */
   private async checkPerformance(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       // 检查数据库查询性能
       const queryStart = Date.now()
@@ -297,7 +300,7 @@ export class SystemHealthChecker {
       const memoryUsageMB = Math.round(memoryUsage.heapUsed / 1024 / 1024)
 
       let status = HealthStatus.HEALTHY
-      
+
       if (queryTime > 1000 || memoryUsageMB > 512) {
         status = HealthStatus.DEGRADED
       }
@@ -313,8 +316,8 @@ export class SystemHealthChecker {
         details: {
           queryResponseTime: queryTime,
           memoryUsageMB,
-          uptime: Date.now() - this.startTime
-        }
+          uptime: Date.now() - this.startTime,
+        },
       }
     } catch (error) {
       return {
@@ -322,7 +325,7 @@ export class SystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -331,8 +334,12 @@ export class SystemHealthChecker {
    * 确定整体健康状态
    */
   private determineOverallStatus(checks: HealthCheck[]): HealthStatus {
-    const unhealthyCount = checks.filter(c => c.status === HealthStatus.UNHEALTHY).length
-    const degradedCount = checks.filter(c => c.status === HealthStatus.DEGRADED).length
+    const unhealthyCount = checks.filter(
+      (c) => c.status === HealthStatus.UNHEALTHY
+    ).length
+    const degradedCount = checks.filter(
+      (c) => c.status === HealthStatus.DEGRADED
+    ).length
 
     if (unhealthyCount > 0) {
       return HealthStatus.UNHEALTHY
@@ -343,7 +350,7 @@ export class SystemHealthChecker {
     if (degradedCount === 1) {
       return HealthStatus.DEGRADED
     }
-    
+
     return HealthStatus.HEALTHY
   }
 }
@@ -359,13 +366,13 @@ export class BillSystemHealthChecker {
    */
   async checkBillSystemHealth(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       const checks = await Promise.all([
         this.checkRecentBillGeneration(),
         this.checkBillDataIntegrity(),
         this.checkMeterReadingStatus(),
-        this.checkBillProcessingQueue()
+        this.checkBillProcessingQueue(),
       ])
 
       const overallStatus = this.determineOverallStatus(checks)
@@ -376,15 +383,18 @@ export class BillSystemHealthChecker {
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
         details: {
-          checks: checks.reduce((acc, check) => {
-            acc[check.name] = {
-              status: check.status,
-              details: check.details,
-              error: check.error
-            }
-            return acc
-          }, {} as Record<string, any>)
-        }
+          checks: checks.reduce(
+            (acc, check) => {
+              acc[check.name] = {
+                status: check.status,
+                details: check.details,
+                error: check.error,
+              }
+              return acc
+            },
+            {} as Record<string, any>
+          ),
+        },
       }
     } catch (error) {
       return {
@@ -392,7 +402,7 @@ export class BillSystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -403,16 +413,16 @@ export class BillSystemHealthChecker {
   private async checkRecentBillGeneration(): Promise<HealthCheck> {
     try {
       const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      
+
       const recentBills = await prisma.bill.count({
-        where: { createdAt: { gte: last24h } }
+        where: { createdAt: { gte: last24h } },
       })
 
       const recentUtilityBills = await prisma.bill.count({
         where: {
           type: 'UTILITIES',
-          createdAt: { gte: last24h }
-        }
+          createdAt: { gte: last24h },
+        },
       })
 
       return {
@@ -423,8 +433,8 @@ export class BillSystemHealthChecker {
         details: {
           totalRecentBills: recentBills,
           recentUtilityBills,
-          lastBillTime: await this.getLastBillTime()
-        }
+          lastBillTime: await this.getLastBillTime(),
+        },
       }
     } catch (error) {
       return {
@@ -432,7 +442,7 @@ export class BillSystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -445,29 +455,34 @@ export class BillSystemHealthChecker {
       const utilityBillsWithoutDetails = await prisma.bill.count({
         where: {
           type: 'UTILITIES',
-          billDetails: { none: {} }
-        }
+          billDetails: { none: {} },
+        },
       })
 
       const billsWithInconsistentAmounts = await prisma.bill.count({
         where: {
-          amount: { not: { equals: prisma.bill.fields.pendingAmount } }
-        }
+          amount: { not: { equals: prisma.bill.fields.pendingAmount } },
+        },
       })
 
-      const totalIssues = utilityBillsWithoutDetails + billsWithInconsistentAmounts
-      
+      const totalIssues =
+        utilityBillsWithoutDetails + billsWithInconsistentAmounts
+
       return {
         name: 'bill_data_integrity',
-        status: totalIssues === 0 ? HealthStatus.HEALTHY : 
-                totalIssues <= 3 ? HealthStatus.DEGRADED : HealthStatus.UNHEALTHY,
+        status:
+          totalIssues === 0
+            ? HealthStatus.HEALTHY
+            : totalIssues <= 3
+              ? HealthStatus.DEGRADED
+              : HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
         details: {
           utilityBillsWithoutDetails,
           billsWithInconsistentAmounts,
-          totalIssues
-        }
+          totalIssues,
+        },
       }
     } catch (error) {
       return {
@@ -475,7 +490,7 @@ export class BillSystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -486,28 +501,32 @@ export class BillSystemHealthChecker {
   private async checkMeterReadingStatus(): Promise<HealthCheck> {
     try {
       const pendingReadings = await prisma.meterReading.count({
-        where: { status: 'PENDING' }
+        where: { status: 'PENDING' },
       })
 
       const inconsistentReadings = await prisma.meterReading.count({
         where: {
           OR: [
             { status: 'BILLED', isBilled: false },
-            { status: 'PENDING', isBilled: true }
-          ]
-        }
+            { status: 'PENDING', isBilled: true },
+          ],
+        },
       })
 
       return {
         name: 'meter_reading_status',
-        status: inconsistentReadings === 0 ? HealthStatus.HEALTHY : 
-                inconsistentReadings <= 2 ? HealthStatus.DEGRADED : HealthStatus.UNHEALTHY,
+        status:
+          inconsistentReadings === 0
+            ? HealthStatus.HEALTHY
+            : inconsistentReadings <= 2
+              ? HealthStatus.DEGRADED
+              : HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
         details: {
           pendingReadings,
-          inconsistentReadings
-        }
+          inconsistentReadings,
+        },
       }
     } catch (error) {
       return {
@@ -515,7 +534,7 @@ export class BillSystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -530,21 +549,25 @@ export class BillSystemHealthChecker {
         where: {
           status: 'PENDING',
           createdAt: {
-            lt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2小时前
-          }
-        }
+            lt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2小时前
+          },
+        },
       })
 
       return {
         name: 'bill_processing_queue',
-        status: oldPendingReadings === 0 ? HealthStatus.HEALTHY : 
-                oldPendingReadings <= 5 ? HealthStatus.DEGRADED : HealthStatus.UNHEALTHY,
+        status:
+          oldPendingReadings === 0
+            ? HealthStatus.HEALTHY
+            : oldPendingReadings <= 5
+              ? HealthStatus.DEGRADED
+              : HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
         details: {
           oldPendingReadings,
-          queueBacklog: oldPendingReadings > 0
-        }
+          queueBacklog: oldPendingReadings > 0,
+        },
       }
     } catch (error) {
       return {
@@ -552,7 +575,7 @@ export class BillSystemHealthChecker {
         status: HealthStatus.UNHEALTHY,
         lastCheck: new Date(),
         responseTime: 0,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
@@ -564,9 +587,9 @@ export class BillSystemHealthChecker {
     try {
       const lastBill = await prisma.bill.findFirst({
         orderBy: { createdAt: 'desc' },
-        select: { createdAt: true }
+        select: { createdAt: true },
       })
-      
+
       return lastBill ? lastBill.createdAt.toISOString() : null
     } catch {
       return null
@@ -577,8 +600,12 @@ export class BillSystemHealthChecker {
    * 确定整体状态
    */
   private determineOverallStatus(checks: HealthCheck[]): HealthStatus {
-    const unhealthyCount = checks.filter(c => c.status === HealthStatus.UNHEALTHY).length
-    const degradedCount = checks.filter(c => c.status === HealthStatus.DEGRADED).length
+    const unhealthyCount = checks.filter(
+      (c) => c.status === HealthStatus.UNHEALTHY
+    ).length
+    const degradedCount = checks.filter(
+      (c) => c.status === HealthStatus.DEGRADED
+    ).length
 
     if (unhealthyCount > 0) {
       return HealthStatus.UNHEALTHY
@@ -586,7 +613,7 @@ export class BillSystemHealthChecker {
     if (degradedCount > 1) {
       return HealthStatus.DEGRADED
     }
-    
+
     return HealthStatus.HEALTHY
   }
 }

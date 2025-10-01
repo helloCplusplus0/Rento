@@ -3,18 +3,18 @@
  * GET /api/health/system
  */
 
+import { ErrorLogger, ErrorSeverity, ErrorType } from '@/lib/error-logger'
 import { systemHealthChecker } from '@/lib/health-checker'
-import { ErrorLogger, ErrorType, ErrorSeverity } from '@/lib/error-logger'
 
 const logger = ErrorLogger.getInstance()
 
 export async function GET() {
   const startTime = Date.now()
-  
+
   try {
     logger.logInfo('开始系统健康检查', {
       module: 'health-api',
-      function: 'GET /api/health/system'
+      function: 'GET /api/health/system',
     })
 
     const health = await systemHealthChecker.checkSystemHealth()
@@ -24,25 +24,31 @@ export async function GET() {
       module: 'health-api',
       overallStatus: health.overall,
       responseTime,
-      checksCount: health.checks.length
+      checksCount: health.checks.length,
     })
 
     // 根据健康状态返回相应的HTTP状态码
-    const httpStatus = health.overall === 'healthy' ? 200 : 
-                      health.overall === 'degraded' ? 200 : 503
+    const httpStatus =
+      health.overall === 'healthy'
+        ? 200
+        : health.overall === 'degraded'
+          ? 200
+          : 503
 
-    return Response.json({
-      ...health,
-      responseTime
-    }, {
-      status: httpStatus,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+    return Response.json(
+      {
+        ...health,
+        responseTime,
+      },
+      {
+        status: httpStatus,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
       }
-    })
-
+    )
   } catch (error) {
     const responseTime = Date.now() - startTime
 
@@ -53,19 +59,22 @@ export async function GET() {
       {
         module: 'health-api',
         function: 'GET /api/health/system',
-        responseTime
+        responseTime,
       },
       error instanceof Error ? error : undefined
     )
 
-    return Response.json({
-      overall: 'unhealthy',
-      error: 'Health check failed',
-      details: error instanceof Error ? error.message : String(error),
-      timestamp: new Date(),
-      responseTime
-    }, {
-      status: 500
-    })
+    return Response.json(
+      {
+        overall: 'unhealthy',
+        error: 'Health check failed',
+        details: error instanceof Error ? error.message : String(error),
+        timestamp: new Date(),
+        responseTime,
+      },
+      {
+        status: 500,
+      }
+    )
   }
 }

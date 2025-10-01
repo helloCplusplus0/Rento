@@ -7,13 +7,13 @@
  * 路由配置接口
  */
 export interface RouteConfig {
-  path: string              // 路由路径
-  requireAuth?: boolean     // 是否需要身份验证
-  roles?: string[]          // 允许访问的角色列表
-  redirect?: string         // 重定向路径
-  title?: string           // 页面标题
-  description?: string     // 页面描述
-  icon?: string           // 页面图标
+  path: string // 路由路径
+  requireAuth?: boolean // 是否需要身份验证
+  roles?: string[] // 允许访问的角色列表
+  redirect?: string // 重定向路径
+  title?: string // 页面标题
+  description?: string // 页面描述
+  icon?: string // 页面图标
 }
 
 /**
@@ -27,42 +27,42 @@ export const routeConfigs: RouteConfig[] = [
     requireAuth: false,
     title: '工作台',
     description: '仪表板和数据概览',
-    icon: 'home'
+    icon: 'home',
   },
   {
     path: '/rooms',
     requireAuth: false,
     title: '房源管理',
     description: '管理房间信息和状态',
-    icon: 'building'
+    icon: 'building',
   },
   {
     path: '/contracts',
     requireAuth: false,
     title: '合同管理',
     description: '管理租赁合同',
-    icon: 'document'
+    icon: 'document',
   },
   {
     path: '/bills',
     requireAuth: false,
     title: '账单管理',
     description: '管理收支账单',
-    icon: 'receipt'
+    icon: 'receipt',
   },
   {
     path: '/add',
     requireAuth: false,
     title: '添加功能',
     description: '快速添加各类信息',
-    icon: 'plus'
+    icon: 'plus',
   },
   {
     path: '/settings',
     requireAuth: false,
     title: '系统设置',
     description: '配置系统参数',
-    icon: 'settings'
+    icon: 'settings',
   },
 
   // 开发和演示页面
@@ -71,14 +71,14 @@ export const routeConfigs: RouteConfig[] = [
     requireAuth: false,
     title: '组件展示',
     description: '开发组件展示页面',
-    icon: 'code'
+    icon: 'code',
   },
   {
     path: '/layout-demo',
     requireAuth: false,
     title: '布局演示',
     description: '响应式布局演示',
-    icon: 'layout'
+    icon: 'layout',
   },
 
   // 预留：管理员页面 (后期实现)
@@ -106,7 +106,7 @@ export const routeConfigs: RouteConfig[] = [
  * 根据路径获取路由配置
  */
 export function getRouteConfig(path: string): RouteConfig | undefined {
-  return routeConfigs.find(config => config.path === path)
+  return routeConfigs.find((config) => config.path === path)
 }
 
 /**
@@ -122,28 +122,28 @@ export function requiresAuth(path: string): boolean {
  */
 export function hasPermission(userRoles: string[], path: string): boolean {
   const config = getRouteConfig(path)
-  
+
   // 如果没有配置或不需要特定角色，允许访问
   if (!config?.roles || config.roles.length === 0) {
     return true
   }
-  
+
   // 检查用户角色是否在允许列表中
-  return config.roles.some(role => userRoles.includes(role))
+  return config.roles.some((role) => userRoles.includes(role))
 }
 
 /**
  * 获取所有公开路由
  */
 export function getPublicRoutes(): RouteConfig[] {
-  return routeConfigs.filter(config => !config.requireAuth)
+  return routeConfigs.filter((config) => !config.requireAuth)
 }
 
 /**
  * 获取所有受保护路由
  */
 export function getProtectedRoutes(): RouteConfig[] {
-  return routeConfigs.filter(config => config.requireAuth)
+  return routeConfigs.filter((config) => config.requireAuth)
 }
 
 /**
@@ -154,7 +154,7 @@ export const navigationRoutes = [
   '/rooms',
   '/add',
   '/contracts',
-  '/settings'
+  '/settings',
 ]
 
 /**

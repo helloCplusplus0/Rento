@@ -1,9 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
+import {
+  Calendar,
+  Droplets,
+  Edit,
+  Flame,
+  Gauge,
+  MapPin,
+  Trash2,
+  Zap,
+} from 'lucide-react'
+
+import type { MeterWithReadingsForClient } from '@/types/meter'
+import { formatDate } from '@/lib/format'
+import { formatMeterReading, formatMeterType } from '@/lib/meter-utils'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,19 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { 
-  Edit, 
-  Trash2, 
-  MapPin, 
-  Calendar,
-  Zap,
-  Droplets,
-  Flame,
-  Gauge
-} from 'lucide-react'
-import { formatMeterType, formatMeterReading } from '@/lib/meter-utils'
-import { formatDate } from '@/lib/format'
-import type { MeterWithReadingsForClient } from '@/types/meter'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 
 interface MeterCardProps {
   meter: MeterWithReadingsForClient
@@ -46,7 +47,7 @@ export function MeterCard({
   onEdit,
   onDelete,
   onToggleStatus,
-  loading = false
+  loading = false,
 }: MeterCardProps) {
   const [isToggling, setIsToggling] = useState(false)
 
@@ -54,15 +55,15 @@ export function MeterCard({
   const getMeterIcon = (meterType: string) => {
     switch (meterType) {
       case 'ELECTRICITY':
-        return <Zap className="w-4 h-4 text-yellow-500" />
+        return <Zap className="h-4 w-4 text-yellow-500" />
       case 'COLD_WATER':
-        return <Droplets className="w-4 h-4 text-blue-500" />
+        return <Droplets className="h-4 w-4 text-blue-500" />
       case 'HOT_WATER':
-        return <Droplets className="w-4 h-4 text-red-500" />
+        return <Droplets className="h-4 w-4 text-red-500" />
       case 'GAS':
-        return <Flame className="w-4 h-4 text-orange-500" />
+        return <Flame className="h-4 w-4 text-orange-500" />
       default:
-        return <Gauge className="w-4 h-4 text-gray-500" />
+        return <Gauge className="h-4 w-4 text-gray-500" />
     }
   }
 
@@ -85,18 +86,18 @@ export function MeterCard({
   }
 
   return (
-    <Card className={`transition-all duration-200 ${
-      meter.isActive 
-        ? 'border-green-200 bg-white' 
-        : 'border-gray-200 bg-gray-50 opacity-75'
-    }`}>
+    <Card
+      className={`transition-all duration-200 ${
+        meter.isActive
+          ? 'border-green-200 bg-white'
+          : 'border-gray-200 bg-gray-50 opacity-75'
+      }`}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {getMeterIcon(meter.meterType)}
-            <h3 className="font-medium text-gray-900">
-              {meter.displayName}
-            </h3>
+            <h3 className="font-medium text-gray-900">{meter.displayName}</h3>
           </div>
           {/* 简化状态显示 - 只保留Switch，移除重复的Badge和span */}
           <Switch
@@ -105,15 +106,17 @@ export function MeterCard({
             disabled={loading || isToggling}
           />
         </div>
-        
+
         <div className="text-sm text-gray-500">
           {formatMeterType(meter.meterType)} · {meter.meterNumber}
           {/* 状态指示移到这里，更简洁 */}
-          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-            meter.isActive 
-              ? 'bg-green-100 text-green-700' 
-              : 'bg-gray-100 text-gray-500'
-          }`}>
+          <span
+            className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+              meter.isActive
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-500'
+            }`}
+          >
             {meter.isActive ? '启用' : '禁用'}
           </span>
         </div>
@@ -124,11 +127,11 @@ export function MeterCard({
         <div className="space-y-2">
           {meter.location && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-3 h-3" />
+              <MapPin className="h-3 w-3" />
               <span>{meter.location}</span>
             </div>
           )}
-          
+
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">单价</span>
             <span className="font-medium">
@@ -147,7 +150,7 @@ export function MeterCard({
 
           {meter.installDate && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Calendar className="w-3 h-3" />
+              <Calendar className="h-3 w-3" />
               <span>安装于 {formatDate(meter.installDate)}</span>
             </div>
           )}
@@ -155,13 +158,13 @@ export function MeterCard({
 
         {/* 备注信息 */}
         {meter.remarks && (
-          <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+          <div className="rounded bg-gray-50 p-2 text-sm text-gray-600">
             {meter.remarks}
           </div>
         )}
 
         {/* 操作按钮 - 简化布局 */}
-        <div className="flex items-center gap-2 pt-2 border-t">
+        <div className="flex items-center gap-2 border-t pt-2">
           <Button
             variant="ghost"
             size="sm"
@@ -169,10 +172,10 @@ export function MeterCard({
             disabled={loading}
             className="h-8 px-2"
           >
-            <Edit className="w-3 h-3 mr-1" />
+            <Edit className="mr-1 h-3 w-3" />
             编辑
           </Button>
-          
+
           {/* 删除按钮 - 使用AlertDialog确认 */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -180,9 +183,9 @@ export function MeterCard({
                 variant="ghost"
                 size="sm"
                 disabled={loading}
-                className="h-8 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                className="h-8 px-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
               >
-                <Trash2 className="w-3 h-3 mr-1" />
+                <Trash2 className="mr-1 h-3 w-3" />
                 移除
               </Button>
             </AlertDialogTrigger>
@@ -192,11 +195,11 @@ export function MeterCard({
                 <AlertDialogDescription>
                   您确定要从房间中移除仪表 &quot;{meter.displayName}&quot; 吗？
                   <br />
-                  <span className="text-blue-600 font-medium">
+                  <span className="font-medium text-blue-600">
                     此操作仅会取消仪表与房间的关联关系，不会删除仪表的历史数据和账单记录。
                   </span>
                   <br />
-                  <span className="text-gray-600 text-sm mt-2 block">
+                  <span className="mt-2 block text-sm text-gray-600">
                     如需彻底删除仪表，请先确保没有相关的抄表记录和账单数据。
                   </span>
                 </AlertDialogDescription>

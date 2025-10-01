@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server'
-import { withApiErrorHandler, createSuccessResponse } from '@/lib/api-error-handler'
+
+import {
+  createSuccessResponse,
+  withApiErrorHandler,
+} from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { prisma } from '@/lib/prisma'
 
@@ -9,37 +13,34 @@ import { prisma } from '@/lib/prisma'
 async function handleGetVacantRooms(_request: NextRequest) {
   const rooms = await prisma.room.findMany({
     where: {
-      status: 'VACANT'
+      status: 'VACANT',
     },
     include: {
       building: {
         select: {
           id: true,
           name: true,
-          address: true
-        }
-      }
+          address: true,
+        },
+      },
     },
-    orderBy: [
-      { building: { name: 'asc' } },
-      { roomNumber: 'asc' }
-    ]
+    orderBy: [{ building: { name: 'asc' } }, { roomNumber: 'asc' }],
   })
 
   // 转换数据类型
-  const roomsData = rooms.map(room => ({
+  const roomsData = rooms.map((room) => ({
     ...room,
     rent: Number(room.rent),
-    area: room.area ? Number(room.area) : null
+    area: room.area ? Number(room.area) : null,
   }))
 
   return createSuccessResponse({
     rooms: roomsData,
-    total: rooms.length
+    total: rooms.length,
   })
 }
 
 export const GET = withApiErrorHandler(handleGetVacantRooms, {
   module: 'vacant-rooms-api',
-  errorType: ErrorType.DATABASE_ERROR
+  errorType: ErrorType.DATABASE_ERROR,
 })

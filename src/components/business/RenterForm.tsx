@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Save, X } from 'lucide-react'
+
+import { ErrorLogger, ErrorSeverity, ErrorType } from '@/lib/error-logger'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Save, X } from 'lucide-react'
+
 import { ErrorAlert, SimpleErrorAlert } from './ErrorAlert'
-import { ErrorLogger, ErrorType, ErrorSeverity } from '@/lib/error-logger'
 
 interface RenterFormProps {
   initialData?: any
@@ -18,12 +20,12 @@ interface RenterFormProps {
   mode?: 'create' | 'edit'
 }
 
-export function RenterForm({ 
-  initialData, 
-  onSubmit, 
-  onCancel, 
+export function RenterForm({
+  initialData,
+  onSubmit,
+  onCancel,
   loading = false,
-  mode = 'create'
+  mode = 'create',
 }: RenterFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -34,74 +36,79 @@ export function RenterForm({
     emergencyPhone: initialData?.emergencyPhone || '',
     occupation: initialData?.occupation || '',
     company: initialData?.company || '',
-    moveInDate: initialData?.moveInDate ? new Date(initialData.moveInDate).toISOString().split('T')[0] : '',
+    moveInDate: initialData?.moveInDate
+      ? new Date(initialData.moveInDate).toISOString().split('T')[0]
+      : '',
     tenantCount: initialData?.tenantCount || '',
-    remarks: initialData?.remarks || ''
+    remarks: initialData?.remarks || '',
   })
-  
+
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
     // 清除错误状态
     if (error) {
       setError(null)
     }
   }
-  
+
   const validateForm = (): string | null => {
     if (!formData.name.trim()) {
       return '请输入租客姓名'
     }
-    
+
     if (!formData.phone.trim()) {
       return '请输入手机号'
     }
-    
+
     // 手机号格式验证
     const phoneRegex = /^1[3-9]\d{9}$/
     if (!phoneRegex.test(formData.phone)) {
       return '请输入正确的手机号格式'
     }
-    
+
     // 身份证号格式验证（如果填写了）
     if (formData.idCard && formData.idCard.length !== 18) {
       return '请输入正确的身份证号格式'
     }
-    
+
     return null
   }
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // 数据验证
     const validationError = validateForm()
     if (validationError) {
       setError(validationError)
       return
     }
-    
+
     setIsSubmitting(true)
     setError(null)
-    
+
     try {
       // 准备提交数据
       const submitData = {
         ...formData,
         moveInDate: formData.moveInDate ? new Date(formData.moveInDate) : null,
-        tenantCount: formData.tenantCount ? parseInt(formData.tenantCount) : null
+        tenantCount: formData.tenantCount
+          ? parseInt(formData.tenantCount)
+          : null,
       }
-      
+
       await onSubmit(submitData)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '提交失败，请重试'
+      const errorMessage =
+        err instanceof Error ? err.message : '提交失败，请重试'
       setError(errorMessage)
-      
+
       // 记录错误日志
       const logger = ErrorLogger.getInstance()
       await logger.logError(
@@ -111,7 +118,7 @@ export function RenterForm({
         {
           module: 'RenterForm',
           function: 'handleSubmit',
-          formData: { ...formData, idCard: '***' } // 脱敏处理
+          formData: { ...formData, idCard: '***' }, // 脱敏处理
         },
         err instanceof Error ? err : undefined
       )
@@ -119,11 +126,11 @@ export function RenterForm({
       setIsSubmitting(false)
     }
   }
-  
+
   const handleRetry = () => {
     setError(null)
   }
-  
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-6">
@@ -135,14 +142,14 @@ export function RenterForm({
             onRetry={handleRetry}
           />
         )}
-        
+
         {/* 基本信息 */}
         <Card>
           <CardHeader>
             <CardTitle>基本信息</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="name">姓名 *</Label>
                 <Input
@@ -153,21 +160,21 @@ export function RenterForm({
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="gender">性别</Label>
                 <select
                   id="gender"
                   value={formData.gender}
                   onChange={(e) => handleChange('gender', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                   <option value="">请选择性别</option>
                   <option value="男">男</option>
                   <option value="女">女</option>
                 </select>
               </div>
-              
+
               <div>
                 <Label htmlFor="phone">手机号 *</Label>
                 <Input
@@ -178,7 +185,7 @@ export function RenterForm({
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="idCard">身份证号</Label>
                 <Input
@@ -191,44 +198,48 @@ export function RenterForm({
             </div>
           </CardContent>
         </Card>
-        
+
         {/* 联系信息 */}
         <Card>
           <CardHeader>
             <CardTitle>紧急联系人</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="emergencyContact">联系人姓名</Label>
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) => handleChange('emergencyContact', e.target.value)}
+                  onChange={(e) =>
+                    handleChange('emergencyContact', e.target.value)
+                  }
                   placeholder="请输入紧急联系人姓名"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="emergencyPhone">联系人电话</Label>
                 <Input
                   id="emergencyPhone"
                   value={formData.emergencyPhone}
-                  onChange={(e) => handleChange('emergencyPhone', e.target.value)}
+                  onChange={(e) =>
+                    handleChange('emergencyPhone', e.target.value)
+                  }
                   placeholder="请输入紧急联系人电话"
                 />
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         {/* 职业信息 */}
         <Card>
           <CardHeader>
             <CardTitle>职业信息</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="occupation">职业</Label>
                 <Input
@@ -238,7 +249,7 @@ export function RenterForm({
                   placeholder="请输入职业"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="company">公司名称</Label>
                 <Input
@@ -251,14 +262,14 @@ export function RenterForm({
             </div>
           </CardContent>
         </Card>
-        
+
         {/* 入住信息 */}
         <Card>
           <CardHeader>
             <CardTitle>入住信息</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="moveInDate">入住日期</Label>
                 <Input
@@ -268,7 +279,7 @@ export function RenterForm({
                   onChange={(e) => handleChange('moveInDate', e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="tenantCount">入住人数</Label>
                 <Input
@@ -284,7 +295,7 @@ export function RenterForm({
             </div>
           </CardContent>
         </Card>
-        
+
         {/* 备注信息 */}
         <Card>
           <CardHeader>
@@ -303,7 +314,7 @@ export function RenterForm({
             </div>
           </CardContent>
         </Card>
-        
+
         {/* 操作按钮 */}
         <div className="flex space-x-4">
           <Button
@@ -311,10 +322,14 @@ export function RenterForm({
             disabled={loading || isSubmitting}
             className="flex-1"
           >
-            <Save className="w-4 h-4 mr-2" />
-            {(loading || isSubmitting) ? '保存中...' : (mode === 'edit' ? '保存修改' : '创建租客')}
+            <Save className="mr-2 h-4 w-4" />
+            {loading || isSubmitting
+              ? '保存中...'
+              : mode === 'edit'
+                ? '保存修改'
+                : '创建租客'}
           </Button>
-          
+
           <Button
             type="button"
             variant="outline"
@@ -322,7 +337,7 @@ export function RenterForm({
             disabled={loading || isSubmitting}
             className="flex-1"
           >
-            <X className="w-4 h-4 mr-2" />
+            <X className="mr-2 h-4 w-4" />
             取消
           </Button>
         </div>

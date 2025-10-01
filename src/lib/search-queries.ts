@@ -14,22 +14,22 @@ export async function searchRooms(query: string) {
         OR: [
           { roomNumber: { contains: query } },
           { currentRenter: { contains: query } },
-          { building: { name: { contains: query } } }
-        ]
+          { building: { name: { contains: query } } },
+        ],
       },
       include: {
         building: true,
         contracts: {
           where: { status: 'ACTIVE' },
-          include: { renter: true }
-        }
+          include: { renter: true },
+        },
       },
       take: 10,
       orderBy: [
         { building: { name: 'asc' } },
         { floorNumber: 'asc' },
-        { roomNumber: 'asc' }
-      ]
+        { roomNumber: 'asc' },
+      ],
     })
 
     return rooms
@@ -53,22 +53,22 @@ export async function searchContracts(query: string) {
         OR: [
           { contractNumber: { contains: query } },
           { renter: { name: { contains: query } } },
-          { renter: { phone: { contains: query } } }
-        ]
+          { renter: { phone: { contains: query } } },
+        ],
       },
       include: {
-        room: { 
-          include: { building: true } 
+        room: {
+          include: { building: true },
         },
         renter: true,
         bills: {
           where: { status: { in: ['PENDING', 'OVERDUE'] } },
           take: 3,
-          orderBy: { dueDate: 'desc' }
-        }
+          orderBy: { dueDate: 'desc' },
+        },
       },
       take: 10,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
     return contracts
@@ -92,18 +92,18 @@ export async function getSearchSuggestions(query: string) {
       where: {
         OR: [
           { roomNumber: { contains: query } },
-          { currentRenter: { contains: query } }
-        ]
+          { currentRenter: { contains: query } },
+        ],
       },
       select: {
         id: true,
         roomNumber: true,
         currentRenter: true,
         building: {
-          select: { name: true }
-        }
+          select: { name: true },
+        },
       },
-      take: 5
+      take: 5,
     })
 
     // 获取合同建议
@@ -111,28 +111,28 @@ export async function getSearchSuggestions(query: string) {
       where: {
         OR: [
           { contractNumber: { contains: query } },
-          { renter: { name: { contains: query } } }
-        ]
+          { renter: { name: { contains: query } } },
+        ],
       },
       select: {
         id: true,
         contractNumber: true,
         renter: {
-          select: { name: true }
+          select: { name: true },
         },
         room: {
-          select: { 
+          select: {
             roomNumber: true,
-            building: { select: { name: true } }
-          }
-        }
+            building: { select: { name: true } },
+          },
+        },
       },
-      take: 5
+      take: 5,
     })
 
     return {
       rooms: roomSuggestions,
-      contracts: contractSuggestions
+      contracts: contractSuggestions,
     }
   } catch (error) {
     console.error('获取搜索建议失败:', error)

@@ -1,10 +1,11 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Clock, XCircle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Clock, RefreshCw, XCircle } from 'lucide-react'
+
 import { formatDate } from '@/lib/format'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface ContractExpiryAlert {
   id: string
@@ -23,10 +24,10 @@ interface ContractExpiryAlertProps {
   onDismissAlert?: (alertId: string) => void
 }
 
-export function ContractExpiryAlert({ 
-  alerts, 
+export function ContractExpiryAlert({
+  alerts,
   onRenewContract,
-  onDismissAlert 
+  onDismissAlert,
 }: ContractExpiryAlertProps) {
   if (alerts.length === 0) {
     return null
@@ -35,11 +36,11 @@ export function ContractExpiryAlert({
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'danger':
-        return <AlertTriangle className="w-4 h-4" />
+        return <AlertTriangle className="h-4 w-4" />
       case 'expired':
-        return <XCircle className="w-4 h-4" />
+        return <XCircle className="h-4 w-4" />
       default:
-        return <Clock className="w-4 h-4" />
+        return <Clock className="h-4 w-4" />
     }
   }
 
@@ -79,11 +80,14 @@ export function ContractExpiryAlert({
     <Card className="border-orange-200">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
             合同到期提醒
           </CardTitle>
-          <Badge variant="outline" className="text-orange-600 border-orange-200">
+          <Badge
+            variant="outline"
+            className="border-orange-200 text-orange-600"
+          >
             {alerts.length} 个合同需要关注
           </Badge>
         </div>
@@ -93,28 +97,31 @@ export function ContractExpiryAlert({
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className={`p-3 rounded-lg border ${getAlertColor(alert.alertType)}`}
+              className={`rounded-lg border p-3 ${getAlertColor(alert.alertType)}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="mb-1 flex items-center gap-2">
                     {getAlertIcon(alert.alertType)}
                     <span className="font-medium text-gray-900">
                       {alert.contractNumber}
                     </span>
-                    <Badge variant={getBadgeVariant(alert.alertType)} className="text-xs">
+                    <Badge
+                      variant={getBadgeVariant(alert.alertType)}
+                      className="text-xs"
+                    >
                       {getAlertText(alert)}
                     </Badge>
                   </div>
-                  <div className="text-sm text-gray-600 mb-1">
+                  <div className="mb-1 text-sm text-gray-600">
                     租客: {alert.renterName} | 房间: {alert.roomInfo}
                   </div>
                   <div className="text-xs text-gray-500">
                     到期日期: {formatDate(alert.endDate)}
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2 ml-4">
+
+                <div className="ml-4 flex items-center gap-2">
                   {onRenewContract && alert.alertType !== 'expired' && (
                     <Button
                       size="sm"
@@ -122,7 +129,7 @@ export function ContractExpiryAlert({
                       onClick={() => onRenewContract(alert.contractId)}
                       className="text-xs"
                     >
-                      <RefreshCw className="w-3 h-3 mr-1" />
+                      <RefreshCw className="mr-1 h-3 w-3" />
                       续约
                     </Button>
                   )}
@@ -141,9 +148,9 @@ export function ContractExpiryAlert({
             </div>
           ))}
         </div>
-        
+
         {alerts.length > 3 && (
-          <div className="mt-3 pt-3 border-t text-center">
+          <div className="mt-3 border-t pt-3 text-center">
             <Button variant="ghost" size="sm" className="text-xs text-gray-500">
               查看全部 {alerts.length} 个提醒
             </Button>

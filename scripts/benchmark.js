@@ -25,10 +25,10 @@ class BenchmarkTool {
           building: true,
           contracts: {
             include: {
-              renter: true
-            }
-          }
-        }
+              renter: true,
+            },
+          },
+        },
       })
       return rooms.length
     })
@@ -39,8 +39,8 @@ class BenchmarkTool {
         by: ['status'],
         _count: true,
         _sum: {
-          amount: true
-        }
+          amount: true,
+        },
       })
       return stats.length
     })
@@ -49,21 +49,21 @@ class BenchmarkTool {
     await this.benchmarkOperation('深度关联查询', async () => {
       const contracts = await prisma.contract.findMany({
         where: {
-          status: 'ACTIVE'
+          status: 'ACTIVE',
         },
         include: {
           room: {
             include: {
-              building: true
-            }
+              building: true,
+            },
           },
           renter: true,
           bills: {
             where: {
-              status: 'PENDING'
-            }
-          }
-        }
+              status: 'PENDING',
+            },
+          },
+        },
       })
       return contracts.length
     })
@@ -74,16 +74,16 @@ class BenchmarkTool {
         take: 20,
         skip: 0,
         orderBy: {
-          createdAt: 'desc'
+          createdAt: 'desc',
         },
         include: {
           contract: {
             include: {
               room: true,
-              renter: true
-            }
-          }
-        }
+              renter: true,
+            },
+          },
+        },
       })
       return bills.length
     })
@@ -95,16 +95,16 @@ class BenchmarkTool {
           OR: [
             { name: { contains: '张' } },
             { phone: { contains: '138' } },
-            { idCard: { contains: '1234' } }
-          ]
+            { idCard: { contains: '1234' } },
+          ],
         },
         include: {
           contracts: {
             include: {
-              room: true
-            }
-          }
-        }
+              room: true,
+            },
+          },
+        },
       })
       return renters.length
     })
@@ -122,7 +122,7 @@ class BenchmarkTool {
       { path: '/api/contracts', method: 'GET', name: '合同列表' },
       { path: '/api/bills', method: 'GET', name: '账单列表' },
       { path: '/api/dashboard/stats', method: 'GET', name: '仪表板统计' },
-      { path: '/api/renters', method: 'GET', name: '租客列表' }
+      { path: '/api/renters', method: 'GET', name: '租客列表' },
     ]
 
     for (const endpoint of endpoints) {
@@ -131,14 +131,16 @@ class BenchmarkTool {
           const response = await fetch(`${this.baseUrl}${endpoint.path}`, {
             method: endpoint.method,
             headers: {
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+            },
           })
-          
+
           if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
+            throw new Error(
+              `API请求失败: ${response.status} ${response.statusText}`
+            )
           }
-          
+
           const data = await response.json()
           return Array.isArray(data) ? data.length : 1
         } catch (error) {
@@ -156,18 +158,20 @@ class BenchmarkTool {
     console.log('⚡ 开始并发性能测试...')
 
     const concurrencyLevels = [1, 5, 10]
-    
+
     for (const concurrency of concurrencyLevels) {
       await this.benchmarkOperation(`并发查询 (${concurrency}个)`, async () => {
-        const promises = Array(concurrency).fill(null).map(() => 
-          prisma.room.findMany({
-            include: {
-              building: true,
-              contracts: true
-            }
-          })
-        )
-        
+        const promises = Array(concurrency)
+          .fill(null)
+          .map(() =>
+            prisma.room.findMany({
+              include: {
+                building: true,
+                contracts: true,
+              },
+            })
+          )
+
         const results = await Promise.all(promises)
         return results.reduce((total, rooms) => total + rooms.length, 0)
       })
@@ -190,9 +194,9 @@ class BenchmarkTool {
 
       const memoryBefore = process.memoryUsage()
       const start = performance.now()
-      
+
       const recordsProcessed = await operation()
-      
+
       const duration = performance.now() - start
       const memoryAfter = process.memoryUsage()
       const memoryDelta = memoryAfter.heapUsed - memoryBefore.heapUsed
@@ -201,11 +205,12 @@ class BenchmarkTool {
       memoryDeltas.push(memoryDelta)
 
       // 短暂延迟
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
     const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length
-    const avgMemoryDelta = memoryDeltas.reduce((a, b) => a + b, 0) / memoryDeltas.length
+    const avgMemoryDelta =
+      memoryDeltas.reduce((a, b) => a + b, 0) / memoryDeltas.length
     const throughput = 1000 / avgDuration // 每秒操作数
 
     const result = {
@@ -214,12 +219,14 @@ class BenchmarkTool {
       recordsProcessed: 0,
       throughput: Math.round(throughput * 100) / 100,
       memoryUsage: {
-        delta: Math.round(avgMemoryDelta / 1024 / 1024 * 100) / 100 // MB
-      }
+        delta: Math.round((avgMemoryDelta / 1024 / 1024) * 100) / 100, // MB
+      },
     }
 
     this.results.push(result)
-    console.log(`✅ ${name}: ${result.duration}ms (${result.throughput} ops/sec, ${result.memoryUsage.delta}MB)`)
+    console.log(
+      `✅ ${name}: ${result.duration}ms (${result.throughput} ops/sec, ${result.memoryUsage.delta}MB)`
+    )
   }
 
   /**
@@ -231,33 +238,40 @@ class BenchmarkTool {
     }
 
     console.log('\n📊 性能基准测试报告')
-    console.log('=' .repeat(60))
-    
+    console.log('='.repeat(60))
+
     // 基本统计
     const totalDuration = this.results.reduce((sum, r) => sum + r.duration, 0)
     const averageDuration = totalDuration / this.results.length
-    
+
     // 找出最慢和最快的操作
-    const slowestOperation = this.results.reduce((prev, curr) => 
+    const slowestOperation = this.results.reduce((prev, curr) =>
       prev.duration > curr.duration ? prev : curr
     )
-    const fastestOperation = this.results.reduce((prev, curr) => 
+    const fastestOperation = this.results.reduce((prev, curr) =>
       prev.duration < curr.duration ? prev : curr
     )
 
     console.log(`总操作数: ${this.results.length}`)
     console.log(`总耗时: ${Math.round(totalDuration)}ms`)
     console.log(`平均耗时: ${Math.round(averageDuration)}ms`)
-    console.log(`最慢操作: ${slowestOperation.operation} (${slowestOperation.duration}ms)`)
-    console.log(`最快操作: ${fastestOperation.operation} (${fastestOperation.duration}ms)`)
+    console.log(
+      `最慢操作: ${slowestOperation.operation} (${slowestOperation.duration}ms)`
+    )
+    console.log(
+      `最快操作: ${fastestOperation.operation} (${fastestOperation.duration}ms)`
+    )
     console.log('')
-    
+
     console.log('📈 性能排行:')
     this.results
       .sort((a, b) => a.duration - b.duration)
       .forEach((result, index) => {
-        const emoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  '
-        console.log(`${emoji} ${result.operation}: ${result.duration}ms (${result.throughput} ops/sec)`)
+        const emoji =
+          index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  '
+        console.log(
+          `${emoji} ${result.operation}: ${result.duration}ms (${result.throughput} ops/sec)`
+        )
       })
 
     console.log('')
@@ -265,26 +279,31 @@ class BenchmarkTool {
     this.results
       .sort((a, b) => a.memoryUsage.delta - b.memoryUsage.delta)
       .forEach((result, index) => {
-        const emoji = index === 0 ? '🟢' : result.memoryUsage.delta > 10 ? '🔴' : '🟡'
-        console.log(`${emoji} ${result.operation}: ${result.memoryUsage.delta}MB`)
+        const emoji =
+          index === 0 ? '🟢' : result.memoryUsage.delta > 10 ? '🔴' : '🟡'
+        console.log(
+          `${emoji} ${result.operation}: ${result.memoryUsage.delta}MB`
+        )
       })
 
     // 性能警告
     console.log('')
     console.log('⚠️  性能警告:')
-    const slowOperations = this.results.filter(r => r.duration > 1000)
-    const memoryHeavyOperations = this.results.filter(r => r.memoryUsage.delta > 50)
-    
+    const slowOperations = this.results.filter((r) => r.duration > 1000)
+    const memoryHeavyOperations = this.results.filter(
+      (r) => r.memoryUsage.delta > 50
+    )
+
     if (slowOperations.length > 0) {
       console.log('慢操作 (>1000ms):')
-      slowOperations.forEach(op => {
+      slowOperations.forEach((op) => {
         console.log(`  - ${op.operation}: ${op.duration}ms`)
       })
     }
-    
+
     if (memoryHeavyOperations.length > 0) {
       console.log('高内存操作 (>50MB):')
-      memoryHeavyOperations.forEach(op => {
+      memoryHeavyOperations.forEach((op) => {
         console.log(`  - ${op.operation}: ${op.memoryUsage.delta}MB`)
       })
     }
@@ -298,7 +317,7 @@ class BenchmarkTool {
       totalDuration,
       averageDuration,
       slowestOperation,
-      fastestOperation
+      fastestOperation,
     }
   }
 }
@@ -308,7 +327,7 @@ class BenchmarkTool {
  */
 async function runFullBenchmark() {
   const benchmark = new BenchmarkTool()
-  
+
   try {
     console.log('🚀 开始性能基准测试套件')
     console.log('时间:', new Date().toLocaleString())
@@ -328,12 +347,11 @@ async function runFullBenchmark() {
 
     // 生成报告
     const summary = benchmark.generateReport()
-    
+
     console.log('')
     console.log('🎉 基准测试完成!')
-    
+
     return summary
-    
   } catch (error) {
     console.error('❌ 基准测试失败:', error)
     process.exit(1)

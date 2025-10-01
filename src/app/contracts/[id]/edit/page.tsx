@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { EditContractPageSimple } from '@/components/pages/EditContractPageSimple'
+
 import { contractQueries } from '@/lib/queries'
+import { EditContractPageSimple } from '@/components/pages/EditContractPageSimple'
 
 interface EditContractPageProps {
   params: Promise<{ id: string }>
@@ -9,20 +10,22 @@ interface EditContractPageProps {
 
 export const metadata: Metadata = {
   title: '编辑合同',
-  description: '编辑租赁合同签约信息'
+  description: '编辑租赁合同签约信息',
 }
 
-export default async function EditContractRoute({ params }: EditContractPageProps) {
+export default async function EditContractRoute({
+  params,
+}: EditContractPageProps) {
   const { id } = await params
-  
+
   try {
     // 获取合同详情
     const contract = await contractQueries.findById(id)
-    
+
     if (!contract) {
       notFound()
     }
-    
+
     // 转换数据类型
     const contractData = {
       ...contract,
@@ -37,17 +40,18 @@ export default async function EditContractRoute({ params }: EditContractPageProp
         area: contract.room.area ? Number(contract.room.area) : null,
         building: {
           ...contract.room.building,
-          totalRooms: Number(contract.room.building.totalRooms)
-        }
+          totalRooms: Number(contract.room.building.totalRooms),
+        },
       },
-      bills: contract.bills?.map(bill => ({
-        ...bill,
-        amount: Number(bill.amount),
-        receivedAmount: Number(bill.receivedAmount),
-        pendingAmount: Number(bill.pendingAmount)
-      })) || []
+      bills:
+        contract.bills?.map((bill) => ({
+          ...bill,
+          amount: Number(bill.amount),
+          receivedAmount: Number(bill.receivedAmount),
+          pendingAmount: Number(bill.pendingAmount),
+        })) || [],
     }
-    
+
     return <EditContractPageSimple contract={contractData} />
   } catch (error) {
     console.error('Failed to load contract for editing:', error)

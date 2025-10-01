@@ -1,12 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle, Save, X } from 'lucide-react'
+
 import { useSettings } from '@/hooks/useSettings'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 // 临时类型定义
 interface Meter {
@@ -45,12 +52,14 @@ export function SingleMeterReadingModal({
   roomId,
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }: SingleMeterReadingModalProps) {
   const { settings } = useSettings()
   const [meters, setMeters] = useState<Meter[]>([])
   const [readings, setReadings] = useState<Record<string, MeterReading>>({})
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({})
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -73,11 +82,13 @@ export function SingleMeterReadingModal({
     try {
       setLoading(true)
       const response = await fetch(`/api/rooms/${roomId}/meters`)
-      
+
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.data) {
-          const activeMeters = result.data.filter((meter: any) => meter.isActive)
+          const activeMeters = result.data.filter(
+            (meter: any) => meter.isActive
+          )
           setMeters(activeMeters)
         } else {
           console.warn('获取仪表数据失败:', result)
@@ -97,7 +108,7 @@ export function SingleMeterReadingModal({
 
   // 处理读数变更
   const handleReadingChange = (meterId: string, currentReading: number) => {
-    const meter = meters.find(m => m.id === meterId)
+    const meter = meters.find((m) => m.id === meterId)
     if (!meter) return
 
     const lastReading = Math.round(meter.lastReading || 0)
@@ -106,31 +117,32 @@ export function SingleMeterReadingModal({
 
     // 验证逻辑
     const errors: Record<string, string> = {}
-    
+
     if (currentReading < lastReading) {
       errors[meterId] = '本次读数不能小于上次读数'
     } else if (usage > lastReading * (settings.usageAnomalyThreshold || 3.0)) {
-      errors[meterId] = `用量异常偏高（超过${settings.usageAnomalyThreshold || 3.0}倍历史读数）`
+      errors[meterId] =
+        `用量异常偏高（超过${settings.usageAnomalyThreshold || 3.0}倍历史读数）`
     }
 
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      [meterId]: errors[meterId] || ''
+      [meterId]: errors[meterId] || '',
     }))
 
     if (currentReading > 0) {
-      setReadings(prev => ({
+      setReadings((prev) => ({
         ...prev,
         [meterId]: {
           meterId,
           currentReading,
           readingDate: new Date(),
           usage,
-          amount
-        }
+          amount,
+        },
       }))
     } else {
-      setReadings(prev => {
+      setReadings((prev) => {
         const newReadings = { ...prev }
         delete newReadings[meterId]
         return newReadings
@@ -141,22 +153,32 @@ export function SingleMeterReadingModal({
   // 获取仪表类型颜色
   const getMeterTypeColor = (type: string) => {
     switch (type) {
-      case 'ELECTRICITY': return 'bg-yellow-100 text-yellow-800'
-      case 'COLD_WATER': return 'bg-blue-100 text-blue-800'
-      case 'HOT_WATER': return 'bg-red-100 text-red-800'
-      case 'GAS': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'ELECTRICITY':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'COLD_WATER':
+        return 'bg-blue-100 text-blue-800'
+      case 'HOT_WATER':
+        return 'bg-red-100 text-red-800'
+      case 'GAS':
+        return 'bg-purple-100 text-purple-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
   // 获取仪表类型标签
   const getMeterTypeLabel = (type: string) => {
     switch (type) {
-      case 'ELECTRICITY': return '电表'
-      case 'COLD_WATER': return '冷水表'
-      case 'HOT_WATER': return '热水表'
-      case 'GAS': return '燃气表'
-      default: return '未知'
+      case 'ELECTRICITY':
+        return '电表'
+      case 'COLD_WATER':
+        return '冷水表'
+      case 'HOT_WATER':
+        return '热水表'
+      case 'GAS':
+        return '燃气表'
+      default:
+        return '未知'
     }
   }
 
@@ -169,15 +191,17 @@ export function SingleMeterReadingModal({
 
   // 提交抄表
   const handleSubmit = async () => {
-    const readingsToSubmit = Object.values(readings).filter(reading => reading.currentReading > 0)
-    
+    const readingsToSubmit = Object.values(readings).filter(
+      (reading) => reading.currentReading > 0
+    )
+
     if (readingsToSubmit.length === 0) {
       alert('请至少录入一个仪表读数')
       return
     }
 
     // 检查是否有验证错误
-    const hasErrors = Object.values(validationErrors).some(error => error)
+    const hasErrors = Object.values(validationErrors).some((error) => error)
     if (hasErrors) {
       const confirmed = confirm('检测到异常数据，是否仍要提交？')
       if (!confirmed) return
@@ -185,10 +209,10 @@ export function SingleMeterReadingModal({
 
     try {
       setSubmitting(true)
-      
+
       // 构建提交数据
-      const submitData = readingsToSubmit.map(reading => {
-        const meter = meters.find(m => m.id === reading.meterId)
+      const submitData = readingsToSubmit.map((reading) => {
+        const meter = meters.find((m) => m.id === reading.meterId)
         return {
           meterId: reading.meterId,
           contractId: contractId,
@@ -200,7 +224,7 @@ export function SingleMeterReadingModal({
           unitPrice: meter?.unitPrice || 0,
           amount: reading.amount,
           operator: '系统用户',
-          remarks: reading.remarks || undefined
+          remarks: reading.remarks || undefined,
         }
       })
 
@@ -210,30 +234,31 @@ export function SingleMeterReadingModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           readings: submitData,
-          aggregationMode: 'AGGREGATED' // 聚合模式
-        })
+          aggregationMode: 'AGGREGATED', // 聚合模式
+        }),
       })
 
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
           // 修复：正确访问API返回的数据结构
-          const successCount = result.data?.results?.length || result.data?.length || 0
+          const successCount =
+            result.data?.results?.length || result.data?.length || 0
           let message = `✅ 成功录入 ${successCount} 个仪表读数`
-          
+
           if (result.data?.warnings && result.data.warnings.length > 0) {
             message += `\n\n⚠️ 警告信息 (${result.data.warnings.length} 个):`
             result.data.warnings.forEach((warning: any, index: number) => {
               message += `\n${index + 1}. ${warning.warning}`
             })
           }
-          
+
           if (result.data?.bills && result.data.bills.length > 0) {
             message += `\n\n💰 已自动生成 ${result.data.bills.length} 个水电费账单`
           }
-          
+
           alert(message)
-          
+
           // 调用成功回调
           onSuccess?.(readingsToSubmit)
           handleClose()
@@ -253,11 +278,14 @@ export function SingleMeterReadingModal({
   }
 
   const readingsCount = Object.keys(readings).length
-  const totalAmount = Object.values(readings).reduce((sum, r) => sum + r.amount, 0)
+  const totalAmount = Object.values(readings).reduce(
+    (sum, r) => sum + r.amount,
+    0
+  )
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>合同抄表录入</span>
@@ -277,9 +305,9 @@ export function SingleMeterReadingModal({
             <div className="text-gray-500">加载仪表数据中...</div>
           </div>
         ) : meters.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="py-12 text-center text-gray-500">
             <p>该房间暂无配置仪表</p>
-            <p className="text-sm mt-2">请先为房间配置仪表后再进行抄表</p>
+            <p className="mt-2 text-sm">请先为房间配置仪表后再进行抄表</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -289,18 +317,26 @@ export function SingleMeterReadingModal({
                 const reading = readings[meter.id]
                 const error = validationErrors[meter.id]
                 const hasReading = reading && reading.currentReading > 0
-                
+
                 return (
-                  <Card key={meter.id} className={`${hasReading && !error ? 'border-green-200 bg-green-50' : error ? 'border-red-200 bg-red-50' : ''}`}>
+                  <Card
+                    key={meter.id}
+                    className={`${hasReading && !error ? 'border-green-200 bg-green-50' : error ? 'border-red-200 bg-red-50' : ''}`}
+                  >
                     <CardContent className="p-3">
                       {/* 仪表信息头部 */}
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="mb-2 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Badge className={getMeterTypeColor(meter.meterType)} variant="secondary">
+                          <Badge
+                            className={getMeterTypeColor(meter.meterType)}
+                            variant="secondary"
+                          >
                             {getMeterTypeLabel(meter.meterType)}
                           </Badge>
                           <div>
-                            <div className="font-medium text-sm">{meter.displayName}</div>
+                            <div className="text-sm font-medium">
+                              {meter.displayName}
+                            </div>
                             <div className="text-xs text-gray-500">
                               ¥{meter.unitPrice}/{meter.unit}
                             </div>
@@ -308,41 +344,48 @@ export function SingleMeterReadingModal({
                         </div>
                         <div className="text-right">
                           {hasReading && !error ? (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <CheckCircle className="h-4 w-4 text-green-500" />
                           ) : error ? (
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
                           ) : (
-                            <div className="w-4 h-4 border border-gray-300 rounded-full"></div>
+                            <div className="h-4 w-4 rounded-full border border-gray-300"></div>
                           )}
                         </div>
                       </div>
 
                       {/* 读数录入区域 */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                         <div>
-                          <label className="text-xs text-gray-500">上次读数</label>
+                          <label className="text-xs text-gray-500">
+                            上次读数
+                          </label>
                           <div className="font-mono text-sm font-medium">
                             {Math.round(meter.lastReading || 0)} {meter.unit}
                           </div>
                           {meter.lastReadingDate && (
                             <div className="text-xs text-gray-400">
-                              {meter.lastReadingDate instanceof Date 
+                              {meter.lastReadingDate instanceof Date
                                 ? meter.lastReadingDate.toLocaleDateString()
-                                : new Date(meter.lastReadingDate).toLocaleDateString()
-                              }
+                                : new Date(
+                                    meter.lastReadingDate
+                                  ).toLocaleDateString()}
                             </div>
                           )}
                         </div>
-                        
+
                         <div>
-                          <label className="text-xs text-gray-500">本次读数 *</label>
+                          <label className="text-xs text-gray-500">
+                            本次读数 *
+                          </label>
                           <input
                             type="number"
                             min={Math.round(meter.lastReading || 0)}
                             step="1"
                             placeholder="请输入"
-                            className={`w-full px-2 py-1 text-center border rounded text-sm font-mono ${
-                              error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                            className={`w-full rounded border px-2 py-1 text-center font-mono text-sm ${
+                              error
+                                ? 'border-red-300 bg-red-50'
+                                : 'border-gray-300'
                             }`}
                             onChange={(e) => {
                               const value = parseInt(e.target.value) || 0
@@ -354,14 +397,18 @@ export function SingleMeterReadingModal({
                         {hasReading && (
                           <>
                             <div>
-                              <label className="text-xs text-gray-500">用量</label>
+                              <label className="text-xs text-gray-500">
+                                用量
+                              </label>
                               <div className="font-mono text-sm font-medium text-blue-600">
                                 {reading.usage.toFixed(1)} {meter.unit}
                               </div>
                             </div>
-                            
+
                             <div>
-                              <label className="text-xs text-gray-500">费用</label>
+                              <label className="text-xs text-gray-500">
+                                费用
+                              </label>
                               <div className="font-mono text-sm font-medium text-green-600">
                                 ¥{reading.amount.toFixed(2)}
                               </div>
@@ -373,7 +420,7 @@ export function SingleMeterReadingModal({
                       {/* 错误提示 */}
                       {error && (
                         <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-                          <AlertTriangle className="w-3 h-3" />
+                          <AlertTriangle className="h-3 w-3" />
                           <span>{error}</span>
                         </div>
                       )}
@@ -385,12 +432,13 @@ export function SingleMeterReadingModal({
 
             {/* 汇总信息 */}
             {readingsCount > 0 && (
-              <Card className="bg-blue-50 border-blue-200">
+              <Card className="border-blue-200 bg-blue-50">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-blue-800">
                       <span className="font-medium">抄表汇总：</span>
-                      已录入 {readingsCount} 个仪表，总费用 ¥{totalAmount.toFixed(2)}
+                      已录入 {readingsCount} 个仪表，总费用 ¥
+                      {totalAmount.toFixed(2)}
                     </div>
                     <div className="text-xs text-blue-600">
                       将生成一个聚合水电费账单
@@ -407,7 +455,7 @@ export function SingleMeterReadingModal({
                 onClick={handleClose}
                 disabled={submitting}
               >
-                <X className="w-4 h-4 mr-1" />
+                <X className="mr-1 h-4 w-4" />
                 取消
               </Button>
               <Button
@@ -417,12 +465,12 @@ export function SingleMeterReadingModal({
               >
                 {submitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     提交中...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
+                    <Save className="h-4 w-4" />
                     提交抄表 ({readingsCount})
                   </>
                 )}

@@ -15,12 +15,10 @@ export function DesktopLayout({ children }: DesktopLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* 统一导航栏 - 桌面端样式 */}
       <UnifiedNavigation variant="desktop" />
-      
+
       {/* 主内容区域 */}
       <main className="pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
       </main>
     </div>
   )

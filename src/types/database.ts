@@ -1,3 +1,5 @@
+import type { Bill, Building, Contract, Renter, Room } from '@prisma/client'
+
 // 导出 Prisma 生成的类型
 export type {
   Building,
@@ -10,14 +12,6 @@ export type {
   ContractStatus,
   BillType,
   BillStatus,
-} from '@prisma/client'
-
-import type {
-  Building,
-  Room,
-  Renter,
-  Contract,
-  Bill,
 } from '@prisma/client'
 
 // 扩展类型定义
@@ -36,7 +30,10 @@ export interface RoomWithBuildingForClient extends Omit<Room, 'rent' | 'area'> {
   building: Omit<Building, 'totalRooms'> & {
     totalRooms: number
   }
-  contracts?: (Omit<Contract, 'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'> & {
+  contracts?: (Omit<
+    Contract,
+    'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'
+  > & {
     monthlyRent: number
     totalRent: number
     deposit: number
@@ -71,30 +68,34 @@ export interface BillWithContract extends Bill {
 
 // 统计数据类型
 export interface DashboardStats {
-  pendingReceivables: number    // 待收逾期金额
-  pendingPayables: number       // 待付逾期金额
+  pendingReceivables: number // 待收逾期金额
+  pendingPayables: number // 待付逾期金额
   todayStats: {
-    receivables: number         // 今日收款笔数
-    payables: number           // 今日付款笔数
+    receivables: number // 今日收款笔数
+    payables: number // 今日付款笔数
   }
   monthlyStats: {
-    receivables: number         // 30日内收款笔数  
-    payables: number           // 30日内付款笔数
+    receivables: number // 30日内收款笔数
+    payables: number // 30日内付款笔数
   }
 }
 
 // 房间状态统计
 export interface RoomStatusStats {
-  vacant: number      // 空房数量
-  occupied: number    // 在租数量
-  overdue: number     // 逾期数量
+  vacant: number // 空房数量
+  occupied: number // 在租数量
+  overdue: number // 逾期数量
   maintenance: number // 维护数量
-  total: number       // 总数量
+  total: number // 总数量
 }
 
 // 账单汇总统计
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
-export interface ContractWithDetailsForClient extends Omit<Contract, 'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'> {
+export interface ContractWithDetailsForClient
+  extends Omit<
+    Contract,
+    'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'
+  > {
   monthlyRent: number
   totalRent: number
   deposit: number
@@ -111,7 +112,10 @@ export interface ContractWithDetailsForClient extends Omit<Contract, 'monthlyRen
 
 // 为客户端组件定义的租客类型（包含合同信息）
 export interface RenterWithContractsForClient extends Renter {
-  contracts: (Omit<Contract, 'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'> & {
+  contracts: (Omit<
+    Contract,
+    'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'
+  > & {
     monthlyRent: number
     totalRent: number
     deposit: number

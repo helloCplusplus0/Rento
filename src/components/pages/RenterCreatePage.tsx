@@ -2,24 +2,25 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
+
 import { RenterForm } from '@/components/business/RenterForm'
+import { PageContainer } from '@/components/layout'
 
 export function RenterCreatePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  
+
   const handleSubmit = async (data: any) => {
     try {
       setLoading(true)
       const response = await fetch('/api/renters', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
-      
+
       if (response.ok) {
         const result = await response.json()
         // API返回格式: { success: true, data: renter, message: '租客创建成功' }
@@ -41,17 +42,13 @@ export function RenterCreatePage() {
       setLoading(false)
     }
   }
-  
+
   const handleCancel = () => {
     router.back()
   }
-  
+
   return (
-    <PageContainer 
-      title="添加租客"
-      subtitle="创建新的租客信息"
-      showBackButton
-    >
+    <PageContainer title="添加租客" subtitle="创建新的租客信息" showBackButton>
       <div className="pb-6">
         <RenterForm
           onSubmit={handleSubmit}

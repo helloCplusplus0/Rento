@@ -6,6 +6,7 @@
 'use client'
 
 import { useEffect } from 'react'
+
 import { alertManager } from '@/lib/alert-manager'
 
 interface AlertManagerProviderProps {

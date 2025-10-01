@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server'
+
 import { billQueries } from '@/lib/queries'
 
 /**
  * 更新账单状态API
  * PATCH /api/bills/[id]/status
- * 
+ *
  * 请求体:
  * {
  *   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'COMPLETED',
@@ -23,40 +24,31 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { 
-      status, 
-      receivedAmount, 
-      pendingAmount, 
-      paidDate, 
-      paymentMethod, 
-      operator, 
-      remarks 
+    const {
+      status,
+      receivedAmount,
+      pendingAmount,
+      paidDate,
+      paymentMethod,
+      operator,
+      remarks,
     } = body
 
     // 基础数据验证
     if (!status) {
-      return Response.json(
-        { error: 'Status is required' },
-        { status: 400 }
-      )
+      return Response.json({ error: 'Status is required' }, { status: 400 })
     }
 
     // 验证状态值
     const validStatuses = ['PENDING', 'PAID', 'OVERDUE', 'COMPLETED']
     if (!validStatuses.includes(status)) {
-      return Response.json(
-        { error: 'Invalid status value' },
-        { status: 400 }
-      )
+      return Response.json({ error: 'Invalid status value' }, { status: 400 })
     }
 
     // 检查账单是否存在
     const existingBill = await billQueries.findById(id)
     if (!existingBill) {
-      return Response.json(
-        { error: 'Bill not found' },
-        { status: 404 }
-      )
+      return Response.json({ error: 'Bill not found' }, { status: 404 })
     }
 
     const updateData: any = { status }
@@ -73,19 +65,19 @@ export async function PATCH(
         }
         updateData.receivedAmount = receivedAmount
       }
-      
+
       if (pendingAmount !== undefined) {
         updateData.pendingAmount = pendingAmount
       }
-      
+
       if (paidDate) {
         updateData.paidDate = new Date(paidDate)
       }
-      
+
       if (paymentMethod) {
         updateData.paymentMethod = paymentMethod
       }
-      
+
       if (operator) {
         updateData.operator = operator
       }
@@ -108,17 +100,18 @@ export async function PATCH(
         monthlyRent: Number(updatedBill.contract.monthlyRent),
         totalRent: Number(updatedBill.contract.totalRent),
         deposit: Number(updatedBill.contract.deposit),
-        keyDeposit: updatedBill.contract.keyDeposit ? Number(updatedBill.contract.keyDeposit) : null,
-        cleaningFee: updatedBill.contract.cleaningFee ? Number(updatedBill.contract.cleaningFee) : null
-      }
+        keyDeposit: updatedBill.contract.keyDeposit
+          ? Number(updatedBill.contract.keyDeposit)
+          : null,
+        cleaningFee: updatedBill.contract.cleaningFee
+          ? Number(updatedBill.contract.cleaningFee)
+          : null,
+      },
     }
 
     return Response.json(billData)
   } catch (error) {
     console.error('Failed to update bill status:', error)
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

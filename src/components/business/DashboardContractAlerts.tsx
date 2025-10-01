@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Clock, Eye, RefreshCw, Calendar } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react'
+import { AlertTriangle, Calendar, Clock, Eye, RefreshCw } from 'lucide-react'
+
 import { formatCurrency, formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface DashboardContractAlert {
   id: string
@@ -33,14 +34,14 @@ interface DashboardContractAlertsProps {
 export function DashboardContractAlerts({
   onViewContract,
   onRenewContract,
-  className
+  className,
 }: DashboardContractAlertsProps) {
   const [alerts, setAlerts] = useState<DashboardContractAlert[]>([])
   const [summary, setSummary] = useState({
     total: 0,
     warning: 0,
     danger: 0,
-    expired: 0
+    expired: 0,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,15 +51,17 @@ export function DashboardContractAlerts({
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await fetch('/api/dashboard/contract-alerts')
       if (!response.ok) {
         throw new Error('获取提醒数据失败')
       }
-      
+
       const data = await response.json()
       setAlerts(data.alerts || [])
-      setSummary(data.summary || { total: 0, warning: 0, danger: 0, expired: 0 })
+      setSummary(
+        data.summary || { total: 0, warning: 0, danger: 0, expired: 0 }
+      )
     } catch (error) {
       console.error('获取合同到期提醒失败:', error)
       setError(error instanceof Error ? error.message : '获取数据失败')
@@ -74,11 +77,11 @@ export function DashboardContractAlerts({
   const getAlertIcon = (level: string) => {
     switch (level) {
       case 'danger':
-        return <AlertTriangle className="w-4 h-4 text-red-500" />
+        return <AlertTriangle className="h-4 w-4 text-red-500" />
       case 'expired':
-        return <Clock className="w-4 h-4 text-gray-500" />
+        return <Clock className="h-4 w-4 text-gray-500" />
       default:
-        return <Calendar className="w-4 h-4 text-orange-500" />
+        return <Calendar className="h-4 w-4 text-orange-500" />
     }
   }
 
@@ -108,11 +111,14 @@ export function DashboardContractAlerts({
       <div className={cn('space-y-4', className)}>
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-gray-700">合同到期提醒</h4>
-          <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 w-4 animate-pulse rounded bg-gray-200"></div>
         </div>
         <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 bg-gray-100 rounded animate-pulse"></div>
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-16 animate-pulse rounded bg-gray-100"
+            ></div>
           ))}
         </div>
       </div>
@@ -130,12 +136,10 @@ export function DashboardContractAlerts({
             onClick={fetchAlerts}
             className="h-6 w-6 p-0"
           >
-            <RefreshCw className="w-3 h-3" />
+            <RefreshCw className="h-3 w-3" />
           </Button>
         </div>
-        <div className="text-center py-4 text-red-500 text-sm">
-          {error}
-        </div>
+        <div className="py-4 text-center text-sm text-red-500">{error}</div>
       </div>
     )
   }
@@ -151,10 +155,10 @@ export function DashboardContractAlerts({
             onClick={fetchAlerts}
             className="h-6 w-6 p-0"
           >
-            <RefreshCw className="w-3 h-3" />
+            <RefreshCw className="h-3 w-3" />
           </Button>
         </div>
-        <div className="text-center py-4 text-gray-500 text-sm">
+        <div className="py-4 text-center text-sm text-gray-500">
           暂无即将到期的合同
         </div>
       </div>
@@ -178,13 +182,13 @@ export function DashboardContractAlerts({
             onClick={fetchAlerts}
             className="h-6 w-6 p-0"
           >
-            <RefreshCw className="w-3 h-3" />
+            <RefreshCw className="h-3 w-3" />
           </Button>
         </div>
       </div>
 
       {/* 提醒列表 */}
-      <div className="space-y-2 max-h-64 overflow-y-auto">
+      <div className="max-h-64 space-y-2 overflow-y-auto">
         {alerts.slice(0, 5).map((alert) => (
           <Card
             key={alert.id}
@@ -195,18 +199,18 @@ export function DashboardContractAlerts({
           >
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                <div className="flex min-w-0 flex-1 items-center space-x-2">
                   {getAlertIcon(alert.alertLevel)}
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium text-sm truncate">
+                      <span className="truncate text-sm font-medium">
                         {alert.renterName}
                       </span>
-                      <span className="text-xs text-gray-500 truncate">
+                      <span className="truncate text-xs text-gray-500">
                         {alert.roomInfo}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <div className="mt-1 flex items-center space-x-2">
                       <span className="text-xs text-gray-600">
                         {getAlertText(alert)}
                       </span>
@@ -216,8 +220,8 @@ export function DashboardContractAlerts({
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-1 ml-2">
+
+                <div className="ml-2 flex items-center space-x-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -225,7 +229,7 @@ export function DashboardContractAlerts({
                     className="h-6 w-6 p-0"
                     title="查看合同"
                   >
-                    <Eye className="w-3 h-3" />
+                    <Eye className="h-3 w-3" />
                   </Button>
                   {alert.alertLevel !== 'expired' && (
                     <Button
@@ -235,7 +239,7 @@ export function DashboardContractAlerts({
                       className="h-6 w-6 p-0"
                       title="续约"
                     >
-                      <RefreshCw className="w-3 h-3" />
+                      <RefreshCw className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
@@ -251,7 +255,9 @@ export function DashboardContractAlerts({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.location.href = '/contracts?status=expiring_soon'}
+            onClick={() =>
+              (window.location.href = '/contracts?status=expiring_soon')
+            }
             className="text-xs text-gray-500 hover:text-gray-700"
           >
             查看全部 {alerts.length} 个提醒
@@ -261,22 +267,22 @@ export function DashboardContractAlerts({
 
       {/* 统计信息 */}
       {summary.total > 0 && (
-        <div className="flex justify-center space-x-4 pt-2 border-t text-xs text-gray-500">
+        <div className="flex justify-center space-x-4 border-t pt-2 text-xs text-gray-500">
           {summary.warning > 0 && (
             <span className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <div className="h-2 w-2 rounded-full bg-orange-500"></div>
               <span>{summary.warning} 个即将到期</span>
             </span>
           )}
           {summary.danger > 0 && (
             <span className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <div className="h-2 w-2 rounded-full bg-red-500"></div>
               <span>{summary.danger} 个紧急</span>
             </span>
           )}
           {summary.expired > 0 && (
             <span className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+              <div className="h-2 w-2 rounded-full bg-gray-500"></div>
               <span>{summary.expired} 个已逾期</span>
             </span>
           )}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { billQueries, meterReadingQueries } from '@/lib/queries'
 
 /**
@@ -32,7 +33,7 @@ export async function GET(
     // 解析metadata中的水电费明细
     let utilityDetails = null
     let meterReadingIds: string[] = []
-    
+
     if (bill.metadata) {
       try {
         const metadata = JSON.parse(bill.metadata)
@@ -48,11 +49,11 @@ export async function GET(
     if (meterReadingIds.length > 0) {
       try {
         // 批量查询抄表记录
-        const readingPromises = meterReadingIds.map(id => 
+        const readingPromises = meterReadingIds.map((id) =>
           meterReadingQueries.findById(id)
         )
         const readings = await Promise.all(readingPromises)
-        meterReadings = readings.filter(reading => reading !== null)
+        meterReadings = readings.filter((reading) => reading !== null)
       } catch (error) {
         console.error('查询关联抄表记录失败:', error)
       }
@@ -70,7 +71,7 @@ export async function GET(
         usage: breakdown.electricity.usage,
         unitPrice: breakdown.electricity.unitPrice,
         amount: breakdown.electricity.amount,
-        unit: '度'
+        unit: '度',
       })
     }
 
@@ -82,7 +83,7 @@ export async function GET(
         usage: breakdown.water.usage,
         unitPrice: breakdown.water.unitPrice,
         amount: breakdown.water.amount,
-        unit: '吨'
+        unit: '吨',
       })
     }
 
@@ -94,7 +95,7 @@ export async function GET(
         usage: breakdown.gas.usage,
         unitPrice: breakdown.gas.unitPrice,
         amount: breakdown.gas.amount,
-        unit: '立方米'
+        unit: '立方米',
       })
     }
 
@@ -107,14 +108,13 @@ export async function GET(
       totalWaterCost: breakdown.water?.amount || 0,
       totalGasCost: breakdown.gas?.amount || 0,
       grandTotal: Number(bill.amount),
-      breakdown: meterBillDetails
+      breakdown: meterBillDetails,
     }
 
     // 查询同期其他账单（可选）
     const relatedBills = await billQueries.findByContract(bill.contractId)
-    const samePeriodBills = relatedBills.filter(b => 
-      b.id !== bill.id && 
-      b.period === bill.period
+    const samePeriodBills = relatedBills.filter(
+      (b) => b.id !== bill.id && b.period === bill.period
     )
 
     // 转换数据类型
@@ -123,16 +123,18 @@ export async function GET(
       amount: Number(bill.amount),
       receivedAmount: Number(bill.receivedAmount),
       pendingAmount: Number(bill.pendingAmount),
-      utilityDetails: utilityDetails
+      utilityDetails: utilityDetails,
     }
 
-    const meterReadingsData = meterReadings.map(reading => ({
+    const meterReadingsData = meterReadings.map((reading) => ({
       ...reading,
-      previousReading: reading.previousReading ? Number(reading.previousReading) : null,
+      previousReading: reading.previousReading
+        ? Number(reading.previousReading)
+        : null,
       currentReading: Number(reading.currentReading),
       usage: Number(reading.usage),
       unitPrice: Number(reading.unitPrice),
-      amount: Number(reading.amount)
+      amount: Number(reading.amount),
     }))
 
     return NextResponse.json({
@@ -142,15 +144,14 @@ export async function GET(
         meterReadings: meterReadingsData,
         breakdown: meterBillDetails,
         summary: summary,
-        relatedBills: samePeriodBills.map(b => ({
+        relatedBills: samePeriodBills.map((b) => ({
           ...b,
           amount: Number(b.amount),
           receivedAmount: Number(b.receivedAmount),
-          pendingAmount: Number(b.pendingAmount)
-        }))
-      }
+          pendingAmount: Number(b.pendingAmount),
+        })),
+      },
     })
-
   } catch (error) {
     console.error('获取水电费账单详情失败:', error)
     return NextResponse.json(

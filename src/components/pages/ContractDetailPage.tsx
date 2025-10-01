@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
+
 import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
 import { SingleMeterReadingModal } from '@/components/business/SingleMeterReadingModal'
+import { PageContainer } from '@/components/layout'
 
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
 interface ContractWithDetailsForClient {
@@ -96,17 +97,17 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [showMeterReadingModal, setShowMeterReadingModal] = useState(false)
-  
+
   // 处理编辑
   const handleEdit = () => {
     router.push(`/contracts/${contract.id}/edit`)
   }
-  
+
   // 处理续约
   const handleRenew = () => {
     router.push(`/contracts/${contract.id}/renew`)
   }
-  
+
   // 处理退租
   const handleCheckout = () => {
     // 跳转到退租页面
@@ -127,26 +128,26 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
     if (!confirm(confirmMessage)) {
       return
     }
-    
+
     setLoading(true)
     try {
       const response = await fetch('/api/contracts/activate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contractId: contract.id
-        })
+          contractId: contract.id,
+        }),
       })
-      
+
       const result = await response.json()
-      
+
       if (!response.ok) {
         alert(`激活合同失败：${result.error || '未知错误'}`)
         return
       }
-      
+
       // 激活成功，刷新页面
       alert('合同激活成功！')
       window.location.reload()
@@ -171,37 +172,42 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
     if (!confirm(confirmMessage)) {
       return
     }
-    
+
     setLoading(true)
     try {
       const response = await fetch(`/api/contracts/${contract.id}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       })
-      
+
       const result = await response.json()
-      
+
       if (!response.ok) {
         // 根据错误代码提供具体的用户指引
         let errorMessage = result.error || '删除合同失败'
-        
+
         if (result.code === 'INVALID_STATUS_ACTIVE') {
           errorMessage = `无法删除生效中的合同\n\n${result.details?.suggestion || '请使用退租功能处理生效中的合同'}`
         } else if (result.code === 'HAS_PAID_BILLS') {
           errorMessage = `无法删除有已支付账单的合同\n\n已支付账单数量：${result.details?.paidBillCount || 0}\n${result.details?.suggestion || '已支付的账单包含重要的财务记录，不能删除'}`
-        } else if (result.code === 'INVALID_STATUS_EXPIRED' || result.code === 'INVALID_STATUS_TERMINATED') {
+        } else if (
+          result.code === 'INVALID_STATUS_EXPIRED' ||
+          result.code === 'INVALID_STATUS_TERMINATED'
+        ) {
           errorMessage = `无法删除已完成的合同\n\n${result.details?.suggestion || '已完成的合同不能删除，用于保护历史记录'}`
         }
-        
+
         alert(errorMessage)
         return
       }
-      
+
       // 删除成功，显示成功信息并跳转
-      alert(`合同删除成功！\n\n删除的内容：\n• 合同记录：1个\n• 未支付账单：${result.data?.deletedEntities?.bills || 0}个\n• 抄表记录：${result.data?.deletedEntities?.meterReadings || 0}个`)
-      
+      alert(
+        `合同删除成功！\n\n删除的内容：\n• 合同记录：1个\n• 未支付账单：${result.data?.deletedEntities?.bills || 0}个\n• 抄表记录：${result.data?.deletedEntities?.meterReadings || 0}个`
+      )
+
       // 跳转回合同列表
       router.push('/contracts')
     } catch (error) {
@@ -211,7 +217,7 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
       setLoading(false)
     }
   }
-  
+
   // 处理查看PDF
   const handleViewPDF = () => {
     // TODO: 实现PDF查看功能
@@ -222,7 +228,7 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
   const handleMeterReading = () => {
     setShowMeterReadingModal(true)
   }
-  
+
   return (
     <PageContainer title="合同详情" showBackButton>
       <div className="pb-6">

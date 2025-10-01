@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server'
-import { roomQueries } from '@/lib/queries'
-import { performDeleteSafetyCheck } from '@/lib/validation'
-import { transformRoomDecimalFields } from '@/lib/room-utils'
+
 import { prisma } from '@/lib/prisma'
+import { roomQueries } from '@/lib/queries'
+import { transformRoomDecimalFields } from '@/lib/room-utils'
+import { performDeleteSafetyCheck } from '@/lib/validation'
 
 /**
  * 删除房间API（支持级联删除）
  * DELETE /api/rooms/[id]
- * 
+ *
  * 查询参数:
  * - force: 强制删除（true/false）
  * - archive: 归档相关数据（true/false）
@@ -21,42 +22,40 @@ export async function DELETE(
     const { searchParams } = new URL(request.url)
     const force = searchParams.get('force') === 'true'
     const archive = searchParams.get('archive') === 'true'
-    
+
     // 执行安全检查
     const safetyCheck = await performDeleteSafetyCheck(id)
-    
+
     if (safetyCheck.hasRelatedData && !force) {
-      return Response.json({
-        error: 'Cannot delete room with related data',
-        details: {
-          hasActiveContracts: safetyCheck.hasActiveContracts,
-          activeContractCount: safetyCheck.activeContractCount,
-          hasUnpaidBills: safetyCheck.hasUnpaidBills,
-          unpaidBillCount: safetyCheck.unpaidBillCount,
-          relatedDataTypes: safetyCheck.relatedDataTypes
+      return Response.json(
+        {
+          error: 'Cannot delete room with related data',
+          details: {
+            hasActiveContracts: safetyCheck.hasActiveContracts,
+            activeContractCount: safetyCheck.activeContractCount,
+            hasUnpaidBills: safetyCheck.hasUnpaidBills,
+            unpaidBillCount: safetyCheck.unpaidBillCount,
+            relatedDataTypes: safetyCheck.relatedDataTypes,
+          },
+          suggestion:
+            'Use force=true parameter to force delete or archive=true to archive related data',
         },
-        suggestion: 'Use force=true parameter to force delete or archive=true to archive related data'
-      }, { status: 400 })
+        { status: 400 }
+      )
     }
-    
+
     // 执行级联删除
     const result = await cascadeDeleteRoom(id, { force, archiveData: archive })
-    
+
     return Response.json(result)
   } catch (error: any) {
     console.error('Failed to delete room:', error)
-    
+
     if (error.message === 'Room not found') {
-      return Response.json(
-        { error: 'Room not found' },
-        { status: 404 }
-      )
+      return Response.json({ error: 'Room not found' }, { status: 404 })
     }
-    
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -71,24 +70,18 @@ export async function GET(
   try {
     const { id } = await params
     const room = await roomQueries.findById(id)
-    
+
     if (!room) {
-      return Response.json(
-        { error: 'Room not found' },
-        { status: 404 }
-      )
+      return Response.json({ error: 'Room not found' }, { status: 404 })
     }
-    
+
     // 转换 Decimal 类型
     const roomData = transformRoomDecimalFields(room)
-    
+
     return Response.json(roomData)
   } catch (error) {
     console.error('Failed to get room:', error)
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -103,16 +96,13 @@ export async function PUT(
   try {
     const { id } = await params
     const requestData = await request.json()
-    
+
     // 检查房间是否存在
     const existingRoom = await roomQueries.findById(id)
     if (!existingRoom) {
-      return Response.json(
-        { error: 'Room not found' },
-        { status: 404 }
-      )
+      return Response.json({ error: 'Room not found' }, { status: 404 })
     }
-    
+
     // 过滤掉不支持的字段，只保留roomQueries.update支持的字段
     const updateData: {
       roomNumber?: string
@@ -124,27 +114,35 @@ export async function PUT(
       currentRenter?: string
       overdueDays?: number
     } = {}
-    
+
     // 只复制支持的字段
-    if (requestData.roomNumber !== undefined) updateData.roomNumber = requestData.roomNumber
-    if (requestData.floorNumber !== undefined) updateData.floorNumber = requestData.floorNumber
-    if (requestData.roomType !== undefined) updateData.roomType = requestData.roomType
+    if (requestData.roomNumber !== undefined)
+      updateData.roomNumber = requestData.roomNumber
+    if (requestData.floorNumber !== undefined)
+      updateData.floorNumber = requestData.floorNumber
+    if (requestData.roomType !== undefined)
+      updateData.roomType = requestData.roomType
     if (requestData.area !== undefined) updateData.area = requestData.area
     if (requestData.rent !== undefined) updateData.rent = requestData.rent
     if (requestData.status !== undefined) updateData.status = requestData.status
-    if (requestData.currentRenter !== undefined) updateData.currentRenter = requestData.currentRenter
-    if (requestData.overdueDays !== undefined) updateData.overdueDays = requestData.overdueDays
-    
+    if (requestData.currentRenter !== undefined)
+      updateData.currentRenter = requestData.currentRenter
+    if (requestData.overdueDays !== undefined)
+      updateData.overdueDays = requestData.overdueDays
+
     // 如果更新房间号，检查唯一性
-    if (updateData.roomNumber && updateData.roomNumber !== existingRoom.roomNumber) {
+    if (
+      updateData.roomNumber &&
+      updateData.roomNumber !== existingRoom.roomNumber
+    ) {
       const duplicateRoom = await prisma.room.findFirst({
         where: {
           buildingId: existingRoom.buildingId,
           roomNumber: updateData.roomNumber,
-          id: { not: id }
-        }
+          id: { not: id },
+        },
       })
-      
+
       if (duplicateRoom) {
         return Response.json(
           { error: 'Room number already exists in this building' },
@@ -152,27 +150,21 @@ export async function PUT(
         )
       }
     }
-    
+
     // 更新房间
     const updatedRoom = await roomQueries.update(id, updateData)
-    
+
     if (!updatedRoom) {
-      return Response.json(
-        { error: 'Failed to update room' },
-        { status: 500 }
-      )
+      return Response.json({ error: 'Failed to update room' }, { status: 500 })
     }
-    
+
     // 转换 Decimal 类型
     const roomData = transformRoomDecimalFields(updatedRoom)
-    
+
     return Response.json(roomData)
   } catch (error) {
     console.error('Failed to update room:', error)
-    return Response.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -180,7 +172,7 @@ export async function PUT(
  * 级联删除房间
  */
 async function cascadeDeleteRoom(
-  roomId: string, 
+  roomId: string,
   options: { force?: boolean; archiveData?: boolean } = {}
 ) {
   return await prisma.$transaction(async (tx) => {
@@ -189,65 +181,65 @@ async function cascadeDeleteRoom(
       include: {
         contracts: {
           include: {
-            bills: true
-          }
-        }
-      }
+            bills: true,
+          },
+        },
+      },
     })
-    
+
     if (!room) {
       throw new Error('Room not found')
     }
-    
+
     let archivedContracts = 0
     let archivedBills = 0
-    
+
     // 处理相关合同和账单
     for (const contract of room.contracts) {
       if (options.archiveData) {
         // 归档账单
-         await tx.bill.updateMany({
-           where: { contractId: contract.id },
-           data: { status: 'COMPLETED' }
-         })
+        await tx.bill.updateMany({
+          where: { contractId: contract.id },
+          data: { status: 'COMPLETED' },
+        })
         archivedBills += contract.bills.length
-        
+
         // 归档合同
         await tx.contract.update({
           where: { id: contract.id },
-          data: { status: 'TERMINATED' }
+          data: { status: 'TERMINATED' },
         })
         archivedContracts += 1
       } else {
         // 删除账单
         await tx.bill.deleteMany({
-          where: { contractId: contract.id }
+          where: { contractId: contract.id },
         })
-        
+
         // 删除合同
         await tx.contract.delete({
-          where: { id: contract.id }
+          where: { id: contract.id },
         })
       }
     }
-    
+
     // 删除房间
     await tx.room.delete({ where: { id: roomId } })
-    
+
     // 更新楼栋房间计数
     await tx.building.update({
       where: { id: room.buildingId },
-      data: { totalRooms: { decrement: 1 } }
+      data: { totalRooms: { decrement: 1 } },
     })
-    
+
     return {
       success: true,
       deletedRoomId: roomId,
       archivedData: options.archiveData || false,
       affectedRecords: {
         contracts: archivedContracts,
-        bills: archivedBills
-      }
+        bills: archivedBills,
+      },
     }
   })
 }

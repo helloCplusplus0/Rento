@@ -1,6 +1,6 @@
 'use client'
 
-import { ErrorLogger, ErrorType, ErrorSeverity } from './error-logger'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 
 /**
  * 本地缓存项接口
@@ -33,7 +33,7 @@ export interface LocalCacheConfig {
 
 /**
  * 本地存储缓存类
- * 
+ *
  * 基于localStorage/sessionStorage的前端缓存系统，提供：
  * - 自动过期管理
  * - 版本控制
@@ -58,10 +58,10 @@ export class LocalStorageCache {
     this.version = config.version || '1.0.0'
     this.enableCompression = config.enableCompression
     this.maxStorageSize = config.maxStorageSize
-    
+
     // 选择存储类型
     this.storage = useSessionStorage ? sessionStorage : localStorage
-    
+
     // 初始化时清理过期数据
     this.cleanup()
   }
@@ -69,18 +69,22 @@ export class LocalStorageCache {
   /**
    * 设置缓存数据
    */
-  set<T>(key: string, data: T, options?: {
-    maxAge?: number
-    tags?: string[]
-    version?: string
-  }): boolean {
+  set<T>(
+    key: string,
+    data: T,
+    options?: {
+      maxAge?: number
+      tags?: string[]
+      version?: string
+    }
+  ): boolean {
     try {
       const item: LocalCacheItem<T> = {
         data,
         timestamp: Date.now(),
         maxAge: options?.maxAge || this.maxAge,
         version: options?.version || this.version,
-        tags: options?.tags
+        tags: options?.tags,
       }
 
       const serialized = this.serialize(item)
@@ -96,7 +100,7 @@ export class LocalStorageCache {
     } catch (error) {
       this.logger.logWarning('Failed to set cache item', {
         key,
-        error: (error as Error).message
+        error: (error as Error).message,
       })
       return false
     }
@@ -105,20 +109,23 @@ export class LocalStorageCache {
   /**
    * 获取缓存数据
    */
-  get<T>(key: string, options?: {
-    acceptVersion?: string
-    acceptTags?: string[]
-  }): T | null {
+  get<T>(
+    key: string,
+    options?: {
+      acceptVersion?: string
+      acceptTags?: string[]
+    }
+  ): T | null {
     try {
       const fullKey = this.getFullKey(key)
       const serialized = this.storage.getItem(fullKey)
-      
+
       if (!serialized) {
         return null
       }
 
       const item = this.deserialize<T>(serialized)
-      
+
       // 检查过期时间
       if (Date.now() - item.timestamp > item.maxAge) {
         this.delete(key)
@@ -134,7 +141,7 @@ export class LocalStorageCache {
 
       // 检查标签
       if (options?.acceptTags && item.tags) {
-        const hasMatchingTag = options.acceptTags.some(tag => 
+        const hasMatchingTag = options.acceptTags.some((tag) =>
           item.tags!.includes(tag)
         )
         if (!hasMatchingTag) {
@@ -146,7 +153,7 @@ export class LocalStorageCache {
     } catch (error) {
       this.logger.logWarning('Failed to get cache item', {
         key,
-        error: (error as Error).message
+        error: (error as Error).message,
       })
       return null
     }
@@ -166,7 +173,7 @@ export class LocalStorageCache {
   ): Promise<T> {
     const cached = this.get<T>(key, {
       acceptVersion: options?.version,
-      acceptTags: options?.tags
+      acceptTags: options?.tags,
     })
 
     if (cached !== null) {
@@ -189,7 +196,7 @@ export class LocalStorageCache {
     } catch (error) {
       this.logger.logWarning('Failed to delete cache item', {
         key,
-        error: (error as Error).message
+        error: (error as Error).message,
       })
       return false
     }
@@ -201,10 +208,10 @@ export class LocalStorageCache {
   deletePattern(pattern: string): number {
     let deletedCount = 0
     const regex = new RegExp(pattern.replace(/\*/g, '.*'))
-    
+
     try {
       const keysToDelete: string[] = []
-      
+
       for (let i = 0; i < this.storage.length; i++) {
         const fullKey = this.storage.key(i)
         if (fullKey && fullKey.startsWith(this.prefix)) {
@@ -215,7 +222,7 @@ export class LocalStorageCache {
         }
       }
 
-      keysToDelete.forEach(key => {
+      keysToDelete.forEach((key) => {
         if (this.delete(key)) {
           deletedCount++
         }
@@ -223,7 +230,7 @@ export class LocalStorageCache {
     } catch (error) {
       this.logger.logWarning('Failed to delete cache pattern', {
         pattern,
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -235,10 +242,10 @@ export class LocalStorageCache {
    */
   deleteByTags(tags: string[]): number {
     let deletedCount = 0
-    
+
     try {
       const keysToDelete: string[] = []
-      
+
       for (let i = 0; i < this.storage.length; i++) {
         const fullKey = this.storage.key(i)
         if (fullKey && fullKey.startsWith(this.prefix)) {
@@ -246,7 +253,7 @@ export class LocalStorageCache {
           if (serialized) {
             try {
               const item = this.deserialize(serialized)
-              if (item.tags && item.tags.some(tag => tags.includes(tag))) {
+              if (item.tags && item.tags.some((tag) => tags.includes(tag))) {
                 keysToDelete.push(this.extractKey(fullKey))
               }
             } catch {
@@ -256,7 +263,7 @@ export class LocalStorageCache {
         }
       }
 
-      keysToDelete.forEach(key => {
+      keysToDelete.forEach((key) => {
         if (this.delete(key)) {
           deletedCount++
         }
@@ -264,7 +271,7 @@ export class LocalStorageCache {
     } catch (error) {
       this.logger.logWarning('Failed to delete cache by tags', {
         tags,
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -276,10 +283,10 @@ export class LocalStorageCache {
    */
   clear(): number {
     let deletedCount = 0
-    
+
     try {
       const keysToDelete: string[] = []
-      
+
       for (let i = 0; i < this.storage.length; i++) {
         const fullKey = this.storage.key(i)
         if (fullKey && fullKey.startsWith(this.prefix)) {
@@ -287,14 +294,14 @@ export class LocalStorageCache {
         }
       }
 
-      keysToDelete.forEach(key => {
+      keysToDelete.forEach((key) => {
         if (this.delete(key)) {
           deletedCount++
         }
       })
     } catch (error) {
       this.logger.logWarning('Failed to clear cache', {
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -337,16 +344,17 @@ export class LocalStorageCache {
       }
     } catch (error) {
       this.logger.logWarning('Failed to get cache stats', {
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
     return {
       itemCount,
       totalSize,
-      oldestItem: oldestTimestamp === Infinity ? null : new Date(oldestTimestamp),
+      oldestItem:
+        oldestTimestamp === Infinity ? null : new Date(oldestTimestamp),
       newestItem: newestTimestamp === 0 ? null : new Date(newestTimestamp),
-      hitRate: 0 // 需要额外的统计逻辑来计算命中率
+      hitRate: 0, // 需要额外的统计逻辑来计算命中率
     }
   }
 
@@ -356,10 +364,10 @@ export class LocalStorageCache {
   cleanup(): number {
     let cleanedCount = 0
     const now = Date.now()
-    
+
     try {
       const keysToDelete: string[] = []
-      
+
       for (let i = 0; i < this.storage.length; i++) {
         const fullKey = this.storage.key(i)
         if (fullKey && fullKey.startsWith(this.prefix)) {
@@ -378,14 +386,14 @@ export class LocalStorageCache {
         }
       }
 
-      keysToDelete.forEach(key => {
+      keysToDelete.forEach((key) => {
         if (this.delete(key)) {
           cleanedCount++
         }
       })
     } catch (error) {
       this.logger.logWarning('Failed to cleanup cache', {
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -397,12 +405,12 @@ export class LocalStorageCache {
    */
   private serialize<T>(item: LocalCacheItem<T>): string {
     const json = JSON.stringify(item)
-    
+
     if (this.enableCompression && json.length > 1024) {
       // 简单的压缩：移除空格
       return json.replace(/\s+/g, ' ')
     }
-    
+
     return json
   }
 
@@ -432,7 +440,7 @@ export class LocalStorageCache {
    */
   private getStorageSize(): number {
     let size = 0
-    
+
     try {
       for (let i = 0; i < this.storage.length; i++) {
         const key = this.storage.key(i)
@@ -446,7 +454,7 @@ export class LocalStorageCache {
     } catch {
       // 忽略错误
     }
-    
+
     return size
   }
 
@@ -482,7 +490,7 @@ export class LocalStorageCache {
       }
     } catch (error) {
       this.logger.logWarning('Failed to evict oldest cache item', {
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
   }
@@ -494,7 +502,7 @@ export const searchCache = new LocalStorageCache({
   maxAge: 2 * 60 * 1000, // 2分钟
   enableVersioning: false,
   enableCompression: true,
-  maxStorageSize: 1024 * 1024 // 1MB
+  maxStorageSize: 1024 * 1024, // 1MB
 })
 
 export const userPrefsCache = new LocalStorageCache({
@@ -503,7 +511,7 @@ export const userPrefsCache = new LocalStorageCache({
   enableVersioning: true,
   version: '1.0.0',
   enableCompression: false,
-  maxStorageSize: 512 * 1024 // 512KB
+  maxStorageSize: 512 * 1024, // 512KB
 })
 
 export const apiCache = new LocalStorageCache({
@@ -512,15 +520,18 @@ export const apiCache = new LocalStorageCache({
   enableVersioning: true,
   version: '1.0.0',
   enableCompression: true,
-  maxStorageSize: 2 * 1024 * 1024 // 2MB
+  maxStorageSize: 2 * 1024 * 1024, // 2MB
 })
 
-export const tempCache = new LocalStorageCache({
-  prefix: 'rento-temp',
-  maxAge: 30 * 1000, // 30秒
-  enableVersioning: false,
-  enableCompression: false,
-  maxStorageSize: 256 * 1024 // 256KB
-}, true) // 使用sessionStorage
+export const tempCache = new LocalStorageCache(
+  {
+    prefix: 'rento-temp',
+    maxAge: 30 * 1000, // 30秒
+    enableVersioning: false,
+    enableCompression: false,
+    maxStorageSize: 256 * 1024, // 256KB
+  },
+  true
+) // 使用sessionStorage
 
 export default LocalStorageCache

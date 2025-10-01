@@ -1,13 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { CheckCircle, Clock, Play, RefreshCw, XCircle } from 'lucide-react'
+
+import type {
+  ValidationReport,
+  ValidationResult,
+} from '@/lib/business-flow-validator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, XCircle, Clock, Play, RefreshCw } from 'lucide-react'
-import type { ValidationReport, ValidationResult } from '@/lib/business-flow-validator'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 
 interface ValidationStatus {
   isRunning: boolean
@@ -20,22 +30,22 @@ interface ValidationStatus {
 export function BusinessFlowValidationPage() {
   const [status, setStatus] = useState<ValidationStatus>({
     isRunning: false,
-    progress: 0
+    progress: 0,
   })
 
   const startValidation = async () => {
     setStatus({
       isRunning: true,
       progress: 0,
-      currentFlow: '准备验证环境...'
+      currentFlow: '准备验证环境...',
     })
 
     try {
       const response = await fetch('/api/validation', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       })
 
       const result = await response.json()
@@ -44,20 +54,20 @@ export function BusinessFlowValidationPage() {
         setStatus({
           isRunning: false,
           progress: 100,
-          report: result.data
+          report: result.data,
         })
       } else {
         setStatus({
           isRunning: false,
           progress: 0,
-          error: result.error || '验证失败'
+          error: result.error || '验证失败',
         })
       }
     } catch (error) {
       setStatus({
         isRunning: false,
         progress: 0,
-        error: '网络请求失败'
+        error: '网络请求失败',
       })
     }
   }
@@ -65,7 +75,7 @@ export function BusinessFlowValidationPage() {
   const resetValidation = () => {
     setStatus({
       isRunning: false,
-      progress: 0
+      progress: 0,
     })
   }
 
@@ -109,8 +119,8 @@ export function BusinessFlowValidationPage() {
         <CardContent className="space-y-4">
           {/* 控制按钮 */}
           <div className="flex gap-2">
-            <Button 
-              onClick={startValidation} 
+            <Button
+              onClick={startValidation}
               disabled={status.isRunning}
               className="flex items-center gap-2"
             >
@@ -121,9 +131,9 @@ export function BusinessFlowValidationPage() {
               )}
               {status.isRunning ? '验证中...' : '开始验证'}
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               onClick={resetValidation}
               disabled={status.isRunning}
             >
@@ -168,30 +178,30 @@ export function BusinessFlowValidationPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
                     {status.report.successfulFlows}
                   </div>
-                  <div className="text-sm text-muted-foreground">成功流程</div>
+                  <div className="text-muted-foreground text-sm">成功流程</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
                     {status.report.failedFlows}
                   </div>
-                  <div className="text-sm text-muted-foreground">失败流程</div>
+                  <div className="text-muted-foreground text-sm">失败流程</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">
                     {status.report.totalFlows}
                   </div>
-                  <div className="text-sm text-muted-foreground">总流程数</div>
+                  <div className="text-muted-foreground text-sm">总流程数</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">
                     {Math.round(status.report.executionTime / 1000)}s
                   </div>
-                  <div className="text-sm text-muted-foreground">执行时间</div>
+                  <div className="text-muted-foreground text-sm">执行时间</div>
                 </div>
               </div>
             </CardContent>
@@ -210,10 +220,9 @@ export function BusinessFlowValidationPage() {
                     {getFlowStatusBadge(result.success)}
                   </CardTitle>
                   <CardDescription>
-                    执行时间: {Math.round(result.executionTime / 1000)}s | 
-                    步骤数: {result.steps.length} | 
-                    错误数: {result.errors.length} | 
-                    警告数: {result.warnings.length}
+                    执行时间: {Math.round(result.executionTime / 1000)}s |
+                    步骤数: {result.steps.length} | 错误数:{' '}
+                    {result.errors.length} | 警告数: {result.warnings.length}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -221,7 +230,10 @@ export function BusinessFlowValidationPage() {
                   <div className="space-y-2">
                     <h4 className="font-medium">验证步骤:</h4>
                     {result.steps.map((step, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 text-sm"
+                      >
                         {step.success ? (
                           <CheckCircle className="h-4 w-4 text-green-500" />
                         ) : (
@@ -274,11 +286,11 @@ export function BusinessFlowValidationPage() {
 
 function getFlowName(flowName: string): string {
   const flowNames: Record<string, string> = {
-    'RoomManagement': '房间管理流程',
-    'BillGeneration': '账单生成流程',
-    'MeterReading': '水电表抄表流程',
-    'ContractLifecycle': '合同生命周期流程',
-    'DataConsistency': '数据一致性检查'
+    RoomManagement: '房间管理流程',
+    BillGeneration: '账单生成流程',
+    MeterReading: '水电表抄表流程',
+    ContractLifecycle: '合同生命周期流程',
+    DataConsistency: '数据一致性检查',
   }
   return flowNames[flowName] || flowName
 }

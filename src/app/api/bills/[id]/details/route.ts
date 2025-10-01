@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+
+import {
+  createSuccessResponse,
+  withApiErrorHandler,
+} from '@/lib/api-error-handler'
 import { billQueryCache } from '@/lib/bill-cache'
-import { withApiErrorHandler, createSuccessResponse } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { prisma } from '@/lib/prisma'
 
 /**
  * 统一的账单明细响应接口
@@ -53,12 +57,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    
+
     // 使用缓存获取账单明细
     const result = await billQueryCache.getCachedQuery(
       {
         type: 'filter',
-        filters: { billId: id, type: 'details' }
+        filters: { billId: id, type: 'details' },
       },
       async () => {
         // 获取账单基本信息
@@ -70,21 +74,21 @@ export async function GET(
             type: true,
             amount: true,
             status: true,
-            meterReadingId: true
-          }
+            meterReadingId: true,
+          },
         })
-        
+
         if (!bill) {
           return {
             success: false,
             data: [],
             metadata: {
               source: 'empty' as const,
-              isLegacy: false
-            }
+              isLegacy: false,
+            },
           }
         }
-        
+
         // 获取账单明细
         const billDetails = await prisma.billDetail.findMany({
           where: { billId: id },
@@ -97,53 +101,61 @@ export async function GET(
                     displayName: true,
                     meterType: true,
                     unit: true,
-                    unitPrice: true
-                  }
-                }
-              }
-            }
+                    unitPrice: true,
+                  },
+                },
+              },
+            },
           },
-          orderBy: { createdAt: 'asc' }
+          orderBy: { createdAt: 'asc' },
         })
-        
+
         if (billDetails.length > 0) {
-          const detailItems: BillDetailItem[] = billDetails.map(detail => ({
+          const detailItems: BillDetailItem[] = billDetails.map((detail) => ({
             id: detail.id,
             billId: detail.billId,
             meterReadingId: detail.meterReadingId,
             meterType: detail.meterType,
-            meterName: detail.meterName || detail.meterReading?.meter?.displayName || '未知仪表',
+            meterName:
+              detail.meterName ||
+              detail.meterReading?.meter?.displayName ||
+              '未知仪表',
             usage: Number(detail.usage),
             unitPrice: Number(detail.unitPrice),
             amount: Number(detail.amount),
             unit: detail.unit,
-            previousReading: detail.previousReading ? Number(detail.previousReading) : null,
+            previousReading: detail.previousReading
+              ? Number(detail.previousReading)
+              : null,
             currentReading: Number(detail.currentReading),
             readingDate: detail.readingDate.toISOString(),
             priceSource: detail.priceSource || 'METER_CONFIG',
             createdAt: detail.createdAt.toISOString(),
             updatedAt: detail.updatedAt.toISOString(),
-            meterReading: detail.meterReading
+            meterReading: detail.meterReading,
           }))
-          
+
           return {
             success: true,
             data: detailItems,
             metadata: {
               source: 'bill_details' as const,
               isLegacy: false,
-              totalAmount: detailItems.reduce((sum, item) => sum + item.amount, 0),
+              totalAmount: detailItems.reduce(
+                (sum, item) => sum + item.amount,
+                0
+              ),
               billInfo: {
                 id: bill.id,
                 billNumber: bill.billNumber,
                 type: bill.type,
                 amount: Number(bill.amount),
-                status: bill.status
-              }
-            }
+                status: bill.status,
+              },
+            },
           }
         }
-        
+
         // 兼容性处理：从关联的抄表记录构造明细
         if (bill.meterReadingId) {
           const meterReading = await prisma.meterReading.findUnique({
@@ -155,12 +167,12 @@ export async function GET(
                   displayName: true,
                   meterType: true,
                   unit: true,
-                  unitPrice: true
-                }
-              }
-            }
+                  unitPrice: true,
+                },
+              },
+            },
           })
-          
+
           if (meterReading) {
             const legacyDetail: BillDetailItem = {
               id: `legacy-${meterReading.id}`,
@@ -172,15 +184,17 @@ export async function GET(
               unitPrice: Number(meterReading.unitPrice),
               amount: Number(meterReading.amount),
               unit: meterReading.meter.unit,
-              previousReading: meterReading.previousReading ? Number(meterReading.previousReading) : null,
+              previousReading: meterReading.previousReading
+                ? Number(meterReading.previousReading)
+                : null,
               currentReading: Number(meterReading.currentReading),
               readingDate: meterReading.readingDate.toISOString(),
               priceSource: 'METER_CONFIG',
               createdAt: meterReading.createdAt.toISOString(),
               updatedAt: meterReading.updatedAt.toISOString(),
-              meterReading
+              meterReading,
             }
-            
+
             return {
               success: true,
               data: [legacyDetail],
@@ -193,13 +207,13 @@ export async function GET(
                   billNumber: bill.billNumber,
                   type: bill.type,
                   amount: Number(bill.amount),
-                  status: bill.status
-                }
-              }
+                  status: bill.status,
+                },
+              },
             }
           }
         }
-        
+
         // 返回空结果
         return {
           success: true,
@@ -213,25 +227,27 @@ export async function GET(
               billNumber: bill.billNumber,
               type: bill.type,
               amount: Number(bill.amount),
-              status: bill.status
-            }
-          }
+              status: bill.status,
+            },
+          },
         }
       }
     )
-    
+
     return NextResponse.json(result)
-    
   } catch (error) {
     console.error('获取账单明细失败:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: '获取账单明细失败',
-      data: [],
-      metadata: {
-        source: 'empty' as const,
-        isLegacy: false
-      }
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: '获取账单明细失败',
+        data: [],
+        metadata: {
+          source: 'empty' as const,
+          isLegacy: false,
+        },
+      },
+      { status: 500 }
+    )
   }
 }

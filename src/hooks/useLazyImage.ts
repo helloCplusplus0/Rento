@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * 懒加载图片Hook的配置选项
@@ -46,21 +46,21 @@ export interface LazyImageResult {
 
 /**
  * 图片懒加载Hook
- * 
+ *
  * 使用Intersection Observer API实现图片懒加载，
  * 只有当图片进入视口时才开始加载，提升页面性能。
- * 
+ *
  * 特性：
  * - 基于Intersection Observer的懒加载
  * - 支持占位符图片
  * - 支持加载失败重试
  * - 支持淡入动画
  * - 内存优化，自动清理观察器
- * 
+ *
  * @param src 图片源URL
  * @param options 配置选项
  * @returns 懒加载状态和控制方法
- * 
+ *
  * @example
  * ```tsx
  * const { imageSrc, isLoaded, isError, imgRef } = useLazyImage('/image.jpg', {
@@ -68,7 +68,7 @@ export interface LazyImageResult {
  *   threshold: 0.1,
  *   rootMargin: '50px'
  * })
- * 
+ *
  * return (
  *   <img
  *     ref={imgRef}
@@ -92,7 +92,7 @@ export function useLazyImage(
     retryDelay = 1000,
     enableSmartPreload = true,
     preloadDistance = 200,
-    enablePriorityLoading = false
+    enablePriorityLoading = false,
   } = options
 
   const [imageSrc, setImageSrc] = useState(placeholder)
@@ -129,11 +129,11 @@ export function useLazyImage(
     img.onerror = () => {
       if (imageInstanceRef.current === img) {
         setIsLoading(false)
-        
+
         if (currentRetry < retryCount) {
           // 重试加载
           setTimeout(() => {
-            setCurrentRetry(prev => prev + 1)
+            setCurrentRetry((prev) => prev + 1)
             loadImage()
           }, retryDelay)
         } else {
@@ -176,7 +176,7 @@ export function useLazyImage(
       },
       {
         threshold,
-        rootMargin
+        rootMargin,
       }
     )
 
@@ -220,19 +220,19 @@ export function useLazyImage(
     isError,
     isLoading,
     imgRef,
-    reload
+    reload,
   }
 }
 
 /**
  * 批量图片预加载Hook
- * 
+ *
  * 用于预加载一组图片，提升用户体验
- * 
+ *
  * @param urls 图片URL数组
  * @param options 配置选项
  * @returns 预加载状态
- * 
+ *
  * @example
  * ```tsx
  * const { loadedCount, totalCount, isAllLoaded } = useImagePreloader([
@@ -240,7 +240,7 @@ export function useLazyImage(
  *   '/image2.jpg',
  *   '/image3.jpg'
  * ])
- * 
+ *
  * return (
  *   <div>
  *     预加载进度: {loadedCount}/{totalCount}
@@ -249,7 +249,10 @@ export function useLazyImage(
  * )
  * ```
  */
-export function useImagePreloader(urls: string[], options: { priority?: boolean } = {}) {
+export function useImagePreloader(
+  urls: string[],
+  options: { priority?: boolean } = {}
+) {
   const [loadedCount, setLoadedCount] = useState(0)
   const [failedCount, setFailedCount] = useState(0)
   const [isAllLoaded, setIsAllLoaded] = useState(false)
@@ -266,13 +269,13 @@ export function useImagePreloader(urls: string[], options: { priority?: boolean 
     const preloadImage = (url: string) => {
       return new Promise<void>((resolve) => {
         const img = new Image()
-        
+
         img.onload = () => {
           loadedImages++
           setLoadedCount(loadedImages)
           resolve()
         }
-        
+
         img.onerror = () => {
           failedImages++
           setFailedCount(failedImages)
@@ -287,7 +290,6 @@ export function useImagePreloader(urls: string[], options: { priority?: boolean 
     Promise.all(urls.map(preloadImage)).then(() => {
       setIsAllLoaded(true)
     })
-
   }, [urls])
 
   return {
@@ -295,7 +297,7 @@ export function useImagePreloader(urls: string[], options: { priority?: boolean 
     failedCount,
     totalCount: urls.length,
     isAllLoaded,
-    progress: urls.length > 0 ? (loadedCount + failedCount) / urls.length : 1
+    progress: urls.length > 0 ? (loadedCount + failedCount) / urls.length : 1,
   }
 }
 

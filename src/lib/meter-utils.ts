@@ -1,3 +1,5 @@
+import { globalSettings } from './global-settings'
+
 /**
  * 水电表管理工具函数
  * 提供仪表编号生成、用量计算、数据验证等功能
@@ -12,21 +14,21 @@ export const METER_BUSINESS_RULES = {
   meterNumberPattern: /^[A-Z]{2}\d{8}$/, // 如: EL20240001
   maxMetersPerRoom: 10,
   maxSameTypePerRoom: 5,
-  
+
   // 单价规则
   priceRange: { min: 0.01, max: 100 },
-  
+
   // 显示名称规则
   displayNameMaxLength: 50,
   displayNamePattern: /^[\u4e00-\u9fa5a-zA-Z0-9\-_\s]+$/,
-  
+
   // 抄表规则
   maxReadingValue: 999999,
   maxUsagePerPeriod: 10000,
   negativeUsageThreshold: -1,
   abnormalUsageMultiplier: 3,
   maxReadingInterval: 60, // 天
-  minReadingInterval: 1   // 天
+  minReadingInterval: 1, // 天
 } as const
 
 /**
@@ -37,11 +39,11 @@ export const METER_BUSINESS_RULES = {
 export function generateMeterNumber(meterType: MeterType): string {
   const prefixes: Record<MeterType, string> = {
     ELECTRICITY: 'EL',
-    COLD_WATER: 'CW', 
+    COLD_WATER: 'CW',
     HOT_WATER: 'HW',
-    GAS: 'GS'
+    GAS: 'GS',
   }
-  
+
   const prefix = prefixes[meterType]
   const timestamp = Date.now().toString().slice(-8)
   return `${prefix}${timestamp}`
@@ -62,7 +64,10 @@ export function validateMeterNumber(meterNumber: string): boolean {
  * @returns 是否有效
  */
 export function validateDisplayName(displayName: string): boolean {
-  if (!displayName || displayName.length > METER_BUSINESS_RULES.displayNameMaxLength) {
+  if (
+    !displayName ||
+    displayName.length > METER_BUSINESS_RULES.displayNameMaxLength
+  ) {
     return false
   }
   return METER_BUSINESS_RULES.displayNamePattern.test(displayName)
@@ -74,8 +79,10 @@ export function validateDisplayName(displayName: string): boolean {
  * @returns 是否有效
  */
 export function validateUnitPrice(unitPrice: number): boolean {
-  return unitPrice >= METER_BUSINESS_RULES.priceRange.min && 
-         unitPrice <= METER_BUSINESS_RULES.priceRange.max
+  return (
+    unitPrice >= METER_BUSINESS_RULES.priceRange.min &&
+    unitPrice <= METER_BUSINESS_RULES.priceRange.max
+  )
 }
 
 /**
@@ -95,18 +102,27 @@ export function validateMeterConfigData(data: {
 
   // 显示名称验证
   if (!validateDisplayName(data.displayName)) {
-    errors.push('显示名称格式不正确，最多50字符，支持中文、英文、数字、横线、下划线')
+    errors.push(
+      '显示名称格式不正确，最多50字符，支持中文、英文、数字、横线、下划线'
+    )
   }
 
   // 仪表类型验证
-  const validTypes: MeterType[] = ['ELECTRICITY', 'COLD_WATER', 'HOT_WATER', 'GAS']
+  const validTypes: MeterType[] = [
+    'ELECTRICITY',
+    'COLD_WATER',
+    'HOT_WATER',
+    'GAS',
+  ]
   if (!validTypes.includes(data.meterType)) {
     errors.push('仪表类型无效')
   }
 
   // 单价验证
   if (!validateUnitPrice(data.unitPrice)) {
-    errors.push(`单价必须在${METER_BUSINESS_RULES.priceRange.min}-${METER_BUSINESS_RULES.priceRange.max}元之间`)
+    errors.push(
+      `单价必须在${METER_BUSINESS_RULES.priceRange.min}-${METER_BUSINESS_RULES.priceRange.max}元之间`
+    )
   }
 
   // 计量单位验证
@@ -126,7 +142,7 @@ export function validateMeterConfigData(data: {
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
@@ -146,24 +162,32 @@ export function checkMeterLimits(
 
   // 检查房间仪表总数限制
   if (existingMeters.length >= METER_BUSINESS_RULES.maxMetersPerRoom) {
-    errors.push(`单个房间最多只能配置${METER_BUSINESS_RULES.maxMetersPerRoom}个仪表`)
+    errors.push(
+      `单个房间最多只能配置${METER_BUSINESS_RULES.maxMetersPerRoom}个仪表`
+    )
   }
 
   // 检查同类型仪表数量限制
-  const sameTypeCount = existingMeters.filter(m => m.meterType === newMeterType).length
+  const sameTypeCount = existingMeters.filter(
+    (m) => m.meterType === newMeterType
+  ).length
   if (sameTypeCount >= METER_BUSINESS_RULES.maxSameTypePerRoom) {
-    errors.push(`单个房间同类型仪表最多只能配置${METER_BUSINESS_RULES.maxSameTypePerRoom}个`)
+    errors.push(
+      `单个房间同类型仪表最多只能配置${METER_BUSINESS_RULES.maxSameTypePerRoom}个`
+    )
   }
 
   // 检查显示名称唯一性
-  const nameExists = existingMeters.some(m => m.displayName === newDisplayName)
+  const nameExists = existingMeters.some(
+    (m) => m.displayName === newDisplayName
+  )
   if (nameExists) {
     errors.push('显示名称在该房间内已存在，请使用不同的名称')
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
@@ -216,9 +240,9 @@ export function formatMeterType(meterType: MeterType): string {
     ELECTRICITY: '电表',
     COLD_WATER: '冷水表',
     HOT_WATER: '热水表',
-    GAS: '燃气表'
+    GAS: '燃气表',
   }
-  
+
   return typeNames[meterType]
 }
 
@@ -232,13 +256,11 @@ export function getDefaultUnit(meterType: MeterType): string {
     ELECTRICITY: '度',
     COLD_WATER: '吨',
     HOT_WATER: '吨',
-    GAS: '立方米'
+    GAS: '立方米',
   }
-  
+
   return defaultUnits[meterType]
 }
-
-import { globalSettings } from './global-settings'
 
 /**
  * 获取仪表类型的默认单价 (增强版)
@@ -246,11 +268,13 @@ import { globalSettings } from './global-settings'
  * @param meterType 仪表类型
  * @returns 默认单价
  */
-export async function getDefaultUnitPrice(meterType: MeterType): Promise<number> {
+export async function getDefaultUnitPrice(
+  meterType: MeterType
+): Promise<number> {
   try {
     // 优先从数据库全局设置获取
     const billingSettings = await globalSettings.getBillingSettings()
-    
+
     switch (meterType) {
       case 'ELECTRICITY':
         return billingSettings.electricityPrice
@@ -265,15 +289,15 @@ export async function getDefaultUnitPrice(meterType: MeterType): Promise<number>
     }
   } catch (error) {
     console.error('[仪表工具] 获取默认单价失败，使用硬编码回退值:', error)
-    
+
     // 回退到硬编码默认值
     const fallbackPrices: Record<MeterType, number> = {
       ELECTRICITY: 1.0,
       COLD_WATER: 10.0,
       HOT_WATER: 15.0,
-      GAS: 3.5
+      GAS: 3.5,
     }
-    
+
     return fallbackPrices[meterType]
   }
 }
@@ -291,7 +315,7 @@ export function getDefaultUnitPriceSync(meterType: MeterType): number {
       const cachedSettings = localStorage.getItem('app_settings')
       if (cachedSettings) {
         const settings = JSON.parse(cachedSettings)
-        
+
         switch (meterType) {
           case 'ELECTRICITY':
             return settings.electricityPrice || 1.0
@@ -307,15 +331,15 @@ export function getDefaultUnitPriceSync(meterType: MeterType): number {
   } catch (error) {
     console.error('[仪表工具] 获取缓存设置失败:', error)
   }
-  
+
   // 最终回退到硬编码默认值
   const fallbackPrices: Record<MeterType, number> = {
     ELECTRICITY: 1.0,
     COLD_WATER: 10.0,
     HOT_WATER: 15.0,
-    GAS: 3.5
+    GAS: 3.5,
   }
-  
+
   return fallbackPrices[meterType]
 }
 
@@ -335,34 +359,36 @@ export function detectAbnormalReading(
   if (currentReading > METER_BUSINESS_RULES.maxReadingValue) {
     return true
   }
-  
+
   // 检查是否为负增长
   if (previousReading !== null && currentReading < previousReading) {
     return true
   }
-  
+
   // 检查用量是否异常
   if (previousReading !== null) {
     const usage = currentReading - previousReading
-    
+
     // 用量过大
     if (usage > METER_BUSINESS_RULES.maxUsagePerPeriod) {
       return true
     }
-    
+
     // 与历史用量对比
     if (recentReadings.length >= 3) {
-      const avgUsage = recentReadings.reduce((sum, reading, index) => {
-        if (index === 0) return sum
-        return sum + (recentReadings[index - 1] - reading)
-      }, 0) / (recentReadings.length - 1)
-      
+      const avgUsage =
+        recentReadings.reduce((sum, reading, index) => {
+          if (index === 0) return sum
+          return sum + (recentReadings[index - 1] - reading)
+        }, 0) /
+        (recentReadings.length - 1)
+
       if (usage > avgUsage * METER_BUSINESS_RULES.abnormalUsageMultiplier) {
         return true
       }
     }
   }
-  
+
   return false
 }
 
@@ -389,42 +415,44 @@ export function validateMeterReadingData(data: {
   unitPrice: number
 }): { isValid: boolean; errors: string[] } {
   const errors: string[] = []
-  
+
   // 验证读数
   if (data.currentReading < 0) {
     errors.push('读数不能为负数')
   }
-  
+
   if (data.currentReading > METER_BUSINESS_RULES.maxReadingValue) {
     errors.push(`读数不能超过 ${METER_BUSINESS_RULES.maxReadingValue}`)
   }
-  
+
   // 验证读数递增
   if (data.previousReading !== null && data.previousReading !== undefined) {
     if (data.currentReading < data.previousReading) {
       errors.push('本次读数不能小于上次读数')
     }
-    
+
     const usage = data.currentReading - data.previousReading
     if (usage > METER_BUSINESS_RULES.maxUsagePerPeriod) {
       errors.push(`单期用量不能超过 ${METER_BUSINESS_RULES.maxUsagePerPeriod}`)
     }
   }
-  
+
   // 验证日期
   const now = new Date()
   if (data.readingDate > now) {
     errors.push('抄表日期不能是未来时间')
   }
-  
+
   // 验证单价
   if (!validateUnitPrice(data.unitPrice)) {
-    errors.push(`单价必须在 ${METER_BUSINESS_RULES.priceRange.min} - ${METER_BUSINESS_RULES.priceRange.max} 之间`)
+    errors.push(
+      `单价必须在 ${METER_BUSINESS_RULES.priceRange.min} - ${METER_BUSINESS_RULES.priceRange.max} 之间`
+    )
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
@@ -443,19 +471,19 @@ export function generateSortOrder(
     ELECTRICITY: 1000,
     COLD_WATER: 2000,
     HOT_WATER: 3000,
-    GAS: 4000
+    GAS: 4000,
   }
-  
+
   const base = baseOrder[meterType]
-  
+
   // 找到该类型下的最大排序值
-  const typeOrders = existingSortOrders.filter(order => 
-    order >= base && order < base + 1000
+  const typeOrders = existingSortOrders.filter(
+    (order) => order >= base && order < base + 1000
   )
-  
+
   if (typeOrders.length === 0) {
     return base + 1
   }
-  
+
   return Math.max(...typeOrders) + 1
 }

@@ -25,7 +25,10 @@ async function main() {
     },
   })
 
-  console.log('楼栋创建完成:', { buildingA: buildingA.name, buildingB: buildingB.name })
+  console.log('楼栋创建完成:', {
+    buildingA: buildingA.name,
+    buildingB: buildingB.name,
+  })
 
   // 创建A栋房间
   const roomsA = await Promise.all([
@@ -197,9 +200,9 @@ async function main() {
     }),
   ])
 
-  console.log('房间创建完成:', { 
-    buildingA: roomsA.length, 
-    buildingB: roomsB.length 
+  console.log('房间创建完成:', {
+    buildingA: roomsA.length,
+    buildingB: roomsB.length,
   })
 
   // 创建租客
@@ -428,15 +431,15 @@ async function main() {
 
   // 创建账单
   const bills = []
-  
+
   // 为每个合同创建不同类型的账单
   for (const contract of contracts) {
     const startMonth = new Date(contract.startDate)
     const currentDate = new Date()
-    
+
     let billMonth = new Date(startMonth)
     let billCount = 0
-    
+
     // 创建押金账单 (合同开始时)
     const depositBillNumber = `BILL${contract.contractNumber.slice(-3)}DEP${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
     const depositBill = await prisma.bill.create({
@@ -457,21 +460,29 @@ async function main() {
       },
     })
     bills.push(depositBill)
-    
+
     // 创建租金账单
     while (billMonth <= currentDate && billCount < 6) {
       const billNumber = `BILL${contract.contractNumber.slice(-3)}${String(billMonth.getMonth() + 1).padStart(2, '0')}${String(billMonth.getFullYear()).slice(-2)}${String(billCount + 1).padStart(2, '0')}`
-      
+
       const dueDate = new Date(billMonth)
       dueDate.setDate(15) // 每月15日到期
-      
+
       // 计算账单周期 (当月1日到月末)
-      const periodStart = new Date(billMonth.getFullYear(), billMonth.getMonth(), 1)
-      const periodEnd = new Date(billMonth.getFullYear(), billMonth.getMonth() + 1, 0)
-      
+      const periodStart = new Date(
+        billMonth.getFullYear(),
+        billMonth.getMonth(),
+        1
+      )
+      const periodEnd = new Date(
+        billMonth.getFullYear(),
+        billMonth.getMonth() + 1,
+        0
+      )
+
       const isOverdue = dueDate < currentDate
       const isPaid = Math.random() > 0.3 // 70% 概率已付款
-      
+
       const bill = await prisma.bill.create({
         data: {
           billNumber,
@@ -480,74 +491,92 @@ async function main() {
           receivedAmount: isPaid ? contract.monthlyRent : 0,
           pendingAmount: isPaid ? 0 : contract.monthlyRent,
           dueDate,
-          paidDate: isPaid ? new Date(dueDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000) : null,
+          paidDate: isPaid
+            ? new Date(
+                dueDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000
+              )
+            : null,
           period: `${periodStart.toISOString().slice(0, 10)} 至 ${periodEnd.toISOString().slice(0, 10)}`,
-          status: isPaid ? 'PAID' : (isOverdue ? 'OVERDUE' : 'PENDING'),
+          status: isPaid ? 'PAID' : isOverdue ? 'OVERDUE' : 'PENDING',
           contractId: contract.id,
-          paymentMethod: isPaid ? (Math.random() > 0.5 ? '微信' : '支付宝') : null,
+          paymentMethod: isPaid
+            ? Math.random() > 0.5
+              ? '微信'
+              : '支付宝'
+            : null,
           operator: isPaid ? '系统管理员' : null,
           remarks: isOverdue && !isPaid ? '已逾期，需要催收' : null,
         },
       })
-      
+
       bills.push(bill)
-      
+
       // 下个月
       billMonth.setMonth(billMonth.getMonth() + 1)
       billCount++
     }
-    
+
     // 为部分合同创建水电费账单
-      if (Math.random() > 0.5) {
-        const utilityMonth = new Date(currentDate)
-        utilityMonth.setMonth(utilityMonth.getMonth() - 1) // 上个月的水电费
-        
-        const utilityPeriodStart = new Date(utilityMonth.getFullYear(), utilityMonth.getMonth(), 1)
-        const utilityPeriodEnd = new Date(utilityMonth.getFullYear(), utilityMonth.getMonth() + 1, 0)
-        
-        const utilityBillNumber = `BILL${contract.contractNumber.slice(-3)}UTL${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
-        const utilityBill = await prisma.bill.create({
-          data: {
-            billNumber: utilityBillNumber,
-            type: 'UTILITIES',
-            amount: 150 + Math.random() * 100, // 150-250元的水电费
-            receivedAmount: Math.random() > 0.4 ? 0 : 150 + Math.random() * 100,
-            pendingAmount: Math.random() > 0.4 ? 150 + Math.random() * 100 : 0,
-            dueDate: new Date(utilityPeriodEnd.getTime() + 10 * 24 * 60 * 60 * 1000), // 月末后10天到期
-            paidDate: Math.random() > 0.4 ? null : new Date(),
-            period: `${utilityPeriodStart.toISOString().slice(0, 10)} 至 ${utilityPeriodEnd.toISOString().slice(0, 10)}`,
-            status: Math.random() > 0.4 ? 'PENDING' : 'PAID',
-            contractId: contract.id,
-            paymentMethod: Math.random() > 0.4 ? null : '现金',
-            operator: Math.random() > 0.4 ? null : '物业管理员',
-            remarks: '包含电费、冷水费、热水费',
-          },
-        })
-        bills.push(utilityBill)
-      }
-      
-      // 为部分合同创建其他费用账单
-      if (Math.random() > 0.7) {
-        const otherBillNumber = `BILL${contract.contractNumber.slice(-3)}OTH${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
-        const otherBill = await prisma.bill.create({
-          data: {
-            billNumber: otherBillNumber,
-            type: 'OTHER',
-            amount: 50 + Math.random() * 50, // 50-100元的其他费用
-            receivedAmount: 0,
-            pendingAmount: 50 + Math.random() * 50,
-            dueDate: new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000), // 7天后到期
-            paidDate: null,
-            period: `${currentDate.toISOString().slice(0, 10)} 至 ${new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}`,
-            status: 'PENDING',
-            contractId: contract.id,
-            paymentMethod: null,
-            operator: null,
-            remarks: '维修费用/清洁费用',
-          },
-        })
-        bills.push(otherBill)
-      }
+    if (Math.random() > 0.5) {
+      const utilityMonth = new Date(currentDate)
+      utilityMonth.setMonth(utilityMonth.getMonth() - 1) // 上个月的水电费
+
+      const utilityPeriodStart = new Date(
+        utilityMonth.getFullYear(),
+        utilityMonth.getMonth(),
+        1
+      )
+      const utilityPeriodEnd = new Date(
+        utilityMonth.getFullYear(),
+        utilityMonth.getMonth() + 1,
+        0
+      )
+
+      const utilityBillNumber = `BILL${contract.contractNumber.slice(-3)}UTL${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
+      const utilityBill = await prisma.bill.create({
+        data: {
+          billNumber: utilityBillNumber,
+          type: 'UTILITIES',
+          amount: 150 + Math.random() * 100, // 150-250元的水电费
+          receivedAmount: Math.random() > 0.4 ? 0 : 150 + Math.random() * 100,
+          pendingAmount: Math.random() > 0.4 ? 150 + Math.random() * 100 : 0,
+          dueDate: new Date(
+            utilityPeriodEnd.getTime() + 10 * 24 * 60 * 60 * 1000
+          ), // 月末后10天到期
+          paidDate: Math.random() > 0.4 ? null : new Date(),
+          period: `${utilityPeriodStart.toISOString().slice(0, 10)} 至 ${utilityPeriodEnd.toISOString().slice(0, 10)}`,
+          status: Math.random() > 0.4 ? 'PENDING' : 'PAID',
+          contractId: contract.id,
+          paymentMethod: Math.random() > 0.4 ? null : '现金',
+          operator: Math.random() > 0.4 ? null : '物业管理员',
+          remarks: '包含电费、冷水费、热水费',
+        },
+      })
+      bills.push(utilityBill)
+    }
+
+    // 为部分合同创建其他费用账单
+    if (Math.random() > 0.7) {
+      const otherBillNumber = `BILL${contract.contractNumber.slice(-3)}OTH${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
+      const otherBill = await prisma.bill.create({
+        data: {
+          billNumber: otherBillNumber,
+          type: 'OTHER',
+          amount: 50 + Math.random() * 50, // 50-100元的其他费用
+          receivedAmount: 0,
+          pendingAmount: 50 + Math.random() * 50,
+          dueDate: new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000), // 7天后到期
+          paidDate: null,
+          period: `${currentDate.toISOString().slice(0, 10)} 至 ${new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}`,
+          status: 'PENDING',
+          contractId: contract.id,
+          paymentMethod: null,
+          operator: null,
+          remarks: '维修费用/清洁费用',
+        },
+      })
+      bills.push(otherBill)
+    }
   }
 
   console.log('账单创建完成:', bills.length)
@@ -555,12 +584,12 @@ async function main() {
   // 更新楼栋的房间总数
   await prisma.building.update({
     where: { id: buildingA.id },
-    data: { totalRooms: roomsA.length }
+    data: { totalRooms: roomsA.length },
   })
 
   await prisma.building.update({
     where: { id: buildingB.id },
-    data: { totalRooms: roomsB.length }
+    data: { totalRooms: roomsB.length },
   })
 
   console.log('种子数据创建完成!')

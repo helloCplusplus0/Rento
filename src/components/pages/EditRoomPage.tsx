@@ -2,16 +2,23 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageContainer } from '@/components/layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { Building } from '@prisma/client'
+import { ArrowLeft, Save } from 'lucide-react'
+
+import type { RoomWithBuildingForClient } from '@/types/database'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Save, ArrowLeft } from 'lucide-react'
-import type { RoomWithBuildingForClient } from '@/types/database'
-import type { Building } from '@prisma/client'
+import { PageContainer } from '@/components/layout'
 
 interface EditRoomPageProps {
   room: RoomWithBuildingForClient
@@ -42,29 +49,32 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
     roomType: room.roomType as 'SHARED' | 'WHOLE' | 'SINGLE',
     area: room.area || undefined,
     rent: room.rent,
-    remarks: ''
+    remarks: '',
   })
 
-  const handleInputChange = (field: keyof RoomFormData, value: string | number) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof RoomFormData,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.roomNumber.trim()) {
       alert('房间号不能为空')
       return
     }
-    
+
     if (formData.rent <= 0) {
       alert('租金必须大于0')
       return
     }
-    
+
     if (formData.floorNumber <= 0) {
       alert('楼层必须大于0')
       return
@@ -75,9 +85,9 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
       const response = await fetch(`/api/rooms/${room.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       })
-      
+
       if (response.ok) {
         // 显示成功提示
         alert('房间信息更新成功！')
@@ -97,16 +107,20 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
 
   const getRoomTypeLabel = (type: string) => {
     switch (type) {
-      case 'SHARED': return '合租'
-      case 'WHOLE': return '整租'
-      case 'SINGLE': return '单间'
-      default: return type
+      case 'SHARED':
+        return '合租'
+      case 'WHOLE':
+        return '整租'
+      case 'SINGLE':
+        return '单间'
+      default:
+        return type
     }
   }
 
   return (
     <PageContainer title={`编辑房间 ${room.roomNumber}`} showBackButton>
-      <div className="max-w-2xl mx-auto space-y-6 pb-6">
+      <div className="mx-auto max-w-2xl space-y-6 pb-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -121,13 +135,15 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                 <Label htmlFor="buildingId">所属楼栋</Label>
                 <Select
                   value={formData.buildingId}
-                  onValueChange={(value) => handleInputChange('buildingId', value)}
+                  onValueChange={(value) =>
+                    handleInputChange('buildingId', value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择楼栋" />
                   </SelectTrigger>
                   <SelectContent>
-                    {buildings.map(building => (
+                    {buildings.map((building) => (
                       <SelectItem key={building.id} value={building.id}>
                         {building.name} ({building.address || '无地址'})
                       </SelectItem>
@@ -142,7 +158,9 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                 <Input
                   id="roomNumber"
                   value={formData.roomNumber}
-                  onChange={(e) => handleInputChange('roomNumber', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange('roomNumber', e.target.value)
+                  }
                   placeholder="如：101, A201"
                   required
                 />
@@ -157,7 +175,12 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                   min="1"
                   max="50"
                   value={formData.floorNumber}
-                  onChange={(e) => handleInputChange('floorNumber', parseInt(e.target.value) || 1)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      'floorNumber',
+                      parseInt(e.target.value) || 1
+                    )
+                  }
                   required
                 />
               </div>
@@ -167,7 +190,9 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                 <Label htmlFor="roomType">房间类型</Label>
                 <Select
                   value={formData.roomType}
-                  onValueChange={(value) => handleInputChange('roomType', value)}
+                  onValueChange={(value) =>
+                    handleInputChange('roomType', value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -205,18 +230,16 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                   type="number"
                   min="1"
                   value={formData.rent}
-                  onChange={(e) => handleInputChange('rent', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleInputChange('rent', parseFloat(e.target.value) || 0)
+                  }
                   required
                 />
               </div>
 
               {/* 操作按钮 */}
               <div className="flex gap-3 pt-4">
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={isLoading} className="flex-1">
                   {isLoading ? '保存中...' : '保存修改'}
                 </Button>
                 <Button
@@ -225,7 +248,7 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                   onClick={() => router.back()}
                   disabled={isLoading}
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   取消
                 </Button>
               </div>
@@ -236,9 +259,9 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
         {/* 编辑说明 */}
         <Card>
           <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground space-y-2">
-              <h4 className="font-medium text-foreground">编辑说明：</h4>
-              <ul className="space-y-1 list-disc list-inside">
+            <div className="text-muted-foreground space-y-2 text-sm">
+              <h4 className="text-foreground font-medium">编辑说明：</h4>
+              <ul className="list-inside list-disc space-y-1">
                 <li>房间号在同一楼栋内必须唯一</li>
                 <li>租金修改会影响新签订的合同，现有合同不受影响</li>
                 <li>房间类型变更可能影响租赁策略</li>

@@ -1,8 +1,8 @@
-import { getEnhancedDashboardStats } from '@/lib/dashboard-queries'
-import { 
-  withApiErrorHandler, 
-  createSuccessResponse
+import {
+  createSuccessResponse,
+  withApiErrorHandler,
 } from '@/lib/api-error-handler'
+import { getEnhancedDashboardStats } from '@/lib/dashboard-queries'
 import { ErrorType } from '@/lib/error-logger'
 
 /**
@@ -15,5 +15,5 @@ async function handleGetDashboardStats() {
 
 export const GET = withApiErrorHandler(handleGetDashboardStats, {
   module: 'dashboard-api',
-  errorType: ErrorType.DATABASE_ERROR
+  errorType: ErrorType.DATABASE_ERROR,
 })
