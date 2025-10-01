@@ -4,6 +4,9 @@ import { PageContainer } from '@/components/layout'
 import { RoomListPage } from '@/components/pages/RoomListPage'
 import { roomQueries } from '@/lib/queries'
 
+// 禁用静态生成，强制使用服务端渲染
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '房源管理',
   description: '管理公寓房源信息，查看房间状态和租客信息'

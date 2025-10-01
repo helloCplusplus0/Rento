@@ -3,6 +3,9 @@ import { Suspense } from 'react'
 import { AddRoomPage } from '@/components/pages/AddRoomPage'
 import { buildingQueries } from '@/lib/queries'
 
+// 禁用静态生成，强制使用服务端渲染
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '添加房间',
   description: '新增房间信息，支持楼栋管理和批量添加'

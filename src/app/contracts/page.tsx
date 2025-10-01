@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import { ContractListPage } from '@/components/pages/ContractListPage'
 import { contractQueries } from '@/lib/queries'
 
+// 禁用静态生成，强制使用服务端渲染
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '合同管理',
   description: '管理租赁合同信息，跟踪合同状态和到期提醒'

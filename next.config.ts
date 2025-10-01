@@ -27,11 +27,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // 实验性功能
-  experimental: {
-    // 启用服务器组件日志
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
+  // 服务器外部包配置 (Next.js 15+ 新配置)
+  serverExternalPackages: ['@prisma/client'],
 }
 
 export default nextConfig

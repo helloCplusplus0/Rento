@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import { CreateBillPage } from '@/components/pages/CreateBillPage'
 import { contractQueries } from '@/lib/queries'
 
+// 禁用静态生成，强制使用服务端渲染
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '创建账单 - Rento',
   description: '手动创建账单，处理特殊费用和临时账单'

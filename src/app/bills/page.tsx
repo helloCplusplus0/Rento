@@ -5,6 +5,9 @@ import { billQueries } from '@/lib/queries'
 import { Button } from '@/components/ui/button'
 import { BarChart3 } from 'lucide-react'
 
+// 禁用静态生成，强制使用服务端渲染
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '账单管理',
   description: '管理和查看所有账单信息'
