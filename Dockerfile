@@ -53,10 +53,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # 复制脚本文件
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-RUN chmod +x ./scripts/*.sh
+RUN chmod +x ./scripts/*.sh && chmod +x ./node_modules/.bin/prisma
 
 # 创建必要目录并设置权限
 RUN mkdir -p /app/logs /app/backups && \

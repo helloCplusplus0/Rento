@@ -9,13 +9,13 @@ version: '3.8'
 services:
   app:
     # 使用预构建的镜像，支持多架构 (amd64/arm64)
-    image: ghcr.io/hellocplusplus0/rento:latest
+    image: ghcr.io/hellocplusplus0/rento:main
     container_name: ${CONTAINER_PREFIX:-rento}-app
     ports:
       - '${APP_PORT:-3001}:3001'
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-rento}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rento_production}
+      - DATABASE_URL=${DATABASE_URL}
       - BACKUP_DIR=/app/backups
       - LOG_DIR=/app/logs
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3001}
