@@ -23,6 +23,50 @@ export function withApiErrorHandler(
     const logger = ErrorLogger.getInstance()
     const startTime = Date.now()
 
+    // CORS 配置
+    const corsEnabled = process.env.CORS_ENABLED === 'true'
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const origin = request.headers.get('origin') || undefined
+
+    // 预检请求处理（仅在启用 CORS 时）
+    if (corsEnabled && request.method === 'OPTIONS') {
+      const res = new NextResponse(null, { status: 204 })
+      // 如果配置了允许的来源且当前来源匹配，则返回相应头
+      if (origin && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+        res.headers.set('Access-Control-Allow-Origin', origin)
+        res.headers.set('Access-Control-Allow-Credentials', 'true')
+        res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+        res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.headers.set('Vary', 'Origin')
+      }
+      return res
+    }
+
+    // 请求体大小限制（POST/PUT/PATCH）
+    const maxRequestSize = parseInt(process.env.MAX_REQUEST_SIZE || '1048576', 10) // 默认1MB
+    if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
+      const contentLength = request.headers.get('content-length')
+      if (contentLength && Number(contentLength) > maxRequestSize) {
+        const res = NextResponse.json(
+          {
+            success: false,
+            error: '请求体过大',
+            errorType: 'PAYLOAD_TOO_LARGE',
+          },
+          { status: 413 }
+        )
+        if (corsEnabled && origin && allowedOrigins.includes(origin)) {
+          res.headers.set('Access-Control-Allow-Origin', origin)
+          res.headers.set('Access-Control-Allow-Credentials', 'true')
+          res.headers.set('Vary', 'Origin')
+        }
+        return res
+      }
+    }
+
     try {
       // 记录请求开始
       logger.logInfo(`API请求开始: ${request.method} ${request.url}`, {
@@ -31,7 +75,17 @@ export function withApiErrorHandler(
         url: request.url,
       })
 
-      const response = await handler(request, context)
+      // 执行处理器并添加超时控制
+      const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT || '15000', 10) // 默认15秒
+      const handlerPromise = handler(request, context)
+      const response = (timeoutMs && timeoutMs > 0)
+        ? await Promise.race<NextResponse>([
+            handlerPromise,
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('请求超时')), timeoutMs)
+            ) as Promise<NextResponse>,
+          ])
+        : await handlerPromise
 
       // 记录成功响应
       const duration = Date.now() - startTime
@@ -42,6 +96,13 @@ export function withApiErrorHandler(
         status: response.status,
         duration,
       })
+
+      // 成功响应添加 CORS 头（在启用 CORS 且来源被允许时）
+      if (corsEnabled && origin && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+        response.headers.set('Access-Control-Allow-Origin', origin)
+        response.headers.set('Access-Control-Allow-Credentials', 'true')
+        response.headers.set('Vary', 'Origin')
+      }
 
       return response
     } catch (error) {
@@ -87,7 +148,14 @@ export function withApiErrorHandler(
       }
 
       // 返回标准化错误响应
-      return createErrorResponse(error, request.method, request.url)
+      const res = createErrorResponse(error, request.method, request.url)
+      // 错误响应也添加 CORS 头（在启用 CORS 且来源被允许时）
+      if (corsEnabled && origin && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+        res.headers.set('Access-Control-Allow-Origin', origin)
+        res.headers.set('Access-Control-Allow-Credentials', 'true')
+        res.headers.set('Vary', 'Origin')
+      }
+      return res
     }
   }
 }

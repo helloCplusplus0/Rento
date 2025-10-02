@@ -75,6 +75,28 @@ podman exec -it rento-app /app/scripts/migrate-and-seed.sh
 
 > 📖 **详细部署指南**: 查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取完整的部署文档
 
+### 云部署（一键脚本）
+在云服务器上，使用内置脚本可端到端完成部署与验证：
+```bash
+# 赋予脚本执行权限
+chmod +x scripts/cloud-deploy.sh
+
+# 传入你的域名执行（示例：example.com）
+./scripts/cloud-deploy.sh example.com
+
+# 验证健康状态
+curl https://example.com:3001/api/health
+```
+脚本会：
+- 自动检测 Podman 或 Docker 并选择可用的容器运行时
+- 更新域名相关配置（`NEXTAUTH_URL`、`ALLOWED_ORIGINS`）为 `https://<domain>`
+- 拉取镜像、启动容器、执行数据库迁移并做健康检查
+
+#### 端口说明
+- `APP_PORT`：宿主机对外暴露端口（默认 `3001`）
+- `APP_INTERNAL_PORT`：容器内应用监听端口（默认 `3001`，通过 `PORT` 传入）
+两者保持一致，可简化健康检查与代理配置。
+
 ### 本地开发（可选）
 
 如需进行代码开发，可以使用本地开发模式：

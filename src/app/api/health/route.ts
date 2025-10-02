@@ -168,27 +168,35 @@ async function checkMemory(): Promise<HealthCheck> {
     const memoryUsage = process.memoryUsage()
     const totalMemory = memoryUsage.heapTotal
     const usedMemory = memoryUsage.heapUsed
+
+    const usedMB = Math.round(usedMemory / 1024 / 1024)
+    const totalMB = Math.round(totalMemory / 1024 / 1024)
     const memoryPercentage = (usedMemory / totalMemory) * 100
 
-    // 内存使用率阈值检查
-    if (memoryPercentage > 90) {
+    // 采用绝对阈值（与系统内存无关）
+    const warnMB = Number(process.env.MEM_WARN_MB || 512)
+    const failMB = Number(process.env.MEM_FAIL_MB || 1024)
+
+    if (usedMB > failMB) {
       return {
         status: 'fail',
-        message: '内存使用率过高',
+        message: '内存使用过高',
         details: {
-          used: `${Math.round(usedMemory / 1024 / 1024)}MB`,
-          total: `${Math.round(totalMemory / 1024 / 1024)}MB`,
+          used: `${usedMB}MB`,
+          total: `${totalMB}MB`,
           percentage: `${memoryPercentage.toFixed(1)}%`,
+          thresholds: { warnMB, failMB },
         },
       }
-    } else if (memoryPercentage > 80) {
+    } else if (usedMB > warnMB) {
       return {
         status: 'warn',
-        message: '内存使用率较高',
+        message: '内存使用偏高',
         details: {
-          used: `${Math.round(usedMemory / 1024 / 1024)}MB`,
-          total: `${Math.round(totalMemory / 1024 / 1024)}MB`,
+          used: `${usedMB}MB`,
+          total: `${totalMB}MB`,
           percentage: `${memoryPercentage.toFixed(1)}%`,
+          thresholds: { warnMB, failMB },
         },
       }
     }
@@ -197,9 +205,10 @@ async function checkMemory(): Promise<HealthCheck> {
       status: 'pass',
       message: '内存使用正常',
       details: {
-        used: `${Math.round(usedMemory / 1024 / 1024)}MB`,
-        total: `${Math.round(totalMemory / 1024 / 1024)}MB`,
+        used: `${usedMB}MB`,
+        total: `${totalMB}MB`,
         percentage: `${memoryPercentage.toFixed(1)}%`,
+        thresholds: { warnMB, failMB },
       },
     }
   } catch (error) {

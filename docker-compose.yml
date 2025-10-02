@@ -15,6 +15,7 @@ services:
       - '${APP_PORT:-3001}:3001'
     environment:
       - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${APP_INTERNAL_PORT:-3001}
       - DATABASE_URL=${DATABASE_URL}
       - BACKUP_DIR=/app/backups
       - LOG_DIR=/app/logs
@@ -24,6 +25,10 @@ services:
       - ENABLE_MONITORING=${ENABLE_MONITORING:-true}
       - PERFORMANCE_MONITORING=${PERFORMANCE_MONITORING:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001}
+      - CORS_ENABLED=${CORS_ENABLED:-true}
+      - MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-10mb}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
     volumes:
       - ./backups:/app/backups
       - ./logs:/app/logs
@@ -36,7 +41,11 @@ services:
     networks:
       - rento-network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3001/api/health']
+      test:
+        [
+          'CMD-SHELL',
+          "node -e \"require('http').get('http://localhost:3001/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\"",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

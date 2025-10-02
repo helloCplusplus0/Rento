@@ -42,6 +42,23 @@ podman exec -it rento-app /app/scripts/migrate-and-seed.sh
 curl http://localhost:3001/api/health
 ```
 
+### 云服务器一键部署（推荐）
+在云服务器上，可使用内置脚本完成端到端部署：
+```bash
+# 1) 赋予脚本执行权限
+chmod +x scripts/cloud-deploy.sh
+
+# 2) 传入你的域名并执行（例如 example.com）
+./scripts/cloud-deploy.sh example.com
+
+# 3) 验证
+curl https://example.com:3001/api/health
+```
+说明：
+- 脚本会自动检测 Podman 或 Docker，并选择可用的容器运行时。
+- 若传入非 localhost 的域名，脚本会将 `NEXTAUTH_URL` 和 `ALLOWED_ORIGINS` 自动更新为 `https://<domain>`。
+- 数据库迁移与健康检查会自动执行与验证。
+
 ### 访问应用
 - **应用地址**: http://localhost:3001
 - **健康检查**: http://localhost:3001/api/health
@@ -69,6 +86,15 @@ ALLOWED_ORIGINS=https://your-domain.com
 # NEXTAUTH_SECRET=your-custom-secret
 # POSTGRES_PASSWORD=your-custom-password
 ```
+
+#### 端口与内部监听
+```bash
+# 容器内部监听端口（compose 已传递为 PORT）
+APP_INTERNAL_PORT=3001
+# 宿主机暴露端口（compose 映射为 APP_PORT:3001）
+APP_PORT=3001
+```
+保持 `APP_INTERNAL_PORT` 与健康检查端点一致（`/api/health` 默认 3001）。
 
 ## 📊 服务管理
 
@@ -110,6 +136,15 @@ sudo lsof -i :3001
 # 修改端口：编辑 docker-compose.yml 中的端口映射
 ```
 
+**域名或跨域问题**
+```bash
+# 确认环境变量已设置：
+grep -E "^(NEXTAUTH_URL|ALLOWED_ORIGINS|CORS_ENABLED)=" .env
+
+# 使用脚本自动修复域名相关配置
+./scripts/cloud-deploy.sh your-domain.com
+```
+
 **容器启动失败**
 ```bash
 # 查看日志
@@ -147,6 +182,26 @@ curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
 docker-compose up -d
 docker exec -it rento-app /app/scripts/migrate-and-seed.sh
 ```
+
+## 🌐 Nginx 反向代理（可选，生产）
+使用 Compose Profile 启用 Nginx 并配置 SSL：
+```bash
+# 启用 Nginx profile
+podman-compose --profile nginx up -d
+# 或
+docker-compose --profile nginx up -d
+
+# 将证书放置到 ./nginx/ssl 目录
+# 并根据需要调整 ./nginx/nginx.conf
+```
+环境变量：
+- `HTTP_PORT`（默认 80）
+- `HTTPS_PORT`（默认 443）
+
+## 🔐 云服务器安全与防火墙建议
+- 仅开放必要端口（`80/443` 或应用端口 `3001`）
+- 使用强密码与随机密钥（`POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`）
+- 建议启用 HTTPS 与反向代理
 
 ## 📞 获取帮助
 

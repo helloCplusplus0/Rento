@@ -42,6 +42,28 @@ podman-compose up -d
 # 或 docker-compose up -d
 ```
 
+### 云服务器一键部署（推荐）
+使用内置脚本在云服务器端到端完成部署：
+```bash
+chmod +x scripts/cloud-deploy.sh
+./scripts/cloud-deploy.sh your-domain.com
+```
+脚本会自动：
+- 检测 Podman/Docker 并选择可用运行时
+- 更新域名相关配置（`NEXTAUTH_URL`, `ALLOWED_ORIGINS`）
+- 拉取镜像、启动容器、执行数据库迁移
+- 轮询健康端点，验证部署结果
+
+### 端口与内部监听说明
+- `APP_PORT`：宿主机对外暴露端口（默认 `3001`）
+- `APP_INTERNAL_PORT`：容器内应用监听端口（默认 `3001`，通过 `PORT` 传入）
+两者保持一致，可简化健康检查与反向代理配置。
+
+### 跨域（CORS）与域名配置
+- 生产环境请将 `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 设置为实际域名（含协议）
+- 启用 `CORS_ENABLED=true` 可在 API 侧开启跨域校验
+- 如遇到跨域或域名访问问题，可执行 `./scripts/cloud-deploy.sh your-domain.com` 自动修正相关配置
+
 ## 🔧 核心配置项
 
 ### 必须配置的项目
