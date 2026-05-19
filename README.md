@@ -1,251 +1,74 @@
-# Rento - 房屋租赁管理系统
+# Rento
 
-专业的房屋租赁管理系统，提供房源管理、租客管理、合同管理、账单管理等功能。
+Rento 是一个面向房东/运营者的私有化租赁管理后台，覆盖房源、租客、合同、账单、仪表与抄表管理。
 
-## 🎯 统一部署理念
+## 当前状态
+- 当前阶段：`phase02-auth-gate-*`
+- 当前目标：先补齐最小认证门禁与访问边界，再进入一致性和性能加固。
+- 当前定位：自用优先、私有部署优先、移动端友好、UI 视觉风格冻结。
+- 当前登录方式：最小管理员门禁，默认通过 `/login` 进入后台。
 
-**核心原则**: 本地部署和生产部署使用完全相同的流程和配置，确保部署一致性。
+## 核心能力
+- 房源管理：楼栋、房间、状态、批量操作
+- 租客管理：资料、合同关联、详情展示
+- 合同管理：创建、续租、退租、状态流转
+- 账单管理：租金、水电费、账单明细、支付状态
+- 仪表管理：一个房间支持多个仪表，抄表与账单联动
+- 运维辅助：健康检查、数据一致性检查、部署脚本
 
-- **本地部署**: 在开发环境中运行容器，验证所有部署环节
-- **生产部署**: 在云服务器中运行相同的容器配置  
-- **唯一差异**: 运行环境的物理位置，配置和流程完全一致
+## 关键约束
+- 数据库主线固定为 PostgreSQL，不再恢复 SQLite 开发/同步双轨。
+- 在鉴权落地前，禁止将系统作为公网匿名可访问后台部署。
+- 当前 UI 设计为已确认资产，后续只做不破坏视觉结果的优化。
+- 仪表历史数据必须长期保留，不能因解绑或更换仪表而丢失。
 
-## 🚀 快速开始
+## 技术栈
+- 前端：Next.js 15、React 19、TypeScript、Tailwind CSS 4
+- 后端：Next.js App Router Route Handlers
+- 数据层：Prisma 6、PostgreSQL
+- 基础设施：Docker/Podman、Redis、Nginx（可选）
 
-### ⚡ 5分钟部署
+## 快速开始
 ```bash
-# 1. 获取代码
-git clone https://github.com/helloCplusplus0/Rento.git && cd Rento
-
-# 2. 配置环境（已包含安全默认值）
 cp .env.example .env
-
-# 3. 启动服务
 podman-compose up -d
-
-# 4. 等待启动完成
-sleep 60
-
-# 5. 初始化数据库
 podman exec -it rento-app /app/scripts/migrate-and-seed.sh
-
-# 6. 访问应用
-# 🌐 http://localhost:3001
-```
-
-> 📖 **详细指南**: 查看 [QUICK_START.md](./QUICK_START.md) 获取完整的快速开始指南
-
-### 统一容器部署（推荐）
-
-无论本地还是生产环境，都使用相同的部署流程：
-
-#### 1. 获取代码
-```bash
-git clone https://github.com/helloCplusplus0/Rento.git
-cd Rento
-```
-
-#### 2. 配置环境
-```bash
-# 复制环境变量模板
-cp .env.example .env
-
-# 根据环境修改配置
-nano .env
-```
-
-#### 3. 启动服务
-```bash
-# 启动所有服务（推荐使用Podman）
-podman-compose up -d
-
-# 或使用Docker（备选）
-# docker-compose up -d
-
-# 执行数据库迁移
-podman exec -it rento-app /app/scripts/migrate-and-seed.sh
-
-# 验证部署
-./scripts/health-check.sh
-```
-
-#### 4. 访问应用
-- **本地环境**: http://localhost:3001
-- **生产环境**: https://your-domain.com
-
-> 📖 **详细部署指南**: 查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取完整的部署文档
-
-### 云部署（一键脚本）
-在云服务器上，使用内置脚本可端到端完成部署与验证：
-```bash
-# 赋予脚本执行权限
-chmod +x scripts/cloud-deploy.sh
-
-# 传入你的域名执行（示例：example.com）
-./scripts/cloud-deploy.sh example.com
-
-# 验证健康状态
-curl https://example.com:3001/api/health
-```
-脚本会：
-- 自动检测 Podman 或 Docker 并选择可用的容器运行时
-- 更新域名相关配置（`NEXTAUTH_URL`、`ALLOWED_ORIGINS`）为 `https://<domain>`
-- 拉取镜像、启动容器、执行数据库迁移并做健康检查
-
-#### 端口说明
-- `APP_PORT`：宿主机对外暴露端口（默认 `3001`）
-- `APP_INTERNAL_PORT`：容器内应用监听端口（默认 `3001`，通过 `PORT` 传入）
-两者保持一致，可简化健康检查与代理配置。
-
-### 本地开发（可选）
-
-如需进行代码开发，可以使用本地开发模式：
-
-```bash
-# 安装依赖
-npm install
-
-# 配置数据库
-npx prisma generate
-npx prisma migrate dev
-
-# 启动开发服务器
-npm run dev
-```
-
-#### 健康检查
-
-```bash
-# 使用内置健康检查脚本
-./scripts/health-check.sh
-
-# 或直接访问健康检查端点
 curl http://localhost:3001/api/health
 ```
 
-#### 服务管理
+如使用 Docker，请将 `podman-compose` / `podman` 替换为 `docker-compose` / `docker`。
+- 首次启用门禁前，请在 `.env` 中补齐：
+  - `AUTH_SESSION_SECRET`
+  - `ADMIN_USERNAME`
+  - `ADMIN_PASSWORD_HASH`
+- 配置完成后，通过 `http://localhost:3001/login` 使用管理员账号登录。
 
-```bash
-# 查看服务状态（推荐使用Podman）
-podman-compose ps
+## 运行模式
+- 开发热加载模式：使用 `npm run dev` 启动本地 `Next.js dev server`，适合日常开发和浏览器即时反馈。
+- 容器部署验证模式：使用 `docker-compose.yml` 启动容器栈，适合验证部署链路、健康检查和环境配置。
+- 当前默认开发方式应优先使用开发热加载模式；容器模式不替代本地热加载。
 
-# 查看日志
-podman-compose logs -f
+## 文档入口
+- [AGENTS.md](./AGENTS.md)：顶层执行规范与阅读顺序
+- [project_rules.md](./project_rules.md)：刚性规则、门禁与目录治理
+- [architecture_map.md](./architecture_map.md)：仓库结构地图与模块说明
+- [plan.md](./plan.md)：当前阶段计划与后续顺序
+- [QUICK_START.md](./QUICK_START.md)：最短启动路径
+- [DEPLOYMENT.md](./DEPLOYMENT.md)：部署与发布说明
+- [ENVIRONMENT_GUIDE.md](./ENVIRONMENT_GUIDE.md)：环境变量与配置说明
+- [docs/archive/README.md](./docs/archive/README.md)：历史任务文档归档说明
 
-# 停止服务
-podman-compose down
-
-# 重启服务
-podman-compose restart
-
-# 如果使用Docker，将podman-compose替换为docker-compose
+## 目录结构
+```text
+src/                 应用源码
+prisma/              Prisma schema 与迁移
+scripts/             部署、初始化与辅助脚本
+docs/                当前分析文档与归档文档
+public/              静态资源
+nginx/               反向代理配置
 ```
 
-## 📁 项目结构
-
-```
-├── src/                     # 应用源代码
-│   ├── app/                 # Next.js App Router
-│   ├── components/          # React 组件
-│   ├── lib/                 # 工具库和配置
-│   └── types/               # TypeScript 类型定义
-├── prisma/                  # 数据库模式和迁移
-├── scripts/                 # 部署和维护脚本
-├── .github/workflows/       # GitHub Actions CI/CD
-├── docker-compose.yml       # 容器编排配置
-├── DEPLOYMENT.md           # 详细部署指南
-└── ENVIRONMENT_GUIDE.md    # 环境配置指南
-```
-
-## 🛠️ 技术栈
-
-- **前端**: Next.js 15, React 19, TypeScript, Tailwind CSS
-- **后端**: Next.js API Routes, Prisma ORM
-- **数据库**: PostgreSQL (生产), SQLite (开发)
-- **缓存**: Redis
-- **容器**: Podman/Docker
-- **CI/CD**: GitHub Actions
-
-## 📊 功能特性
-
-- ✅ **房源管理**: 楼栋、房间、状态管理
-- ✅ **租客管理**: 信息管理、合同关联
-- ✅ **合同管理**: 创建、续约、退租
-- ✅ **账单管理**: 租金、水电费、支付状态
-- ✅ **水电表管理**: 抄表、计费
-- ✅ **数据统计**: 收支统计、趋势分析
-- ✅ **移动端适配**: 响应式设计
-- ✅ **PWA支持**: 离线访问、安装到桌面
-
-## 🔧 开发指南
-
-### 环境要求
-
-- Node.js 20+
-- PostgreSQL 16+ (生产环境)
-- Docker/Podman (容器部署)
-
-### 开发命令
-
-```bash
-# 开发服务器
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 代码检查
-npm run lint
-npm run type-check
-
-# 数据库操作
-npm run db:generate    # 生成 Prisma 客户端
-npm run db:migrate     # 运行数据库迁移
-npm run db:seed        # 运行种子数据
-npm run db:studio      # 打开 Prisma Studio
-```
-
-### 容器镜像
-
-项目使用 GitHub Actions 自动构建 Docker 镜像：
-
-- **镜像仓库**: `ghcr.io/hellocplusplus0/rento`
-- **标签**: `latest` (主分支), `v*` (版本标签)
-- **架构**: linux/amd64, linux/arm64
-
-## 📝 部署注意事项
-
-### 安全配置
-- ✅ 修改默认密码 (`POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`)
-- ✅ 使用 HTTPS (生产环境)
-- ✅ 配置防火墙规则
-
-### 性能优化
-- ✅ PostgreSQL 配置已优化
-- ✅ Redis 缓存配置
-- ✅ 健康检查和监控
-
-### 数据备份
-- ✅ 定期备份 PostgreSQL 数据
-- ✅ 备份目录: `./backups`
-- ✅ 日志目录: `./logs`
-
-## 📖 相关文档
-
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)**: 完整的部署指南
-- **[ENVIRONMENT_GUIDE.md](./ENVIRONMENT_GUIDE.md)**: 环境配置指南
-- **[GitHub Actions](./.github/workflows/)**: CI/CD 配置
-
-## 📄 许可证
-
-MIT License
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
----
-
-**版本**: v0.1.0  
-**部署方式**: 统一容器部署  
-**最后更新**: 2024年1月
+## 当前已知问题
+- 鉴权尚未落地，因此公网部署仍不满足安全门禁。
+- SQLite 时代的迁移锁与部分历史脚本仍有遗留，需要单独任务收口。
+- 若干性能/演示/验证页面仍与正式页面并存，后续需要分类治理。

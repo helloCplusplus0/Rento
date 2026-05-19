@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
+import { requireAdminSession } from './auth/guard'
 import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { fallbackManager } from './fallback-manager'
 
@@ -17,6 +18,7 @@ export function withApiErrorHandler(
     module: string
     errorType?: ErrorType
     enableFallback?: boolean
+    requireAuth?: boolean
   }
 ) {
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
@@ -74,6 +76,10 @@ export function withApiErrorHandler(
         method: request.method,
         url: request.url,
       })
+
+      if (options.requireAuth) {
+        await requireAdminSession(request)
+      }
 
       // 执行处理器并添加超时控制
       const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT || '15000', 10) // 默认15秒
@@ -179,6 +185,10 @@ function createErrorResponse(
     status = 404
     userMessage = '请求的资源不存在'
     errorType = 'NOT_FOUND'
+  } else if (errorMessage.includes('forbidden')) {
+    status = 403
+    userMessage = '无权访问该资源'
+    errorType = 'FORBIDDEN'
   } else if (
     errorMessage.includes('validation') ||
     errorMessage.includes('验证')
@@ -188,10 +198,10 @@ function createErrorResponse(
     errorType = 'VALIDATION_ERROR'
   } else if (
     errorMessage.includes('unauthorized') ||
-    errorMessage.includes('权限')
+    errorMessage.includes('请先登录')
   ) {
     status = 401
-    userMessage = '权限不足'
+    userMessage = '请先登录'
     errorType = 'UNAUTHORIZED'
   } else if (
     errorMessage.includes('timeout') ||

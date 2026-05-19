@@ -41,6 +41,7 @@ async function handleGetVacantRooms(_request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetVacantRooms, {
+  requireAuth: true,
   module: 'vacant-rooms-api',
   errorType: ErrorType.DATABASE_ERROR,
 })

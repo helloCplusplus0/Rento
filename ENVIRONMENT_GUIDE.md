@@ -1,148 +1,81 @@
-# Rento 环境配置简明指南
+# ENVIRONMENT_GUIDE.md
 
-快速了解 Rento 项目的环境配置，3分钟上手。
+## 1. 配置文件说明
+- `.env`：本地私有环境配置，真实部署时使用，不应作为共享真相源。
+- `.env.example`：环境模板，提供字段说明和安全占位值。
+- `docker-compose.yml`：本地/测试/生产统一容器编排入口。
 
-## 📁 配置文件说明
+## 2. 当前配置原则
+- PostgreSQL-only：当前主线不再支持 SQLite 开发配置。
+- `.env` 私有：局域网地址、密码、密钥可保留在本地 `.env`，不应同步到共享文档。
+- 域名优先：生产环境使用正式域名，局域网地址仅用于本地或内网调试。
 
-| 文件名 | 用途 | 说明 |
-|--------|------|------|
-| `.env` | 当前环境配置 | 实际使用的环境变量（不提交到版本控制） |
-| `.env.example` | 配置模板 | 包含所有配置项和安全默认值 |
-| `docker-compose.yml` | 容器编排 | 适用于所有环境的统一配置 |
-
-## 🚀 快速配置
-
-### 1. 复制配置模板
+## 3. 最小配置步骤
 ```bash
 cp .env.example .env
 ```
 
-### 2. 根据需要调整配置
-
-**开发环境**（本地开发）：
+至少确认以下字段：
 ```bash
-# 编辑 .env 文件
-NODE_ENV=development
-DATABASE_URL="file:./prisma/dev.db"
-ENABLE_MONITORING=false
-LOG_LEVEL=debug
-```
-
-**生产环境**（服务器部署）：
-```bash
-# 编辑 .env 文件
-NEXTAUTH_URL=https://your-domain.com
-ALLOWED_ORIGINS=https://your-domain.com
-# 其他配置保持默认即可
-```
-
-### 3. 启动服务
-```bash
-podman-compose up -d
-# 或 docker-compose up -d
-```
-
-### 云服务器一键部署（推荐）
-使用内置脚本在云服务器端到端完成部署：
-```bash
-chmod +x scripts/cloud-deploy.sh
-./scripts/cloud-deploy.sh your-domain.com
-```
-脚本会自动：
-- 检测 Podman/Docker 并选择可用运行时
-- 更新域名相关配置（`NEXTAUTH_URL`, `ALLOWED_ORIGINS`）
-- 拉取镜像、启动容器、执行数据库迁移
-- 轮询健康端点，验证部署结果
-
-### 端口与内部监听说明
-- `APP_PORT`：宿主机对外暴露端口（默认 `3001`）
-- `APP_INTERNAL_PORT`：容器内应用监听端口（默认 `3001`，通过 `PORT` 传入）
-两者保持一致，可简化健康检查与反向代理配置。
-
-### 跨域（CORS）与域名配置
-- 生产环境请将 `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 设置为实际域名（含协议）
-- 启用 `CORS_ENABLED=true` 可在 API 侧开启跨域校验
-- 如遇到跨域或域名访问问题，可执行 `./scripts/cloud-deploy.sh your-domain.com` 自动修正相关配置
-
-## 🔧 核心配置项
-
-### 必须配置的项目
-
-| 配置项 | 说明 | 示例 |
-|--------|------|------|
-| `NEXTAUTH_SECRET` | 会话加密密钥 | 已提供安全默认值 |
-| `POSTGRES_PASSWORD` | 数据库密码 | 已提供安全默认值 |
-| `NEXTAUTH_URL` | 应用访问地址 | 生产环境需修改为实际域名 |
-
-### 可选配置项
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `NODE_ENV` | 运行环境 | production |
-| `LOG_LEVEL` | 日志级别 | info |
-| `ENABLE_MONITORING` | 启用监控 | true |
-
-## 🔒 安全说明
-
-### 默认安全配置
-- ✅ **安全密钥**: 已预生成强密码和密钥
-- ✅ **数据库密码**: 使用随机生成的安全密码
-- ✅ **监控启用**: 默认启用性能监控
-- ✅ **日志配置**: 合理的日志级别设置
-
-### 生产环境建议
-- 🔐 修改 `NEXTAUTH_URL` 为实际域名
-- 🔐 修改 `ALLOWED_ORIGINS` 为实际域名
-- 🔐 可选：自定义密码（已提供安全默认值）
-
-## 🛠️ 环境切换
-
-### 开发 → 生产
-```bash
-# 修改 .env 文件中的域名配置
-NEXTAUTH_URL=https://your-domain.com
-ALLOWED_ORIGINS=https://your-domain.com
-```
-
-### 生产 → 开发
-```bash
-# 修改 .env 文件
-NODE_ENV=development
-DATABASE_URL="file:./prisma/dev.db"
 NEXTAUTH_URL=http://localhost:3001
+NEXTAUTH_SECRET=replace-me
+AUTH_SESSION_SECRET=replace-me
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=scrypt:YOUR_SALT:YOUR_HASH
+DATABASE_URL=postgresql://rento:YOUR_PASSWORD@postgres:5432/rento_production
+POSTGRES_PASSWORD=YOUR_PASSWORD
 ALLOWED_ORIGINS=http://localhost:3001
 ```
 
-## 📝 常见问题
+## 4. 关键字段
+### 应用相关
+- `NODE_ENV`：运行环境
+- `APP_INTERNAL_PORT`：容器内应用监听端口
+- `NEXTAUTH_URL`：应用对外访问地址
+- `NEXTAUTH_SECRET`：历史兼容密钥，当前仍可作为 session secret 回退值
+- `AUTH_SESSION_SECRET`：当前最小门禁使用的 session 签名密钥
 
-**Q: 需要修改哪些配置？**
-A: 对于快速测试，只需复制 `.env.example` 为 `.env` 即可。生产环境建议修改域名相关配置。
+### 认证相关
+- `ADMIN_USERNAME`：管理员登录账号
+- `ADMIN_PASSWORD_HASH`：管理员密码哈希，格式固定为 `scrypt:<salt>:<hash>`
+- 当前不再依赖开放注册；必须显式配置管理员账号与密码哈希
 
-**Q: 密码安全吗？**
-A: 是的，配置模板已包含随机生成的安全密码和密钥，可直接使用。
+### 数据库相关
+- `DATABASE_URL`：Prisma 使用的 PostgreSQL 连接串
+- `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD`：容器数据库初始化配置
 
-**Q: 如何生成新密钥？**
-A: 使用 `openssl rand -base64 32` 生成新的 NextAuth 密钥。
+### 安全与网络
+- `ALLOWED_ORIGINS`：允许的来源地址
+- `CORS_ENABLED`：是否开启 CORS 校验
+- `MAX_REQUEST_SIZE`：请求体限制
+- `REQUEST_TIMEOUT`：请求超时
 
-**Q: 开发环境用什么数据库？**
-A: 推荐使用 SQLite（`DATABASE_URL="file:./prisma/dev.db"`），无需额外配置。
+## 5. 本地开发建议
+- 可在 `.env` 中使用真实局域网地址进行本地联调。
+- 若是本机访问，默认可用：`http://localhost:3001`。
+- 若使用局域网地址，请同步更新：
+  - `NEXTAUTH_URL`
+  - `ALLOWED_ORIGINS`
+- 若要启用认证登录，请至少补齐：
+  - `AUTH_SESSION_SECRET`
+  - `ADMIN_USERNAME`
+  - `ADMIN_PASSWORD_HASH`
 
-## 🔄 配置验证
+## 6. 生产环境建议
+- 使用正式域名和 HTTPS
+- 使用强密码与随机密钥
+- 将反向代理证书放到受控路径，不提交私钥
+- 不要把生产 `.env` 放入版本控制
+- 不要在生产环境使用明文密码；仅使用 `ADMIN_PASSWORD_HASH`
 
-启动后验证配置是否正确：
+## 6.1 生成管理员密码哈希
 ```bash
-# 检查服务状态
-podman-compose ps
-
-# 检查健康状态
-curl http://localhost:3001/api/health
-
-# 查看日志
-podman-compose logs -f
+node -e "const { randomBytes, scryptSync } = require('node:crypto'); const password = process.argv[1]; const salt = randomBytes(16).toString('hex'); const hash = scryptSync(password, salt, 64).toString('hex'); console.log(`scrypt:${salt}:${hash}`)" "your-password"
 ```
 
----
+- 将输出值写入 `ADMIN_PASSWORD_HASH`
+- 不要把明文密码回写到共享文档
 
-**配置原则**: 安全默认值 + 最小化配置  
-**推荐方式**: 使用默认配置 + 按需调整  
-**支持环境**: 开发/测试/生产统一配置
+## 7. 已知历史遗留
+- 早期项目曾使用 SQLite，本仓库仍残留少量历史注释和兼容脚本。
+- 当前执行与发布口径以 PostgreSQL 为准；遇到冲突时，以 `prisma/schema.prisma`、`.env.example` 和顶层治理文档为准。

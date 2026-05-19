@@ -78,6 +78,7 @@ async function handleGetContractAlerts(_request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetContractAlerts, {
+  requireAuth: true,
   module: 'contract-alerts-api',
   errorType: ErrorType.DATABASE_ERROR,
 })

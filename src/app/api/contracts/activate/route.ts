@@ -46,6 +46,7 @@ async function handleActivateContracts(
 }
 
 export const POST = withApiErrorHandler(handleActivateContracts, {
+  requireAuth: true,
   module: 'contracts-activate-api',
   errorType: ErrorType.SYSTEM_ERROR,
 })

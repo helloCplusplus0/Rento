@@ -145,6 +145,7 @@ async function handleGetMeterReadings(request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetMeterReadings, {
+  requireAuth: true,
   module: 'meter-readings-api',
   errorType: ErrorType.DATABASE_ERROR,
 })
@@ -329,6 +330,7 @@ async function handlePostMeterReadings(request: NextRequest) {
 }
 
 export const POST = withApiErrorHandler(handlePostMeterReadings, {
+  requireAuth: true,
   module: 'meter-readings-api',
   errorType: ErrorType.BILL_GENERATION,
   enableFallback: true,

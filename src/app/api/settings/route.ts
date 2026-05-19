@@ -28,6 +28,7 @@ async function handleGetSettings() {
 }
 
 export const GET = withApiErrorHandler(handleGetSettings, {
+  requireAuth: true,
   module: 'settings-api',
   errorType: ErrorType.SYSTEM_ERROR,
 })
@@ -57,6 +58,7 @@ async function handlePostSettings(request: NextRequest) {
 }
 
 export const POST = withApiErrorHandler(handlePostSettings, {
+  requireAuth: true,
   module: 'settings-api',
   errorType: ErrorType.SYSTEM_ERROR,
 })
@@ -76,6 +78,7 @@ async function handleDeleteSettings() {
 }
 
 export const DELETE = withApiErrorHandler(handleDeleteSettings, {
+  requireAuth: true,
   module: 'settings-api',
   errorType: ErrorType.SYSTEM_ERROR,
 })

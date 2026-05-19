@@ -225,6 +225,7 @@ async function handleRenewContractWithBills(
 }
 
 export const POST = withApiErrorHandler(handleRenewContractWithBills, {
+  requireAuth: true,
   module: 'renew-contract-api',
   errorType: ErrorType.VALIDATION_ERROR,
   enableFallback: true,

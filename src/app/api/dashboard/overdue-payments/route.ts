@@ -79,6 +79,7 @@ async function handleGetOverduePayments(_request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetOverduePayments, {
+  requireAuth: true,
   module: 'overdue-payments-api',
   errorType: ErrorType.DATABASE_ERROR,
 })

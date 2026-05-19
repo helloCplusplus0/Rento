@@ -77,6 +77,7 @@ async function handleGetUpcomingContracts(_request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetUpcomingContracts, {
+  requireAuth: true,
   module: 'upcoming-contracts-api',
   errorType: ErrorType.DATABASE_ERROR,
 })

@@ -68,6 +68,7 @@ async function handleGetLeavingTenants(_request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetLeavingTenants, {
+  requireAuth: true,
   module: 'leaving-tenants-api',
   errorType: ErrorType.DATABASE_ERROR,
 })

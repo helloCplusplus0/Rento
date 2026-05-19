@@ -281,17 +281,20 @@ async function handleDeleteContract(
 }
 
 export const GET = withApiErrorHandler(handleGetContract, {
+  requireAuth: true,
   module: 'contract-detail-api',
   errorType: ErrorType.DATABASE_ERROR,
 })
 
 export const PUT = withApiErrorHandler(handleUpdateContract, {
+  requireAuth: true,
   module: 'contract-update-api',
   errorType: ErrorType.VALIDATION_ERROR,
   enableFallback: true,
 })
 
 export const DELETE = withApiErrorHandler(handleDeleteContract, {
+  requireAuth: true,
   module: 'contract-delete-api',
   errorType: ErrorType.DATABASE_ERROR,
   enableFallback: false,

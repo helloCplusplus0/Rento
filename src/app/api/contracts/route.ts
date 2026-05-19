@@ -125,6 +125,7 @@ async function handleGetContracts(request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetContracts, {
+  requireAuth: true,
   module: 'contracts-api',
   errorType: ErrorType.DATABASE_ERROR,
 })
@@ -432,6 +433,7 @@ async function handlePostContracts(request: NextRequest) {
 }
 
 export const POST = withApiErrorHandler(handlePostContracts, {
+  requireAuth: true,
   module: 'contracts-api',
   errorType: ErrorType.VALIDATION_ERROR,
   enableFallback: true,

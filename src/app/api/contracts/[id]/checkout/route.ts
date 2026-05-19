@@ -548,6 +548,7 @@ function calculateDetailedSettlement(contract: any, basicSettlement: any) {
 }
 
 export const POST = withApiErrorHandler(handleCheckoutContractWithSettlement, {
+  requireAuth: true,
   module: 'checkout-contract-api',
   errorType: ErrorType.VALIDATION_ERROR,
   enableFallback: true,

@@ -95,6 +95,7 @@ async function handleGetRenters(request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetRenters, {
+  requireAuth: true,
   module: 'renters-api',
   errorType: ErrorType.DATABASE_ERROR,
 })
@@ -126,6 +127,7 @@ async function handlePostRenters(request: NextRequest) {
 }
 
 export const POST = withApiErrorHandler(handlePostRenters, {
+  requireAuth: true,
   module: 'renters-api',
   errorType: ErrorType.VALIDATION_ERROR,
 })

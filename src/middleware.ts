@@ -1,5 +1,35 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { getSessionFromRequest } from '@/lib/auth/session'
+
+const PUBLIC_PAGE_PATHS = new Set(['/login'])
+const PUBLIC_API_PREFIXES = ['/api/health', '/api/auth/login', '/api/auth/logout']
+
+function isPublicApiPath(pathname: string) {
+  return PUBLIC_API_PREFIXES.some(
+    (publicPath) => pathname === publicPath || pathname.startsWith(`${publicPath}/`)
+  )
+}
+
+function createUnauthorizedApiResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: '请先登录',
+      errorType: 'UNAUTHORIZED',
+      timestamp: new Date().toISOString(),
+    },
+    { status: 401 }
+  )
+}
+
+function appendSecurityHeaders(response: NextResponse) {
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  return response
+}
+
 /**
  * Next.js 中间件
  * 用于处理路由守卫、身份验证和权限控制
@@ -14,6 +44,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   // 获取请求路径
   const { pathname } = request.nextUrl
+  const nextPath = request.nextUrl.pathname
 
   // 开发环境日志 (可选)
   if (
@@ -23,32 +54,42 @@ export function middleware(request: NextRequest) {
     console.log(`[Middleware] ${request.method} ${pathname}`)
   }
 
-  // 预留：身份验证检查
-  // const token = request.cookies.get('auth-token')
-  // if (!token && isProtectedRoute(pathname)) {
-  //   return NextResponse.redirect(new URL('/login', request.url))
-  // }
+  return handleAuth(request, nextPath)
+}
 
-  // 预留：权限验证
-  // const userRole = getUserRole(token)
-  // if (!hasPermission(userRole, pathname)) {
-  //   return NextResponse.redirect(new URL('/unauthorized', request.url))
-  // }
+async function handleAuth(request: NextRequest, pathname: string) {
+  const session = await getSessionFromRequest(request)
 
-  // 预留：路由重定向逻辑
-  // if (pathname === '/old-path') {
-  //   return NextResponse.redirect(new URL('/new-path', request.url))
-  // }
+  if (pathname.startsWith('/api')) {
+    if (isPublicApiPath(pathname)) {
+      return appendSecurityHeaders(NextResponse.next())
+    }
 
-  // 添加安全头 (可选)
-  const response = NextResponse.next()
+    if (!session) {
+      return appendSecurityHeaders(createUnauthorizedApiResponse())
+    }
 
-  // 预留：添加安全相关的响应头
-  // response.headers.set('X-Frame-Options', 'DENY')
-  // response.headers.set('X-Content-Type-Options', 'nosniff')
-  // response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
+    return appendSecurityHeaders(NextResponse.next())
+  }
 
-  return response
+  if (PUBLIC_PAGE_PATHS.has(pathname)) {
+    if (session) {
+      return appendSecurityHeaders(
+        NextResponse.redirect(new URL('/', request.url))
+      )
+    }
+
+    return appendSecurityHeaders(NextResponse.next())
+  }
+
+  if (!session) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
+
+    return appendSecurityHeaders(NextResponse.redirect(loginUrl))
+  }
+
+  return appendSecurityHeaders(NextResponse.next())
 }
 
 /**
@@ -65,22 +106,6 @@ export const config = {
    * - public files (images, etc.)
    */
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }
-
-// 预留：辅助函数，后期实现
-// function isProtectedRoute(pathname: string): boolean {
-//   const protectedRoutes = ['/admin', '/settings/system']
-//   return protectedRoutes.some(route => pathname.startsWith(route))
-// }
-
-// function getUserRole(token: any): string {
-//   // 从token中解析用户角色
-//   return 'user' // 默认角色
-// }
-
-// function hasPermission(role: string, pathname: string): boolean {
-//   // 检查用户角色是否有访问指定路径的权限
-//   return true // 默认允许访问
-// }

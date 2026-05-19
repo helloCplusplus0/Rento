@@ -14,6 +14,7 @@ async function handleGetDashboardStats() {
 }
 
 export const GET = withApiErrorHandler(handleGetDashboardStats, {
+  requireAuth: true,
   module: 'dashboard-api',
   errorType: ErrorType.DATABASE_ERROR,
 })

@@ -102,6 +102,7 @@ async function handleGetUnpaidRent(_request: NextRequest) {
 }
 
 export const GET = withApiErrorHandler(handleGetUnpaidRent, {
+  requireAuth: true,
   module: 'unpaid-rent-api',
   errorType: ErrorType.DATABASE_ERROR,
 })
