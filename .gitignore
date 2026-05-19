@@ -47,3 +47,11 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+# local runtime data
+.env
+.env.*
+/backups/
+/logs/
+/nginx/ssl/
+/certs/
+prisma/*.db

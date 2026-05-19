@@ -10,10 +10,10 @@ sleep "$DB_WAIT_SECS"
 
 echo "数据库连接成功，开始迁移..."
 
-# 如果迁移锁文件为 sqlite，则使用 db push 同步到 PostgreSQL，避免 P3019 错误
+# 历史遗留：如果迁移锁文件仍指向 sqlite，则临时使用 db push 同步到 PostgreSQL，避免旧迁移链导致的 P3019 错误
 LOCK_FILE="/app/prisma/migrations/migration_lock.toml"
 if [ -f "$LOCK_FILE" ] && grep -q 'provider = "sqlite"' "$LOCK_FILE"; then
-  echo "检测到 migration_lock.toml 指向 sqlite，改用 Prisma db push 同步架构到 PostgreSQL"
+  echo "检测到历史 migration_lock.toml 仍指向 sqlite，改用 Prisma db push 同步当前 PostgreSQL schema"
   node /app/node_modules/prisma/build/index.js db push
 else
   # 运行 Prisma 迁移（使用容器内已复制的本地 CLI 入口，避免网络访问）

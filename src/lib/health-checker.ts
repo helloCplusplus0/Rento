@@ -83,7 +83,7 @@ export class SystemHealthChecker {
         lastCheck: new Date(),
         responseTime: Date.now() - startTime,
         details: {
-          provider: 'sqlite',
+          provider: 'postgresql',
           connected: true,
         },
       }
