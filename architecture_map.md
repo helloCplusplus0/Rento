@@ -67,6 +67,10 @@ Rento/
 
 ## 6. `docs/` 结构说明
 - `docs/` 根目录保留当前仍有参考价值的分析文档、策略文档和设计说明。
+- `phase03` 当前下一步将新增：
+  - `docs/phase03_consistency_hardening_architecture_plan.md`
+  - `docs/phase03_consistency_hardening_dev_plan.md`
+  - `docs/phase03_consistency_hardening_shared_baseline.md`
 - `docs/archive/tasks/`：历史 `task_*.md` 实施记录。
 - `docs/archive/README.md`：归档说明与使用边界。
 - 历史任务文档默认只读，不再代表当前执行计划。
@@ -90,5 +94,9 @@ Rento/
 ## 9. 已知结构债务
 - `.env` 仍有历史跟踪痕迹，后续应完成真正的模板化与去跟踪化收口。
 - SQLite 时代遗留仍体现在迁移锁、迁移 SQL、兼容脚本和少量注释中。
+- `src/lib/validation.ts`、`src/lib/queries.ts` 与 `src/app/api/rooms/[id]/route.ts`、`src/app/api/contracts/[id]/route.ts`、`src/app/api/meters/[meterId]/route.ts` 仍存在“业务门禁已部分存在，但默认删除路径仍偏向物理删除”的张力。
+- `src/lib/optimized-queries.ts` 仍存在字段漂移，当前已确认至少包括 `Room.rent` / `monthlyRent` 与 `Renter.idCard` / `idNumber` 的不一致。
+- `src/lib/dashboard-queries.ts` 的待收金额与趋势统计仍有历史语义漂移，需要在 `phase03` 明确与 `BillStatus` 的统一口径。
+- `scripts/migrate-and-seed.sh` 与 `prisma/migrations/migration_lock.toml` 仍通过 `sqlite -> db push` 兼容分支维持 PostgreSQL 主线，尚未形成正式退出条件。
 - 部分辅助页面与性能页面未明确“只在开发使用”还是“长期保留”。
 - 房间、合同、账单、仪表主链的删除门禁与状态约束仍需在服务端进一步加固。

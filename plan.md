@@ -3,6 +3,8 @@
 ## 当前默认入口
 - 当前默认工作流：`phase03-consistency-hardening-*`
 - 当前阶段目标：在最小认证门禁完成后，继续收口核心业务链的一致性、删除门禁与历史语义漂移。
+- 当前执行方式：进入新 `phase*` 前，先通过 `/plan` 同步顶层规范并产出阶段级 `architecture_plan` / `dev_plan`，待用户审核后再逐个子任务进入 `/spec`。
+- 当前下一步：先生成 `docs/phase03_consistency_hardening_architecture_plan.md`、`docs/phase03_consistency_hardening_dev_plan.md`、`docs/phase03_consistency_hardening_shared_baseline.md`，完成后停止并等待用户审核。
 
 ## 阶段顺序
 
@@ -48,6 +50,11 @@
   - 多仪表历史保留策略收口
   - 关键查询和金额语义复核
   - 迁移锁与数据库口径治理方案
+- 推荐子任务顺序：
+  - `phase03-consistency-hardening-01-boundary-and-shared-baseline-freeze`
+  - `phase03-consistency-hardening-02-delete-guard-and-history-preservation`
+  - `phase03-consistency-hardening-03-billing-query-and-dashboard-semantic-closure`
+  - `phase03-consistency-hardening-04-migration-compatibility-exit-plan`
 - 验收条件：
   - 关键状态流转有明确规则
   - 不再存在“文档正确、代码行为相反”的主链路问题
@@ -66,6 +73,14 @@
 - 当前项目具备继续演进的业务骨架，不建议重写。
 - 当前最优策略是“治理性重启”，而不是立刻叠加新功能。
 - 当前默认推进方向：`phase03-consistency-hardening-*` -> `phase04-performance-and-ops-*`
+
+## 阶段执行工作流
+- 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断的临时承接位。
+- `/plan` 完成前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`，确保顶层真相源一致。
+- 每个 `phase*` 默认先产出 `docs/phaseX_<workflow>_architecture_plan.md` 与 `docs/phaseX_<workflow>_dev_plan.md`；存在共享边界时，再补 `docs/phaseX_<workflow>_shared_baseline.md`。
+- 阶段级文档产出后即停止工作流，等待用户审核；未经用户明确批准，禁止直接进入 `/spec` 或实现。
+- 用户审核后，按 `dev_plan` 的子任务顺序逐个进入 `/spec`、开发、验收、提交并推送；每个子任务通过验收后再进入下一个子任务。
+- 整个 `phase*` 的 `dev_plan` 执行完毕后，若方向仍不明确，再回到下一轮 `/plan`。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。
