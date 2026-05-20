@@ -1,0 +1,8 @@
+- [x] `validation.ts` 已补强房间与合同删除安全检查，覆盖合同链、账务链、仪表链或抄表链影响
+- [x] `queries.ts` 已不再保留可被直接当作高风险物理删除入口的默认能力
+- [x] `rooms/[id]/route.ts` 已不再通过默认删除路径清空合同和账单历史
+- [x] `contracts/[id]/route.ts` 已不再通过删除合同清空未支付账单和抄表事实
+- [x] `meters/[meterId]/route.ts` 已优先停用或解绑，保留历史读数和计费事实
+- [x] `bills/[id]/route.ts` 已补强账单删除门禁，避免删除真实财务事实
+- [x] 已通过 `npm run lint` 与 `npm run type-check`
+- [x] 已补并执行至少一条覆盖账单 / 合同 / 仪表主链的可执行验证路径

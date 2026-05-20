@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { validateDisplayName, validateUnitPrice } from '@/lib/meter-utils'
+import { prisma } from '@/lib/prisma'
 import { meterQueries } from '@/lib/queries'
 
 /**
@@ -115,7 +116,7 @@ export const PUT = withApiErrorHandler(handlePutMeter, {
 })
 
 /**
- * 移除仪表关联（软删除或硬删除）
+ * 移除仪表关联（停用优先，必要时才允许硬删除）
  * DELETE /api/meters/[meterId]
  */
 async function handleDeleteMeter(
@@ -123,22 +124,77 @@ async function handleDeleteMeter(
   { params }: { params: Promise<{ meterId: string }> }
 ) {
   const { meterId } = await params
-  const existingMeter = await meterQueries.findById(meterId)
+  const existingMeter = await prisma.meter.findUnique({
+    where: { id: meterId },
+    include: {
+      room: {
+        include: { building: true },
+      },
+      _count: {
+        select: {
+          readings: true,
+        },
+      },
+    },
+  })
+
   if (!existingMeter) {
     return NextResponse.json({ error: 'Meter not found' }, { status: 404 })
   }
 
-  if (existingMeter.readings && existingMeter.readings.length > 0) {
-    await meterQueries.softDelete(meterId)
+  const [billCount, billDetailCount] = await Promise.all([
+    prisma.bill.count({
+      where: {
+        meterReading: {
+          meterId,
+        },
+      },
+    }),
+    prisma.billDetail.count({
+      where: {
+        meterReading: {
+          meterId,
+        },
+      },
+    }),
+  ])
+
+  const readingCount = existingMeter._count.readings
+  const hasHistoricalFacts =
+    readingCount > 0 || billCount > 0 || billDetailCount > 0
+
+  if (hasHistoricalFacts) {
+    if (existingMeter.isActive) {
+      await meterQueries.softDelete(meterId)
+    }
+
+    const action = existingMeter.isActive ? 'deactivate' : 'already_inactive'
+
     return NextResponse.json({
-      message: 'Meter association removed successfully. Historical data preserved.',
-      action: 'soft_delete',
+      success: true,
+      message:
+        action === 'deactivate'
+          ? '仪表已停用，历史读数与计费事实已保留'
+          : '仪表已处于停用状态，历史读数与计费事实继续保留',
+      action,
+      details: {
+        readingCount,
+        billCount,
+        billDetailCount,
+        roomId: existingMeter.roomId,
+        roomNumber: existingMeter.room.roomNumber,
+        suggestion: '当前数据模型未提供物理解绑字段，请后续通过专用解绑流程处理当前绑定关系',
+      },
     })
   }
 
-  await meterQueries.delete(meterId)
+  await prisma.meter.delete({
+    where: { id: meterId },
+  })
+
   return NextResponse.json({
-    message: 'Meter removed successfully.',
+    success: true,
+    message: '仪表无任何历史读数或计费事实，已执行物理删除',
     action: 'hard_delete',
   })
 }

@@ -2,6 +2,12 @@ import type { BillStatus, ContractStatus, RoomStatus } from '@prisma/client'
 
 import { prisma } from './prisma'
 
+function createRestrictedDeleteError(entityName: string, suggestion: string) {
+  return new Error(
+    `${entityName}默认删除入口已禁用，请改用受门禁保护的详情 API 或专用业务流程。${suggestion}`
+  )
+}
+
 // 楼栋相关查询
 export const buildingQueries = {
   // 查找所有楼栋
@@ -165,9 +171,12 @@ export const roomQueries = {
 
   // 删除房间
   delete: (id: string) =>
-    prisma.room.delete({
-      where: { id },
-    }),
+    Promise.reject(
+      createRestrictedDeleteError(
+        '房间',
+        '房间存在合同、账单、仪表或抄表历史时必须优先拦截或归档。'
+      )
+    ),
 
   // 高效的楼栋房间查询（带统计信息）
   findByBuildingWithStats: async (buildingId: string) => {
@@ -785,9 +794,12 @@ export const contractQueries = {
 
   // 删除合同
   delete: (id: string) =>
-    prisma.contract.delete({
-      where: { id },
-    }),
+    Promise.reject(
+      createRestrictedDeleteError(
+        '合同',
+        '合同是租务事实锚点，默认不得通过查询层清空账单或抄表历史。'
+      )
+    ),
 
   // 获取合同统计
   getContractStats: async () => {
@@ -1012,9 +1024,12 @@ export const billQueries = {
 
   // 删除账单
   delete: (id: string) =>
-    prisma.bill.delete({
-      where: { id },
-    }),
+    Promise.reject(
+      createRestrictedDeleteError(
+        '账单',
+        '账单删除必须先经过状态、金额和历史追溯门禁校验。'
+      )
+    ),
 }
 
 // 统计查询
@@ -1186,9 +1201,12 @@ export const meterQueries = {
 
   // 删除仪表 (真正删除)
   delete: (id: string) =>
-    prisma.meter.delete({
-      where: { id },
-    }),
+    Promise.reject(
+      createRestrictedDeleteError(
+        '仪表',
+        '仪表属于独立资产，默认应优先停用或走专用解绑流程。'
+      )
+    ),
 
   // 软删除仪表 (设置为禁用)
   softDelete: (id: string) =>
@@ -1432,9 +1450,12 @@ export const meterReadingQueries = {
   // 删除抄表记录
   // 删除抄表记录
   delete: (id: string) =>
-    prisma.meterReading.delete({
-      where: { id },
-    }),
+    Promise.reject(
+      createRestrictedDeleteError(
+        '抄表记录',
+        '抄表记录会影响账单和历史追溯，默认不允许通过查询层直接删除。'
+      )
+    ),
 
   // 获取仪表最新读数
   getLatestReading: (meterId: string) =>

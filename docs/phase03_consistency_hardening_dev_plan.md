@@ -29,6 +29,8 @@
     ->
 再收紧删除门禁与历史保留
     ->
+再收口开发态运行入口与最小门禁上下文
+    ->
 再收口账务查询与统计语义
     ->
 最后写清迁移兼容与退出路径
@@ -38,6 +40,7 @@
 
 - 若不先冻结共享边界，后续 `/spec` 很容易把“允许停用/归档”和“允许物理删除”混写
 - 若不先收紧删除门禁，后续语义修复和统计修复仍会建立在错误行为之上
+- 若不把开发态运行入口单独收口，后续浏览器验证、脚本验证和手动调试仍会落在不同的认证 / 数据库上下文中
 - 若不最后单独处理迁移兼容，极易把 schema 风险与业务改造混成一次高风险改动
 
 ## 三、任务拆分建议
@@ -102,6 +105,41 @@
 - 高风险删除默认被拦截或转为非物理删除动作
 - 历史 `Bill`、`BillDetail`、`MeterReading` 不再因清理当前业务关系而被默认清空
 - 至少补一条覆盖账单/合同/仪表主链的可执行验证路径
+
+## phase03-consistency-hardening-02a-dev-auth-runtime-entry
+
+### 目标
+
+把开发态手动启动入口与最小门禁、数据库连接和验证上下文统一收口，避免浏览器验证与脚本验证落在不同运行环境。
+
+### 范围
+
+- 在 `scripts/` 下提供一个由用户手动执行的开发启动脚本
+- 统一加载或校验开发态认证、数据库和缓存所需的关键环境变量
+- 在不改变最小门禁安全边界的前提下，补充开发态启动文档与便捷入口
+- 必要时补充 `package.json` 中的轻量启动别名
+
+### 重点文件
+
+- `scripts/` 下新增或更新的开发启动脚本
+- `package.json`
+- `README.md`
+- `ENVIRONMENT_GUIDE.md`
+- 必要时 `.env.example`
+
+### 不在范围内
+
+- 不绕过 `middleware` 或放宽最小门禁
+- 不引入新的认证框架、第二套登录系统或多角色模型
+- 不把开发态便捷入口扩写成生产态逻辑分支
+- 不顺手处理业务删除门禁、账务语义或迁移链整改
+
+### DoD
+
+- 用户可通过单一、显式、手动执行的入口启动带完整门禁上下文的开发服务器
+- 缺少关键认证或数据库环境变量时，启动入口能给出清晰失败提示
+- 浏览器验证与脚本验证对认证 / 数据库上下文的假设一致
+- 不降低现有最小门禁的安全边界，也不引入额外复杂度
 
 ## phase03-consistency-hardening-03-billing-query-and-dashboard-semantic-closure
 
@@ -177,6 +215,7 @@
 ```text
 phase03-consistency-hardening-01-boundary-and-shared-baseline-freeze
 phase03-consistency-hardening-02-delete-guard-and-history-preservation
+phase03-consistency-hardening-02a-dev-auth-runtime-entry
 phase03-consistency-hardening-03-billing-query-and-dashboard-semantic-closure
 phase03-consistency-hardening-04-migration-compatibility-exit-plan
 ```

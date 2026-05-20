@@ -8,7 +8,7 @@ import { transformRoomDecimalFields } from '@/lib/room-utils'
 import { performDeleteSafetyCheck } from '@/lib/validation'
 
 /**
- * 删除房间API（支持级联删除）
+ * 删除房间API
  * DELETE /api/rooms/[id]
  */
 async function handleDeleteRoom(
@@ -17,30 +17,56 @@ async function handleDeleteRoom(
 ) {
   const { id } = await params
   const { searchParams } = new URL(request.url)
-  const force = searchParams.get('force') === 'true'
-  const archive = searchParams.get('archive') === 'true'
 
-  const safetyCheck = await performDeleteSafetyCheck(id)
-
-  if (safetyCheck.hasRelatedData && !force) {
+  if (
+    searchParams.get('force') === 'true' ||
+    searchParams.get('archive') === 'true'
+  ) {
     return NextResponse.json(
       {
-        error: 'Cannot delete room with related data',
+        error: 'Legacy delete overrides are no longer supported',
+        code: 'ROOM_LEGACY_DELETE_OVERRIDE_DISABLED',
         details: {
-          hasActiveContracts: safetyCheck.hasActiveContracts,
-          activeContractCount: safetyCheck.activeContractCount,
-          hasUnpaidBills: safetyCheck.hasUnpaidBills,
-          unpaidBillCount: safetyCheck.unpaidBillCount,
-          relatedDataTypes: safetyCheck.relatedDataTypes,
+          suggestion:
+            '房间删除不再支持 force 或 archive 参数，请改用退租、归档、仪表停用或专用解绑流程',
         },
-        suggestion:
-          'Use force=true parameter to force delete or archive=true to archive related data',
       },
       { status: 400 }
     )
   }
 
-  const result = await cascadeDeleteRoom(id, { force, archiveData: archive })
+  const safetyCheck = await performDeleteSafetyCheck(id)
+
+  if (!safetyCheck.canDelete) {
+    return NextResponse.json(
+      {
+        error: 'Cannot delete room with related business history',
+        code: safetyCheck.errorCode,
+        details: {
+          roomStatus: safetyCheck.roomStatus,
+          contractCount: safetyCheck.contractCount,
+          hasActiveContracts: safetyCheck.hasActiveContracts,
+          activeContractCount: safetyCheck.activeContractCount,
+          pendingContractCount: safetyCheck.pendingContractCount,
+          billCount: safetyCheck.billCount,
+          hasUnpaidBills: safetyCheck.hasUnpaidBills,
+          unpaidBillCount: safetyCheck.unpaidBillCount,
+          settledBillCount: safetyCheck.settledBillCount,
+          meterCount: safetyCheck.meterCount,
+          activeMeterCount: safetyCheck.activeMeterCount,
+          inactiveMeterCount: safetyCheck.inactiveMeterCount,
+          meterReadingCount: safetyCheck.meterReadingCount,
+          billDetailCount: safetyCheck.billDetailCount,
+          relatedDataTypes: safetyCheck.relatedDataTypes,
+          blockingReasons: safetyCheck.blockingReasons,
+        },
+        suggestion: safetyCheck.suggestion,
+      },
+      { status: 400 }
+    )
+  }
+
+  const result = await deleteRoomWithoutRelatedHistory(id)
   return NextResponse.json(result)
 }
 
@@ -167,53 +193,20 @@ export const PUT = withApiErrorHandler(handlePutRoom, {
 })
 
 /**
- * 级联删除房间
+ * 仅在房间不存在主链历史时执行物理删除
  */
-async function cascadeDeleteRoom(
-  roomId: string,
-  options: { force?: boolean; archiveData?: boolean } = {}
-) {
+async function deleteRoomWithoutRelatedHistory(roomId: string) {
   return prisma.$transaction(async (tx) => {
     const room = await tx.room.findUnique({
       where: { id: roomId },
-      include: {
-        contracts: {
-          include: {
-            bills: true,
-          },
-        },
+      select: {
+        id: true,
+        buildingId: true,
       },
     })
 
     if (!room) {
       throw new Error('Room not found')
-    }
-
-    let archivedContracts = 0
-    let archivedBills = 0
-
-    for (const contract of room.contracts) {
-      if (options.archiveData) {
-        await tx.bill.updateMany({
-          where: { contractId: contract.id },
-          data: { status: 'COMPLETED' },
-        })
-        archivedBills += contract.bills.length
-
-        await tx.contract.update({
-          where: { id: contract.id },
-          data: { status: 'TERMINATED' },
-        })
-        archivedContracts += 1
-      } else {
-        await tx.bill.deleteMany({
-          where: { contractId: contract.id },
-        })
-
-        await tx.contract.delete({
-          where: { id: contract.id },
-        })
-      }
     }
 
     await tx.room.delete({ where: { id: roomId } })
@@ -225,12 +218,9 @@ async function cascadeDeleteRoom(
 
     return {
       success: true,
+      action: 'hard_delete',
+      message: '房间无合同、账单、仪表或抄表历史，已执行物理删除',
       deletedRoomId: roomId,
-      archivedData: options.archiveData || false,
-      affectedRecords: {
-        contracts: archivedContracts,
-        bills: archivedBills,
-      },
     }
   })
 }

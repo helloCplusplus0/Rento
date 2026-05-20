@@ -29,13 +29,14 @@
 
 ### 2.2 当前真实阻塞面
 
-基于当前代码实况，`phase03` 的阻塞面已收束为以下四类：
+基于当前代码实况，`phase03` 的阻塞面已收束为以下几类：
 
 - 删除门禁与历史保留存在服务端缺口
 - 查询条件与金额字段存在真实字段漂移
 - 仪表盘与账务状态的语义口径尚未完全一致
 - PostgreSQL 主线已成立，但迁移链仍依赖 SQLite 历史兼容
 - 若继续沿用“最简关系 + 页面临时兜底”的思路，容易偏离真实租务流程，导致状态不可解释、历史不可追溯
+- 开发态手动启动入口尚未与最小门禁、数据库连接和验证脚本统一收口，导致浏览器验证与脚本验证容易落在不同运行上下文
 
 ### 2.3 为什么现在不进入 phase04
 
@@ -65,6 +66,7 @@ phase03-consistency-hardening-*
 
 - 收紧房间、合同、账单、仪表主链的服务端门禁
 - 明确“历史事实优先保留”的默认行为
+- 收口开发态运行入口与最小门禁、数据库上下文的一致性
 - 修复账务字段、查询条件和统计口径的历史漂移
 - 将迁移链中的 SQLite 兼容项显式化，并为后续退出设计路径
 
@@ -93,6 +95,7 @@ phase03-consistency-hardening-*
 - 收口 dashboard 与账单状态的统计语义
 - 把迁移兼容项的存在原因、当前作用和退出条件写清楚
 - 在子任务 `01` 中同步冻结“真实租务流程优先、事实表达优先于最简关系、业务真实 / 状态可解释 / 历史可追溯 / 实现低复杂度”的共享判断标准
+- 在删除门禁子任务之后，补一个轻量的开发态运行入口收口任务，统一手动启动时的认证与数据库运行上下文
 
 ### 4.2 本阶段暂不做的事
 
@@ -101,6 +104,7 @@ phase03-consistency-hardening-*
 - 不在没有专项方案的前提下直接重建迁移基线
 - 不把开发辅助页面治理提前到本阶段主线
 - 不扩展多角色权限模型
+- 不为了开发方便绕过 `middleware`、取消最小门禁或引入第二套认证系统
 
 ### 4.3 服务端优先级
 
@@ -125,14 +129,16 @@ phase03-consistency-hardening-*
 - 一份阶段级架构规划文档
 - 一份阶段级开发规划文档
 - 一份共享基线文档
-- 四个顺序执行的子任务定义
+- 五个顺序执行的子任务定义
 - 其中子任务 `01` 负责先把上述判断标准写成后续 `/spec` 可直接继承的共享边界
+- 其中补充子任务 `02a` 负责把开发态手动启动入口、最小门禁与数据库运行上下文收口到同一条低复杂度路径
 
 推荐子任务顺序固定为：
 
 ```text
 phase03-consistency-hardening-01-boundary-and-shared-baseline-freeze
 phase03-consistency-hardening-02-delete-guard-and-history-preservation
+phase03-consistency-hardening-02a-dev-auth-runtime-entry
 phase03-consistency-hardening-03-billing-query-and-dashboard-semantic-closure
 phase03-consistency-hardening-04-migration-compatibility-exit-plan
 ```
@@ -150,5 +156,6 @@ phase03-consistency-hardening-04-migration-compatibility-exit-plan
 这能确保：
 
 - 后续删除门禁整改不会再次滑回“前端限制 + 后端物理删除”
+- 后续浏览器验证与脚本验证不会继续落在不同的认证 / 数据库上下文里
 - 后续金额语义修复不会与 schema 口径继续漂移
 - 后续迁移链治理不会在未设计退出路径前破坏既有部署链

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { prisma } from '@/lib/prisma'
 import { billQueries } from '@/lib/queries'
 
 /**
@@ -159,33 +160,90 @@ async function handleDeleteBill(
 ) {
   const { id } = await params
 
-  const existingBill = await billQueries.findById(id)
+  const existingBill = await prisma.bill.findUnique({
+    where: { id },
+    include: {
+      billDetails: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  })
+
   if (!existingBill) {
     return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
   }
 
-  if (
-    existingBill.status === 'PAID' &&
-    Number(existingBill.receivedAmount) > 0
-  ) {
+  const amount = Number(existingBill.amount)
+  const receivedAmount = Number(existingBill.receivedAmount)
+  const pendingAmount = Number(existingBill.pendingAmount)
+  const billDetailCount = existingBill.billDetails.length
+  const hasSettlementTrace =
+    receivedAmount > 0 ||
+    pendingAmount < amount ||
+    existingBill.paidDate !== null ||
+    existingBill.status === 'PAID' ||
+    existingBill.status === 'COMPLETED'
+  const hasUsageHistory =
+    Boolean(existingBill.meterReadingId) || billDetailCount > 0
+
+  if (existingBill.status !== 'PENDING') {
     return NextResponse.json(
-      { error: 'Cannot delete paid bill with received amount' },
+      {
+        error: 'Cannot delete bill outside pending status',
+        code: 'BILL_STATUS_NOT_DELETABLE',
+        details: {
+          status: existingBill.status,
+          suggestion:
+            '账单已进入正式账务流程，请改用收款、作废、终止合同或专用归档流程处理',
+        },
+      },
       { status: 400 }
     )
   }
 
-  if (existingBill.status === 'COMPLETED') {
+  if (hasSettlementTrace) {
     return NextResponse.json(
-      { error: 'Cannot delete completed bill' },
+      {
+        error: 'Cannot delete bill with settlement history',
+        code: 'BILL_HAS_SETTLEMENT_HISTORY',
+        details: {
+          amount,
+          pendingAmount,
+          receivedAmount,
+          paidDate: existingBill.paidDate,
+          suggestion: '账单已产生收款或结清痕迹，必须保留财务事实',
+        },
+      },
       { status: 400 }
     )
   }
 
-  await billQueries.delete(id)
+  if (hasUsageHistory) {
+    return NextResponse.json(
+      {
+        error: 'Cannot delete bill with meter reading history',
+        code: 'BILL_HAS_USAGE_HISTORY',
+        details: {
+          meterReadingId: existingBill.meterReadingId,
+          billDetailCount,
+          suggestion:
+            '该账单已关联抄表或账单明细，请保留历史并通过专用业务流程处理',
+        },
+      },
+      { status: 400 }
+    )
+  }
+
+  await prisma.bill.delete({
+    where: { id },
+  })
 
   return NextResponse.json({
     success: true,
-    message: 'Bill deleted successfully',
+    action: 'hard_delete',
+    message: '账单删除成功，仅删除了未进入正式账务链的待付款账单',
   })
 }
 
