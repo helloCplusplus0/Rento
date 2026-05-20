@@ -3,8 +3,8 @@
 Rento 是一个面向房东/运营者的私有化租赁管理后台，覆盖房源、租客、合同、账单、仪表与抄表管理。
 
 ## 当前状态
-- 当前阶段：`phase02-auth-gate-*`
-- 当前目标：先补齐最小认证门禁与访问边界，再进入一致性和性能加固。
+- 当前阶段：`phase03-consistency-hardening-*`
+- 当前目标：在最小认证门禁稳定后，继续收口一致性、删除门禁和历史语义漂移。
 - 当前定位：自用优先、私有部署优先、移动端友好、UI 视觉风格冻结。
 - 当前登录方式：最小管理员门禁，默认通过 `/login` 进入后台。
 
@@ -41,34 +41,5 @@ curl http://localhost:3001/api/health
   - `AUTH_SESSION_SECRET`
   - `ADMIN_USERNAME`
   - `ADMIN_PASSWORD_HASH`
-- 配置完成后，通过 `http://localhost:3001/login` 使用管理员账号登录。
 
-## 运行模式
-- 开发热加载模式：使用 `npm run dev` 启动本地 `Next.js dev server`，适合日常开发和浏览器即时反馈。
-- 容器部署验证模式：使用 `docker-compose.yml` 启动容器栈，适合验证部署链路、健康检查和环境配置。
-- 当前默认开发方式应优先使用开发热加载模式；容器模式不替代本地热加载。
-
-## 文档入口
-- [AGENTS.md](./AGENTS.md)：顶层执行规范与阅读顺序
-- [project_rules.md](./project_rules.md)：刚性规则、门禁与目录治理
-- [architecture_map.md](./architecture_map.md)：仓库结构地图与模块说明
-- [plan.md](./plan.md)：当前阶段计划与后续顺序
-- [QUICK_START.md](./QUICK_START.md)：最短启动路径
-- [DEPLOYMENT.md](./DEPLOYMENT.md)：部署与发布说明
-- [ENVIRONMENT_GUIDE.md](./ENVIRONMENT_GUIDE.md)：环境变量与配置说明
-- [docs/archive/README.md](./docs/archive/README.md)：历史任务文档归档说明
-
-## 目录结构
-```text
-src/                 应用源码
-prisma/              Prisma schema 与迁移
-scripts/             部署、初始化与辅助脚本
-docs/                当前分析文档与归档文档
-public/              静态资源
-nginx/               反向代理配置
-```
-
-## 当前已知问题
-- 鉴权尚未落地，因此公网部署仍不满足安全门禁。
-- SQLite 时代的迁移锁与部分历史脚本仍有遗留，需要单独任务收口。
-- 若干性能/演示/验证页面仍与正式页面并存，后续需要分类治理。
+更多运行说明见：`QUICK_START.md`、`ENVIRONMENT_GUIDE.md`、`DEPLOYMENT.md`。

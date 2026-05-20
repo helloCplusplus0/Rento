@@ -32,6 +32,7 @@ Rento/
 - `src/app/rooms`、`renters`、`contracts`、`bills`：核心业务页面。
 - `src/app/add/*`：新增房间、合同等创建入口。
 - `src/app/api/*`：App Router Route Handlers，承载后端 API。
+- `src/app/login/page.tsx`：管理员登录页。
 - `src/app/settings`、`system-health`、`data-consistency`：运维/治理页面。
 - `src/app/performance-*`、`layout-demo`、`components`、`business-flow-validation`：开发辅助或治理辅助页面，后续需要进一步标记和门禁化。
 
@@ -45,7 +46,8 @@ Rento/
 ### `src/lib`
 - `prisma.ts`：Prisma Client 单例。
 - `queries.ts`：核心查询封装。
-- `api-error-handler.ts`：API 统一错误处理与部分请求治理。
+- `api-error-handler.ts`：API 统一错误处理、CORS、请求体限制与认证接入点。
+- `auth/session.ts`、`auth/password.ts`、`auth/guard.ts`：最小会话方案、密码校验与服务端守卫。
 - `auto-bill-generator.ts`、`business-flow-validator.ts`、`health-checker.ts` 等：业务规则与运行治理能力。
 - `optimized-queries.ts` 等文件包含性能优化尝试，但存在历史字段漂移问题，需持续治理。
 
@@ -72,23 +74,21 @@ Rento/
 ## 7. 运行入口
 - Web 应用入口：`src/app`。
 - API 入口：`src/app/api/**/route.ts`。
+- 页面门禁入口：`src/middleware.ts`。
+- 认证入口：`src/app/login/page.tsx` 与 `src/app/api/auth/**/route.ts`。
+- 会话与守卫入口：`src/lib/auth/**`。
 - 数据库入口：`prisma/schema.prisma`。
 - 本地开发热加载入口：`package.json` 中的 `npm run dev`。
 - 容器部署验证入口：`docker-compose.yml`。
 - 云部署入口：`scripts/cloud-deploy.sh`。
-- 即将新增的认证入口：
-  - 页面门禁：`src/middleware.ts`
-  - 登录页：`src/app/login/page.tsx`
-  - 登录/登出 API：`src/app/api/auth/**/route.ts`
-  - Session 与守卫：`src/lib/auth/**`
 
 ## 8. 当前目录治理判断
 - 当前主线目录结构整体可继续沿用，无需重做大规模源码搬迁。
-- 最需要收口的是顶层治理文档、历史任务文档归档、环境与部署文档去漂移。
+- `phase02-auth-gate-*` 已完成，页面与核心 API 均已接入最小认证闭环。
 - `src/app` 中若干开发辅助页面仍混在正式页面旁边，后续应在不破坏 UI 的前提下做“分类 + 门禁 + 导航治理”。
 
 ## 9. 已知结构债务
 - `.env` 仍有历史跟踪痕迹，后续应完成真正的模板化与去跟踪化收口。
 - SQLite 时代遗留仍体现在迁移锁、迁移 SQL、兼容脚本和少量注释中。
 - 部分辅助页面与性能页面未明确“只在开发使用”还是“长期保留”。
-- 当前 `middleware.ts` 仍是预留实现，直到 `phase02-auth-gate-*` 完成前都不能视为真实门禁层。
+- 房间、合同、账单、仪表主链的删除门禁与状态约束仍需在服务端进一步加固。

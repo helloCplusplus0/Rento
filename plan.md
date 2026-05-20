@@ -1,8 +1,8 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase02-auth-gate-*`
-- 当前阶段目标：先补齐最小认证门禁，为私有部署与后续一致性加固建立统一的安全边界。
+- 当前默认工作流：`phase03-consistency-hardening-*`
+- 当前阶段目标：在最小认证门禁完成后，继续收口核心业务链的一致性、删除门禁与历史语义漂移。
 
 ## 阶段顺序
 
@@ -37,6 +37,9 @@
   - 已登录管理员可正常访问核心业务页面和 API
   - 页面门禁与 API 门禁口径一致
   - 公网部署具备最小可接受安全边界
+- 当前结论：
+  - 已完成
+  - 页面和核心业务 API 均已接入最小认证闭环
 
 ### phase03-consistency-hardening
 - 目标：修复核心业务链的一致性问题与历史语义漂移。
@@ -62,7 +65,7 @@
 ## 当前阶段结论
 - 当前项目具备继续演进的业务骨架，不建议重写。
 - 当前最优策略是“治理性重启”，而不是立刻叠加新功能。
-- 当前默认推进方向：`phase02-auth-gate-*` -> `phase03-consistency-hardening-*` -> `phase04-performance-and-ops-*`
+- 当前默认推进方向：`phase03-consistency-hardening-*` -> `phase04-performance-and-ops-*`
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。
