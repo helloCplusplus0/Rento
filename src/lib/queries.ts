@@ -1,5 +1,6 @@
 import type { BillStatus, ContractStatus, RoomStatus } from '@prisma/client'
 
+import { createBillStatusCountMap } from './bill-semantics'
 import { prisma } from './prisma'
 
 function createRestrictedDeleteError(entityName: string, suggestion: string) {
@@ -1073,33 +1074,40 @@ export const statsQueries = {
           }
         : {}
 
-    const bills = await prisma.bill.findMany({
-      where: whereClause,
-      select: {
-        amount: true,
-        receivedAmount: true,
-        status: true,
-        type: true,
-      },
+    const [billSummary, statusStats] = await Promise.all([
+      prisma.bill.aggregate({
+        where: whereClause,
+        _sum: {
+          amount: true,
+          receivedAmount: true,
+          pendingAmount: true,
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+      prisma.bill.groupBy({
+        by: ['status'],
+        where: whereClause,
+        _count: {
+          status: true,
+        },
+      }),
+    ])
+
+    const statusCounts = createBillStatusCountMap()
+
+    statusStats.forEach((item) => {
+      statusCounts[item.status] = item._count.status
     })
 
-    const totalAmount = bills.reduce(
-      (sum, bill) => sum + Number(bill.amount),
-      0
-    )
-    const receivedAmount = bills.reduce(
-      (sum, bill) => sum + Number(bill.receivedAmount),
-      0
-    )
-    const pendingAmount = totalAmount - receivedAmount
-
     return {
-      totalAmount,
-      receivedAmount,
-      pendingAmount,
-      billCount: bills.length,
-      paidBills: bills.filter((b) => b.status === 'PAID').length,
-      overdueBills: bills.filter((b) => b.status === 'OVERDUE').length,
+      totalAmount: Number(billSummary._sum.amount || 0),
+      receivedAmount: Number(billSummary._sum.receivedAmount || 0),
+      pendingAmount: Number(billSummary._sum.pendingAmount || 0),
+      billCount: billSummary._count._all,
+      paidBills: statusCounts.PAID + statusCounts.COMPLETED,
+      overdueBills: statusCounts.OVERDUE,
     }
   },
 }

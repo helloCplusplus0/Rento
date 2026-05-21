@@ -94,23 +94,16 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
     }
   }
 
-  // 判断是否实际逾期
-  const today = new Date()
-  const dueDate = new Date(bill.dueDate)
-  const isActuallyOverdue =
-    today > dueDate && bill.status !== 'PAID' && bill.status !== 'COMPLETED'
-
   // 判断操作权限
   const canConfirmPayment =
-    (bill.status === 'PENDING' ||
-      bill.status === 'PAID' ||
-      isActuallyOverdue) &&
+    (bill.status === 'PENDING' || bill.status === 'OVERDUE') &&
     bill.pendingAmount > 0
   const canMarkCompleted = bill.status === 'PAID' && bill.pendingAmount === 0
   const canRestorePending = bill.status === 'OVERDUE'
   const canDelete =
-    bill.status === 'PENDING' ||
-    (bill.status === 'PAID' && bill.receivedAmount === 0)
+    bill.status === 'PENDING' &&
+    bill.receivedAmount === 0 &&
+    bill.pendingAmount === bill.amount
 
   // 定义操作按钮 - 简化版，只保留核心功能
   const actions = [
@@ -118,7 +111,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
     ...(canConfirmPayment
       ? [
           {
-            label: bill.status === 'PAID' ? '继续收款' : '确认收款',
+            label: bill.receivedAmount > 0 ? '继续收款' : '确认收款',
             icon: <CreditCard className="h-4 w-4" />,
             onClick: () => setShowPaymentDialog(true),
             disabled: isLoading,

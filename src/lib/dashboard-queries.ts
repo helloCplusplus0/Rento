@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { OPEN_BILL_STATUSES, toBillAmount } from '@/lib/bill-semantics'
 
 /**
  * 增强的仪表板统计数据接口
@@ -59,7 +60,7 @@ async function getTodayStats() {
           receivedAmount: { gt: 0 },
         },
       }),
-      // 统计今日确认收款的总额
+      // 统计今日确认收款的总额（仅累计已确认入账金额）
       prisma.bill.aggregate({
         where: {
           paidDate: { gte: today, lt: tomorrow }, // 使用paidDate而不是updatedAt
@@ -72,7 +73,7 @@ async function getTodayStats() {
     return {
       receivables: {
         count: todayPayments,
-        amount: Number(todayPaymentAmount._sum.receivedAmount || 0),
+        amount: toBillAmount(todayPaymentAmount._sum.receivedAmount),
       },
       payables: {
         count: 0, // 暂时为0，后续扩展
@@ -105,7 +106,7 @@ async function getMonthlyStats() {
           receivedAmount: { gt: 0 },
         },
       }),
-      // 统计30日内确认收款的总额
+      // 统计30日内确认收款的总额（仅累计已确认入账金额）
       prisma.bill.aggregate({
         where: {
           paidDate: { gte: thirtyDaysAgo }, // 使用paidDate而不是updatedAt
@@ -118,7 +119,7 @@ async function getMonthlyStats() {
     return {
       receivables: {
         count: monthlyPayments,
-        amount: Number(monthlyPaymentAmount._sum.receivedAmount || 0),
+        amount: toBillAmount(monthlyPaymentAmount._sum.receivedAmount),
       },
       payables: {
         count: 0, // 暂时为0，后续扩展
@@ -178,12 +179,8 @@ async function getStatsTrends() {
       }),
     ])
 
-    const lastMonthAmount = Number(
-      lastMonthReceivables._sum.receivedAmount || 0
-    )
-    const thisMonthAmount = Number(
-      thisMonthReceivables._sum.receivedAmount || 0
-    )
+    const lastMonthAmount = toBillAmount(lastMonthReceivables._sum.receivedAmount)
+    const thisMonthAmount = toBillAmount(thisMonthReceivables._sum.receivedAmount)
 
     const receivablesChange =
       lastMonthAmount > 0
@@ -210,11 +207,11 @@ export async function getEnhancedDashboardStats(): Promise<EnhancedDashboardStat
   try {
     const [pendingReceivablesData, todayStats, monthlyStats, trends] =
       await Promise.all([
-        // 待收金额统计 - 统计所有待收金额（包括未逾期的）
+        // 待收金额统计 - 仅统计仍处于开放状态的待收金额
         prisma.bill.aggregate({
           where: {
             pendingAmount: { gt: 0 },
-            status: { in: ['PENDING', 'OVERDUE', 'PAID'] }, // 包括部分付款状态
+            status: { in: OPEN_BILL_STATUSES },
           },
           _sum: { pendingAmount: true },
         }),
@@ -230,9 +227,7 @@ export async function getEnhancedDashboardStats(): Promise<EnhancedDashboardStat
       ])
 
     return {
-      pendingReceivables: Number(
-        pendingReceivablesData._sum?.pendingAmount || 0
-      ),
+      pendingReceivables: toBillAmount(pendingReceivablesData._sum?.pendingAmount),
       pendingPayables: 0, // 暂时设为0，后续可扩展为支出账单
       todayReceivables: todayStats.receivables,
       todayPayables: todayStats.payables,

@@ -17,29 +17,26 @@ export function BillStatusExplanation() {
       color: 'yellow',
       icon: <Clock className="h-4 w-4" />,
       description: '账单已生成，等待收款',
-      scenarios: ['新生成的账单', '尚未收到任何款项'],
-      nextSteps: ['收到款项后变为"部分付款"', '超过到期日变为"逾期"'],
+      scenarios: ['新生成的账单', '已部分收款但仍有待收金额'],
+      nextSteps: ['收齐款项后变为"已收款"', '人工催收后可转为"逾期"'],
     },
     {
       status: 'PAID',
-      label: '部分付款',
+      label: '已收款',
       color: 'green',
       icon: <CheckCircle className="h-4 w-4" />,
-      description: '已收到部分或全部款项，但账单流程未完结',
-      scenarios: [
-        '收到部分款项（如1000元账单收了500元）',
-        '收到全部款项但需要后续处理（如开票、记账）',
-      ],
-      nextSteps: ['待收金额为0时可标记为"已完成"', '继续收取剩余款项'],
+      description: '账单款项已收齐，但流程尚未明确关闭',
+      scenarios: ['待收金额为 0', '收款完成但仍需保留后续处理动作'],
+      nextSteps: ['流程闭环后可标记为"已完成"', '如有纠错需求，应先修正金额再改状态'],
     },
     {
       status: 'OVERDUE',
       label: '逾期',
       color: 'red',
       icon: <AlertTriangle className="h-4 w-4" />,
-      description: '超过到期日期仍未收款',
-      scenarios: ['超过到期日且待收金额>0', '需要催收处理'],
-      nextSteps: ['收到款项后变为"部分付款"', '可恢复为"待付"状态'],
+      description: '账单仍有待收金额，且已进入逾期跟进状态',
+      scenarios: ['超过约定时点仍未结清', '需要催收或专项跟进'],
+      nextSteps: ['继续收款时仍保留开放状态', '结清后变为"已收款"或"已完成"'],
     },
     {
       status: 'COMPLETED',
@@ -119,7 +116,7 @@ export function BillStatusExplanation() {
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Badge className="bg-yellow-100 text-yellow-800">待付</Badge>
             <span className="text-gray-400">→</span>
-            <Badge className="bg-green-100 text-green-800">部分付款</Badge>
+            <Badge className="bg-green-100 text-green-800">已收款</Badge>
             <span className="text-gray-400">→</span>
             <Badge className="bg-blue-100 text-blue-800">已完成</Badge>
           </div>
@@ -128,7 +125,7 @@ export function BillStatusExplanation() {
             <span className="text-gray-400">→</span>
             <Badge className="bg-red-100 text-red-800">逾期</Badge>
             <span className="text-gray-400">→</span>
-            <Badge className="bg-green-100 text-green-800">部分付款</Badge>
+            <Badge className="bg-green-100 text-green-800">已收款</Badge>
           </div>
         </div>
 
@@ -139,8 +136,8 @@ export function BillStatusExplanation() {
             <div className="text-sm text-blue-800">
               <p className="mb-1 font-medium">💡 设计理念：</p>
               <p>
-                "部分付款"状态区分了"已收款"和"完全结清"两个概念，支持分期收款和后续处理流程，
-                让账单管理更加精细化和专业化。
+                部分收款不再单独占用状态，而是统一由“已收金额 / 待收金额”表达；
+                状态只负责描述账单是否开放、是否逾期以及是否已完成闭环。
               </p>
             </div>
           </div>

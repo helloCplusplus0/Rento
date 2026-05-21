@@ -133,7 +133,7 @@ export function UtilityBillDetailCard({
               {bill.status === 'PENDING'
                 ? '待付款'
                 : bill.status === 'PAID'
-                  ? '部分付款'
+                  ? '已收款'
                   : bill.status === 'OVERDUE'
                     ? '逾期'
                     : '已完成'}

@@ -20,17 +20,13 @@ interface BillBasicInfoProps {
 export function BillBasicInfo({ bill }: BillBasicInfoProps) {
   const router = useRouter()
 
-  // 根据到期日期自动判断是否逾期
+  // 统一以服务端状态为准，避免与统计口径分叉
   const today = new Date()
   const dueDate = new Date(bill.dueDate)
-  const isActuallyOverdue =
-    today > dueDate && bill.status !== 'PAID' && bill.status !== 'COMPLETED'
-  const overdueDays = isActuallyOverdue
+  const isOverdue = bill.status === 'OVERDUE'
+  const overdueDays = isOverdue
     ? Math.ceil((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
     : 0
-
-  // 显示实际状态（基于日期计算）
-  const actualStatus = isActuallyOverdue ? 'OVERDUE' : bill.status
 
   // 跳转到合同详情
   const handleContractClick = () => {
@@ -51,7 +47,7 @@ export function BillBasicInfo({ bill }: BillBasicInfoProps) {
         <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 via-green-50 to-blue-50 p-4">
           {/* 顶部：状态 */}
           <div className="mb-4 flex justify-center">
-            <BillStatusBadge status={actualStatus} />
+            <BillStatusBadge status={bill.status} />
           </div>
 
           {/* 中部：账单总金额 */}
@@ -88,7 +84,7 @@ export function BillBasicInfo({ bill }: BillBasicInfoProps) {
           <GeneralBillDetails bill={bill} />
         )}
 
-        {isActuallyOverdue && (
+        {isOverdue && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3">
             <p className="font-medium text-red-700">
               ⚠️ 账单已逾期 {overdueDays} 天，请及时处理

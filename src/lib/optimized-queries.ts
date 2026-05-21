@@ -1,4 +1,4 @@
-import type { BillStatus, ContractStatus, RoomStatus } from '@prisma/client'
+import type { ContractStatus, RoomStatus } from '@prisma/client'
 
 import { prisma } from './prisma'
 
@@ -95,7 +95,7 @@ export const optimizedRoomQueries = {
 
     // 范围筛选
     if (rentRange) {
-      where.monthlyRent = {
+      where.rent = {
         gte: rentRange[0],
         lte: rentRange[1],
       }
@@ -249,7 +249,7 @@ export const optimizedRenterQueries = {
       where.OR = [
         { name: { contains: search } },
         { phone: { contains: search } },
-        { idNumber: { contains: search } },
+        { idCard: { contains: search } },
       ]
     }
 

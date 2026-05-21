@@ -736,7 +736,7 @@ export function EnhancedContractDetail({
                     <p className="text-2xl font-bold text-green-600">
                       {billStats.paid}
                     </p>
-                    <p className="text-sm text-gray-600">部分付款</p>
+                    <p className="text-sm text-gray-600">已收款</p>
                   </div>
                 </div>
               </CardContent>

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
+import {
+  resolveBillAmounts,
+  resolveBillStatus,
+  toBillAmount,
+} from '@/lib/bill-semantics'
 import { ErrorType } from '@/lib/error-logger'
 import { billQueries } from '@/lib/queries'
 
@@ -11,8 +16,8 @@ import { billQueries } from '@/lib/queries'
  * 请求体:
  * {
  *   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'COMPLETED',
- *   receivedAmount?: number,
- *   pendingAmount?: number,
+ *   receivedAmount?: number, // 已确认收款金额
+ *   pendingAmount?: number,  // 剩余待收金额
  *   paidDate?: string,
  *   paymentMethod?: string,
  *   operator?: string,
@@ -49,25 +54,65 @@ async function handlePatchBillStatus(
     return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
   }
 
-  const updateData: any = { status }
+  const amount = toBillAmount(existingBill.amount)
+  const currentReceivedAmount = toBillAmount(existingBill.receivedAmount)
+  const currentPendingAmount = toBillAmount(existingBill.pendingAmount)
 
-  if (status === 'PAID') {
-    if (receivedAmount !== undefined) {
-      if (receivedAmount < 0) {
-        return NextResponse.json(
-          { error: 'Received amount cannot be negative' },
-          { status: 400 }
-        )
-      }
-      updateData.receivedAmount = receivedAmount
-    }
+  let normalizedAmounts
 
-    if (pendingAmount !== undefined) {
-      updateData.pendingAmount = pendingAmount
-    }
+  try {
+    normalizedAmounts = resolveBillAmounts({
+      amount,
+      receivedAmount:
+        receivedAmount !== undefined ? receivedAmount : currentReceivedAmount,
+      pendingAmount:
+        pendingAmount !== undefined ? pendingAmount : currentPendingAmount,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Invalid bill amounts',
+      },
+      { status: 400 }
+    )
+  }
 
+  if (
+    status === 'COMPLETED' &&
+    normalizedAmounts.pendingAmount > 0.01
+  ) {
+    return NextResponse.json(
+      { error: 'Completed bill must have zero pending amount' },
+      { status: 400 }
+    )
+  }
+
+  const openStatusBase =
+    status === 'OVERDUE'
+      ? 'OVERDUE'
+      : existingBill.status === 'OVERDUE'
+        ? 'OVERDUE'
+        : 'PENDING'
+
+  const normalizedStatus = resolveBillStatus({
+    requestedStatus: status === 'COMPLETED' ? 'COMPLETED' : openStatusBase,
+    pendingAmount: normalizedAmounts.pendingAmount,
+  })
+
+  const hasPaymentChange =
+    Math.abs(normalizedAmounts.receivedAmount - currentReceivedAmount) > 0.01
+
+  const updateData: any = {
+    status: normalizedStatus,
+    receivedAmount: normalizedAmounts.receivedAmount,
+    pendingAmount: normalizedAmounts.pendingAmount,
+  }
+
+  if (hasPaymentChange || normalizedStatus === 'PAID' || normalizedStatus === 'COMPLETED') {
     if (paidDate) {
       updateData.paidDate = new Date(paidDate)
+    } else if (!existingBill.paidDate && normalizedAmounts.receivedAmount > 0) {
+      updateData.paidDate = new Date()
     }
 
     if (paymentMethod) {
@@ -77,6 +122,8 @@ async function handlePatchBillStatus(
     if (operator) {
       updateData.operator = operator
     }
+  } else if (normalizedAmounts.receivedAmount === 0) {
+    updateData.paidDate = null
   }
 
   if (remarks) {

@@ -1,0 +1,7 @@
+- [x] 已冻结 `pendingAmount`、`receivedAmount` 与 `BillStatus` 的统一语义
+- [x] 已识别并移除 `monthlyRent` / `idNumber` 等历史漂移字段在账务查询主链中的引用
+- [x] 已收口仪表盘待收、趋势与状态分布的统计口径
+- [x] 已确认账单状态查询、详情或状态变更接口与统计语义一致
+- [x] 已完成 `npm run lint`
+- [x] 已完成 `npm run type-check`
+- [x] 已提供至少一条覆盖账务主链语义的可执行验证路径

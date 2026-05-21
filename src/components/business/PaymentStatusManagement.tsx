@@ -110,7 +110,15 @@ export function PaymentStatusManagement({
     try {
       await onStatusChange(status)
       setSuccess(
-        `状态已更新为${status === 'COMPLETED' ? '已完成' : status === 'PENDING' ? '待付款' : status}`
+        `状态已更新为${
+          status === 'COMPLETED'
+            ? '已完成'
+            : status === 'PENDING'
+              ? '待付款'
+              : status === 'PAID'
+                ? '已收款'
+                : status
+        }`
       )
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
@@ -129,13 +137,14 @@ export function PaymentStatusManagement({
     setSuccess(null)
   }
 
-  // 根据到期日期自动判断是否逾期
+  // 统一以服务端状态为准，避免界面根据到期日再次推导出不同状态口径
   const today = new Date()
   const dueDate = new Date(bill.dueDate)
-  const isActuallyOverdue =
-    today > dueDate && bill.status !== 'PAID' && bill.status !== 'COMPLETED'
+  const isOverdue = bill.status === 'OVERDUE'
 
-  const canConfirmPayment = bill.status === 'PENDING' || isActuallyOverdue
+  const canConfirmPayment =
+    (bill.status === 'PENDING' || bill.status === 'OVERDUE') &&
+    bill.pendingAmount > 0
   const canMarkCompleted = bill.status === 'PAID' && bill.pendingAmount === 0
 
   return (
@@ -201,14 +210,14 @@ export function PaymentStatusManagement({
           <div className="rounded-lg bg-gray-50 p-3">
             <p className="text-sm text-gray-600">
               <strong>当前状态：</strong>
-              {isActuallyOverdue
-                ? '逾期'
-                : bill.status === 'PENDING'
-                  ? '待付款'
-                  : bill.status === 'PAID'
-                    ? '部分付款'
-                    : bill.status === 'COMPLETED'
-                      ? '已完成'
+              {bill.status === 'PENDING'
+                ? '待付款'
+                : bill.status === 'PAID'
+                  ? '已收款'
+                  : bill.status === 'COMPLETED'
+                    ? '已完成'
+                    : bill.status === 'OVERDUE'
+                      ? '逾期'
                       : bill.status}
             </p>
             {bill.pendingAmount > 0 && (
@@ -217,7 +226,7 @@ export function PaymentStatusManagement({
                 {formatCurrency(bill.pendingAmount)}
               </p>
             )}
-            {isActuallyOverdue && (
+            {isOverdue && (
               <p className="mt-1 text-sm text-red-600">
                 <strong>逾期天数：</strong>
                 {Math.ceil(
