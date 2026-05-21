@@ -1,5 +1,12 @@
+const path = require('path')
 const { performance } = require('perf_hooks')
+const { loadEnvConfig } = require('@next/env')
 const { PrismaClient } = require('@prisma/client')
+
+const projectDir = path.resolve(__dirname, '..')
+
+// Reuse Next.js env resolution so benchmark runs with the same .env* precedence as the app.
+loadEnvConfig(projectDir, true)
 
 const prisma = new PrismaClient()
 
@@ -20,22 +27,147 @@ class BenchmarkTool {
   async benchmarkDatabaseQueries() {
     console.log('🔍 开始数据库性能测试...')
 
-    // 测试基础查询
-    await this.benchmarkOperation('房间列表查询', async () => {
-      const rooms = await prisma.room.findMany({
+    await this.benchmarkOperation('账单分页筛选查询', async () => {
+      const bills = await prisma.bill.findMany({
+        where: {
+          status: { in: ['PENDING', 'OVERDUE'] },
+        },
+        orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+        take: 20,
+        skip: 0,
         include: {
-          building: true,
-          contracts: {
-            include: {
-              renter: true,
+          contract: {
+            select: {
+              id: true,
+              contractNumber: true,
+              renter: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              room: {
+                select: {
+                  id: true,
+                  roomNumber: true,
+                  building: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
       })
+      return bills.length
+    })
+
+    await this.benchmarkOperation('合同分页搜索查询', async () => {
+      const contracts = await prisma.contract.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        skip: 0,
+        include: {
+          renter: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+          room: {
+            select: {
+              id: true,
+              roomNumber: true,
+              building: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          bills: {
+            select: {
+              id: true,
+              status: true,
+              amount: true,
+              receivedAmount: true,
+              pendingAmount: true,
+            },
+            orderBy: { dueDate: 'desc' },
+          },
+        },
+      })
+      return contracts.length
+    })
+
+    await this.benchmarkOperation('房间-仪表批量读取查询', async () => {
+      const rooms = await prisma.room.findMany({
+        include: {
+          building: true,
+          contracts: {
+            where: { status: 'ACTIVE' },
+            include: {
+              renter: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: { startDate: 'desc' },
+          },
+          meters: {
+            include: {
+              readings: {
+                orderBy: { readingDate: 'desc' },
+                take: 1,
+              },
+            },
+            orderBy: [
+              { meterType: 'asc' },
+              { sortOrder: 'asc' },
+              { displayName: 'asc' },
+            ],
+          },
+        },
+        orderBy: [
+          { building: { name: 'asc' } },
+          { floorNumber: 'asc' },
+          { roomNumber: 'asc' },
+        ],
+      })
       return rooms.length
     })
 
-    // 测试复杂聚合查询
+    await this.benchmarkOperation('租客分页查询', async () => {
+      const renters = await prisma.renter.findMany({
+        orderBy: { name: 'asc' },
+        take: 20,
+        skip: 0,
+        include: {
+          contracts: {
+            orderBy: { createdAt: 'desc' },
+            include: {
+              room: {
+                include: {
+                  building: true,
+                },
+              },
+            },
+          },
+        },
+      })
+      return renters.length
+    })
+
     await this.benchmarkOperation('账单统计查询', async () => {
       const stats = await prisma.bill.groupBy({
         by: ['status'],
@@ -45,70 +177,6 @@ class BenchmarkTool {
         },
       })
       return stats.length
-    })
-
-    // 测试深度关联查询
-    await this.benchmarkOperation('深度关联查询', async () => {
-      const contracts = await prisma.contract.findMany({
-        where: {
-          status: 'ACTIVE',
-        },
-        include: {
-          room: {
-            include: {
-              building: true,
-            },
-          },
-          renter: true,
-          bills: {
-            where: {
-              status: 'PENDING',
-            },
-          },
-        },
-      })
-      return contracts.length
-    })
-
-    // 测试分页查询
-    await this.benchmarkOperation('分页查询测试', async () => {
-      const bills = await prisma.bill.findMany({
-        take: 20,
-        skip: 0,
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          contract: {
-            include: {
-              room: true,
-              renter: true,
-            },
-          },
-        },
-      })
-      return bills.length
-    })
-
-    // 测试搜索查询
-    await this.benchmarkOperation('模糊搜索查询', async () => {
-      const renters = await prisma.renter.findMany({
-        where: {
-          OR: [
-            { name: { contains: '张' } },
-            { phone: { contains: '138' } },
-            { idCard: { contains: '1234' } },
-          ],
-        },
-        include: {
-          contracts: {
-            include: {
-              room: true,
-            },
-          },
-        },
-      })
-      return renters.length
     })
   }
 
@@ -187,6 +255,7 @@ class BenchmarkTool {
     const iterations = 3 // 减少迭代次数
     const durations = []
     const memoryDeltas = []
+    let recordsProcessed = 0
 
     for (let i = 0; i < iterations; i++) {
       // 强制垃圾回收（如果可用）
@@ -197,7 +266,7 @@ class BenchmarkTool {
       const memoryBefore = process.memoryUsage()
       const start = performance.now()
 
-      const recordsProcessed = await operation()
+      recordsProcessed += await operation()
 
       const duration = performance.now() - start
       const memoryAfter = process.memoryUsage()
@@ -214,11 +283,12 @@ class BenchmarkTool {
     const avgMemoryDelta =
       memoryDeltas.reduce((a, b) => a + b, 0) / memoryDeltas.length
     const throughput = 1000 / avgDuration // 每秒操作数
+    const averageRecordsProcessed = recordsProcessed / iterations
 
     const result = {
       operation: name,
       duration: Math.round(avgDuration * 100) / 100,
-      recordsProcessed: 0,
+      recordsProcessed: Math.round(averageRecordsProcessed * 100) / 100,
       throughput: Math.round(throughput * 100) / 100,
       memoryUsage: {
         delta: Math.round((avgMemoryDelta / 1024 / 1024) * 100) / 100, // MB

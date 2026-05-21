@@ -1,4 +1,9 @@
-import type { ContractStatus, RoomStatus } from '@prisma/client'
+import type {
+  BillStatus,
+  BillType,
+  ContractStatus,
+  RoomStatus,
+} from '@prisma/client'
 
 import { prisma } from './prisma'
 
@@ -57,6 +62,20 @@ export interface ContractQueryFilters {
   startDate?: Date
   endDate?: Date
   expiringDays?: number
+}
+
+/**
+ * 账单查询筛选参数接口
+ */
+export interface BillQueryFilters {
+  status?: BillStatus
+  type?: BillType
+  contractId?: string
+  search?: string
+  startDate?: Date
+  endDate?: Date
+  buildingId?: string
+  renterId?: string
 }
 
 /**
@@ -225,6 +244,52 @@ export const optimizedRoomQueries = {
 
     return result
   },
+
+  /**
+   * 获取房间及仪表信息，避免逐房补查产生 N+1。
+   */
+  async findWithMeters(): Promise<any[]> {
+    return prisma.room.findMany({
+      include: {
+        building: true,
+        contracts: {
+          where: { status: 'ACTIVE' },
+          include: {
+            renter: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: { startDate: 'desc' },
+        },
+        meters: {
+          include: {
+            readings: {
+              orderBy: { readingDate: 'desc' },
+              take: 1,
+              select: {
+                currentReading: true,
+                readingDate: true,
+              },
+            },
+          },
+          orderBy: [
+            { meterType: 'asc' },
+            { sortOrder: 'asc' },
+            { displayName: 'asc' },
+          ],
+        },
+      },
+      orderBy: [
+        { building: { name: 'asc' } },
+        { floorNumber: 'asc' },
+        { roomNumber: 'asc' },
+      ],
+    })
+  },
 }
 
 /**
@@ -236,37 +301,62 @@ export const optimizedRenterQueries = {
    */
   async findWithPagination(
     pagination: PaginationParams,
-    filters: RenterQueryFilters = {}
+    filters: RenterQueryFilters = {},
+    sort: {
+      field?: 'name' | 'phone' | 'moveInDate' | 'createdAt'
+      order?: 'asc' | 'desc'
+    } = {}
   ): Promise<PaginatedResult<any>> {
     const { page, limit } = pagination
     const { search, contractStatus, hasActiveContract, buildingId } = filters
+    const { field = 'name', order = 'asc' } = sort
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const whereConditions: any[] = []
 
     // 搜索条件
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { phone: { contains: search } },
-        { idCard: { contains: search } },
-      ]
+      whereConditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+          { idCard: { contains: search, mode: 'insensitive' } },
+        ],
+      })
     }
 
     // 合同状态筛选
-    if (contractStatus || hasActiveContract !== undefined || buildingId) {
-      where.contracts = {
-        some: {
-          ...(contractStatus && { status: contractStatus }),
-          ...(hasActiveContract !== undefined && {
-            status: hasActiveContract ? 'ACTIVE' : { not: 'ACTIVE' },
-          }),
-          ...(buildingId && {
-            room: { buildingId },
-          }),
+    if (contractStatus) {
+      whereConditions.push({
+        contracts: {
+          some: { status: contractStatus },
         },
-      }
+      })
     }
+
+    if (hasActiveContract !== undefined) {
+      whereConditions.push({
+        contracts: hasActiveContract
+          ? {
+              some: { status: 'ACTIVE' },
+            }
+          : {
+              none: { status: 'ACTIVE' },
+            },
+      })
+    }
+
+    if (buildingId) {
+      whereConditions.push({
+        contracts: {
+          some: {
+            room: { buildingId },
+          },
+        },
+      })
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {}
 
     const [renters, total] = await Promise.all([
       prisma.renter.findMany({
@@ -294,7 +384,7 @@ export const optimizedRenterQueries = {
             orderBy: { createdAt: 'desc' },
           },
         },
-        orderBy: { name: 'asc' },
+        orderBy: { [field]: order },
         skip,
         take: limit,
       }),
@@ -425,13 +515,39 @@ export const optimizedContractQueries = {
             select: {
               id: true,
               roomNumber: true,
+              rent: true,
+              area: true,
               building: {
                 select: {
                   id: true,
                   name: true,
+                  totalRooms: true,
                 },
               },
             },
+          },
+          bills: {
+            select: {
+              id: true,
+              billNumber: true,
+              type: true,
+              amount: true,
+              receivedAmount: true,
+              pendingAmount: true,
+              dueDate: true,
+              paidDate: true,
+              period: true,
+              status: true,
+              contractId: true,
+              paymentMethod: true,
+              operator: true,
+              remarks: true,
+              aggregationType: true,
+              meterReadingId: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+            orderBy: { dueDate: 'desc' },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -519,11 +635,141 @@ export const optimizedContractQueries = {
   },
 }
 
+/**
+ * 优化的账单查询函数
+ */
+export const optimizedBillQueries = {
+  /**
+   * 分页查询账单列表（优化版）
+   */
+  async findWithPagination(
+    pagination: PaginationParams,
+    filters: BillQueryFilters = {}
+  ): Promise<PaginatedResult<any>> {
+    const { page, limit } = pagination
+    const {
+      status,
+      type,
+      contractId,
+      search,
+      startDate,
+      endDate,
+      buildingId,
+      renterId,
+    } = filters
+    const skip = (page - 1) * limit
+
+    const where: any = {}
+
+    if (status) where.status = status
+    if (type) where.type = type
+    if (contractId) where.contractId = contractId
+
+    if (startDate || endDate) {
+      where.dueDate = {}
+      if (startDate) where.dueDate.gte = startDate
+      if (endDate) where.dueDate.lte = endDate
+    }
+
+    if (buildingId || renterId) {
+      where.contract = {
+        ...(buildingId ? { room: { buildingId } } : {}),
+        ...(renterId ? { renterId } : {}),
+      }
+    }
+
+    if (search) {
+      where.OR = [
+        { billNumber: { contains: search, mode: 'insensitive' } },
+        {
+          contract: {
+            renter: {
+              name: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          contract: {
+            room: {
+              roomNumber: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          contract: {
+            room: {
+              building: {
+                name: { contains: search, mode: 'insensitive' },
+              },
+            },
+          },
+        },
+      ]
+    }
+
+    const [bills, total] = await Promise.all([
+      prisma.bill.findMany({
+        where,
+        include: {
+          contract: {
+            select: {
+              id: true,
+              contractNumber: true,
+              monthlyRent: true,
+              totalRent: true,
+              deposit: true,
+              keyDeposit: true,
+              cleaningFee: true,
+              room: {
+                select: {
+                  id: true,
+                  roomNumber: true,
+                  rent: true,
+                  area: true,
+                  building: {
+                    select: {
+                      id: true,
+                      name: true,
+                      totalRooms: true,
+                    },
+                  },
+                },
+              },
+              renter: {
+                select: {
+                  id: true,
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.bill.count({ where }),
+    ])
+
+    return {
+      data: bills,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1,
+    }
+  },
+}
+
 // 导出所有优化查询
 export const optimizedQueries = {
   rooms: optimizedRoomQueries,
   renters: optimizedRenterQueries,
   contracts: optimizedContractQueries,
+  bills: optimizedBillQueries,
 }
 
 export default optimizedQueries

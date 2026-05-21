@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 
 import {
   createSuccessResponse,
+  parsePaginationParams,
   parseQueryParams,
   parseRequestBody,
   validateRequired,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/api-error-handler'
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import { ErrorType } from '@/lib/error-logger'
+import { optimizedContractQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import {
   contractQueries,
@@ -26,6 +28,7 @@ import {
 
 async function handleGetContracts(request: NextRequest) {
   const queryParams = parseQueryParams(request)
+  const { page, limit } = parsePaginationParams(request)
   const {
     search: searchQuery = '',
     status,
@@ -33,68 +36,23 @@ async function handleGetContracts(request: NextRequest) {
     isExpiringSoon,
   } = queryParams
 
-  // 构建查询条件
-  const filters: any = {}
+  const shouldFilterExpiringSoon =
+    status === 'expiring_soon' || isExpiringSoon === true
 
-  if (status && status !== 'all') {
-    if (status === 'expiring_soon') {
-      // 30天内到期的合同
-      const thirtyDaysFromNow = new Date()
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-
-      filters.endDate = {
-        lte: thirtyDaysFromNow,
-      }
-      filters.status = 'ACTIVE'
-    } else {
-      filters.status = status
+  const result = await optimizedContractQueries.findWithPagination(
+    { page, limit },
+    {
+      ...(status && status !== 'all' && status !== 'expiring_soon'
+        ? { status: status as any }
+        : {}),
+      ...(searchQuery ? { search: searchQuery as string } : {}),
+      ...(buildingId ? { buildingId: buildingId as string } : {}),
+      ...(shouldFilterExpiringSoon ? { expiringDays: 30 } : {}),
     }
-  }
-
-  if (buildingId) {
-    filters.room = {
-      buildingId,
-    }
-  }
-
-  if (isExpiringSoon) {
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-
-    filters.endDate = {
-      lte: thirtyDaysFromNow,
-    }
-    filters.status = 'ACTIVE'
-  }
-
-  // 获取合同列表
-  const contracts = await prisma.contract.findMany({
-    where: filters,
-    include: {
-      room: {
-        include: { building: true },
-      },
-      renter: true,
-      bills: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  // 如果有搜索关键词，进行过滤
-  let filteredContracts = contracts
-  if (searchQuery) {
-    const query = (searchQuery as string).toLowerCase()
-    filteredContracts = contracts.filter(
-      (contract: any) =>
-        contract.contractNumber.toLowerCase().includes(query) ||
-        contract.renter.name.toLowerCase().includes(query) ||
-        contract.room.roomNumber.toLowerCase().includes(query) ||
-        contract.room.building.name.toLowerCase().includes(query)
-    )
-  }
+  )
 
   // 转换数据类型（Decimal -> number）
-  const contractsForClient = filteredContracts.map((contract: any) => ({
+  const contractsForClient = result.data.map((contract: any) => ({
     ...contract,
     monthlyRent: Number(contract.monthlyRent),
     totalRent: Number(contract.totalRent),
@@ -120,7 +78,12 @@ async function handleGetContracts(request: NextRequest) {
 
   return createSuccessResponse({
     contracts: contractsForClient,
-    total: contractsForClient.length,
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+    hasNext: result.hasNext,
+    hasPrev: result.hasPrev,
   })
 }
 

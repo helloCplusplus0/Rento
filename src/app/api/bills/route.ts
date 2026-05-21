@@ -3,6 +3,7 @@ import type { BillStatus, BillType } from '@prisma/client'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { optimizedBillQueries } from '@/lib/optimized-queries'
 import { billQueries, contractQueries } from '@/lib/queries'
 
 /**
@@ -26,58 +27,22 @@ async function handleGetBills(request: NextRequest) {
   const buildingId = searchParams.get('buildingId')
   const renterId = searchParams.get('renterId')
 
-  // 构建筛选条件
-  const filters = {
-    ...(status && { status }),
-    ...(type && { type }),
-    ...(contractId && { contractId }),
-    ...(search && { search }),
-    ...(startDate && { startDate: new Date(startDate) }),
-    ...(endDate && { endDate: new Date(endDate) }),
-    ...(buildingId && { buildingId }),
-    ...(renterId && { renterId }),
-  }
-  void filters
-
-  // 使用现有的 billQueries 获取数据
-  const bills = await billQueries.findAll()
-
-  // 应用筛选逻辑
-  let filteredBills = bills
-
-  if (status) {
-    filteredBills = filteredBills.filter((bill) => bill.status === status)
-  }
-
-  if (type) {
-    filteredBills = filteredBills.filter((bill) => bill.type === type)
-  }
-
-  if (contractId) {
-    filteredBills = filteredBills.filter(
-      (bill) => bill.contractId === contractId
-    )
-  }
-
-  if (search) {
-    const searchLower = search.toLowerCase()
-    filteredBills = filteredBills.filter(
-      (bill) =>
-        bill.billNumber.toLowerCase().includes(searchLower) ||
-        bill.contract.renter.name.toLowerCase().includes(searchLower) ||
-        bill.contract.room.roomNumber.toLowerCase().includes(searchLower) ||
-        bill.contract.room.building.name.toLowerCase().includes(searchLower)
-    )
-  }
-
-  // 分页处理
-  const total = filteredBills.length
-  const totalPages = Math.ceil(total / limit)
-  const skip = (page - 1) * limit
-  const paginatedBills = filteredBills.slice(skip, skip + limit)
+  const result = await optimizedBillQueries.findWithPagination(
+    { page, limit },
+    {
+      ...(status ? { status } : {}),
+      ...(type ? { type } : {}),
+      ...(contractId ? { contractId } : {}),
+      ...(search ? { search } : {}),
+      ...(startDate ? { startDate: new Date(startDate) } : {}),
+      ...(endDate ? { endDate: new Date(endDate) } : {}),
+      ...(buildingId ? { buildingId } : {}),
+      ...(renterId ? { renterId } : {}),
+    }
+  )
 
   // 转换 Decimal 类型为 number
-  const billsData = paginatedBills.map((bill) => ({
+  const billsData = result.data.map((bill) => ({
     ...bill,
     amount: Number(bill.amount),
     receivedAmount: Number(bill.receivedAmount),
@@ -98,12 +63,12 @@ async function handleGetBills(request: NextRequest) {
 
   return NextResponse.json({
     data: billsData,
-    total,
-    page,
-    limit,
-    totalPages,
-    hasNext: page < totalPages,
-    hasPrev: page > 1,
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+    hasNext: result.hasNext,
+    hasPrev: result.hasPrev,
   })
 }
 

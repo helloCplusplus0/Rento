@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
-import { meterQueries, roomQueries } from '@/lib/queries'
+import { optimizedRoomQueries } from '@/lib/optimized-queries'
+import { roomQueries } from '@/lib/queries'
 import {
   formatBatchUpdateResponse,
   formatRoomSearchResponse,
@@ -26,78 +27,59 @@ async function handleGetRooms(request: NextRequest) {
   const includeMeters = searchParams.get('includeMeters') === 'true'
 
   if (includeMeters) {
-    const rooms = await roomQueries.findAll()
+    const now = new Date()
+    const rooms = await optimizedRoomQueries.findWithMeters()
 
-    const roomsWithMeters = await Promise.all(
-      rooms.map(async (room) => {
-        try {
-          const meters = await meterQueries.findByRoom(room.id)
+    const roomsWithMeters = rooms.map((room) => {
+      const activeContract =
+        room.contracts.find(
+          (contract: any) =>
+            contract.status === 'ACTIVE' &&
+            now >= new Date(contract.startDate) &&
+            now <= new Date(contract.endDate)
+        ) || null
 
-          const activeContract = room.contracts.find(
-            (contract) =>
-              contract.status === 'ACTIVE' &&
-              new Date() >= new Date(contract.startDate) &&
-              new Date() <= new Date(contract.endDate)
-          )
+      const metersData = room.meters.map((meter: any) => ({
+        id: meter.id,
+        displayName: meter.displayName,
+        meterType: meter.meterType,
+        unitPrice: Number(meter.unitPrice),
+        unit: meter.unit,
+        location: meter.location,
+        isActive: meter.isActive,
+        lastReading:
+          meter.readings.length > 0
+            ? Number(meter.readings[0].currentReading)
+            : 0,
+        lastReadingDate:
+          meter.readings.length > 0 ? meter.readings[0].readingDate : null,
+        contractId: activeContract?.id || null,
+        contractNumber: activeContract?.contractNumber || null,
+        renterName: activeContract?.renter?.name || null,
+        contractStatus: activeContract?.status || null,
+      }))
 
-          const metersData = meters.map((meter: any) => ({
-            id: meter.id,
-            displayName: meter.displayName,
-            meterType: meter.meterType,
-            unitPrice: Number(meter.unitPrice),
-            unit: meter.unit,
-            location: meter.location,
-            isActive: meter.isActive,
-            lastReading:
-              meter.readings.length > 0
-                ? Number(meter.readings[0].currentReading)
-                : 0,
-            lastReadingDate:
-              meter.readings.length > 0
-                ? meter.readings[0].readingDate
-                : null,
-            contractId: activeContract?.id || null,
-            contractNumber: activeContract?.contractNumber || null,
-            renterName: activeContract?.renter?.name || null,
-            contractStatus: activeContract?.status || null,
-          }))
-
-          return {
-            ...room,
-            rent: Number(room.rent),
-            area: room.area ? Number(room.area) : null,
-            building: {
-              ...room.building,
-              totalRooms: Number(room.building.totalRooms),
-            },
-            meters: metersData,
-            activeContract: activeContract
-              ? {
-                  id: activeContract.id,
-                  contractNumber: activeContract.contractNumber,
-                  renter: activeContract.renter,
-                  startDate: activeContract.startDate,
-                  endDate: activeContract.endDate,
-                  status: activeContract.status,
-                }
-              : null,
-          }
-        } catch (error) {
-          console.error(`Failed to load meters for room ${room.id}:`, error)
-          return {
-            ...room,
-            rent: Number(room.rent),
-            area: room.area ? Number(room.area) : null,
-            building: {
-              ...room.building,
-              totalRooms: Number(room.building.totalRooms),
-            },
-            meters: [],
-            activeContract: null,
-          }
-        }
-      })
-    )
+      return {
+        ...room,
+        rent: Number(room.rent),
+        area: room.area ? Number(room.area) : null,
+        building: {
+          ...room.building,
+          totalRooms: Number(room.building.totalRooms),
+        },
+        meters: metersData,
+        activeContract: activeContract
+          ? {
+              id: activeContract.id,
+              contractNumber: activeContract.contractNumber,
+              renter: activeContract.renter,
+              startDate: activeContract.startDate,
+              endDate: activeContract.endDate,
+              status: activeContract.status,
+            }
+          : null,
+      }
+    })
 
     return NextResponse.json(roomsWithMeters)
   }

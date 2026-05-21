@@ -9,6 +9,7 @@ import {
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { optimizedRenterQueries } from '@/lib/optimized-queries'
 import { renterQueries } from '@/lib/queries'
 
 /**
@@ -27,71 +28,46 @@ async function handleGetRenters(request: NextRequest) {
     sortOrder = 'asc',
   } = queryParams
 
-  if (search || contractStatus || hasActiveContract || buildingId) {
-    // 使用搜索功能
-    const result = await renterQueries.searchRenters({
-      query: (search as string) || undefined,
-      filters: {
-        contractStatus: (contractStatus as any) || null,
-        hasActiveContract:
-          hasActiveContract === true
-            ? true
-            : hasActiveContract === false
-              ? false
-              : undefined,
-        buildingId: (buildingId as string) || null,
-      },
-      pagination: { page, limit },
-      sort: {
-        field: sortField as 'name' | 'phone' | 'moveInDate' | 'createdAt',
-        order: sortOrder as 'asc' | 'desc',
-      },
-    })
-
-    // 转换 Decimal 类型为 number
-    const rentersData = {
-      ...result,
-      renters: result.renters.map((renter) => ({
-        ...renter,
-        contracts: renter.contracts.map((contract) => ({
-          ...contract,
-          monthlyRent: Number(contract.monthlyRent),
-          totalRent: Number(contract.totalRent),
-          deposit: Number(contract.deposit),
-          keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
-          cleaningFee: contract.cleaningFee
-            ? Number(contract.cleaningFee)
-            : null,
-        })),
-      })),
+  const result = await optimizedRenterQueries.findWithPagination(
+    { page, limit },
+    {
+      search: (search as string) || undefined,
+      contractStatus: (contractStatus as any) || undefined,
+      hasActiveContract:
+        hasActiveContract === true
+          ? true
+          : hasActiveContract === false
+            ? false
+            : undefined,
+      buildingId: (buildingId as string) || undefined,
+    },
+    {
+      field: sortField as 'name' | 'phone' | 'moveInDate' | 'createdAt',
+      order: sortOrder as 'asc' | 'desc',
     }
+  )
 
-    return createSuccessResponse(rentersData)
-  } else {
-    // 获取所有租客
-    const renters = await renterQueries.findAll()
+  const rentersData = result.data.map((renter) => ({
+    ...renter,
+    contracts: renter.contracts.map((contract: any) => ({
+      ...contract,
+      monthlyRent: Number(contract.monthlyRent),
+      totalRent: Number(contract.totalRent),
+      deposit: Number(contract.deposit),
+      keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
+      cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
+    })),
+  }))
 
-    // 转换 Decimal 类型为 number
-    const rentersData = renters.map((renter) => ({
-      ...renter,
-      contracts: renter.contracts.map((contract) => ({
-        ...contract,
-        monthlyRent: Number(contract.monthlyRent),
-        totalRent: Number(contract.totalRent),
-        deposit: Number(contract.deposit),
-        keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
-        cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
-      })),
-    }))
-
-    return createSuccessResponse({
-      renters: rentersData,
-      total: rentersData.length,
-      page: 1,
-      limit: rentersData.length,
-      totalPages: 1,
-    })
-  }
+  return createSuccessResponse({
+    renters: rentersData,
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+    hasNext: result.hasNext,
+    hasPrev: result.hasPrev,
+  })
 }
 
 export const GET = withApiErrorHandler(handleGetRenters, {
