@@ -56,7 +56,7 @@ Rento/
 
 ## 4. `prisma/` 结构说明
 - `schema.prisma`：当前数据库主真相源，已固定为 PostgreSQL。
-- `migrations/`：保留历史迁移；其中 `migration_lock.toml` 仍残留 SQLite 时代标记，当前部署脚本用兼容逻辑兜底。
+- `migrations/`：保留历史迁移；其中 `migration_lock.toml` 仍残留 SQLite 时代标记，当前只能作为历史兼容项存在，不能被误读为 PostgreSQL 正式迁移锁。
 - `dev.db`：历史 SQLite 文件，已从主路径移除。
 
 ## 5. `scripts/` 结构说明
@@ -97,6 +97,10 @@ Rento/
 - `src/lib/validation.ts`、`src/lib/queries.ts` 与 `src/app/api/rooms/[id]/route.ts`、`src/app/api/contracts/[id]/route.ts`、`src/app/api/meters/[meterId]/route.ts` 仍存在“业务门禁已部分存在，但默认删除路径仍偏向物理删除”的张力。
 - `src/lib/optimized-queries.ts` 仍存在字段漂移，当前已确认至少包括 `Room.rent` / `monthlyRent` 与 `Renter.idCard` / `idNumber` 的不一致。
 - `src/lib/dashboard-queries.ts` 的待收金额与趋势统计仍有历史语义漂移，需要在 `phase03` 明确与 `BillStatus` 的统一口径。
-- `scripts/migrate-and-seed.sh` 与 `prisma/migrations/migration_lock.toml` 仍通过 `sqlite -> db push` 兼容分支维持 PostgreSQL 主线，尚未形成正式退出条件。
+- `scripts/migrate-and-seed.sh` 与 `prisma/migrations/migration_lock.toml` 当前仍承担迁移兼容层：
+  - `migration_lock.toml` 仍指向 SQLite，说明现有迁移目录不是可直接在 PostgreSQL 上回放的正式迁移链
+  - `migrate-and-seed.sh` 当前采用两级兜底：检测到 SQLite 锁时直接 `db push`；其余情况先 `migrate deploy`，失败后仍回退 `db push`
+  - 该兼容层的当前作用是“保证 PostgreSQL 环境可按现状 schema 启动”，不是“提供正式、可审计、可回放的 PostgreSQL 迁移基线”
+  - 正式退出条件至少包括：完成 PostgreSQL 基线方案、在空 PostgreSQL 库上验证通过、确认可替代 `db push` 兼容分支后，才能清理该历史路径
 - 部分辅助页面与性能页面未明确“只在开发使用”还是“长期保留”。
 - 房间、合同、账单、仪表主链的删除门禁与状态约束仍需在服务端进一步加固。

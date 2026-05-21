@@ -11,6 +11,7 @@
 - PostgreSQL-only：当前主线不再支持 SQLite 开发配置。
 - `.env` 私有：局域网地址、密码、密钥可保留在本地 `.env`，不应同步到共享文档。
 - 域名优先：生产环境使用正式域名，局域网地址仅用于本地或内网调试。
+- 迁移兼容显式化：当前 Prisma 迁移链仍保留 SQLite 历史兼容，容器初始化脚本中的 `db push` 只是过渡兜底，不是正式 PostgreSQL 迁移基线。
 
 ## 3. 最小配置步骤
 ```bash
@@ -64,6 +65,7 @@ npm run dev
 - `CONTAINER_DATABASE_URL`：容器内应用运行时使用的 PostgreSQL 连接串，应指向容器服务名
 - `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD`：容器数据库初始化配置
 - `POSTGRES_PORT`：宿主机映射端口
+- 容器部署时，应用实际拿到的是 `docker-compose.yml` 注入后的 `DATABASE_URL=${CONTAINER_DATABASE_URL}`；不要把宿主机开发用 `DATABASE_URL` 误读为容器内连接串
 
 ### 安全与网络
 - `ALLOWED_ORIGINS`：允许的来源地址
@@ -119,4 +121,6 @@ node -e "const { randomBytes, scryptSync } = require('node:crypto'); const passw
 ## 7. 已知历史遗留
 - 早期项目曾使用 SQLite，本仓库仍残留少量历史注释和兼容脚本。
 - 当前执行与发布口径以 PostgreSQL 为准；遇到冲突时，以 `prisma/schema.prisma`、`.env.example` 和顶层治理文档为准。
+- `prisma/migrations/migration_lock.toml` 当前仍指向 SQLite，`scripts/migrate-and-seed.sh` 会在该锁存在或 `migrate deploy` 无法应用旧迁移链时回退到 `db push`。
+- 该兼容分支的当前作用是保证 PostgreSQL 环境按现状 schema 可启动；正式退出前至少需要完成 PostgreSQL 基线方案、空库验证和兼容替代验证。
 - 当前推荐的开发态启动方式已从裸 `npm run dev` 升级为统一入口；若需直接调用 `next dev` 做底层排查，请显式使用 `npm run dev:next`，且仅作为临时调试手段。
