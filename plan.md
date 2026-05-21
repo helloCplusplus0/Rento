@@ -1,10 +1,10 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase03-consistency-hardening-*`
-- 当前阶段目标：在最小认证门禁完成后，继续收口核心业务链的一致性、删除门禁与历史语义漂移。
+- 当前默认工作流：`phase04-performance-and-ops-*`
+- 当前阶段目标：在主链一致性稳定后，继续收口关键查询性能、运行可观测性与 dev-only 入口治理。
 - 当前执行方式：进入新 `phase*` 前，先通过 `/plan` 同步顶层规范并产出阶段级 `architecture_plan` / `dev_plan`，待用户审核后再逐个子任务进入 `/spec`。
-- 当前下一步：先生成 `docs/phase03_consistency_hardening_architecture_plan.md`、`docs/phase03_consistency_hardening_dev_plan.md`、`docs/phase03_consistency_hardening_shared_baseline.md`，完成后停止并等待用户审核。
+- 当前下一步：完成 `phase04-performance-and-ops-01-baseline-and-scope-freeze` 的文档级验收，冻结共享边界、页面初始分类口径与顶层真相源；待用户明确批准后，再按顺序进入 `phase04-performance-and-ops-02-query-performance-closure`。
 
 ## 阶段顺序
 
@@ -58,6 +58,9 @@
 - 验收条件：
   - 关键状态流转有明确规则
   - 不再存在“文档正确、代码行为相反”的主链路问题
+- 当前结论：
+  - 已完成
+  - 已为 `phase04` 的性能治理、观测治理与辅助入口治理提供稳定上游前提
 
 ### phase04-performance-and-ops
 - 目标：在安全与一致性稳定后，再处理查询性能、运维可观测性与调试辅助入口治理。
@@ -65,14 +68,22 @@
   - 列表接口数据库侧优化
   - 健康检查与日志补强
   - dev-only 页面分类和门禁
+- 推荐子任务顺序：
+  - `phase04-performance-and-ops-01-baseline-and-scope-freeze`
+  - `phase04-performance-and-ops-02-query-performance-closure`
+  - `phase04-performance-and-ops-03-observability-and-health-hardening`
+  - `phase04-performance-and-ops-04-dev-only-entry-classification-and-gating`
 - 验收条件：
   - 关键接口性能达标
   - 运行辅助页面不再污染正式业务入口
+- 当前结论：
+  - `phase04-performance-and-ops-01-baseline-and-scope-freeze` 负责先冻结共享边界、页面初始分类口径与固定子任务顺序
+  - 在 `01` 完成文档级验收并得到用户批准前，不进入 `02`、`03`、`04` 的实现子任务
 
 ## 当前阶段结论
 - 当前项目具备继续演进的业务骨架，不建议重写。
 - 当前最优策略是“治理性重启”，而不是立刻叠加新功能。
-- 当前默认推进方向：`phase03-consistency-hardening-*` -> `phase04-performance-and-ops-*`
+- 当前默认推进方向：`phase04-performance-and-ops-*`
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断的临时承接位。

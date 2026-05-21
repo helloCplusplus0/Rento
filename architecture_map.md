@@ -67,10 +67,12 @@ Rento/
 
 ## 6. `docs/` 结构说明
 - `docs/` 根目录保留当前仍有参考价值的分析文档、策略文档和设计说明。
-- `phase03` 当前下一步将新增：
-  - `docs/phase03_consistency_hardening_architecture_plan.md`
-  - `docs/phase03_consistency_hardening_dev_plan.md`
-  - `docs/phase03_consistency_hardening_shared_baseline.md`
+- `phase03` 已完成当前阶段文档冻结与子任务收口。
+- `phase04` 阶段文档已生成并作为当前上游真相源：
+  - `docs/phase04_performance_and_ops_architecture_plan.md`
+  - `docs/phase04_performance_and_ops_dev_plan.md`
+  - `docs/phase04_performance_and_ops_shared_baseline.md`
+- `phase04-performance-and-ops-01-baseline-and-scope-freeze` 当前只负责冻结共享边界、页面初始分类口径与验收方向，不提前进入查询优化、观测补强或页面治理实现。
 - `docs/archive/tasks/`：历史 `task_*.md` 实施记录。
 - `docs/archive/README.md`：归档说明与使用边界。
 - 历史任务文档默认只读，不再代表当前执行计划。
@@ -89,7 +91,10 @@ Rento/
 ## 8. 当前目录治理判断
 - 当前主线目录结构整体可继续沿用，无需重做大规模源码搬迁。
 - `phase02-auth-gate-*` 已完成，页面与核心 API 均已接入最小认证闭环。
-- `src/app` 中若干开发辅助页面仍混在正式页面旁边，后续应在不破坏 UI 的前提下做“分类 + 门禁 + 导航治理”。
+- `phase04-performance-and-ops-01-*` 已冻结辅助页面的初始分类口径：
+  - `src/app/performance-*`、`layout-demo`、`components`、`business-flow-validation` 默认视为 dev-only 或治理辅助候选入口
+  - `src/app/system-health`、`data-consistency` 默认视为运维治理候选入口
+- `src/app` 中若干开发辅助页面仍混在正式页面旁边，后续应在不破坏 UI 的前提下继续完成“门禁 + 导航治理”。
 
 ## 9. 已知结构债务
 - `.env` 仍有历史跟踪痕迹，后续应完成真正的模板化与去跟踪化收口。
@@ -102,5 +107,7 @@ Rento/
   - `migrate-and-seed.sh` 当前采用两级兜底：检测到 SQLite 锁时直接 `db push`；其余情况先 `migrate deploy`，失败后仍回退 `db push`
   - 该兼容层的当前作用是“保证 PostgreSQL 环境可按现状 schema 启动”，不是“提供正式、可审计、可回放的 PostgreSQL 迁移基线”
   - 正式退出条件至少包括：完成 PostgreSQL 基线方案、在空 PostgreSQL 库上验证通过、确认可替代 `db push` 兼容分支后，才能清理该历史路径
-- 部分辅助页面与性能页面未明确“只在开发使用”还是“长期保留”。
+- 部分辅助页面与性能页面虽已冻结初始分类口径，但仍未完成最终门禁、导航归属与保留策略落地。
 - 房间、合同、账单、仪表主链的删除门禁与状态约束仍需在服务端进一步加固。
+- 关键列表接口与统计接口仍需继续收口数据库侧过滤、分页和聚合路径。
+- `performance-*`、`layout-demo`、`components`、`business-flow-validation` 等页面仍需在 `phase04` 后续子任务中完成门禁与正式入口治理；当前阶段只冻结了初始分类口径。

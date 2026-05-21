@@ -26,15 +26,15 @@
 - 所有文档、脚本、环境模板必须与真实代码结构一致；发现双重真相时，优先消除过时文档与历史残留，而不是继续并存。
 
 ## 4. 当前默认入口
-- 当前默认工作流：`phase03-consistency-hardening-*`
-- 当前主问题：在最小认证门禁闭环稳定后，继续收口核心业务链的一致性、删除门禁与历史语义漂移。
+- 当前默认工作流：`phase04-performance-and-ops-*`
+- 当前主问题：在主链一致性、删除门禁、账务语义与迁移兼容项显式化后，继续收口关键查询性能、运行可观测性与 dev-only 入口治理。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](plan.md) 为唯一主真相源。
-- 当前下一步：先同步 `phase03` 阶段快照，并产出 `docs/phase03_consistency_hardening_architecture_plan.md`、`docs/phase03_consistency_hardening_dev_plan.md`、`docs/phase03_consistency_hardening_shared_baseline.md`，待用户审核后再进入首个 `/spec`。
+- 当前下一步：以 `phase04-performance-and-ops-01-baseline-and-scope-freeze` 完成文档级验收并冻结顶层真相源；后续 `/spec` 直接继承 `docs/phase04_performance_and_ops_architecture_plan.md`、`docs/phase04_performance_and_ops_dev_plan.md`、`docs/phase04_performance_and_ops_shared_baseline.md` 的结论，待用户明确批准后再按顺序进入 `phase04-performance-and-ops-02-query-performance-closure`。
 - 当前阶段重点：
-  - 为房间、合同、账单、仪表主链补齐服务端业务门禁
-  - 修复金额字段、查询条件和状态流转中的历史漂移
-  - 明确多仪表历史保留策略与删除边界
-  - 规划迁移链与数据库口径的正式治理路径
+  - 收口关键列表接口与统计接口的数据库侧优化路径
+  - 收口健康检查、错误日志与基础性能指标的统一口径
+  - 完成 dev-only 页面、性能页、演示页、验证页的分类与门禁治理
+  - 在不破坏既有 UI 风格的前提下，清理正式业务入口污染
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
@@ -54,7 +54,8 @@
 ## 6.1 当前阶段结论
 - `phase01-restart-foundation-*` 已完成，结论为：已具备恢复开发条件。
 - `phase02-auth-gate-*` 已完成，结论为：页面与核心 API 已具备最小认证闭环。
-- 当前仍未满足“公网发布”条件，原因是主链一致性治理、删除门禁和迁移链治理尚未完成。
+- `phase03-consistency-hardening-*` 已完成，结论为：主链一致性、删除门禁、账务语义与迁移兼容项已完成当前阶段收口。
+- 当前仍未满足“公网发布”条件，原因是 `phase04` 的性能治理、运行辅助入口治理与完整安全边界仍未全部完成。
 
 ## 7. 全局文档导航
 - [README.md](README.md)：项目总览、快速启动、技术栈与当前约束。
@@ -92,7 +93,7 @@
 - 新增内部工具页、验证页、基准页时，必须在文档中标注用途，并评估是否应限制为开发环境入口。
 - 所有“临时兼容逻辑”都要写明存在原因和退出条件，避免长期遗留。
 - 对外可见行为优先稳定，对内治理优先清理双重真相；宁可少做，也不带着错误入口继续迭代。
-- `phase03` 当前只允许先完成阶段文档冻结，不允许在未经用户审核的情况下直接进入删除门禁、语义修复或迁移链整改实现。
+- `phase04` 当前只允许先完成阶段文档冻结，不允许在未经用户审核的情况下直接进入性能优化、观测补强或入口治理实现。
 - 当用户通过 `/plan` 请求推进方向时，必须先基于当前源代码与顶层真相源，在 `.trae/documents/` 下生成阶段推进计划文档，待用户审核后再继续。
 - `/plan` 至少要先同步全局规范文档，再产出该阶段的 `architecture_plan` 与 `dev_plan`；必要时补充 `shared_baseline`。
 - 阶段级 `architecture_plan` 与 `dev_plan` 产出后，必须停止工作流并把主导权交还用户，禁止未经批准直接进入实现或 `/spec`。

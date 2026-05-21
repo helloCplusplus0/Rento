@@ -1,0 +1,7 @@
+- [x] `phase04_performance_and_ops_architecture_plan.md` 已明确阶段定位、允许路线、禁止路线与固定子任务顺序
+- [x] `phase04_performance_and_ops_dev_plan.md` 已明确 `phase04-01` 的目标、范围、DoD 与后续子任务顺序
+- [x] `phase04_performance_and_ops_shared_baseline.md` 已明确共享判断标准、允许路线、禁止路线与统一验证要求
+- [x] `AGENTS.md`、`plan.md`、`architecture_map.md` 已与 `phase04` 当前默认入口保持一致
+- [x] `global_skills.md`、`project_rules.md`、`project_skills.md` 已补齐 `phase04` 所需的最小方法、规则与项目技能
+- [x] `phase04` 已明确辅助页面的初始分类口径，不再需要在后续子任务重复讨论 dev-only 候选边界
+- [x] 当前子任务仅冻结文档和边界，没有提前进入查询优化、观测补强或页面治理实现
