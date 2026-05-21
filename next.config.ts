@@ -10,10 +10,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
   },
 
-  env: {
-    CUSTOM_PORT: process.env.PORT || '3001',
-  },
-
   // 生产环境优化
   poweredByHeader: false,
   compress: true,

@@ -16,21 +16,21 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=${APP_INTERNAL_PORT:-3001}
-      - DATABASE_URL=${DATABASE_URL}
-      - BACKUP_DIR=/app/backups
-      - LOG_DIR=/app/logs
+      - DATABASE_URL=${CONTAINER_DATABASE_URL}
+      - BACKUP_DIR=${CONTAINER_BACKUP_DIR:-/app/backups}
+      - LOG_DIR=${CONTAINER_LOG_DIR:-/app/logs}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3001}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - AUTH_SESSION_SECRET=${AUTH_SESSION_SECRET}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - REDIS_URL=${CONTAINER_REDIS_URL:-redis://redis:6379}
       - ENABLE_MONITORING=${ENABLE_MONITORING:-true}
       - PERFORMANCE_MONITORING=${PERFORMANCE_MONITORING:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001}
       - CORS_ENABLED=${CORS_ENABLED:-true}
-      - MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-10mb}
+      - MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-10485760}
       - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
     volumes:
       - ./backups:/app/backups

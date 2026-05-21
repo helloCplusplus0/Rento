@@ -9,7 +9,9 @@ const prisma = new PrismaClient()
 class BenchmarkTool {
   constructor() {
     this.results = []
-    this.baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    this.baseUrl =
+      process.env.NEXTAUTH_URL ||
+      `http://localhost:${process.env.APP_PORT || process.env.APP_INTERNAL_PORT || '3001'}`
   }
 
   /**

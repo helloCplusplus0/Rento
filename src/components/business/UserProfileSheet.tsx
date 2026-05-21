@@ -45,6 +45,7 @@ export function UserProfileSheet({
 }: UserProfileSheetProps) {
   const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // 检测屏幕尺寸
   useEffect(() => {
@@ -136,9 +137,35 @@ export function UserProfileSheet({
     },
   ]
 
-  const handleLogout = () => {
-    console.log('用户登出')
-    onOpenChange(false)
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return
+    }
+
+    setIsLoggingOut(true)
+
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || '退出登录失败，请稍后重试')
+      }
+
+      onOpenChange(false)
+      router.replace('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('退出登录失败', error)
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -270,10 +297,11 @@ export function UserProfileSheet({
             <Button
               variant="outline"
               onClick={handleLogout}
+              disabled={isLoggingOut}
               className="w-full justify-start border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              退出登录
+              {isLoggingOut ? '退出中...' : '退出登录'}
             </Button>
           </div>
         </div>

@@ -42,4 +42,27 @@ curl http://localhost:3001/api/health
   - `ADMIN_USERNAME`
   - `ADMIN_PASSWORD_HASH`
 
+## 本地开发
+推荐通过统一入口手动启动开发服务器，而不是直接执行裸 `next dev`：
+
+```bash
+cp .env.example .env
+npm run dev:check
+npm run dev
+```
+
+- `npm run dev:check` 只校验开发态运行上下文，不会启动服务器。
+- `npm run dev:check` 会同时验证 `DATABASE_URL` 的真实连通性与认证是否有效。
+- `npm run dev` 会先校验 `.env*` 中的关键变量，再启动 `next dev --port 3001`。
+- `.env` 与 `.env.example` 现在统一作为唯一环境配置入口；宿主机开发与容器运行使用同一组键名，不再允许并列维护第二套真相。
+- 当前启动入口会阻止缺少以下关键变量的开发启动：
+  - `DATABASE_URL`
+  - `ADMIN_PASSWORD_HASH`
+  - `AUTH_SESSION_SECRET` 或 `NEXTAUTH_SECRET`
+- 宿主机开发必须让 `DATABASE_URL` / `REDIS_URL` 指向宿主机可访问地址，例如 `127.0.0.1`；容器内应用连接统一写入 `CONTAINER_DATABASE_URL` / `CONTAINER_REDIS_URL`。
+- `ADMIN_USERNAME` 未显式配置时默认回退为 `admin`。
+- 若使用局域网地址访问开发环境，请同步更新 `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS`。
+- 健康检查脚本与基准脚本默认复用 `NEXTAUTH_URL` / `APP_PORT` / `APP_INTERNAL_PORT` 推导应用地址，不再维护额外 URL 配置。
+- `MAX_REQUEST_SIZE` 当前按字节解析，应使用纯数字，如 `10485760`，不要写成 `10mb`。
+
 更多运行说明见：`QUICK_START.md`、`ENVIRONMENT_GUIDE.md`、`DEPLOYMENT.md`。

@@ -4,7 +4,8 @@ set -e
 # Rento 应用健康检查脚本
 # 用于 Docker 健康检查和外部监控
 
-HEALTH_URL="${HEALTH_URL:-http://localhost:3001/api/health}"
+APP_BASE_URL="${NEXTAUTH_URL:-http://localhost:${APP_PORT:-${APP_INTERNAL_PORT:-3001}}}"
+HEALTH_URL="${HEALTH_URL:-${APP_BASE_URL%/}/api/health}"
 TIMEOUT="${TIMEOUT:-10}"
 MAX_RETRIES="${MAX_RETRIES:-3}"
 
