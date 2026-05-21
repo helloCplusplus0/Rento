@@ -2,7 +2,9 @@
 set -e
 
 # Rento 应用健康检查脚本
-# 用于 Docker 健康检查和外部监控
+# 默认命中 `/api/health` 这个当前阶段唯一主健康入口；
+# `/api/health/system` 与 `/api/health/bills` 仅用于更细粒度的问题定位。
+# 用于 Docker 健康检查和外部监控。
 
 APP_BASE_URL="${NEXTAUTH_URL:-http://localhost:${APP_PORT:-${APP_INTERNAL_PORT:-3001}}}"
 HEALTH_URL="${HEALTH_URL:-${APP_BASE_URL%/}/api/health}"
@@ -60,7 +62,7 @@ check_health() {
 show_usage() {
     echo "用法: $0 [选项]"
     echo "选项:"
-    echo "  -u, --url URL      健康检查 URL (默认: http://localhost:3001/api/health)"
+    echo "  -u, --url URL      健康检查 URL (默认从 NEXTAUTH_URL / APP_PORT 推导到 /api/health)"
     echo "  -t, --timeout SEC  请求超时时间 (默认: 10)"
     echo "  -r, --retries NUM  最大重试次数 (默认: 3)"
     echo "  -h, --help         显示此帮助信息"

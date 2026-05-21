@@ -3,8 +3,8 @@
 Rento 是一个面向房东/运营者的私有化租赁管理后台，覆盖房源、租客、合同、账单、仪表与抄表管理。
 
 ## 当前状态
-- 当前阶段：`phase03-consistency-hardening-*`
-- 当前目标：在最小认证门禁稳定后，继续收口一致性、删除门禁和历史语义漂移。
+- 当前阶段：`phase04-performance-and-ops-03-observability-and-health-hardening`
+- 当前目标：在查询性能完成首轮收口后，统一健康检查、错误日志与基础性能指标口径，降低问题定位对隐性知识的依赖。
 - 当前定位：自用优先、私有部署优先、移动端友好、UI 视觉风格冻结。
 - 当前登录方式：最小管理员门禁，默认通过 `/login` 进入后台。
 
@@ -66,5 +66,21 @@ npm run dev
 - 若使用局域网地址访问开发环境，请同步更新 `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS`。
 - 健康检查脚本与基准脚本默认复用 `NEXTAUTH_URL` / `APP_PORT` / `APP_INTERNAL_PORT` 推导应用地址，不再维护额外 URL 配置。
 - `MAX_REQUEST_SIZE` 当前按字节解析，应使用纯数字，如 `10485760`，不要写成 `10mb`。
+
+## 运行治理入口
+- 主健康入口：`/api/health`
+- 辅助健康入口：`/api/health/system`、`/api/health/bills`
+- 健康状态口径：整体状态固定为 `healthy` / `degraded` / `unhealthy`；主入口对子检查固定使用 `pass` / `warn` / `fail`
+- 错误日志主线：`src/lib/error-logger.ts`，API 主链默认通过 `withApiErrorHandler` 接入
+- 文件型兼容日志：`src/lib/error-tracker.ts`，按 `LOG_DIR` 写入结构化日志文件，仅作为辅助/兼容定位入口
+- 基础性能指标主线：`src/lib/performance-monitor.ts`，当前最小输出集合通过 `/api/health` 的 `metrics.performance` 暴露
+
+## 运行治理说明
+- `./scripts/health-check.sh` 默认检查 `/api/health`，并把 `degraded` 视为“可用但需关注”的状态。
+- `/api/health` 返回当前阶段统一的运行治理说明，包括主入口、辅助入口、错误日志主线和慢请求阈值。
+- `SLOW_REQUEST_THRESHOLD` 控制慢请求判定阈值，默认 `2000` 毫秒。
+- `MAX_PERFORMANCE_METRICS` 控制当前进程内保留的性能样本数量，默认 `1000`。
+- `MEM_WARN_MB` / `MEM_FAIL_MB` 控制主健康入口的内存告警阈值。
+- `LOG_DIR` 控制兼容型文件日志输出目录，默认 `./logs`。
 
 更多运行说明见：`QUICK_START.md`、`ENVIRONMENT_GUIDE.md`、`DEPLOYMENT.md`。

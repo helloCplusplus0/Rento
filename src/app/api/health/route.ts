@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server'
 
+import {
+  type HealthCheckSignal,
+  type ObservabilityMetadata,
+  type OverallHealthStatus,
+  deriveOverallStatusFromSignals,
+  getObservabilityMetadata,
+  getHealthHttpStatus,
+} from '@/lib/observability'
+import { performanceMonitor } from '@/lib/performance-monitor'
 import { prisma } from '@/lib/prisma'
 
-export interface HealthStatus {
-  status: 'healthy' | 'unhealthy' | 'degraded'
+export interface HealthResponse {
+  status: OverallHealthStatus
   timestamp: string
   uptime: number
   version: string
+  entryRole: 'primary'
   checks: {
     database: HealthCheck
     memory: HealthCheck
@@ -15,11 +25,18 @@ export interface HealthStatus {
   metrics: {
     memory: MemoryMetrics
     database: DatabaseMetrics
+    performance: ReturnType<typeof performanceMonitor.getSnapshot>
   }
+  summary: {
+    totalChecks: number
+    failingChecks: number
+    warningChecks: number
+  }
+  observability: ObservabilityMetadata
 }
 
 interface HealthCheck {
-  status: 'pass' | 'fail' | 'warn'
+  status: HealthCheckSignal
   responseTime?: number
   message?: string
   details?: Record<string, any>
@@ -35,7 +52,7 @@ interface MemoryMetrics {
 interface DatabaseMetrics {
   connectionCount?: number
   responseTime: number
-  status: string
+  status: HealthCheckSignal
 }
 
 /**
@@ -69,11 +86,18 @@ export async function GET() {
       diskCheck,
     ])
 
-    const healthStatus: HealthStatus = {
+    const performanceMetrics = performanceMonitor.getSnapshot()
+    const observability = getObservabilityMetadata()
+    const checks = [dbCheck, memoryCheck, diskCheck].filter(
+      (check): check is HealthCheck => check !== null
+    )
+
+    const healthStatus: HealthResponse = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env.npm_package_version || '0.1.0',
+      entryRole: 'primary',
       checks: {
         database: dbCheck,
         memory: memoryCheck,
@@ -82,24 +106,29 @@ export async function GET() {
       metrics: {
         memory: memoryMetrics,
         database: databaseMetrics,
+        performance: performanceMetrics,
       },
+      summary: {
+        totalChecks: checks.length,
+        failingChecks: checks.filter((check) => check.status === 'fail').length,
+        warningChecks: checks.filter((check) => check.status === 'warn').length,
+      },
+      observability,
     }
 
-    // 根据健康状态返回相应的HTTP状态码
-    const httpStatus =
-      overallStatus === 'healthy'
-        ? 200
-        : overallStatus === 'degraded'
-          ? 200
-          : 503
-
-    return NextResponse.json(healthStatus, { status: httpStatus })
+    return NextResponse.json(healthStatus, {
+      status: getHealthHttpStatus(overallStatus),
+    })
   } catch (error) {
-    const errorStatus: HealthStatus = {
+    const performanceMetrics = performanceMonitor.getSnapshot()
+    const observability = getObservabilityMetadata()
+
+    const errorStatus: HealthResponse = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env.npm_package_version || '0.1.0',
+      entryRole: 'primary',
       checks: {
         database: { status: 'fail', message: 'Health check failed' },
         memory: { status: 'fail', message: 'Health check failed' },
@@ -107,7 +136,14 @@ export async function GET() {
       metrics: {
         memory: getMemoryMetrics(),
         database: { responseTime: Date.now() - startTime, status: 'fail' },
+        performance: performanceMetrics,
       },
+      summary: {
+        totalChecks: 2,
+        failingChecks: 2,
+        warningChecks: 0,
+      },
+      observability,
     }
 
     return NextResponse.json(errorStatus, { status: 503 })
@@ -274,17 +310,10 @@ function getMemoryMetrics(): MemoryMetrics {
  */
 function determineOverallStatus(
   checks: (HealthCheck | null)[]
-): 'healthy' | 'unhealthy' | 'degraded' {
-  const validChecks = checks.filter((check) => check !== null) as HealthCheck[]
+): OverallHealthStatus {
+  const signals = checks
+    .filter((check): check is HealthCheck => check !== null)
+    .map((check) => check.status)
 
-  const hasFailure = validChecks.some((check) => check.status === 'fail')
-  const hasWarning = validChecks.some((check) => check.status === 'warn')
-
-  if (hasFailure) {
-    return 'unhealthy'
-  } else if (hasWarning) {
-    return 'degraded'
-  } else {
-    return 'healthy'
-  }
+  return deriveOverallStatusFromSignals(signals)
 }

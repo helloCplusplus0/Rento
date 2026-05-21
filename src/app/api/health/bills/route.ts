@@ -5,6 +5,10 @@
 
 import { ErrorLogger, ErrorSeverity, ErrorType } from '@/lib/error-logger'
 import { billSystemHealthChecker } from '@/lib/health-checker'
+import {
+  getHealthHttpStatus,
+  getObservabilityMetadata,
+} from '@/lib/observability'
 
 const logger = ErrorLogger.getInstance()
 
@@ -26,21 +30,18 @@ export async function GET() {
       responseTime,
     })
 
-    // 根据健康状态返回相应的HTTP状态码
-    const httpStatus =
-      health.status === 'healthy'
-        ? 200
-        : health.status === 'degraded'
-          ? 200
-          : 503
+    const observability = getObservabilityMetadata()
 
     return Response.json(
       {
         ...health,
         responseTime,
+        entryRole: 'auxiliary',
+        primaryEndpoint: '/api/health',
+        observability,
       },
       {
-        status: httpStatus,
+        status: getHealthHttpStatus(health.status),
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           Pragma: 'no-cache',
@@ -50,6 +51,7 @@ export async function GET() {
     )
   } catch (error) {
     const responseTime = Date.now() - startTime
+    const observability = getObservabilityMetadata()
 
     await logger.logError(
       ErrorType.BILL_GENERATION,
@@ -71,6 +73,9 @@ export async function GET() {
         details: error instanceof Error ? error.message : String(error),
         lastCheck: new Date(),
         responseTime,
+        entryRole: 'auxiliary',
+        primaryEndpoint: '/api/health',
+        observability,
       },
       {
         status: 500,

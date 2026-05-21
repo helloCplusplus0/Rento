@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { errorTracker } from './error-tracker'
+import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
+import {
+  getMaxPerformanceMetrics,
+  getSlowRequestThresholdMs,
+} from './observability'
 
 export interface PerformanceMetrics {
   path: string
@@ -24,6 +29,8 @@ export interface PerformanceStats {
   minResponseTime: number
   slowRequests: number
   errorRate: number
+  slowRequestThresholdMs: number
+  sampleSize: number
   requestsByPath: Record<string, number>
   requestsByStatus: Record<number, number>
 }
@@ -36,12 +43,11 @@ export class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = []
   private maxMetrics: number
   private slowRequestThreshold: number
+  private logger = ErrorLogger.getInstance()
 
   constructor() {
-    this.maxMetrics = parseInt(process.env.MAX_PERFORMANCE_METRICS || '1000')
-    this.slowRequestThreshold = parseInt(
-      process.env.SLOW_REQUEST_THRESHOLD || '2000'
-    )
+    this.maxMetrics = getMaxPerformanceMetrics()
+    this.slowRequestThreshold = getSlowRequestThresholdMs()
   }
 
   /**
@@ -144,6 +150,8 @@ export class PerformanceMonitor {
         minResponseTime: 0,
         slowRequests: 0,
         errorRate: 0,
+        slowRequestThresholdMs: this.slowRequestThreshold,
+        sampleSize: 0,
         requestsByPath: {},
         requestsByStatus: {},
       }
@@ -157,7 +165,7 @@ export class PerformanceMonitor {
       (m) => m.duration > this.slowRequestThreshold
     ).length
     const errorRequests = filteredMetrics.filter(
-      (m) => m.statusCode >= 400
+      (m) => m.statusCode >= 500
     ).length
 
     // 按路径统计
@@ -179,8 +187,28 @@ export class PerformanceMonitor {
       minResponseTime: minDuration,
       slowRequests,
       errorRate: Math.round((errorRequests / filteredMetrics.length) * 100),
+      slowRequestThresholdMs: this.slowRequestThreshold,
+      sampleSize: filteredMetrics.length,
       requestsByPath,
       requestsByStatus,
+    }
+  }
+
+  /**
+   * 返回当前阶段用于问题定位的最小性能指标集合。
+   */
+  getSnapshot() {
+    const stats = this.getStats()
+
+    return {
+      totalRequests: stats.totalRequests,
+      averageResponseTimeMs: stats.averageResponseTime,
+      maxResponseTimeMs: stats.maxResponseTime,
+      slowRequests: stats.slowRequests,
+      slowRequestThresholdMs: stats.slowRequestThresholdMs,
+      errorRatePercent: stats.errorRate,
+      sampleSize: stats.sampleSize,
+      errorRateDefinition: '5xx requests / total requests in current process sample',
     }
   }
 
@@ -250,13 +278,15 @@ export class PerformanceMonitor {
    */
   private async handleSlowRequest(metric: PerformanceMetrics): Promise<void> {
     console.warn(
-      `🐌 慢请求检测: ${metric.method} ${metric.path} - ${metric.duration}ms`
+      `Slow request detected: ${metric.method} ${metric.path} - ${metric.duration}ms`
     )
 
-    // 记录慢请求日志
-    await errorTracker.logWarning(
+    // ErrorLogger 是当前阶段的统一错误日志主线；error-tracker 仅保留为文件型兼容日志。
+    await this.logger.logWarning(
       `慢请求检测: ${metric.method} ${metric.path}`,
       {
+        module: 'performance-monitor',
+        function: 'handleSlowRequest',
         duration: metric.duration,
         threshold: this.slowRequestThreshold,
         path: metric.path,
@@ -266,12 +296,37 @@ export class PerformanceMonitor {
         ip: metric.ip,
       }
     )
+
+    await errorTracker.logWarning(`慢请求兼容日志: ${metric.method} ${metric.path}`, {
+      duration: metric.duration,
+      threshold: this.slowRequestThreshold,
+      path: metric.path,
+      method: metric.method,
+      statusCode: metric.statusCode,
+    })
   }
 
   /**
    * 处理错误请求
    */
   private async handleErrorRequest(metric: PerformanceMetrics): Promise<void> {
+    await this.logger.logError(
+      ErrorType.SYSTEM_ERROR,
+      ErrorSeverity.HIGH,
+      `HTTP错误: ${metric.statusCode} ${metric.method} ${metric.path}`,
+      {
+        module: 'performance-monitor',
+        function: 'handleErrorRequest',
+        path: metric.path,
+        method: metric.method,
+        statusCode: metric.statusCode,
+        duration: metric.duration,
+        userAgent: metric.userAgent,
+        ip: metric.ip,
+        memoryUsage: metric.memoryUsage,
+      }
+    )
+
     await errorTracker.logError({
       id: `perf-error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: metric.timestamp,
@@ -319,6 +374,7 @@ export const performanceMonitor = new PerformanceMonitor()
 
 /**
  * Next.js中间件包装器
+ * 这是显式接入的兼容能力；当前阶段的主采集入口是 withApiErrorHandler。
  */
 export function withPerformanceMonitoring<T extends any[], R>(
   handler: (...args: T) => Promise<R>,

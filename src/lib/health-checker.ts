@@ -1,9 +1,14 @@
 /**
  * 系统健康监控器
- * 提供系统健康状态检查和监控功能
+ * 提供系统级和账单级的深度健康检查。
+ * `/api/health` 是当前阶段的统一主入口，本文件暴露的检查器主要服务辅助健康页和更细粒度的问题定位。
  */
 
 import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
+import {
+  deriveOverallStatusFromSignals,
+  type OverallHealthStatus,
+} from './observability'
 import { prisma } from './prisma'
 
 /**
@@ -31,7 +36,7 @@ export interface HealthCheck {
  * 系统健康状态接口
  */
 export interface SystemHealth {
-  overall: HealthStatus
+  overall: OverallHealthStatus
   checks: HealthCheck[]
   uptime: number
   version: string
@@ -334,24 +339,11 @@ export class SystemHealthChecker {
    * 确定整体健康状态
    */
   private determineOverallStatus(checks: HealthCheck[]): HealthStatus {
-    const unhealthyCount = checks.filter(
-      (c) => c.status === HealthStatus.UNHEALTHY
-    ).length
-    const degradedCount = checks.filter(
-      (c) => c.status === HealthStatus.DEGRADED
-    ).length
-
-    if (unhealthyCount > 0) {
-      return HealthStatus.UNHEALTHY
-    }
-    if (degradedCount > 1) {
-      return HealthStatus.DEGRADED
-    }
-    if (degradedCount === 1) {
-      return HealthStatus.DEGRADED
-    }
-
-    return HealthStatus.HEALTHY
+    return toAuxiliaryHealthStatus(
+      deriveOverallStatusFromSignals(
+        checks.map((check) => mapAuxiliaryStatusToSignal(check.status))
+      )
+    )
   }
 }
 
@@ -359,8 +351,6 @@ export class SystemHealthChecker {
  * 账单系统专用健康检查器
  */
 export class BillSystemHealthChecker {
-  private logger = ErrorLogger.getInstance()
-
   /**
    * 检查账单系统健康状态
    */
@@ -600,21 +590,35 @@ export class BillSystemHealthChecker {
    * 确定整体状态
    */
   private determineOverallStatus(checks: HealthCheck[]): HealthStatus {
-    const unhealthyCount = checks.filter(
-      (c) => c.status === HealthStatus.UNHEALTHY
-    ).length
-    const degradedCount = checks.filter(
-      (c) => c.status === HealthStatus.DEGRADED
-    ).length
+    return toAuxiliaryHealthStatus(
+      deriveOverallStatusFromSignals(
+        checks.map((check) => mapAuxiliaryStatusToSignal(check.status))
+      )
+    )
+  }
+}
 
-    if (unhealthyCount > 0) {
-      return HealthStatus.UNHEALTHY
-    }
-    if (degradedCount > 1) {
+function mapAuxiliaryStatusToSignal(
+  status: HealthStatus
+): 'pass' | 'warn' | 'fail' {
+  switch (status) {
+    case HealthStatus.HEALTHY:
+      return 'pass'
+    case HealthStatus.DEGRADED:
+      return 'warn'
+    case HealthStatus.UNHEALTHY:
+      return 'fail'
+  }
+}
+
+function toAuxiliaryHealthStatus(status: OverallHealthStatus): HealthStatus {
+  switch (status) {
+    case 'healthy':
+      return HealthStatus.HEALTHY
+    case 'degraded':
       return HealthStatus.DEGRADED
-    }
-
-    return HealthStatus.HEALTHY
+    case 'unhealthy':
+      return HealthStatus.UNHEALTHY
   }
 }
 

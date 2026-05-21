@@ -68,6 +68,27 @@ podman-compose down
 curl "http://localhost:${APP_PORT:-3001}/api/health"
 ```
 
+- `/api/health` 是当前阶段唯一主健康入口，返回整体状态、子检查信号、性能快照和运行治理说明。
+- `/api/health/system`、`/api/health/bills` 仅用于更细粒度的问题定位，不替代主健康入口。
+- 主健康入口中 `healthy` / `degraded` / `unhealthy` 为统一整体状态；子检查固定使用 `pass` / `warn` / `fail`。
+
+### 错误日志定位
+```bash
+podman-compose logs app
+tail -f "${LOG_DIR:-./logs}"/error-*.log
+```
+
+- `src/lib/error-logger.ts` 是当前阶段的主错误日志口径，API 主路径默认通过 `withApiErrorHandler` 接入。
+- `src/lib/error-tracker.ts` 保留为文件型兼容日志能力；只有显式接入的路径才会写入 `LOG_DIR`。
+
+### 性能指标定位
+```bash
+curl "http://localhost:${APP_PORT:-3001}/api/health"
+```
+
+- 当前最小性能指标通过主健康入口的 `metrics.performance` 返回，包含请求总量、平均响应时间、最大响应时间、慢请求数量、错误率和慢请求阈值。
+- `SLOW_REQUEST_THRESHOLD` 默认 `2000` 毫秒；`MAX_PERFORMANCE_METRICS` 默认保留最近 `1000` 条进程内样本。
+
 ### 数据库未就绪
 ```bash
 podman-compose logs postgres

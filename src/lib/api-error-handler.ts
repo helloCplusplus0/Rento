@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from './auth/guard'
 import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 import { fallbackManager } from './fallback-manager'
+import { performanceMonitor } from './performance-monitor'
 
 /**
  * API错误处理装饰器
@@ -24,6 +25,7 @@ export function withApiErrorHandler(
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
     const logger = ErrorLogger.getInstance()
     const startTime = Date.now()
+    const path = new URL(request.url).pathname
 
     // CORS 配置
     const corsEnabled = process.env.CORS_ENABLED === 'true'
@@ -52,6 +54,7 @@ export function withApiErrorHandler(
     if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
       const contentLength = request.headers.get('content-length')
       if (contentLength && Number(contentLength) > maxRequestSize) {
+        const duration = Date.now() - startTime
         const res = NextResponse.json(
           {
             success: false,
@@ -60,6 +63,15 @@ export function withApiErrorHandler(
           },
           { status: 413 }
         )
+        performanceMonitor.recordMetric({
+          path,
+          method: request.method,
+          duration,
+          statusCode: 413,
+          timestamp: new Date(),
+          userAgent: request.headers.get('user-agent') || undefined,
+          ip: getRequestIp(request),
+        })
         if (corsEnabled && origin && allowedOrigins.includes(origin)) {
           res.headers.set('Access-Control-Allow-Origin', origin)
           res.headers.set('Access-Control-Allow-Credentials', 'true')
@@ -101,6 +113,15 @@ export function withApiErrorHandler(
         url: request.url,
         status: response.status,
         duration,
+      })
+      performanceMonitor.recordMetric({
+        path,
+        method: request.method,
+        duration,
+        statusCode: response.status,
+        timestamp: new Date(),
+        userAgent: request.headers.get('user-agent') || undefined,
+        ip: getRequestIp(request),
       })
 
       // 成功响应添加 CORS 头（在启用 CORS 且来源被允许时）
@@ -155,6 +176,15 @@ export function withApiErrorHandler(
 
       // 返回标准化错误响应
       const res = createErrorResponse(error, request.method, request.url)
+      performanceMonitor.recordMetric({
+        path,
+        method: request.method,
+        duration,
+        statusCode: res.status,
+        timestamp: new Date(),
+        userAgent: request.headers.get('user-agent') || undefined,
+        ip: getRequestIp(request),
+      })
       // 错误响应也添加 CORS 头（在启用 CORS 且来源被允许时）
       if (corsEnabled && origin && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
         res.headers.set('Access-Control-Allow-Origin', origin)
@@ -164,6 +194,14 @@ export function withApiErrorHandler(
       return res
     }
   }
+}
+
+function getRequestIp(request: NextRequest): string | undefined {
+  return (
+    request.headers.get('x-forwarded-for') ||
+    request.headers.get('x-real-ip') ||
+    undefined
+  )
 }
 
 /**

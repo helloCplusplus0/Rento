@@ -5,6 +5,10 @@
 
 import { ErrorLogger, ErrorSeverity, ErrorType } from '@/lib/error-logger'
 import { systemHealthChecker } from '@/lib/health-checker'
+import {
+  getHealthHttpStatus,
+  getObservabilityMetadata,
+} from '@/lib/observability'
 
 const logger = ErrorLogger.getInstance()
 
@@ -27,21 +31,18 @@ export async function GET() {
       checksCount: health.checks.length,
     })
 
-    // 根据健康状态返回相应的HTTP状态码
-    const httpStatus =
-      health.overall === 'healthy'
-        ? 200
-        : health.overall === 'degraded'
-          ? 200
-          : 503
+    const observability = getObservabilityMetadata()
 
     return Response.json(
       {
         ...health,
         responseTime,
+        entryRole: 'auxiliary',
+        primaryEndpoint: '/api/health',
+        observability,
       },
       {
-        status: httpStatus,
+        status: getHealthHttpStatus(health.overall),
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           Pragma: 'no-cache',
@@ -51,6 +52,7 @@ export async function GET() {
     )
   } catch (error) {
     const responseTime = Date.now() - startTime
+    const observability = getObservabilityMetadata()
 
     await logger.logError(
       ErrorType.SYSTEM_ERROR,
@@ -71,6 +73,9 @@ export async function GET() {
         details: error instanceof Error ? error.message : String(error),
         timestamp: new Date(),
         responseTime,
+        entryRole: 'auxiliary',
+        primaryEndpoint: '/api/health',
+        observability,
       },
       {
         status: 500,

@@ -21,7 +21,8 @@ export interface AlertConfig {
 
 /**
  * 错误追踪和日志记录系统
- * 提供结构化的错误日志记录和告警功能
+ * 提供结构化的文件日志和告警功能。
+ * 当前阶段它保留为兼容型/辅助型日志能力，主错误日志入口是 error-logger。
  */
 export class ErrorTracker {
   private logDir: string
