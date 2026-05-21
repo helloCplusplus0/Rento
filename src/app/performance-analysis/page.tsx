@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 
 interface NavigationMetric {
   id: string
@@ -277,6 +278,7 @@ export default function PerformanceAnalysisPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
+      <AuxiliaryPageNotice path="/performance-analysis" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">页面跳转性能分析</h1>
         <div className="flex gap-2">

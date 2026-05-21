@@ -33,13 +33,15 @@ Rento/
 - `src/app/add/*`：新增房间、合同等创建入口。
 - `src/app/api/*`：App Router Route Handlers，承载后端 API。
 - `src/app/login/page.tsx`：管理员登录页。
-- `src/app/settings`、`system-health`、`data-consistency`：运维/治理页面。
-- `src/app/performance-*`、`layout-demo`、`components`、`business-flow-validation`：开发辅助或治理辅助页面，后续需要进一步标记和门禁化。
+- `src/app/settings`：正式业务设置入口。
+- `src/app/system-health`、`data-consistency`：运维治理页，保留直达路由但不应与正式业务导航等价暴露。
+- `src/app/performance-*`、`layout-demo`、`components`、`business-flow-validation`：`dev-only` 辅助页面，最终分类矩阵与最小门禁策略见 `src/lib/page-governance.ts`。
 
 ### `src/components`
 - `src/components/pages`：页面级组合组件。
 - `src/components/business`：业务组件。
 - `src/components/layout`：移动端/桌面端布局壳。
+- `src/components/layout/AuxiliaryPageNotice.tsx`：辅助页面统一用途说明入口，按分类矩阵展示用途、保留理由与门禁口径。
 - `src/components/ui`：基础 UI 组件。
 - 当前 UI 风格是既有资产，后续以复用和微调为主。
 
@@ -48,6 +50,7 @@ Rento/
 - `queries.ts`：核心查询封装。
 - `api-error-handler.ts`：API 统一错误处理、CORS、请求体限制与认证接入点。
 - `auth/session.ts`、`auth/password.ts`、`auth/guard.ts`：最小会话方案、密码校验与服务端守卫。
+- `page-governance.ts`：辅助页面分类矩阵、最小门禁策略与访问决策真相源。
 - `auto-bill-generator.ts`、`business-flow-validator.ts`、`health-checker.ts` 等：业务规则与运行治理能力。
 - `optimized-queries.ts` 等文件包含性能优化尝试，但存在历史字段漂移问题，需持续治理。
 
@@ -68,11 +71,11 @@ Rento/
 ## 6. `docs/` 结构说明
 - `docs/` 根目录保留当前仍有参考价值的分析文档、策略文档和设计说明。
 - `phase03` 已完成当前阶段文档冻结与子任务收口。
-- `phase04` 阶段文档已生成并作为当前上游真相源：
+- `phase04` 阶段文档已生成并保留为最近一轮已完成工作流的冻结记录：
   - `docs/phase04_performance_and_ops_architecture_plan.md`
   - `docs/phase04_performance_and_ops_dev_plan.md`
   - `docs/phase04_performance_and_ops_shared_baseline.md`
-- `phase04-performance-and-ops-01-baseline-and-scope-freeze` 当前只负责冻结共享边界、页面初始分类口径与验收方向，不提前进入查询优化、观测补强或页面治理实现。
+- `phase04-performance-and-ops-01` 至 `phase04-performance-and-ops-04` 已按顺序完成当前阶段收口；若需继续推进，当前应先回到新一轮 `/plan`，再决定是否进入新的 `phase*` 工作流。
 - `docs/archive/tasks/`：历史 `task_*.md` 实施记录。
 - `docs/archive/README.md`：归档说明与使用边界。
 - 历史任务文档默认只读，不再代表当前执行计划。
@@ -81,6 +84,8 @@ Rento/
 - Web 应用入口：`src/app`。
 - API 入口：`src/app/api/**/route.ts`。
 - 页面门禁入口：`src/middleware.ts`。
+- 辅助页面分类矩阵入口：`src/lib/page-governance.ts`。
+- 辅助页面用途说明入口：`src/components/layout/AuxiliaryPageNotice.tsx`。
 - 认证入口：`src/app/login/page.tsx` 与 `src/app/api/auth/**/route.ts`。
 - 会话与守卫入口：`src/lib/auth/**`。
 - 数据库入口：`prisma/schema.prisma`。
@@ -91,23 +96,29 @@ Rento/
 ## 8. 当前目录治理判断
 - 当前主线目录结构整体可继续沿用，无需重做大规模源码搬迁。
 - `phase02-auth-gate-*` 已完成，页面与核心 API 均已接入最小认证闭环。
-- `phase04-performance-and-ops-01-*` 已冻结辅助页面的初始分类口径：
-  - `src/app/performance-*`、`layout-demo`、`components`、`business-flow-validation` 默认视为 dev-only 或治理辅助候选入口
-  - `src/app/system-health`、`data-consistency` 默认视为运维治理候选入口
-- `src/app` 中若干开发辅助页面仍混在正式页面旁边，后续应在不破坏 UI 的前提下继续完成“门禁 + 导航治理”。
+- `phase04-performance-and-ops-01-*` 已冻结辅助页面的初始分类口径。
+- `phase04-performance-and-ops-04 Task1` 已在 `src/lib/page-governance.ts` 固化最终分类矩阵：
+  - `performance-*`、`layout-demo`、`components`、`business-flow-validation`：`dev-only`
+  - `system-health`、`data-consistency`：运维治理
+- `phase04-performance-and-ops-04 Task2` 已完成正式入口收口：
+  - `dev-only` 页面已退出首页功能网格、默认快捷操作与正式设置页默认暴露
+  - `system-health`、`data-consistency` 已收口到设置页的运维治理分组
+- `phase04-performance-and-ops-04 Task3` 已完成统一门禁与说明接入：
+  - `src/middleware.ts` 已消费 `page-governance.ts` 的访问决策，对 `dev-only` 页面执行开发环境限制
+  - 保留辅助页面已通过 `AuxiliaryPageNotice` 显示用途、保留理由与门禁说明
+- `phase04-performance-and-ops-*` 已完成当前阶段收口；下一步应以 `plan.md` 与 `AGENTS.md` 为准，先进入新一轮 `/plan` 再决定后续工作流。
 
 ## 9. 已知结构债务
 - `.env` 仍有历史跟踪痕迹，后续应完成真正的模板化与去跟踪化收口。
 - SQLite 时代遗留仍体现在迁移锁、迁移 SQL、兼容脚本和少量注释中。
 - `src/lib/validation.ts`、`src/lib/queries.ts` 与 `src/app/api/rooms/[id]/route.ts`、`src/app/api/contracts/[id]/route.ts`、`src/app/api/meters/[meterId]/route.ts` 仍存在“业务门禁已部分存在，但默认删除路径仍偏向物理删除”的张力。
 - `src/lib/optimized-queries.ts` 仍存在字段漂移，当前已确认至少包括 `Room.rent` / `monthlyRent` 与 `Renter.idCard` / `idNumber` 的不一致。
-- `src/lib/dashboard-queries.ts` 的待收金额与趋势统计仍有历史语义漂移，需要在 `phase03` 明确与 `BillStatus` 的统一口径。
+- `src/lib/dashboard-queries.ts` 曾存在待收金额与趋势统计的历史语义漂移；`phase03` 已完成当前阶段口径收口，若后续再发现统计偏差，应进入新一轮 `/plan` 评估，而不是继续引用旧阶段待办。
 - `scripts/migrate-and-seed.sh` 与 `prisma/migrations/migration_lock.toml` 当前仍承担迁移兼容层：
   - `migration_lock.toml` 仍指向 SQLite，说明现有迁移目录不是可直接在 PostgreSQL 上回放的正式迁移链
   - `migrate-and-seed.sh` 当前采用两级兜底：检测到 SQLite 锁时直接 `db push`；其余情况先 `migrate deploy`，失败后仍回退 `db push`
   - 该兼容层的当前作用是“保证 PostgreSQL 环境可按现状 schema 启动”，不是“提供正式、可审计、可回放的 PostgreSQL 迁移基线”
   - 正式退出条件至少包括：完成 PostgreSQL 基线方案、在空 PostgreSQL 库上验证通过、确认可替代 `db push` 兼容分支后，才能清理该历史路径
-- 部分辅助页面与性能页面虽已冻结初始分类口径，但仍未完成最终门禁、导航归属与保留策略落地。
 - 房间、合同、账单、仪表主链的删除门禁与状态约束仍需在服务端进一步加固。
-- 关键列表接口与统计接口仍需继续收口数据库侧过滤、分页和聚合路径。
-- `performance-*`、`layout-demo`、`components`、`business-flow-validation` 等页面仍需在 `phase04` 后续子任务中完成门禁与正式入口治理；当前阶段只冻结了初始分类口径。
+- 关键列表接口与统计接口已完成当前阶段的数据库侧过滤、分页和聚合收口；若后续出现新的性能瓶颈，应通过新一轮 `/plan` 重新评估，而不是沿用旧阶段未完成表述。
+- 辅助页面已完成分类、导航收口与最小门禁接入，但是否继续长期保留，仍需在后续阶段按开发辅助价值与维护成本继续评估。

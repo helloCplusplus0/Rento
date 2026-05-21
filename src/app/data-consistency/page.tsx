@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import { DataConsistencyManager } from '@/components/business/DataConsistencyManager'
+import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 import { PageContainer } from '@/components/layout/PageContainer'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 export default function DataConsistencyPage() {
   return (
     <PageContainer title="数据一致性管理">
+      <AuxiliaryPageNotice path="/data-consistency" className="mb-4" />
       <DataConsistencyManager />
     </PageContainer>
   )

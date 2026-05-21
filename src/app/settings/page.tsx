@@ -213,19 +213,23 @@ export default function SettingsPage() {
       type: 'button' as const,
       action: handleBackupData,
     },
+  ]
+
+  // 运维治理入口单独收口，避免与正式业务设置项混成同级产品能力。
+  const governanceSettings: SettingItemConfig[] = [
+    {
+      id: 'systemHealth',
+      title: '系统监控',
+      description: '查看健康状态、依赖检查结果和基础运行情况',
+      type: 'button' as const,
+      action: () => window.open('/system-health', '_blank'),
+    },
     {
       id: 'dataConsistency',
       title: '数据一致性管理',
       description: '检查和修复系统数据一致性问题',
       type: 'button' as const,
       action: () => window.open('/data-consistency', '_blank'),
-    },
-    {
-      id: 'businessFlowValidation',
-      title: '业务流程验证',
-      description: '验证核心业务流程的完整性和数据一致性',
-      type: 'button' as const,
-      action: () => window.open('/business-flow-validation', '_blank'),
     },
   ]
 
@@ -285,6 +289,12 @@ export default function SettingsPage() {
         <SettingCategory
           title="数据管理"
           items={dataManagementSettings}
+          onValueChange={handleValueChange}
+        />
+
+        <SettingCategory
+          title="运维治理"
+          items={governanceSettings}
           onValueChange={handleValueChange}
         />
 
@@ -379,7 +389,11 @@ export default function SettingsPage() {
               </div>
               <div>
                 <strong>业务流程验证：</strong>
-                全面验证房间管理、账单生成、水电表抄表、合同生命周期等核心业务流程，确保系统运行正常。
+                该页面当前归类为 dev-only 验收辅助入口，保留直达路由，不再从正式设置页默认暴露。
+              </div>
+              <div>
+                <strong>系统监控：</strong>
+                用于查看系统健康状态和运行概况，属于运维治理入口，不与正式业务功能等价暴露。
               </div>
             </div>
           </CardContent>

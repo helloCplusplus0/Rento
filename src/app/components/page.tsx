@@ -66,6 +66,7 @@ import {
   FunctionGrid,
   FunctionGridSkeleton,
 } from '@/components/business/function-grid'
+import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 // 导入业务组件
 import {
   CompactRoomCard,
@@ -351,6 +352,7 @@ export default function ComponentsPage() {
 
       {/* 主要内容区域 */}
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-6">
+        <AuxiliaryPageNotice path="/components" />
         {/* 状态标识组件 */}
         <section className="rounded-lg bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-xl font-semibold text-gray-900">

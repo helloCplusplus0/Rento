@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+import { getAuxiliaryPageGovernance } from '@/lib/page-governance'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -18,7 +18,8 @@ interface FunctionItem {
 }
 
 /**
- * 核心功能定义 - 4个主要业务功能 + 批量抄表 + 抄表历史 + 系统监控 + 性能测试功能
+ * 工作台快捷入口。
+ * 这里仅保留正式业务主链和日常操作入口，辅助页面是否暴露由 page-governance 矩阵决定。
  */
 const coreFeatures: FunctionItem[] = [
   {
@@ -155,6 +156,18 @@ const coreFeatures: FunctionItem[] = [
   },
 ]
 
+const dashboardFeatures = coreFeatures.filter((feature) => {
+  const governanceEntry = getAuxiliaryPageGovernance(feature.href)
+
+  // 不在治理矩阵中的页面默认视为正式业务入口。
+  if (!governanceEntry) {
+    return true
+  }
+
+  // 运维治理与 dev-only 页面保留直达路由，但退出正式工作台默认入口。
+  return governanceEntry.category === 'business-entry'
+})
+
 interface FunctionGridItemProps {
   feature: FunctionItem
 }
@@ -221,7 +234,7 @@ interface FunctionGridProps {
 
 /**
  * 功能模块网格组件
- * 展示4个核心业务功能的入口
+ * 展示正式业务主链和日常操作入口
  */
 export function FunctionGrid({
   className,
@@ -235,8 +248,8 @@ export function FunctionGrid({
         </CardHeader>
       )}
       <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-10">
-          {coreFeatures.map((feature) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-8">
+          {dashboardFeatures.map((feature) => (
             <FunctionGridItem key={feature.id} feature={feature} />
           ))}
         </div>
@@ -255,8 +268,8 @@ export function FunctionGridSkeleton({ className }: { className?: string }) {
         <div className="h-5 w-20 animate-pulse rounded bg-gray-200" />
       </CardHeader>
       <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-10">
-          {Array.from({ length: 10 }).map((_, index) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-8">
+          {Array.from({ length: dashboardFeatures.length }).map((_, index) => (
             <div
               key={index}
               className="flex animate-pulse flex-col items-center justify-center rounded-lg bg-gray-200 p-3 sm:p-4"

@@ -9,6 +9,7 @@ import { LazyImage } from '@/components/ui/LazyImage'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VirtualList } from '@/components/ui/VirtualList'
+import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 
 /**
  * 性能测试页面
@@ -285,6 +286,7 @@ export default function PerformanceTestPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
+      <AuxiliaryPageNotice path="/performance-test" />
       <div className="text-center">
         <h1 className="mb-2 text-3xl font-bold">性能优化验证测试</h1>
         <p className="text-gray-600">全面测试各项性能优化功能的实际效果</p>

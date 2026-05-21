@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 import { AppLayout, PageContainer } from '@/components/layout'
 
 /**
@@ -22,6 +23,7 @@ export default function LayoutDemoPage() {
         }
       >
         <div className="space-y-6">
+          <AuxiliaryPageNotice path="/layout-demo" />
           {/* 布局特性展示 */}
           <Card>
             <CardHeader>

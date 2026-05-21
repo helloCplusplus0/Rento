@@ -4,7 +4,7 @@
 - 当前默认工作流：`phase04-performance-and-ops-*`
 - 当前阶段目标：在主链一致性稳定后，继续收口关键查询性能、运行可观测性与 dev-only 入口治理。
 - 当前执行方式：进入新 `phase*` 前，先通过 `/plan` 同步顶层规范并产出阶段级 `architecture_plan` / `dev_plan`，待用户审核后再逐个子任务进入 `/spec`。
-- 当前下一步：完成 `phase04-performance-and-ops-01-baseline-and-scope-freeze` 的文档级验收，冻结共享边界、页面初始分类口径与顶层真相源；待用户明确批准后，再按顺序进入 `phase04-performance-and-ops-02-query-performance-closure`。
+- 当前下一步：`phase04-performance-and-ops-01` 至 `phase04-performance-and-ops-04` 已按既定顺序完成，当前应先回到新一轮 `/plan`，基于现有代码、顶层真相源与剩余发布门禁评估后续是否进入新的 `phase*` 工作流。
 
 ## 阶段顺序
 
@@ -77,13 +77,13 @@
   - 关键接口性能达标
   - 运行辅助页面不再污染正式业务入口
 - 当前结论：
-  - `phase04-performance-and-ops-01-baseline-and-scope-freeze` 负责先冻结共享边界、页面初始分类口径与固定子任务顺序
-  - 在 `01` 完成文档级验收并得到用户批准前，不进入 `02`、`03`、`04` 的实现子任务
+  - 已按顺序完成 `phase04-performance-and-ops-01-baseline-and-scope-freeze`、`phase04-performance-and-ops-02-query-performance-closure`、`phase04-performance-and-ops-03-observability-and-health-hardening`、`phase04-performance-and-ops-04-dev-only-entry-classification-and-gating`
+  - 当前阶段交付已收口；若需继续推进，必须先进入新一轮 `/plan`，再决定新的阶段目标与工作流
 
 ## 当前阶段结论
 - 当前项目具备继续演进的业务骨架，不建议重写。
 - 当前最优策略是“治理性重启”，而不是立刻叠加新功能。
-- 当前默认推进方向：`phase04-performance-and-ops-*`
+- 当前默认推进方向：`phase04-performance-and-ops-*` 已完成当前阶段收口；下一步先进入新一轮 `/plan`，再决定是否切换到新的 `phase*`
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断的临时承接位。

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 
 /**
  * 性能基准测试页面
@@ -419,6 +420,7 @@ export default function PerformanceBenchmarkPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
+      <AuxiliaryPageNotice path="/performance-benchmark" />
       <div className="text-center">
         <h1 className="mb-2 text-3xl font-bold">性能基准测试</h1>
         <p className="text-gray-600">详细的性能分析和基准测试</p>

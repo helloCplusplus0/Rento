@@ -1,6 +1,10 @@
 /**
  * 路由配置管理
- * 定义应用中各个路由的权限和访问控制规则
+ * 提供页面标题和导航辅助元数据。
+ *
+ * 注意：
+ * - 实际页面鉴权以 `src/middleware.ts` 为准。
+ * - 辅助页面分类与最小门禁策略以 `src/lib/page-governance.ts` 为准。
  */
 
 /**
@@ -18,64 +22,64 @@ export interface RouteConfig {
 
 /**
  * 应用路由配置
- * 当前为开放访问，后期可根据需要添加权限控制
+ * 当前仅维护路由展示元数据，不再把这里视为鉴权真相源。
  */
 export const routeConfigs: RouteConfig[] = [
   // 主要页面
   {
     path: '/',
-    requireAuth: false,
+    requireAuth: true,
     title: '工作台',
     description: '仪表板和数据概览',
     icon: 'home',
   },
   {
     path: '/rooms',
-    requireAuth: false,
+    requireAuth: true,
     title: '房源管理',
     description: '管理房间信息和状态',
     icon: 'building',
   },
   {
     path: '/contracts',
-    requireAuth: false,
+    requireAuth: true,
     title: '合同管理',
     description: '管理租赁合同',
     icon: 'document',
   },
   {
     path: '/bills',
-    requireAuth: false,
+    requireAuth: true,
     title: '账单管理',
     description: '管理收支账单',
     icon: 'receipt',
   },
   {
     path: '/add',
-    requireAuth: false,
+    requireAuth: true,
     title: '添加功能',
     description: '快速添加各类信息',
     icon: 'plus',
   },
   {
     path: '/settings',
-    requireAuth: false,
+    requireAuth: true,
     title: '系统设置',
     description: '配置系统参数',
     icon: 'settings',
   },
 
-  // 开发和演示页面
+  // 辅助页面元数据，分类与门禁真相源见 `page-governance.ts`
   {
     path: '/components',
-    requireAuth: false,
+    requireAuth: true,
     title: '组件展示',
     description: '开发组件展示页面',
     icon: 'code',
   },
   {
     path: '/layout-demo',
-    requireAuth: false,
+    requireAuth: true,
     title: '布局演示',
     description: '响应式布局演示',
     icon: 'layout',

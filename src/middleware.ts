@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { getAuxiliaryPageAccessDecision } from '@/lib/page-governance'
 
 const PUBLIC_PAGE_PATHS = new Set(['/login'])
 const PUBLIC_API_PREFIXES = ['/api/health', '/api/auth/login', '/api/auth/logout']
@@ -87,6 +88,17 @@ async function handleAuth(request: NextRequest, pathname: string) {
     loginUrl.searchParams.set('next', pathname)
 
     return appendSecurityHeaders(NextResponse.redirect(loginUrl))
+  }
+
+  const auxiliaryPageAccess = getAuxiliaryPageAccessDecision(pathname)
+
+  if (!auxiliaryPageAccess.allowed) {
+    const redirectUrl = new URL(
+      auxiliaryPageAccess.redirectPath ?? '/',
+      request.url
+    )
+
+    return appendSecurityHeaders(NextResponse.redirect(redirectUrl))
   }
 
   return appendSecurityHeaders(NextResponse.next())
