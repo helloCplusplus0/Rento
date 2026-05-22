@@ -9,7 +9,7 @@ Rento/
 ├── src/                    # 应用源码
 ├── prisma/                 # Prisma schema 与迁移
 ├── scripts/                # 运行、部署、初始化脚本
-├── docs/                   # 当前分析文档与归档文档
+├── docs/                   # 当前分析文档、fix 文档与归档文档
 ├── public/                 # 静态资源
 ├── nginx/                  # 反向代理配置
 ├── backups/                # 运行时备份目录（本地/容器挂载）
@@ -70,12 +70,16 @@ Rento/
 
 ## 6. `docs/` 结构说明
 - `docs/` 根目录保留当前仍有参考价值的分析文档、策略文档和设计说明。
+- `docs/fix/`：真实场景验证阶段的问题报告目录，存放 `fix_XXX_issue_<topic>.md` 与 `fix_issue_template.md`。
+- `docs/fix/fix_analysis_template.md`：`analysis` 文档模板，用于固定根因、方案、影响面、数据修复策略、验收与回滚结构。
+- `docs/fix/fix_XXX_analysis_<topic>.md`：单个问题的根因与方案分析文档，作为后续 `/spec` 的直接上游真相源。
 - `phase03` 已完成当前阶段文档冻结与子任务收口。
 - `phase04` 阶段文档已生成并保留为最近一轮已完成工作流的冻结记录：
   - `docs/phase04_performance_and_ops_architecture_plan.md`
   - `docs/phase04_performance_and_ops_dev_plan.md`
   - `docs/phase04_performance_and_ops_shared_baseline.md`
 - `phase04-performance-and-ops-01` 至 `phase04-performance-and-ops-04` 已按顺序完成当前阶段收口；若需继续推进，当前应先回到新一轮 `/plan`，再决定是否进入新的 `phase*` 工作流。
+- 当前默认已进入真实场景验证与 fix 闭环：问题先落 `issue` 文档，再落 `analysis` 文档，审核后才进入 `/spec`。
 - `docs/archive/tasks/`：历史 `task_*.md` 实施记录。
 - `docs/archive/README.md`：归档说明与使用边界。
 - 历史任务文档默认只读，不再代表当前执行计划。
@@ -106,7 +110,12 @@ Rento/
 - `phase04-performance-and-ops-04 Task3` 已完成统一门禁与说明接入：
   - `src/middleware.ts` 已消费 `page-governance.ts` 的访问决策，对 `dev-only` 页面执行开发环境限制
   - 保留辅助页面已通过 `AuxiliaryPageNotice` 显示用途、保留理由与门禁说明
-- `phase04-performance-and-ops-*` 已完成当前阶段收口；下一步应以 `plan.md` 与 `AGENTS.md` 为准，先进入新一轮 `/plan` 再决定后续工作流。
+- `phase04-performance-and-ops-*` 已完成当前阶段收口。
+- 当前默认工作流已切换为真实场景验证与 fix 闭环：
+  - 新问题先进入 `docs/fix/fix_XXX_issue_<topic>.md`
+  - 完成根因与方案分析后进入 `docs/fix/fix_XXX_analysis_<topic>.md`
+  - 经审核后再进入 `/spec`
+- 若 fix 已超出局部修补边界，仍需以 `plan.md` 与 `AGENTS.md` 为准，回到新一轮 `/plan` 再决定后续工作流。
 
 ## 9. 已知结构债务
 - `.env` 仍有历史跟踪痕迹，后续应完成真正的模板化与去跟踪化收口。
