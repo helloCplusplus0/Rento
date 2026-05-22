@@ -1,7 +1,7 @@
 import {
-  calculateRentBill,
   calculateUtilityBill,
 } from '@/lib/bill-calculations'
+import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import {
   ErrorLogger,
   ErrorSeverity,
@@ -230,43 +230,35 @@ async function generateAllRentBills(contract: any): Promise<any[]> {
   const startTime = Date.now()
   console.log(`[租金账单] 开始生成，合同: ${contract.contractNumber}`)
 
-  const bills = []
-  const paymentCycle = parsePaymentCycle(contract.paymentMethod || '月付')
-
-  // 计算所有账单周期
-  const billPeriods = calculateAllBillPeriods(
+  const rentBillPlan = buildContractRentBillPlan(
     contract.startDate,
     contract.endDate,
-    contract.paymentMethod || '月付'
+    contract.monthlyRent,
+    contract.paymentMethod
   )
-  console.log(`[租金账单] 计算出${billPeriods.length}个账单周期`)
+  console.log(`[租金账单] 计算出${rentBillPlan.periods.length}个账单周期`)
 
   // 为每个周期生成账单
-  for (let i = 0; i < billPeriods.length; i++) {
-    const period = billPeriods[i]
-    const rentAmount = calculateRentAmount(
-      Number(contract.monthlyRent),
-      contract.paymentMethod || '月付'
-    )
-
+  const bills = []
+  for (const period of rentBillPlan.periods) {
     console.log(
-      `[租金账单] 生成第${i + 1}个账单，周期: ${period.periodStart.toISOString().slice(0, 10)} - ${period.periodEnd.toISOString().slice(0, 10)}`
+      `[租金账单] 生成第${period.index}个账单，周期: ${period.periodLabel}`
     )
 
     const rentBill = await prisma.bill.create({
       data: {
         billNumber: generateBillNumber('RENT', contract.contractNumber),
         type: 'RENT',
-        amount: rentAmount,
+        amount: rentBillPlan.rentAmountPerPeriod,
         receivedAmount: 0,
-        pendingAmount: rentAmount,
+        pendingAmount: rentBillPlan.rentAmountPerPeriod,
         dueDate: period.dueDate,
-        period: `${period.periodStart.toISOString().slice(0, 10)} 至 ${period.periodEnd.toISOString().slice(0, 10)}`,
+        period: period.periodLabel,
         status: 'PENDING',
         contractId: contract.id,
         paymentMethod: contract.paymentMethod || '待确定',
         operator: 'SYSTEM',
-        remarks: `${paymentCycle}租金 - 合同${contract.contractNumber}`,
+        remarks: `${rentBillPlan.paymentCycleLabel}租金 - 合同${contract.contractNumber} - 第${period.index}期`,
       },
     })
 
@@ -282,92 +274,21 @@ async function generateAllRentBills(contract: any): Promise<any[]> {
 }
 
 /**
- * 计算合同期内所有账单周期
+ * 基于共享支付周期计划计算应有的 RENT 账单方案
  */
-function calculateAllBillPeriods(
-  startDate: Date,
-  endDate: Date,
-  paymentCycle: string
-) {
-  const periods = []
-  let currentDate = new Date(startDate) // 从合同实际开始日期开始
-
-  while (currentDate < endDate) {
-    const periodStart = new Date(currentDate)
-    let periodEnd: Date
-    let dueDate: Date
-
-    switch (paymentCycle) {
-      case 'QUARTERLY':
-        // 季付：3个月一期，基于合同实际日期计算
-        periodEnd = new Date(currentDate)
-        periodEnd.setMonth(periodEnd.getMonth() + 3) // 3个月后的同一天
-        if (periodEnd > endDate) {
-          periodEnd = new Date(endDate) // 不超过合同结束日期
-        }
-        dueDate = new Date(periodStart.getTime()) // 应付日期 = 账期开始日期
-
-        // 移动到下个季度的同一天
-        currentDate = new Date(periodStart)
-        currentDate.setMonth(currentDate.getMonth() + 3)
-        break
-      case 'SEMI_YEARLY':
-        // 半年付：6个月一期，基于合同实际日期计算
-        periodEnd = new Date(currentDate)
-        periodEnd.setMonth(periodEnd.getMonth() + 6) // 6个月后的同一天
-        if (periodEnd > endDate) {
-          periodEnd = new Date(endDate) // 不超过合同结束日期
-        }
-        dueDate = new Date(periodStart.getTime()) // 应付日期 = 账期开始日期
-
-        // 移动到下个半年的同一天
-        currentDate = new Date(periodStart)
-        currentDate.setMonth(currentDate.getMonth() + 6)
-        break
-      case 'YEARLY':
-        // 年付：12个月一期，基于合同实际日期计算
-        periodEnd = new Date(currentDate)
-        periodEnd.setFullYear(periodEnd.getFullYear() + 1) // 1年后的同一天
-        if (periodEnd > endDate) {
-          periodEnd = new Date(endDate) // 不超过合同结束日期
-        }
-        dueDate = new Date(periodStart.getTime()) // 应付日期 = 账期开始日期
-
-        // 移动到下一年的同一天
-        currentDate = new Date(periodStart)
-        currentDate.setFullYear(currentDate.getFullYear() + 1)
-        break
-      default: // MONTHLY
-        // 月付：1个月一期，基于合同实际日期计算
-        periodEnd = new Date(currentDate)
-        periodEnd.setMonth(periodEnd.getMonth() + 1) // 1个月后的同一天
-        if (periodEnd > endDate) {
-          periodEnd = new Date(endDate) // 不超过合同结束日期
-        }
-        dueDate = new Date(periodStart.getTime()) // 应付日期 = 账期开始日期
-
-        // 移动到下个月的同一天
-        currentDate = new Date(periodStart)
-        currentDate.setMonth(currentDate.getMonth() + 1)
-        break
-    }
-
-    periods.push({
-      periodStart,
-      periodEnd,
-      dueDate,
-    })
-
-    // 修复：如果账期结束日期已经达到或超过合同结束日期，停止生成
-    if (periodEnd.getTime() >= endDate.getTime()) {
-      break
-    }
-  }
+function buildExpectedRentBillPlan(contract: any) {
+  const rentBillPlan = buildContractRentBillPlan(
+    contract.startDate,
+    contract.endDate,
+    contract.monthlyRent,
+    contract.paymentMethod
+  )
 
   console.log(
-    `[账单周期] 计算完成，支付周期: ${paymentCycle}, 生成${periods.length}个周期`
+    `[账单周期] 计算完成，支付周期: ${rentBillPlan.paymentCycle}, 生成${rentBillPlan.periods.length}个周期`
   )
-  return periods
+
+  return rentBillPlan
 }
 
 /**
@@ -556,88 +477,6 @@ function generateBillNumber(type: string, contractNumber: string): string {
 }
 
 /**
- * 解析支付周期
- */
-function parsePaymentCycle(
-  paymentMethod: string
-): 'MONTHLY' | 'QUARTERLY' | 'SEMI_YEARLY' | 'YEARLY' {
-  if (paymentMethod.includes('季') || paymentMethod.includes('3个月')) {
-    return 'QUARTERLY'
-  }
-  if (paymentMethod.includes('半年') || paymentMethod.includes('6个月')) {
-    return 'SEMI_YEARLY'
-  }
-  if (paymentMethod.includes('年') || paymentMethod.includes('12个月')) {
-    return 'YEARLY'
-  }
-  return 'MONTHLY' // 默认月付
-}
-
-/**
- * 计算账单周期和到期日期
- */
-function calculateBillPeriod(startDate: Date, paymentCycle: string) {
-  const periodStart = new Date(startDate)
-  let periodEnd: Date
-  let dueDate: Date
-
-  switch (paymentCycle) {
-    case 'QUARTERLY':
-      periodEnd = new Date(
-        periodStart.getFullYear(),
-        periodStart.getMonth() + 3,
-        0
-      )
-      dueDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), 15) // 每季度15日到期
-      break
-    case 'SEMI_YEARLY':
-      periodEnd = new Date(
-        periodStart.getFullYear(),
-        periodStart.getMonth() + 6,
-        0
-      )
-      dueDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), 15) // 每半年15日到期
-      break
-    case 'YEARLY':
-      periodEnd = new Date(
-        periodStart.getFullYear() + 1,
-        periodStart.getMonth(),
-        0
-      )
-      dueDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), 15) // 每年15日到期
-      break
-    default: // MONTHLY
-      periodEnd = new Date(
-        periodStart.getFullYear(),
-        periodStart.getMonth() + 1,
-        0
-      )
-      dueDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), 15) // 每月15日到期
-  }
-
-  return { periodStart, periodEnd, dueDate }
-}
-
-/**
- * 根据支付周期计算租金金额
- */
-function calculateRentAmount(
-  monthlyRent: number,
-  paymentCycle: string
-): number {
-  switch (paymentCycle) {
-    case 'QUARTERLY':
-      return monthlyRent * 3
-    case 'SEMI_YEARLY':
-      return monthlyRent * 6
-    case 'YEARLY':
-      return monthlyRent * 12
-    default: // MONTHLY
-      return monthlyRent
-  }
-}
-
-/**
  * 检查是否需要生成下期账单
  *
  * 注意：在新的设计中，所有租金账单都在合同创建时预生成
@@ -693,12 +532,7 @@ export async function checkAndGenerateUpcomingBills() {
  * 检查合同是否有缺失的租金账单
  */
 export async function checkMissingRentBills(contract: any): Promise<any[]> {
-  const paymentCycle = parsePaymentCycle(contract.paymentMethod || '月付')
-  const expectedPeriods = calculateAllBillPeriods(
-    contract.startDate,
-    contract.endDate,
-    paymentCycle
-  )
+  const rentBillPlan = buildExpectedRentBillPlan(contract)
   const existingBills = contract.bills.filter(
     (bill: any) => bill.type === 'RENT'
   )
@@ -706,9 +540,8 @@ export async function checkMissingRentBills(contract: any): Promise<any[]> {
   const missingBills = []
 
   // 检查每个预期的账单周期是否都有对应的账单
-  for (let i = 0; i < expectedPeriods.length; i++) {
-    const period = expectedPeriods[i]
-    const periodStr = `${period.periodStart.toISOString().slice(0, 10)} 至 ${period.periodEnd.toISOString().slice(0, 10)}`
+  for (const period of rentBillPlan.periods) {
+    const periodStr = period.periodLabel
 
     // 检查是否已存在该周期的账单
     const existingBill = existingBills.find(
@@ -716,21 +549,20 @@ export async function checkMissingRentBills(contract: any): Promise<any[]> {
     )
 
     if (!existingBill) {
-      // 生成缺失的账单
-      const rentAmount = calculateRentAmount(contract.monthlyRent, paymentCycle)
-
       const rentBill = await prisma.bill.create({
         data: {
           billNumber: generateBillNumber('RENT', contract.contractNumber),
           type: 'RENT',
-          amount: rentAmount,
+          amount: rentBillPlan.rentAmountPerPeriod,
           receivedAmount: 0,
-          pendingAmount: rentAmount,
+          pendingAmount: rentBillPlan.rentAmountPerPeriod,
           dueDate: period.dueDate,
           period: periodStr,
           status: 'PENDING',
           contractId: contract.id,
-          remarks: `${paymentCycle}租金账单 - 第${i + 1}期 - 补充生成`,
+          paymentMethod: contract.paymentMethod || '待确定',
+          operator: 'SYSTEM',
+          remarks: `${rentBillPlan.paymentCycleLabel}租金账单 - 第${period.index}期 - 补充生成`,
         },
       })
 
@@ -739,43 +571,4 @@ export async function checkMissingRentBills(contract: any): Promise<any[]> {
   }
 
   return missingBills
-}
-
-/**
- * 计算下次账单日期
- */
-function calculateNextBillDate(lastDueDate: Date, paymentMethod: string): Date {
-  const paymentCycle = parsePaymentCycle(paymentMethod)
-  const nextDate = new Date(lastDueDate)
-
-  switch (paymentCycle) {
-    case 'QUARTERLY':
-      nextDate.setMonth(nextDate.getMonth() + 3)
-      break
-    case 'SEMI_YEARLY':
-      nextDate.setMonth(nextDate.getMonth() + 6)
-      break
-    case 'YEARLY':
-      nextDate.setFullYear(nextDate.getFullYear() + 1)
-      break
-    default: // MONTHLY
-      nextDate.setMonth(nextDate.getMonth() + 1)
-  }
-
-  return nextDate
-}
-
-/**
- * 判断是否应该生成下期账单
- */
-function shouldGenerateNextBill(
-  nextBillDate: Date,
-  advanceDays: number
-): boolean {
-  const today = new Date()
-  const generateDate = new Date(
-    nextBillDate.getTime() - advanceDays * 24 * 60 * 60 * 1000
-  )
-
-  return today >= generateDate
 }

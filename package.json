@@ -16,7 +16,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "fix:001:rent-bills": "tsx scripts/fix-001-rent-bill-repair.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

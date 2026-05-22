@@ -1,3 +1,8 @@
+import {
+  calculateRentAmountForPaymentCycle,
+  formatContractPaymentCycle,
+  normalizeContractPaymentCycle,
+} from './contract-payment-cycle'
 import { globalSettings } from './global-settings'
 
 /**
@@ -157,19 +162,12 @@ export function calculateRentBill(
   keyDeposit: number = 100,
   cleaningFee: number = 0
 ): RentCalculationResult {
-  // 使用默认付款周期
-  const cycle = paymentCycle || 'monthly'
-
-  // 根据付款周期计算租金倍数
-  const cycleMultiplier: Record<string, number> = {
-    monthly: 1, // 月付
-    quarterly: 3, // 季付
-    semi_annually: 6, // 半年付
-    annually: 12, // 年付
-  }
-
-  const multiplier = cycleMultiplier[cycle] || 1
-  const totalRent = monthlyRent * multiplier
+  // 兼容历史调用方输入，但内部统一走合同支付周期标准化逻辑。
+  const normalizedCycle = normalizeContractPaymentCycle(paymentCycle)
+  const totalRent = calculateRentAmountForPaymentCycle(
+    monthlyRent,
+    normalizedCycle
+  )
   const deposit = monthlyRent * depositMonths
   const totalAmount = totalRent + deposit + keyDeposit + cleaningFee
 
@@ -180,7 +178,7 @@ export function calculateRentBill(
     keyDeposit,
     cleaningFee,
     totalAmount: Math.round(totalAmount * 100) / 100,
-    paymentCycle: cycle,
+    paymentCycle: normalizedCycle,
   }
 }
 
@@ -249,12 +247,5 @@ export function formatAmount(amount: number): string {
  * 格式化付款周期显示
  */
 export function formatPaymentCycle(cycle: string): string {
-  const cycleMap = {
-    monthly: '月付',
-    quarterly: '季付',
-    semi_annually: '半年付',
-    annually: '年付',
-  }
-
-  return cycleMap[cycle as keyof typeof cycleMap] || cycle
+  return formatContractPaymentCycle(cycle)
 }

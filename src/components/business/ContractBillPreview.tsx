@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 
 import { formatCurrency } from '@/lib/format'
+import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -249,110 +250,24 @@ function generateRentBillsPreview(
   contractData: ContractFormData,
   contractNumber: string
 ): PreviewBill[] {
-  const bills: PreviewBill[] = []
-  const startDate = new Date(contractData.startDate)
-  const endDate = new Date(contractData.endDate)
-  const paymentMethod = contractData.paymentMethod || '月付'
+  const rentBillPlan = buildContractRentBillPlan(
+    new Date(contractData.startDate),
+    new Date(contractData.endDate),
+    contractData.monthlyRent,
+    contractData.paymentMethod
+  )
 
-  // 解析支付周期
-  const paymentCycle = parsePaymentCycle(paymentMethod)
-  const rentAmount = calculateRentAmount(contractData.monthlyRent, paymentCycle)
-
-  // 计算所有账单周期
-  const periods = calculateAllBillPeriods(startDate, endDate, paymentCycle)
-
-  periods.forEach((period, index) => {
-    bills.push({
-      id: `rent-${index}`,
+  return rentBillPlan.periods.map((period) => {
+    return {
+      id: `rent-${period.index}`,
       type: 'RENT',
       billNumber: `BILL${contractNumber.slice(-3)}R${Date.now().toString().slice(-6)}`,
-      amount: rentAmount,
+      amount: rentBillPlan.rentAmountPerPeriod,
       dueDate: period.dueDate,
-      period: `${period.periodStart.toISOString().slice(0, 10)} 至 ${period.periodEnd.toISOString().slice(0, 10)}`,
-      description: `${paymentCycle}租金账单 - 第${index + 1}期`,
+      period: period.periodLabel,
+      description: `${rentBillPlan.paymentCycleLabel}租金账单 - 第${period.index}期`,
       icon: <Home className="h-4 w-4" />,
       color: 'bg-indigo-500',
-    })
-  })
-
-  return bills
-}
-
-/**
- * 解析支付周期
- */
-function parsePaymentCycle(paymentMethod: string): string {
-  if (paymentMethod.includes('季') || paymentMethod.includes('三个月'))
-    return '季付'
-  if (paymentMethod.includes('半年') || paymentMethod.includes('六个月'))
-    return '半年付'
-  if (paymentMethod.includes('年') || paymentMethod.includes('十二个月'))
-    return '年付'
-  return '月付'
-}
-
-/**
- * 计算租金金额
- */
-function calculateRentAmount(
-  monthlyRent: number,
-  paymentCycle: string
-): number {
-  switch (paymentCycle) {
-    case '季付':
-      return monthlyRent * 3
-    case '半年付':
-      return monthlyRent * 6
-    case '年付':
-      return monthlyRent * 12
-    default:
-      return monthlyRent
-  }
-}
-
-/**
- * 计算所有账单周期
- */
-function calculateAllBillPeriods(
-  startDate: Date,
-  endDate: Date,
-  paymentCycle: string
-) {
-  const periods = []
-  let currentStart = new Date(startDate)
-
-  // 计算周期间隔（月数）
-  const monthsInterval =
-    paymentCycle === '季付'
-      ? 3
-      : paymentCycle === '半年付'
-        ? 6
-        : paymentCycle === '年付'
-          ? 12
-          : 1
-
-  while (currentStart < endDate) {
-    const currentEnd = new Date(currentStart)
-    currentEnd.setMonth(currentEnd.getMonth() + monthsInterval)
-
-    // 确保不超过合同结束日期
-    if (currentEnd > endDate) {
-      currentEnd.setTime(endDate.getTime())
     }
-
-    // 到期日期通常是周期开始日期
-    const dueDate = new Date(currentStart)
-
-    periods.push({
-      periodStart: new Date(currentStart),
-      periodEnd: new Date(currentEnd),
-      dueDate,
-    })
-
-    // 移动到下一个周期
-    currentStart = new Date(currentEnd)
-    currentStart.setDate(currentStart.getDate() + 1)
-  }
-
-  return periods
+  })
 }
