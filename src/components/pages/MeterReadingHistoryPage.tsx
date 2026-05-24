@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, Download, Edit, Filter, Search, Trash2 } from 'lucide-react'
+import { Calendar, Download, Edit, Search } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,71 @@ import {
 import { ReadingStatusChecker } from '@/components/business/ReadingStatusChecker'
 import { PageContainer } from '@/components/layout'
 
-// 临时类型定义
+type MeterReadingRecordType =
+  | 'INITIAL_BASELINE'
+  | 'REGULAR_READING'
+  | 'CHECKOUT_FINAL'
+
+const RECORD_TYPE_BADGE_CONFIG = {
+  INITIAL_BASELINE: {
+    label: '初始底数',
+    className: 'border-blue-200 bg-blue-50 text-blue-700',
+  },
+  REGULAR_READING: {
+    label: '正常抄表',
+    className: 'border-green-200 bg-green-50 text-green-700',
+  },
+  CHECKOUT_FINAL: {
+    label: '退租结算',
+    className: 'border-purple-200 bg-purple-50 text-purple-700',
+  },
+} satisfies Record<
+  MeterReadingRecordType,
+  { label: string; className: string }
+>
+
+const LEGACY_INITIAL_BASELINE_REMARK_PATTERN =
+  /合同创建|初始读数|初始底数|底数/i
+const LEGACY_CHECKOUT_FINAL_REMARK_PATTERN = /退租|结算|checkout|final/i
+
+function isKnownRecordType(value: unknown): value is MeterReadingRecordType {
+  return typeof value === 'string' && value in RECORD_TYPE_BADGE_CONFIG
+}
+
+function resolveRecordTypeBadgeConfig(reading: Pick<
+  MeterReadingHistory,
+  'recordType' | 'remarks' | 'usage'
+>) {
+  if (isKnownRecordType(reading.recordType)) {
+    return RECORD_TYPE_BADGE_CONFIG[reading.recordType]
+  }
+
+  const normalizedRemarks = reading.remarks?.trim() ?? ''
+
+  // 仅在结构化字段缺失或异常时，才回退到存量兼容判断，避免重新依赖备注文本。
+  if (
+    reading.usage === 0 &&
+    LEGACY_INITIAL_BASELINE_REMARK_PATTERN.test(normalizedRemarks)
+  ) {
+    return {
+      label: '初始底数(兼容)',
+      className: 'border-blue-200 bg-blue-50 text-blue-700',
+    }
+  }
+
+  if (LEGACY_CHECKOUT_FINAL_REMARK_PATTERN.test(normalizedRemarks)) {
+    return {
+      label: '退租结算(兼容)',
+      className: 'border-purple-200 bg-purple-50 text-purple-700',
+    }
+  }
+
+  return {
+    label: '未知类型',
+    className: 'border-gray-200 bg-gray-50 text-gray-600',
+  }
+}
+
 interface MeterReadingHistory {
   id: string
   meterId: string
@@ -32,6 +96,8 @@ interface MeterReadingHistory {
   status: 'PENDING' | 'CONFIRMED' | 'BILLED' | 'CANCELLED'
   operator?: string
   remarks?: string
+  recordType?: MeterReadingRecordType | string | null
+  isBilled: boolean
   createdAt: string
   // 关联数据
   meter?: {
@@ -56,7 +122,7 @@ interface FilterOptions {
   status: string
   dateRange: string
   operator?: string
-  recordType?: string // 新增：记录类型过滤
+  recordType: 'all' | MeterReadingRecordType
 }
 
 /**
@@ -95,39 +161,16 @@ export function MeterReadingHistoryPage() {
         queryParams.append('dateRange', filters.dateRange)
       if (filters.operator && filters.operator !== 'all')
         queryParams.append('operator', filters.operator)
+      if (filters.recordType && filters.recordType !== 'all') {
+        queryParams.append('recordType', filters.recordType)
+      }
 
       const response = await fetch(
         `/api/meter-readings?${queryParams.toString()}`
       )
       if (response.ok) {
         const data = await response.json()
-        let allReadings = data.data || [] // 修复：使用data字段而不是readings字段
-
-        // 客户端过滤记录类型
-        if (filters.recordType && filters.recordType !== 'all') {
-          if (filters.recordType === 'initial') {
-            // 只显示初始底数记录：usage为0且备注包含特定关键词
-            allReadings = allReadings.filter(
-              (reading: MeterReadingHistory) =>
-                reading.usage === 0 &&
-                (reading.remarks?.includes('合同创建') ||
-                  reading.remarks?.includes('初始读数') ||
-                  reading.remarks?.includes('底数'))
-            )
-          } else if (filters.recordType === 'normal') {
-            // 只显示正常抄表记录：usage大于0或者（usage为0但备注不包含初始底数关键词）
-            allReadings = allReadings.filter(
-              (reading: MeterReadingHistory) =>
-                reading.usage > 0 ||
-                (reading.usage === 0 &&
-                  !reading.remarks?.includes('合同创建') &&
-                  !reading.remarks?.includes('初始读数') &&
-                  !reading.remarks?.includes('底数'))
-            )
-          }
-        }
-
-        setReadings(allReadings)
+        setReadings(data.data || [])
       } else {
         console.error('Failed to load meter reading history')
         setReadings([])
@@ -149,32 +192,6 @@ export function MeterReadingHistoryPage() {
   const handleEdit = (reading: MeterReadingHistory) => {
     // TODO: 打开编辑弹窗
     console.log('编辑抄表记录:', reading.id)
-  }
-
-  // 处理删除
-  const handleDelete = async (reading: MeterReadingHistory) => {
-    if (!confirm('确定要删除这条抄表记录吗？删除后无法恢复。')) {
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/meter-readings/${reading.id}`, {
-        method: 'DELETE',
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        alert('抄表记录删除成功')
-        // 重新加载数据
-        loadReadingHistory()
-      } else {
-        alert(result.error || '删除失败')
-      }
-    } catch (error) {
-      console.error('删除抄表记录失败:', error)
-      alert('删除失败，请重试')
-    }
   }
 
   // 导出数据
@@ -227,31 +244,12 @@ export function MeterReadingHistoryPage() {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
-  // 获取记录类型标识
   const getRecordTypeBadge = (reading: MeterReadingHistory) => {
-    const isInitialReading =
-      reading.usage === 0 &&
-      (reading.remarks?.includes('合同创建') ||
-        reading.remarks?.includes('初始读数') ||
-        reading.remarks?.includes('底数'))
-
-    if (isInitialReading) {
-      return (
-        <Badge
-          variant="outline"
-          className="border-blue-200 bg-blue-50 text-blue-700"
-        >
-          初始底数
-        </Badge>
-      )
-    }
+    const { label, className } = resolveRecordTypeBadgeConfig(reading)
 
     return (
-      <Badge
-        variant="outline"
-        className="border-green-200 bg-green-50 text-green-700"
-      >
-        正常抄表
+      <Badge variant="outline" className={className}>
+        {label}
       </Badge>
     )
   }
@@ -318,8 +316,9 @@ export function MeterReadingHistoryPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部记录</SelectItem>
-                    <SelectItem value="normal">正常抄表</SelectItem>
-                    <SelectItem value="initial">初始底数</SelectItem>
+                    <SelectItem value="REGULAR_READING">正常抄表</SelectItem>
+                    <SelectItem value="INITIAL_BASELINE">初始底数</SelectItem>
+                    <SelectItem value="CHECKOUT_FINAL">退租结算</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -378,6 +377,12 @@ export function MeterReadingHistoryPage() {
                 </Select>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-sm text-gray-600">
+            当前阶段默认保留抄表历史事实，历史页不提供删除入口；如需处理错误记录，应通过受控修复流程完成。
           </CardContent>
         </Card>
 
@@ -528,20 +533,6 @@ export function MeterReadingHistoryPage() {
                         }
                       >
                         <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(reading)}
-                        disabled={reading.status === 'BILLED'}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        title={
-                          reading.status === 'BILLED'
-                            ? '已生成账单的记录不可删除'
-                            : '删除抄表记录'
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

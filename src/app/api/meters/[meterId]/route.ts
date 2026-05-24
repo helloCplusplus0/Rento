@@ -116,7 +116,7 @@ export const PUT = withApiErrorHandler(handlePutMeter, {
 })
 
 /**
- * 移除仪表关联（停用优先，必要时才允许硬删除）
+ * 处理仪表移除（有历史则停用保留，无历史才允许硬删除）
  * DELETE /api/meters/[meterId]
  */
 async function handleDeleteMeter(
@@ -174,16 +174,18 @@ async function handleDeleteMeter(
       success: true,
       message:
         action === 'deactivate'
-          ? '仪表已停用，历史读数与计费事实已保留'
-          : '仪表已处于停用状态，历史读数与计费事实继续保留',
+          ? '仪表已有历史，已停用并保留历史读数与计费事实'
+          : '仪表已有历史且已处于停用状态，继续保留历史读数与计费事实',
       action,
+      hasHistoricalFacts: true,
       details: {
         readingCount,
         billCount,
         billDetailCount,
         roomId: existingMeter.roomId,
         roomNumber: existingMeter.room.roomNumber,
-        suggestion: '当前数据模型未提供物理解绑字段，请后续通过专用解绑流程处理当前绑定关系',
+        suggestion:
+          '如需换表，请保留旧表为停用状态后再新增新表；当前数据模型不提供结构化解绑',
       },
     })
   }
@@ -194,8 +196,15 @@ async function handleDeleteMeter(
 
   return NextResponse.json({
     success: true,
-    message: '仪表无任何历史读数或计费事实，已执行物理删除',
+    message: '仪表无任何历史读数或计费事实，已执行硬删除',
     action: 'hard_delete',
+    hasHistoricalFacts: false,
+    details: {
+      roomId: existingMeter.roomId,
+      roomNumber: existingMeter.room.roomNumber,
+      suggestion:
+        '仅无历史的误加仪表适合直接删除；如需换表，请优先停用旧表并新增新表',
+    },
   })
 }
 

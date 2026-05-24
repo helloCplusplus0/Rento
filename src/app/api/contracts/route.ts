@@ -284,6 +284,7 @@ async function handlePostContracts(request: NextRequest) {
             currentReading: meterInitialReadings[meter.id],
             previousReading: null,
             usage: 0,
+            recordType: 'INITIAL_BASELINE' as const,
             unitPrice: meter.unitPrice,
             amount: 0,
             readingDate: contract.startDate,

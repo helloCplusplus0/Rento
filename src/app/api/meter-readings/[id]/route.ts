@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { meterReadingQueries } from '@/lib/queries'
+import { meterReadingDeletePolicy, meterReadingQueries } from '@/lib/queries'
 
 /**
  * 获取单个抄表记录
@@ -154,21 +154,11 @@ export async function DELETE(
       )
     }
 
-    // 检查是否已生成账单，已生成账单的记录不允许删除
-    if (existingReading.isBilled) {
-      return NextResponse.json(
-        { success: false, error: '已生成账单的抄表记录不允许删除' },
-        { status: 400 }
-      )
-    }
-
-    // 删除记录
-    await meterReadingQueries.delete(id)
-
     return NextResponse.json({
-      success: true,
-      message: '抄表记录删除成功',
-    })
+      success: false,
+      code: 'METER_READING_DELETE_DISABLED',
+      error: meterReadingDeletePolicy.reason,
+    }, { status: 409 })
   } catch (error) {
     console.error('删除抄表记录失败:', error)
     return NextResponse.json(

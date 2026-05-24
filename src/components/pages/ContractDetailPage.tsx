@@ -250,13 +250,10 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
         roomId={contract.roomId}
         isOpen={showMeterReadingModal}
         onClose={() => setShowMeterReadingModal(false)}
-        onSuccess={(reading) => {
-          console.log('抄表成功:', reading)
-          // 抄表成功后可以选择刷新页面或显示成功提示
-          // 这里使用简单的页面刷新来确保数据同步
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
+        onSuccess={(readings) => {
+          console.log('抄表成功:', readings)
+          // 使用 App Router 的局部刷新，避免整页重载导致回执体验中断。
+          router.refresh()
         }}
       />
     </PageContainer>

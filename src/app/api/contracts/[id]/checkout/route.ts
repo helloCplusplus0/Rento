@@ -375,6 +375,7 @@ async function handleCheckoutContract(
             previousReading: Number(previousReading),
             currentReading: finalReading,
             usage: usage,
+            recordType: 'CHECKOUT_FINAL',
             readingDate: checkoutDateObj,
             period: `退租结算-${checkoutDateObj.toISOString().split('T')[0]}`,
             unitPrice: Number(meter.unitPrice),

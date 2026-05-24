@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, ArrowLeft, CheckCircle, Save } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Save } from 'lucide-react'
 
 import { useSettings } from '@/hooks/useSettings'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +34,7 @@ interface Meter {
   meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
   unitPrice: number
   unit: string
+  isActive: boolean
   lastReading?: number
   lastReadingDate?: Date
   contractId?: string | null // 关联的合同ID
@@ -81,10 +82,13 @@ export function BatchMeterReadingPage() {
       const response = await fetch('/api/rooms?includeMeters=true')
       if (response.ok) {
         const roomsData = await response.json()
-        // 只显示有仪表的房间
-        const roomsWithMeters = roomsData.filter(
-          (room: any) => room.meters && room.meters.length > 0
-        )
+        // 批量抄表只展示激活中的仪表，与合同抄表弹窗保持一致。
+        const roomsWithMeters = roomsData
+          .map((room: any) => ({
+            ...room,
+            meters: (room.meters || []).filter((meter: any) => meter.isActive),
+          }))
+          .filter((room: any) => room.meters.length > 0)
         setRooms(roomsWithMeters)
       } else {
         console.error('Failed to load rooms with meters')
@@ -122,27 +126,29 @@ export function BatchMeterReadingPage() {
     //   errors[meterId] = `用量异常偏高（超过${settings.usageAnomalyThreshold}倍历史读数）`
 
     // 4. 可选：对于极大的用量给出友好提示（但不阻止提交）
-    const warnings: Record<string, string> = {}
-    if (usage > 1000) {
-      // 用量超过1000的友好提示
-      warnings[meterId] = '用量较大，请确认读数是否正确'
-    }
-
     setValidationErrors((prev) => ({
       ...prev,
       [meterId]: errors[meterId] || '',
     }))
 
-    setReadings((prev) => ({
-      ...prev,
-      [meterId]: {
-        meterId,
-        currentReading,
-        readingDate: new Date(),
-        usage,
-        amount,
-      },
-    }))
+    if (currentReading > 0) {
+      setReadings((prev) => ({
+        ...prev,
+        [meterId]: {
+          meterId,
+          currentReading,
+          readingDate: new Date(),
+          usage,
+          amount,
+        },
+      }))
+    } else {
+      setReadings((prev) => {
+        const nextReadings = { ...prev }
+        delete nextReadings[meterId]
+        return nextReadings
+      })
+    }
   }
 
   // 提交批量抄表
@@ -157,32 +163,21 @@ export function BatchMeterReadingPage() {
         return
       }
 
-      const readingsToSubmit = Object.values(readings).filter(
-        (reading) => reading.currentReading > 0
-      )
+      const readingsToSubmit = Object.values(readings)
 
       if (readingsToSubmit.length === 0) {
         alert('请至少录入一个仪表读数')
         return
       }
 
-      // 防止重复提交 - 禁用提交按钮
-      const submitButton = document.querySelector(
-        '[data-submit-button]'
-      ) as HTMLButtonElement
-      if (submitButton) {
-        submitButton.disabled = true
-        submitButton.textContent = '提交中...'
-      }
+      const submissionReadingDate = new Date().toISOString()
+      const submissionPeriod = `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`
 
       // 构建完整的抄表数据
       const submitData = readingsToSubmit.map((reading) => {
         const meter = rooms
           .flatMap((r) => r.meters)
           .find((m) => m.id === reading.meterId)
-        const room = rooms.find((r) =>
-          r.meters.some((m) => m.id === reading.meterId)
-        )
 
         return {
           ...reading,
@@ -194,8 +189,9 @@ export function BatchMeterReadingPage() {
           usage: reading.usage,
           unitPrice: meter?.unitPrice || 0,
           amount: reading.amount,
-          readingDate: reading.readingDate.toISOString(),
-          period: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
+          // 聚合模式下同次提交共用同一个业务时间戳，保证正式抄表精确门禁稳定。
+          readingDate: submissionReadingDate,
+          period: submissionPeriod,
           operator: '管理员', // TODO: 从用户会话获取
           remarks: reading.remarks || '',
         }
@@ -214,23 +210,30 @@ export function BatchMeterReadingPage() {
       const result = await response.json()
 
       if (result.success) {
+        const submissionResult = result.data
+        const successCount = submissionResult?.results?.length || 0
+
         // 显示详细的成功信息
-        let message = `✅ 成功录入 ${result.data.length} 个仪表读数`
+        let message = `✅ 成功录入 ${successCount} 个仪表读数`
 
         // 显示详细的警告信息
-        if (result.warnings && result.warnings.length > 0) {
-          message += `\n\n⚠️ 警告信息 (${result.warnings.length} 个):`
-          result.warnings.forEach((warning: any, index: number) => {
+        if (submissionResult?.warnings && submissionResult.warnings.length > 0) {
+          message += `\n\n⚠️ 警告信息 (${submissionResult.warnings.length} 个):`
+          submissionResult.warnings.forEach((warning: any, index: number) => {
             message += `\n${index + 1}. ${warning.warning}`
           })
         }
 
         // 显示详细的错误信息
-        if (result.errors && result.errors.length > 0) {
-          message += `\n\n❌ 错误信息 (${result.errors.length} 个):`
-          result.errors.forEach((error: any, index: number) => {
+        if (submissionResult?.errors && submissionResult.errors.length > 0) {
+          message += `\n\n❌ 错误信息 (${submissionResult.errors.length} 个):`
+          submissionResult.errors.forEach((error: any, index: number) => {
             message += `\n${index + 1}. ${error.error}`
           })
+        }
+
+        if (submissionResult?.bills && submissionResult.bills.length > 0) {
+          message += `\n\n💰 已自动生成 ${submissionResult.bills.length} 个水电费账单`
         }
 
         message += `\n\n📝 提示: 数据已保存，即将跳转到抄表历史页面查看详情`
@@ -252,15 +255,6 @@ export function BatchMeterReadingPage() {
       alert('提交失败，请重试')
     } finally {
       setSubmitting(false)
-
-      // 恢复提交按钮状态
-      const submitButton = document.querySelector(
-        '[data-submit-button]'
-      ) as HTMLButtonElement
-      if (submitButton) {
-        submitButton.disabled = false
-        submitButton.textContent = '提交抄表'
-      }
     }
   }
 
@@ -286,6 +280,10 @@ export function BatchMeterReadingPage() {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
+  const readingsCount = Object.keys(readings).length
+  const hasValidationErrors = Object.values(validationErrors).some(Boolean)
+  const totalMeterCount = rooms.reduce((sum, room) => sum + room.meters.length, 0)
+
   if (loading) {
     return (
       <PageContainer title="批量抄表" showBackButton>
@@ -302,8 +300,9 @@ export function BatchMeterReadingPage() {
       showBackButton
       actions={
         <Button
+          type="button"
           onClick={handleSubmit}
-          disabled={submitting || Object.keys(readings).length === 0}
+          disabled={submitting || readingsCount === 0 || hasValidationErrors}
           className="flex items-center gap-2"
           data-submit-button="true"
         >
@@ -323,6 +322,7 @@ export function BatchMeterReadingPage() {
                 <ul className="space-y-1 text-xs">
                   <li>• 请按实际仪表读数录入，系统会自动计算用量和费用</li>
                   <li>• 本次读数不能小于上次读数</li>
+                  <li>• 仅展示激活中的仪表，禁用仪表不会参与批量抄表</li>
                   <li>• 用量异常偏高时会有警告提示</li>
                   <li>
                     •{' '}
@@ -385,7 +385,7 @@ export function BatchMeterReadingPage() {
             <CardTitle className="flex items-center justify-between text-lg">
               <span>抄表录入</span>
               <div className="text-sm text-gray-500">
-                共 {rooms.reduce((sum, r) => sum + r.meters.length, 0)} 个仪表
+                共 {totalMeterCount} 个激活仪表
               </div>
             </CardTitle>
           </CardHeader>
@@ -396,7 +396,7 @@ export function BatchMeterReadingPage() {
                 room.meters.map((meter, index) => {
                   const reading = readings[meter.id]
                   const error = validationErrors[meter.id]
-                  const hasReading = reading && reading.currentReading > 0
+                  const hasReading = Boolean(reading)
 
                   return (
                     <div key={meter.id} className="space-y-3 border-b p-4">
@@ -557,7 +557,7 @@ export function BatchMeterReadingPage() {
                     room.meters.map((meter, index) => {
                       const reading = readings[meter.id]
                       const error = validationErrors[meter.id]
-                      const hasReading = reading && reading.currentReading > 0
+                      const hasReading = Boolean(reading)
                       const isFirstMeterInRoom = index === 0
 
                       return (
@@ -703,7 +703,7 @@ export function BatchMeterReadingPage() {
               <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
                 <div>
                   <div className="text-2xl font-bold text-blue-600">
-                    {Object.keys(readings).length}
+                    {readingsCount}
                   </div>
                   <div className="text-sm text-gray-500">已录入仪表</div>
                 </div>
@@ -724,7 +724,7 @@ export function BatchMeterReadingPage() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-purple-600">
-                    {rooms.reduce((sum, r) => sum + r.meters.length, 0)}
+                    {totalMeterCount}
                   </div>
                   <div className="text-sm text-gray-500">总仪表数</div>
                 </div>

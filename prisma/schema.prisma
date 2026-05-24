@@ -344,6 +344,7 @@ model MeterReading {
   previousReading Decimal?  // 上次读数
   currentReading  Decimal   // 本次读数
   usage           Decimal   // 用量 (本次-上次)
+  recordType      MeterReadingRecordType @default(REGULAR_READING) // 记录类型
   
   // 时间信息
   readingDate     DateTime  // 抄表日期
@@ -395,4 +396,10 @@ enum ReadingStatus {
   CONFIRMED  // 已确认
   BILLED     // 已生成账单
   CANCELLED  // 已取消
+}
+
+enum MeterReadingRecordType {
+  INITIAL_BASELINE // 合同创建时的初始底数
+  REGULAR_READING  // 正常抄表
+  CHECKOUT_FINAL   // 退租最终抄表
 }

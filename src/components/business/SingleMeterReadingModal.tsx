@@ -209,6 +209,8 @@ export function SingleMeterReadingModal({
 
     try {
       setSubmitting(true)
+      const submissionReadingDate = new Date().toISOString()
+      const submissionPeriod = `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`
 
       // 构建提交数据
       const submitData = readingsToSubmit.map((reading) => {
@@ -219,8 +221,9 @@ export function SingleMeterReadingModal({
           previousReading: Math.round(meter?.lastReading || 0),
           currentReading: reading.currentReading,
           usage: reading.usage,
-          readingDate: new Date().toISOString(),
-          period: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
+          // 同次提交固定同一个 readingDate，避免正式抄表唯一门禁失去稳定锚点。
+          readingDate: submissionReadingDate,
+          period: submissionPeriod,
           unitPrice: meter?.unitPrice || 0,
           amount: reading.amount,
           operator: '系统用户',
@@ -451,6 +454,7 @@ export function SingleMeterReadingModal({
             {/* 操作按钮 */}
             <div className="flex justify-end gap-2 pt-4">
               <Button
+                type="button"
                 variant="outline"
                 onClick={handleClose}
                 disabled={submitting}
@@ -459,6 +463,7 @@ export function SingleMeterReadingModal({
                 取消
               </Button>
               <Button
+                type="button"
                 onClick={handleSubmit}
                 disabled={readingsCount === 0 || submitting}
                 className="flex items-center gap-1"

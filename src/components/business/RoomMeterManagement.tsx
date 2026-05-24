@@ -11,6 +11,18 @@ import type {
 import { MeterFormDialog } from './MeterFormDialog'
 import { MeterList } from './MeterList'
 
+type MeterRemovalAction = 'deactivate' | 'already_inactive' | 'hard_delete'
+
+interface MeterRemovalResponse {
+  success: boolean
+  action: MeterRemovalAction
+  message: string
+  hasHistoricalFacts: boolean
+  details?: {
+    suggestion?: string
+  }
+}
+
 /**
  * 房间仪表管理组件
  * 集成仪表列表、添加、编辑、删除功能
@@ -61,13 +73,24 @@ export function RoomMeterManagement({
         throw new Error(error.error || 'Failed to remove meter')
       }
 
-      const result = await response.json()
+      const result = (await response.json()) as MeterRemovalResponse
 
-      // 根据删除类型显示不同的成功消息
-      if (result.action === 'soft_delete') {
-        toast.success('仪表关联已移除，历史数据已保留')
-      } else {
-        toast.success('仪表移除成功')
+      switch (result.action) {
+        case 'deactivate':
+          toast.success(
+            result.message || '仪表已有历史，已停用并保留历史读数与计费事实'
+          )
+          break
+        case 'already_inactive':
+          toast.success(
+            result.message || '仪表已处于停用状态，历史读数与计费事实继续保留'
+          )
+          break
+        case 'hard_delete':
+          toast.success(result.message || '仪表无历史，已执行硬删除')
+          break
+        default:
+          toast.success('仪表处理成功')
       }
 
       onMeterUpdate()
@@ -106,6 +129,15 @@ export function RoomMeterManagement({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="font-medium">换表说明</p>
+        <p className="mt-1 leading-6">
+          当前默认换表路径是先停用旧表并保留历史，再新增新表。
+          点击“移除”时，系统会先检查该仪表是否已有抄表或计费历史:
+          有历史则仅停用保留，无历史才会执行硬删除。
+        </p>
+      </div>
+
       {/* 仪表列表 */}
       <MeterList
         meters={meters}

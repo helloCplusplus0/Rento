@@ -1,4 +1,9 @@
-import type { BillStatus, ContractStatus, RoomStatus } from '@prisma/client'
+import type {
+  BillStatus,
+  ContractStatus,
+  MeterReadingRecordType,
+  RoomStatus,
+} from '@prisma/client'
 
 import { createBillStatusCountMap } from './bill-semantics'
 import { prisma } from './prisma'
@@ -8,6 +13,12 @@ function createRestrictedDeleteError(entityName: string, suggestion: string) {
     `${entityName}默认删除入口已禁用，请改用受门禁保护的详情 API 或专用业务流程。${suggestion}`
   )
 }
+
+export const meterReadingDeletePolicy = {
+  allowed: false,
+  reason:
+    '抄表记录会影响账单与历史追溯，当前阶段不支持删除历史抄表记录。',
+} as const
 
 // 楼栋相关查询
 export const buildingQueries = {
@@ -1281,12 +1292,28 @@ export const meterReadingQueries = {
       take: limit,
     }),
 
+  // 精确查找同一仪表、同一抄表时间的正式抄表记录
+  findRegularReadingByMeterAndDate: (meterId: string, readingDate: Date) =>
+    prisma.meterReading.findFirst({
+      where: {
+        meterId,
+        readingDate,
+        recordType: 'REGULAR_READING',
+      },
+      select: {
+        id: true,
+        currentReading: true,
+        readingDate: true,
+      },
+    }),
+
   // 查找所有抄表记录 - 支持筛选条件
   findAll: (
     options: {
       limit?: number
       status?: string
       meterType?: string
+      recordType?: MeterReadingRecordType | string
       search?: string
       operator?: string
       startDate?: string
@@ -1297,6 +1324,7 @@ export const meterReadingQueries = {
       limit = 50,
       status,
       meterType,
+      recordType,
       search,
       operator,
       startDate,
@@ -1316,6 +1344,10 @@ export const meterReadingQueries = {
       where.meter = {
         meterType: meterType,
       }
+    }
+
+    if (recordType && recordType !== 'all') {
+      where.recordType = recordType
     }
 
     // 操作员筛选
@@ -1407,6 +1439,7 @@ export const meterReadingQueries = {
     previousReading?: number
     currentReading: number
     usage: number
+    recordType?: MeterReadingRecordType
     readingDate: Date
     period?: string
     unitPrice: number
@@ -1456,12 +1489,11 @@ export const meterReadingQueries = {
     }),
 
   // 删除抄表记录
-  // 删除抄表记录
   delete: (id: string) =>
     Promise.reject(
       createRestrictedDeleteError(
         '抄表记录',
-        '抄表记录会影响账单和历史追溯，默认不允许通过查询层直接删除。'
+        meterReadingDeletePolicy.reason
       )
     ),
 

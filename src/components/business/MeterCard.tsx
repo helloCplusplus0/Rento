@@ -191,16 +191,18 @@ export function MeterCard({
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>移除仪表关联</AlertDialogTitle>
+                <AlertDialogTitle>停用或删除仪表</AlertDialogTitle>
                 <AlertDialogDescription>
-                  您确定要从房间中移除仪表 &quot;{meter.displayName}&quot; 吗？
+                  您确定要处理仪表 &quot;{meter.displayName}&quot; 吗？
                   <br />
                   <span className="font-medium text-blue-600">
-                    此操作仅会取消仪表与房间的关联关系，不会删除仪表的历史数据和账单记录。
+                    系统会先检查该仪表是否已有抄表或计费历史:
+                    有历史则停用并保留历史，无历史才会执行硬删除。
                   </span>
                   <br />
                   <span className="mt-2 block text-sm text-gray-600">
-                    如需彻底删除仪表，请先确保没有相关的抄表记录和账单数据。
+                    如需换表，请保留旧表为停用状态后再新增新表；
+                    当前不提供结构化解绑。
                   </span>
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -210,7 +212,7 @@ export function MeterCard({
                   onClick={handleDelete}
                   className="bg-orange-600 hover:bg-orange-700 focus:ring-orange-600"
                 >
-                  确认移除
+                  确认继续
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 
 import {
   createPaginatedResponse,
@@ -21,6 +22,19 @@ const getServerSettings = () => ({
   requireReadingApproval: false,
 })
 
+function resolveReadingDate(
+  readingDate: string | Date | undefined,
+  fallbackReadingDate: Date
+): Date {
+  const normalizedDate = readingDate ? new Date(readingDate) : fallbackReadingDate
+
+  if (Number.isNaN(normalizedDate.getTime())) {
+    throw new Error('抄表日期无效')
+  }
+
+  return normalizedDate
+}
+
 /**
  * 获取抄表记录列表
  * GET /api/meter-readings
@@ -34,6 +48,7 @@ async function handleGetMeterReadings(request: NextRequest) {
     meterId,
     contractId,
     roomId,
+    recordType,
     startDate,
     endDate,
     status,
@@ -85,6 +100,7 @@ async function handleGetMeterReadings(request: NextRequest) {
       endDate: actualEndDate,
       status: status as string,
       meterType: meterType as string,
+      recordType: recordType as string,
       search: search as string,
       operator: operator as string,
       roomId: roomId as string,
@@ -172,11 +188,16 @@ async function handlePostMeterReadings(request: NextRequest) {
   const results = []
   const warnings = []
   const errors = []
+  const fallbackReadingDate = new Date()
 
   // 处理每个抄表记录
   for (const readingData of readings) {
     try {
       validateRequired(readingData, ['meterId', 'currentReading'])
+      const readingDate = resolveReadingDate(
+        readingData.readingDate,
+        fallbackReadingDate
+      )
 
       // 获取仪表信息进行验证
       const { meterQueries } = await import('@/lib/queries')
@@ -189,28 +210,17 @@ async function handlePostMeterReadings(request: NextRequest) {
         continue
       }
 
-      // 检查重复记录
-      const today = new Date()
-      const todayStart = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate()
-      )
-      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
-
-      const existingReading = await meterReadingQueries.findAll({
-        limit: 1,
-        startDate: todayStart.toISOString(),
-        endDate: todayEnd.toISOString(),
-      })
-
-      const duplicateReading = existingReading.find(
-        (r) => r.meterId === readingData.meterId
-      )
+      // 正式抄表只按 meterId + readingDate + REGULAR_READING 做精确重复门禁，
+      // 避免把合同初始底数或退租最终抄表误判成重复提交。
+      const duplicateReading =
+        await meterReadingQueries.findRegularReadingByMeterAndDate(
+          readingData.meterId,
+          readingDate
+        )
       if (duplicateReading) {
         warnings.push({
           meterId: readingData.meterId,
-          warning: `今日已存在该仪表的抄表记录，当前读数: ${duplicateReading.currentReading}`,
+          warning: `该抄表时间已存在正式抄表记录，当前读数: ${duplicateReading.currentReading}`,
         })
         continue
       }
@@ -223,20 +233,36 @@ async function handlePostMeterReadings(request: NextRequest) {
         const unitPrice = readingData.unitPrice || meter.unitPrice || 0
         const amount = usage * unitPrice
 
-        const createdReading = await meterReadingQueries.create({
-          meterId: readingData.meterId,
-          contractId: readingData.contractId,
-          currentReading: readingData.currentReading,
-          previousReading: readingData.previousReading || 0,
-          usage,
-          readingDate: readingData.readingDate || new Date(),
-          unitPrice,
-          amount,
-          operator: readingData.operator || 'system',
-          remarks: readingData.remarks,
-        })
+        try {
+          const createdReading = await meterReadingQueries.create({
+            meterId: readingData.meterId,
+            contractId: readingData.contractId,
+            currentReading: readingData.currentReading,
+            previousReading: readingData.previousReading || 0,
+            usage,
+            recordType: 'REGULAR_READING',
+            readingDate,
+            unitPrice,
+            amount,
+            operator: readingData.operator || 'system',
+            remarks: readingData.remarks,
+          })
 
-        results.push(createdReading)
+          results.push(createdReading)
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            warnings.push({
+              meterId: readingData.meterId,
+              warning: '该抄表时间已存在正式抄表记录，本次提交已跳过',
+            })
+            continue
+          }
+
+          throw error
+        }
       }
     } catch (error) {
       errors.push({
