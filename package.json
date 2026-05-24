@@ -17,7 +17,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "fix:001:rent-bills": "tsx scripts/fix-001-rent-bill-repair.ts"
+    "fix:001:rent-bills": "tsx scripts/fix-001-rent-bill-repair.ts",
+    "fix:002:checkout-settlement-audit": "tsx scripts/fix-002-checkout-settlement-audit.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

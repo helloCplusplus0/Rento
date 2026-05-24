@@ -97,8 +97,8 @@ export default async function BillStatsRoute({
       pendingAmount: 0,
       overdueAmount: 0,
       totalCount: 0,
-      paidCount: 0,
-      pendingCount: 0,
+      settledCount: 0,
+      openCount: 0,
       overdueCount: 0,
       typeBreakdown: {
         RENT: { amount: 0, count: 0 },

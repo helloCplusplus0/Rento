@@ -1,8 +1,8 @@
-import {
-  applySafeHistoricalRentBillRepairs,
-  auditHistoricalRentBillRepairs,
+import './load-env'
+
+import type {
+  HistoricalRentBillRepairSummary,
 } from '../src/lib/fix-001-rent-bill-repair'
-import { prisma } from '../src/lib/prisma'
 
 interface CliOptions {
   apply: boolean
@@ -69,7 +69,7 @@ fix_001 历史 RENT 账单审计 / 安全修复工具
 `)
 }
 
-function printHumanReadableSummary(summary: Awaited<ReturnType<typeof auditHistoricalRentBillRepairs>>) {
+function printHumanReadableSummary(summary: HistoricalRentBillRepairSummary) {
   console.log('fix_001 历史 RENT 账单审计结果')
   console.log(`- 已审计合同: ${summary.totalAuditedContracts}`)
   console.log(`- 命中异常合同: ${summary.totalFlaggedContracts}`)
@@ -100,6 +100,10 @@ function printHumanReadableSummary(summary: Awaited<ReturnType<typeof auditHisto
 }
 
 async function main() {
+  const [{ applySafeHistoricalRentBillRepairs, auditHistoricalRentBillRepairs }] =
+    await Promise.all([
+      import('../src/lib/fix-001-rent-bill-repair'),
+    ])
   const options = parseArgs(process.argv.slice(2))
 
   if (options.help) {
@@ -151,5 +155,6 @@ main()
     process.exitCode = 1
   })
   .finally(async () => {
+    const { prisma } = await import('../src/lib/prisma')
     await prisma.$disconnect()
   })

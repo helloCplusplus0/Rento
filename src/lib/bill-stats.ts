@@ -14,6 +14,7 @@ import {
   subWeeks,
 } from 'date-fns'
 
+import { buildBillPresentationStats } from './bill-semantics'
 import { billStatsCache } from './bill-cache'
 import { prisma } from './prisma'
 
@@ -29,8 +30,8 @@ export interface BillStatsData {
 
   // 数量统计
   totalCount: number // 总账单数
-  paidCount: number // 已付账单数
-  pendingCount: number // 待付账单数
+  settledCount: number // 已结清账单数（PAID + COMPLETED）
+  openCount: number // 待处理账单数（PENDING）
   overdueCount: number // 逾期账单数
 
   // 类型分布
@@ -211,6 +212,7 @@ export const advancedBillStats = {
     BillStatsData,
     'typeBreakdown' | 'timeSeries' | 'comparison' | 'dateRange'
   > {
+    const presentationStats = buildBillPresentationStats(bills)
     const totalAmount = bills.reduce(
       (sum, bill) => sum + Number(bill.amount),
       0
@@ -221,25 +223,15 @@ export const advancedBillStats = {
     )
     const pendingAmount = totalAmount - paidAmount
 
-    // 计算逾期金额
-    const now = new Date()
-    const overdueAmount = bills
-      .filter(
-        (bill) =>
-          bill.status === 'OVERDUE' ||
-          (bill.status === 'PENDING' && new Date(bill.dueDate) < now)
-      )
-      .reduce((sum, bill) => sum + Number(bill.pendingAmount), 0)
-
     return {
       totalAmount,
       paidAmount,
       pendingAmount,
-      overdueAmount,
-      totalCount: bills.length,
-      paidCount: bills.filter((b) => b.status === 'PAID').length,
-      pendingCount: bills.filter((b) => b.status === 'PENDING').length,
-      overdueCount: bills.filter((b) => b.status === 'OVERDUE').length,
+      overdueAmount: presentationStats.overdueAmount,
+      totalCount: presentationStats.totalCount,
+      settledCount: presentationStats.settledCount,
+      openCount: presentationStats.openCount,
+      overdueCount: presentationStats.overdueCount,
     }
   },
 

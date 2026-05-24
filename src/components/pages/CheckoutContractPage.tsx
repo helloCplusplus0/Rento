@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
@@ -22,6 +22,13 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { PageContainer } from '@/components/layout'
+import {
+  applyCheckoutSettlementSubmission,
+  calculateCheckoutSettlement,
+  createCheckoutSettlementSubmissionItems,
+  type AppliedCheckoutSettlementLineItem,
+  type CheckoutSettlementLineItem,
+} from '@/lib/checkout-settlement'
 
 // 合同详情类型定义
 interface ContractWithDetailsForClient {
@@ -63,64 +70,22 @@ interface ContractWithDetailsForClient {
   }>
 }
 
-// 结算明细类型
-interface CheckoutSettlement {
-  refundItems: {
-    rentRefund: number
-    depositRefund: number
-    keyDepositRefund: number
-    subtotal: number
-  }
-  chargeItems: {
-    rentCharge: number
-    damageCharge: number
-    cleaningCharge: number
-    subtotal: number
-  }
-  summary: {
-    totalRefund: number
-    totalCharge: number
-    netAmount: number
-    settlementType: 'REFUND' | 'CHARGE' | 'BALANCED'
-  }
-  // 新增：计算详情和未付账单明细
-  calculationDetails: {
-    actualDays: number
-    dailyRent: number
-    shouldPayRent: number
-    paidRent: number
-    rentDifference: number
-    unpaidBills: Array<{
-      billNumber: string
-      type: string
-      amount: number
-      pendingAmount: number
-    }>
-  }
-}
-
-// 可编辑的结算项目
-interface EditableSettlementItem {
-  id: string
-  name: string
-  amount: number
-  formula?: string
-  editable: boolean
-}
-
 interface CheckoutContractPageProps {
   contract: ContractWithDetailsForClient
+}
+
+interface SettlementAdjustmentDraft {
+  adjustedAmount: number
+  adjustmentReason: string
 }
 
 export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [editableItems, setEditableItems] = useState<{
-    refund: EditableSettlementItem[]
-    charge: EditableSettlementItem[]
-  }>({ refund: [], charge: [] })
+  const [settlementAdjustments, setSettlementAdjustments] = useState<
+    Record<string, SettlementAdjustmentDraft>
+  >({})
 
   // 表单数据
   const [formData, setFormData] = useState({
@@ -131,222 +96,67 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     remarks: '',
   })
 
-  // 结算预览数据
-  const [settlement, setSettlement] = useState<CheckoutSettlement | null>(null)
+  const settlement = useMemo(() => {
+    if (!formData.checkoutDate) {
+      return null
+    }
 
-  // 计算结算预览
+    return calculateCheckoutSettlement(contract, {
+      checkoutDate: formData.checkoutDate,
+      damageAssessment: formData.damageAssessment,
+    })
+  }, [contract, formData.checkoutDate, formData.damageAssessment])
+
   useEffect(() => {
-    if (formData.checkoutDate) {
-      calculateSettlement()
-    }
-  }, [formData.checkoutDate, formData.damageAssessment])
-
-  // 使用 useEffect 来监听 editableItems 变化并重新计算
-  useEffect(() => {
-    if (editableItems.refund.length > 0 || editableItems.charge.length > 0) {
-      recalculateSettlement()
-    }
-  }, [editableItems])
-
-  const calculateSettlement = () => {
-    const checkoutDate = new Date(formData.checkoutDate)
-    const contractStartDate = new Date(contract.startDate)
-    const contractEndDate = new Date(contract.endDate)
-
-    // 计算实际居住天数（包含开始日期）
-    const actualDays =
-      Math.ceil(
-        (checkoutDate.getTime() - contractStartDate.getTime()) /
-          (1000 * 60 * 60 * 24)
-      ) + 1
-
-    // 计算合同总天数（包含开始和结束日期）
-    const totalDays =
-      Math.ceil(
-        (contractEndDate.getTime() - contractStartDate.getTime()) /
-          (1000 * 60 * 60 * 24)
-      ) + 1
-
-    // 计算应付租金（按日计算）
-    const dailyRent = contract.monthlyRent / 30
-    const shouldPayRent = Math.round(actualDays * dailyRent * 100) / 100
-
-    // 计算已付租金（从totalRent推算）
-    const paidRent = contract.totalRent
-
-    // 计算租金差额
-    const rentDifference = paidRent - shouldPayRent
-
-    // 计算未付账单总额
-    const unpaidBills = contract.bills.filter((bill) =>
-      ['PENDING', 'OVERDUE'].includes(bill.status)
-    )
-    const unpaidAmount = unpaidBills.reduce(
-      (sum, bill) => sum + bill.pendingAmount,
-      0
-    )
-
-    // 应退项目计算
-    const rentRefund = Math.max(0, rentDifference) // 多付租金退还
-    const depositRefund = Math.max(
-      0,
-      contract.deposit - formData.damageAssessment
-    ) // 押金退还（扣除损坏费用）
-    const keyDepositRefund = contract.keyDeposit || 0 // 钥匙押金退还
-
-    // 应收项目计算
-    const rentCharge = Math.max(0, -rentDifference) // 欠缴租金
-    const unpaidBillsCharge = unpaidAmount // 未付账单
-    const damageCharge = formData.damageAssessment // 损坏赔偿
-
-    // 小计
-    const refundSubtotal = rentRefund + depositRefund + keyDepositRefund
-    const chargeSubtotal = rentCharge + unpaidBillsCharge + damageCharge
-
-    // 净结算金额（从管理员角度：正数=管理员收入，负数=管理员支出）
-    const netAmount = chargeSubtotal - refundSubtotal
-
-    const settlementData: CheckoutSettlement = {
-      refundItems: {
-        rentRefund,
-        depositRefund,
-        keyDepositRefund,
-        subtotal: refundSubtotal,
-      },
-      chargeItems: {
-        rentCharge,
-        damageCharge,
-        cleaningCharge: unpaidBillsCharge, // 临时用cleaningCharge字段存储未付账单
-        subtotal: chargeSubtotal,
-      },
-      summary: {
-        totalRefund: refundSubtotal,
-        totalCharge: chargeSubtotal,
-        netAmount,
-        settlementType:
-          netAmount > 0 ? 'CHARGE' : netAmount < 0 ? 'REFUND' : 'BALANCED',
-      },
-      calculationDetails: {
-        actualDays,
-        dailyRent,
-        shouldPayRent,
-        paidRent,
-        rentDifference,
-        unpaidBills: unpaidBills.map((bill) => ({
-          billNumber: bill.billNumber,
-          type: bill.type,
-          amount: bill.amount,
-          pendingAmount: bill.pendingAmount,
-        })),
-      },
+    if (!settlement) {
+      setSettlementAdjustments({})
+      return
     }
 
-    setSettlement(settlementData)
+    setSettlementAdjustments((prev) => {
+      const next: Record<string, SettlementAdjustmentDraft> = {}
 
-    // 初始化可编辑项目
-    const refundItems: EditableSettlementItem[] = [
-      {
-        id: 'rentRefund',
-        name: '多付租金退还',
-        amount: rentRefund,
-        formula: `${actualDays}天 × ¥${dailyRent.toFixed(2)}/天 = ¥${shouldPayRent.toFixed(2)}，已付¥${paidRent.toFixed(2)}，多付¥${rentRefund.toFixed(2)}`,
-        editable: true,
-      },
-      {
-        id: 'depositRefund',
-        name: '押金退还',
-        amount: depositRefund,
-        formula: `押金¥${contract.deposit.toFixed(2)} - 损坏赔偿¥${formData.damageAssessment.toFixed(2)} = ¥${depositRefund.toFixed(2)}`,
-        editable: true,
-      },
-      {
-        id: 'keyDepositRefund',
-        name: '钥匙押金退还',
-        amount: keyDepositRefund,
-        formula: `钥匙押金全额退还`,
-        editable: true,
-      },
-    ].filter((item) => item.amount > 0)
+      for (const item of [
+        ...settlement.lineItems.refund,
+        ...settlement.lineItems.charge,
+      ]) {
+        if (!item.editable) {
+          continue
+        }
 
-    const chargeItems: EditableSettlementItem[] = [
-      {
-        id: 'rentCharge',
-        name: '欠缴租金',
-        amount: rentCharge,
-        formula: `应付¥${shouldPayRent.toFixed(2)} - 已付¥${paidRent.toFixed(2)} = 欠缴¥${rentCharge.toFixed(2)}`,
-        editable: true,
-      },
-      {
-        id: 'damageCharge',
-        name: '损坏赔偿',
-        amount: damageCharge,
-        formula: `根据房屋检查评估`,
-        editable: true,
-      },
-      ...unpaidBills.map((bill) => ({
-        id: `unpaid_${bill.id}`,
-        name: `未付账单 - ${bill.billNumber}`,
-        amount: bill.pendingAmount,
-        formula: `${bill.type === 'RENT' ? '租金' : bill.type === 'DEPOSIT' ? '押金' : bill.type === 'UTILITIES' ? '水电费' : '其他'}账单待收金额`,
-        editable: true,
-      })),
-    ].filter((item) => item.amount > 0)
+        next[item.id] = {
+          adjustedAmount:
+            prev[item.id]?.adjustedAmount ?? item.originalAmount,
+          adjustmentReason: prev[item.id]?.adjustmentReason ?? '',
+        }
+      }
 
-    setEditableItems({ refund: refundItems, charge: chargeItems })
-  }
+      return next
+    })
+  }, [settlement])
 
-  // 处理可编辑项目金额变更
-  const handleEditableItemChange = (
-    type: 'refund' | 'charge',
-    itemId: string,
-    newAmount: number
-  ) => {
-    setEditableItems((prev) => ({
-      ...prev,
-      [type]: prev[type].map((item) =>
-        item.id === itemId ? { ...item, amount: Math.max(0, newAmount) } : item
-      ),
-    }))
+  const finalSettlement = useMemo(() => {
+    if (!settlement) {
+      return null
+    }
 
-    // 重新计算结算汇总
-    recalculateSettlement()
-  }
-
-  // 重新计算结算汇总
-  const recalculateSettlement = () => {
-    if (!settlement) return
-
-    const refundSubtotal = editableItems.refund.reduce(
-      (sum, item) => sum + item.amount,
-      0
+    const submissionItems = createCheckoutSettlementSubmissionItems(
+      settlement,
+      Object.fromEntries(
+        Object.entries(settlementAdjustments).map(([itemId, adjustment]) => [
+          itemId,
+          {
+            adjustedAmount: adjustment.adjustedAmount,
+            adjustmentReason: adjustment.adjustmentReason,
+          },
+        ])
+      )
     )
-    const chargeSubtotal = editableItems.charge.reduce(
-      (sum, item) => sum + item.amount,
-      0
-    )
-    const netAmount = chargeSubtotal - refundSubtotal
 
-    setSettlement((prev) =>
-      prev
-        ? {
-            ...prev,
-            refundItems: { ...prev.refundItems, subtotal: refundSubtotal },
-            chargeItems: { ...prev.chargeItems, subtotal: chargeSubtotal },
-            summary: {
-              totalRefund: refundSubtotal,
-              totalCharge: chargeSubtotal,
-              netAmount,
-              settlementType:
-                netAmount > 0
-                  ? 'CHARGE'
-                  : netAmount < 0
-                    ? 'REFUND'
-                    : 'BALANCED',
-            },
-          }
-        : null
-    )
-  }
+    return applyCheckoutSettlementSubmission(settlement, submissionItems, {
+      requireReasonForAdjusted: false,
+    })
+  }, [settlement, settlementAdjustments])
 
   const handleInputChange = (
     field: keyof typeof formData,
@@ -355,6 +165,39 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
+    }))
+    setError(null)
+  }
+
+  const handleSettlementAmountChange = (
+    item: CheckoutSettlementLineItem,
+    value: string
+  ) => {
+    const parsed = Number.parseFloat(value)
+    const nextAmount = Number.isFinite(parsed)
+      ? Math.min(
+          item.maxAdjustableAmount,
+          Math.max(item.minAdjustableAmount, parsed)
+        )
+      : item.minAdjustableAmount
+
+    setSettlementAdjustments((prev) => ({
+      ...prev,
+      [item.id]: {
+        adjustedAmount: Number(nextAmount.toFixed(2)),
+        adjustmentReason: prev[item.id]?.adjustmentReason ?? '',
+      },
+    }))
+    setError(null)
+  }
+
+  const handleSettlementReasonChange = (itemId: string, value: string) => {
+    setSettlementAdjustments((prev) => ({
+      ...prev,
+      [itemId]: {
+        adjustedAmount: prev[itemId]?.adjustedAmount ?? 0,
+        adjustmentReason: value,
+      },
     }))
     setError(null)
   }
@@ -382,6 +225,40 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
       return
     }
 
+    if (!settlement || !finalSettlement) {
+      setError('当前结算预览尚未生成，请稍后重试')
+      return
+    }
+
+    let validatedSettlement
+    try {
+      validatedSettlement = applyCheckoutSettlementSubmission(
+        settlement,
+        createCheckoutSettlementSubmissionItems(
+          settlement,
+          Object.fromEntries(
+            Object.entries(settlementAdjustments).map(([itemId, adjustment]) => [
+              itemId,
+              {
+                adjustedAmount: adjustment.adjustedAmount,
+                adjustmentReason: adjustment.adjustmentReason,
+              },
+            ])
+          )
+        ),
+        {
+          requireReasonForAdjusted: true,
+        }
+      )
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : '正式结算明细校验失败'
+      )
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -391,7 +268,10 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          settlementItems: validatedSettlement.submissionItems,
+        }),
       })
 
       if (!response.ok) {
@@ -399,56 +279,15 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
         throw new Error(errorData.message || '退租失败')
       }
 
-      setSuccess(true)
-
-      // 立即跳转回合同详情页，避免页面状态不一致导致的404错误
-      router.push(`/contracts/${contract.id}`)
+      // 退租成功后直接替换当前路由，避免在成功态重渲染与页面跳转并发时触发
+      // App Router 的 RSC 请求中断噪音。
+      router.replace(`/contracts/${contract.id}`)
     } catch (error) {
       console.error('退租失败:', error)
       setError(error instanceof Error ? error.message : '退租失败，请重试')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (success) {
-    return (
-      <PageContainer title="退租成功" showBackButton>
-        <div className="py-12 text-center">
-          <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">退租成功</h2>
-          <p className="mb-4 text-gray-600">
-            合同已成功终止，正在跳转到合同详情页...
-          </p>
-          {settlement && (
-            <div className="mx-auto mt-6 max-w-md rounded-lg bg-gray-50 p-4">
-              <h3 className="mb-2 font-medium">结算汇总</h3>
-              <div className="text-2xl font-bold text-green-600">
-                {settlement.summary.settlementType === 'REFUND' && '+'}¥
-                {Math.abs(settlement.summary.netAmount).toFixed(2)}
-              </div>
-              <div className="text-sm text-gray-600">
-                {settlement.summary.settlementType === 'REFUND' &&
-                  '应退还给租客'}
-                {settlement.summary.settlementType === 'CHARGE' && '租客应补缴'}
-                {settlement.summary.settlementType === 'BALANCED' && '收支平衡'}
-              </div>
-            </div>
-          )}
-          <div className="mx-auto mt-4 h-6 w-6 animate-spin rounded-full border-b-2 border-green-500"></div>
-
-          {/* 添加手动跳转按钮，以防自动跳转失败 */}
-          <div className="mt-6">
-            <Button
-              onClick={() => router.push(`/contracts/${contract.id}`)}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              查看合同详情
-            </Button>
-          </div>
-        </div>
-      </PageContainer>
-    )
   }
 
   return (
@@ -578,7 +417,7 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
               )}
 
               {/* 结算预览 */}
-              {settlement && (
+              {finalSettlement && (
                 <div className="space-y-4">
                   <Separator />
                   <h3 className="flex items-center gap-2 font-medium">
@@ -593,37 +432,99 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                         应退项目
                       </h4>
                       <div className="space-y-3">
-                        {editableItems.refund.map((item) => (
+                        {finalSettlement.lineItems.refund.length === 0 && (
+                          <div className="text-sm text-gray-500">暂无应退项目</div>
+                        )}
+                        {finalSettlement.lineItems.refund.map((item) => (
                           <div key={item.id} className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">
-                                {item.name}
-                              </span>
                               <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={item.amount}
-                                  onChange={(e) =>
-                                    handleEditableItemChange(
-                                      'refund',
-                                      item.id,
-                                      parseFloat(e.target.value) || 0
-                                    )
-                                  }
-                                  className="h-8 w-24 text-right font-medium text-red-600"
-                                />
-                                <span className="font-medium text-red-600">
-                                  元
+                                <span className="text-sm font-medium">
+                                  {item.name}
                                 </span>
+                                {item.editable ? (
+                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                    可受限编辑
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline">系统计算项</Badge>
+                                )}
                               </div>
+                              <span className="font-medium text-red-600">
+                                {formatCurrency(item.adjustedAmount)}
+                              </span>
                             </div>
-                            {item.formula && (
-                              <div className="rounded border bg-white p-2 text-xs text-gray-600">
-                                <span className="font-medium">计算公式：</span>
-                                {item.formula}
+                            <div className="rounded border bg-white p-2 text-xs text-gray-600">
+                              <span className="font-medium">计算公式：</span>
+                              {item.formula}
+                            </div>
+                            {item.editable ? (
+                              <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                <div>
+                                  <Label htmlFor={`adjustedRefundAmount-${item.id}`}>
+                                    本次纳入退租结算金额
+                                  </Label>
+                                  <Input
+                                    id={`adjustedRefundAmount-${item.id}`}
+                                    type="number"
+                                    min={item.minAdjustableAmount}
+                                    max={item.maxAdjustableAmount}
+                                    step="0.01"
+                                    value={
+                                      settlementAdjustments[item.id]?.adjustedAmount ??
+                                      item.originalAmount
+                                    }
+                                    onChange={(event) =>
+                                      handleSettlementAmountChange(item, event.target.value)
+                                    }
+                                    disabled={loading}
+                                    className="mt-1"
+                                  />
+                                  <p className="mt-1 text-xs text-amber-700">
+                                    允许范围：{formatCurrency(item.minAdjustableAmount)} ~{' '}
+                                    {formatCurrency(item.maxAdjustableAmount)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <Label htmlFor={`refundAdjustmentReason-${item.id}`}>
+                                    调整原因
+                                  </Label>
+                                  <Textarea
+                                    id={`refundAdjustmentReason-${item.id}`}
+                                    value={
+                                      settlementAdjustments[item.id]?.adjustmentReason ?? ''
+                                    }
+                                    onChange={(event) =>
+                                      handleSettlementReasonChange(
+                                        item.id,
+                                        event.target.value
+                                      )
+                                    }
+                                    disabled={loading}
+                                    className="mt-1"
+                                    placeholder="如与原始应退金额不同，请填写调整原因"
+                                    rows={2}
+                                  />
+                                  {item.isAdjusted &&
+                                    !settlementAdjustments[item.id]?.adjustmentReason.trim() && (
+                                      <p className="mt-1 text-xs text-red-600">
+                                        已调整金额时，提交前必须填写调整原因
+                                      </p>
+                                    )}
+                                </div>
+                                {item.isAdjusted && (
+                                  <div className="text-xs text-amber-700">
+                                    原始金额 {formatCurrency(item.originalAmount)}，当前结算金额{' '}
+                                    {formatCurrency(item.adjustedAmount)}
+                                  </div>
+                                )}
                               </div>
+                            ) : (
+                              item.lockedReason && (
+                                <div className="text-xs text-gray-500">
+                                  {item.lockedReason}
+                                </div>
+                              )
                             )}
                           </div>
                         ))}
@@ -632,10 +533,7 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                           <div className="flex justify-between">
                             <span>应退小计</span>
                             <span className="text-red-600">
-                              ¥
-                              {editableItems.refund
-                                .reduce((sum, item) => sum + item.amount, 0)
-                                .toFixed(2)}
+                              {formatCurrency(finalSettlement.refundItems.subtotal)}
                             </span>
                           </div>
                         </div>
@@ -648,37 +546,111 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                         应收项目
                       </h4>
                       <div className="space-y-3">
-                        {editableItems.charge.map((item) => (
+                        {finalSettlement.lineItems.charge.length === 0 && (
+                          <div className="text-sm text-gray-500">暂无应收项目</div>
+                        )}
+                        {finalSettlement.lineItems.charge.map((item) => (
                           <div key={item.id} className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">
-                                {item.name}
-                              </span>
                               <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={item.amount}
-                                  onChange={(e) =>
-                                    handleEditableItemChange(
-                                      'charge',
-                                      item.id,
-                                      parseFloat(e.target.value) || 0
-                                    )
-                                  }
-                                  className="h-8 w-24 text-right font-medium text-green-600"
-                                />
-                                <span className="font-medium text-green-600">
-                                  元
+                                <span className="text-sm font-medium">
+                                  {item.name}
                                 </span>
+                                {item.editable ? (
+                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                    可受限编辑
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline">系统计算项</Badge>
+                                )}
                               </div>
+                              <span className="font-medium text-green-600">
+                                {formatCurrency(item.adjustedAmount)}
+                              </span>
                             </div>
-                            {item.formula && (
-                              <div className="rounded border bg-white p-2 text-xs text-gray-600">
-                                <span className="font-medium">计算公式：</span>
-                                {item.formula}
+                            <div className="rounded border bg-white p-2 text-xs text-gray-600">
+                              <span className="font-medium">计算公式：</span>
+                              {item.formula}
+                            </div>
+                            {item.billId && (
+                              <div className="grid grid-cols-1 gap-2 rounded border border-dashed bg-white p-3 text-xs text-gray-600 md:grid-cols-3">
+                                <div>
+                                  <span className="font-medium">账单状态：</span>
+                                  {item.billStatus === 'OVERDUE' ? '逾期' : '待处理'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">已收金额：</span>
+                                  {formatCurrency(item.billReceivedAmount ?? 0)}
+                                </div>
+                                <div>
+                                  <span className="font-medium">当前待收：</span>
+                                  {formatCurrency(item.billPendingAmount ?? 0)}
+                                </div>
                               </div>
+                            )}
+                            {item.editable ? (
+                              <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                <div>
+                                  <Label htmlFor={`adjustedAmount-${item.id}`}>
+                                    本次纳入退租结算金额
+                                  </Label>
+                                  <Input
+                                    id={`adjustedAmount-${item.id}`}
+                                    type="number"
+                                    min={item.minAdjustableAmount}
+                                    max={item.maxAdjustableAmount}
+                                    step="0.01"
+                                    value={settlementAdjustments[item.id]?.adjustedAmount ?? item.originalAmount}
+                                    onChange={(event) =>
+                                      handleSettlementAmountChange(item, event.target.value)
+                                    }
+                                    disabled={loading}
+                                    className="mt-1"
+                                  />
+                                  <p className="mt-1 text-xs text-amber-700">
+                                    允许范围：{formatCurrency(item.minAdjustableAmount)} ~{' '}
+                                    {formatCurrency(item.maxAdjustableAmount)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <Label htmlFor={`adjustmentReason-${item.id}`}>
+                                    调整原因
+                                  </Label>
+                                  <Textarea
+                                    id={`adjustmentReason-${item.id}`}
+                                    value={
+                                      settlementAdjustments[item.id]?.adjustmentReason ?? ''
+                                    }
+                                    onChange={(event) =>
+                                      handleSettlementReasonChange(
+                                        item.id,
+                                        event.target.value
+                                      )
+                                    }
+                                    disabled={loading}
+                                    className="mt-1"
+                                    placeholder="如与原始待收金额不同，请填写调整原因"
+                                    rows={2}
+                                  />
+                                  {item.isAdjusted && !settlementAdjustments[item.id]?.adjustmentReason.trim() && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                      已调整金额时，提交前必须填写调整原因
+                                    </p>
+                                  )}
+                                </div>
+                                {item.isAdjusted && (
+                                  <div className="text-xs text-amber-700">
+                                    原始金额 {formatCurrency(item.originalAmount)}，当前结算金额{' '}
+                                    {formatCurrency(item.adjustedAmount)}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              item.lockedReason && (
+                                <div className="text-xs text-gray-500">
+                                  {item.lockedReason}
+                                </div>
+                              )
                             )}
                           </div>
                         ))}
@@ -687,10 +659,7 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                           <div className="flex justify-between">
                             <span>应收小计</span>
                             <span className="text-green-600">
-                              ¥
-                              {editableItems.charge
-                                .reduce((sum, item) => sum + item.amount, 0)
-                                .toFixed(2)}
+                              {formatCurrency(finalSettlement.chargeItems.subtotal)}
                             </span>
                           </div>
                         </div>
@@ -708,7 +677,10 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                           <li>
                             • 点击"确认退租"将一次性结清所有合同权利和义务
                           </li>
-                          <li>• 所有未付账单将自动标记为已支付</li>
+                          <li>• 当前预览即最终落库结算口径，确认后将按此金额生成退租结算账单</li>
+                          <li>• 应退项目允许按 `0 ~ 原始应退金额` 受限调整，并记录调整原因</li>
+                          <li>• 旧未付账单支持按 `0 ~ pendingAmount` 受限调整本次纳入结算金额</li>
+                          <li>• 若旧账单已发生部分收款，系统会保留既有已收事实并记录人工调整原因</li>
                           <li>• 最终结算可线上确认或线下处理</li>
                           <li>• 退租完成后合同状态将变更为已终止</li>
                         </ul>
@@ -719,9 +691,9 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                   {/* 结算汇总 */}
                   <div
                     className={`rounded-lg border-2 p-4 ${
-                      settlement.summary.settlementType === 'CHARGE'
+                      finalSettlement.summary.settlementType === 'CHARGE'
                         ? 'border-green-300 bg-green-100'
-                        : settlement.summary.settlementType === 'REFUND'
+                        : finalSettlement.summary.settlementType === 'REFUND'
                           ? 'border-red-300 bg-red-100'
                           : 'border-gray-300 bg-gray-100'
                     }`}
@@ -731,13 +703,13 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                       <div className="flex justify-between">
                         <span>总应退金额</span>
                         <span className="text-red-600">
-                          ¥{settlement.summary.totalRefund.toFixed(2)}
+                          ¥{finalSettlement.summary.totalRefund.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span>总应收金额</span>
                         <span className="text-green-600">
-                          ¥{settlement.summary.totalCharge.toFixed(2)}
+                          ¥{finalSettlement.summary.totalCharge.toFixed(2)}
                         </span>
                       </div>
                       <div className="border-t-2 pt-2">
@@ -745,15 +717,15 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                           <span>净结算金额</span>
                           <span
                             className={
-                              settlement.summary.settlementType === 'CHARGE'
+                              finalSettlement.summary.settlementType === 'CHARGE'
                                 ? 'text-green-600'
-                                : settlement.summary.settlementType === 'REFUND'
+                                : finalSettlement.summary.settlementType === 'REFUND'
                                   ? 'text-red-600'
                                   : 'text-gray-600'
                             }
                           >
-                            {settlement.summary.netAmount >= 0 ? '+' : ''}¥
-                            {settlement.summary.netAmount.toFixed(2)}
+                            {finalSettlement.summary.netAmount >= 0 ? '+' : ''}¥
+                            {finalSettlement.summary.netAmount.toFixed(2)}
                           </span>
                         </div>
                       </div>

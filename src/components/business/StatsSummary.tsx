@@ -28,7 +28,7 @@ export function StatsSummary({ data, loading }: StatsSummaryProps) {
     {
       title: '已收金额',
       value: formatCurrency(data.paidAmount),
-      description: `已付 ${data.paidCount} 笔`,
+      description: `已结清 ${data.settledCount} 笔`,
       color: 'green',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
@@ -36,7 +36,7 @@ export function StatsSummary({ data, loading }: StatsSummaryProps) {
     {
       title: '待收金额',
       value: formatCurrency(data.pendingAmount),
-      description: `待付 ${data.pendingCount} 笔`,
+      description: `待处理 ${data.openCount} 笔`,
       color: 'orange',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600',
@@ -44,7 +44,7 @@ export function StatsSummary({ data, loading }: StatsSummaryProps) {
     {
       title: '逾期金额',
       value: formatCurrency(data.overdueAmount),
-      description: `逾期 ${data.overdueCount} 笔`,
+      description: `已逾期 ${data.overdueCount} 笔`,
       color: 'red',
       bgColor: 'bg-red-50',
       textColor: 'text-red-600',

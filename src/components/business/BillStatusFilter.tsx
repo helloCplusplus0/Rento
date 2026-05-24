@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  getBillPresentationStatusLabel,
+  type BillPresentationStats,
+  type BillPresentationStatus,
+} from '@/lib/bill-semantics'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -7,15 +12,14 @@ import { Button } from '@/components/ui/button'
 interface BillStatusFilterProps {
   selectedStatus: string | null
   onStatusChange: (status: string | null) => void
-  statusCounts: Record<string, number>
+  presentationStats: BillPresentationStats
 }
 
 const statusOptions = [
   { value: null, label: '全部', color: 'default' },
-  { value: 'PENDING', label: '待付款', color: 'orange' },
-  { value: 'PAID', label: '已收款', color: 'green' },
-  { value: 'OVERDUE', label: '逾期', color: 'red' },
-  { value: 'COMPLETED', label: '已完成', color: 'blue' },
+  { value: 'OPEN', color: 'orange' },
+  { value: 'SETTLED', color: 'green' },
+  { value: 'OVERDUE', color: 'red' },
 ]
 
 /**
@@ -25,17 +29,28 @@ const statusOptions = [
 export function BillStatusFilter({
   selectedStatus,
   onStatusChange,
-  statusCounts,
+  presentationStats,
 }: BillStatusFilterProps) {
   return (
     <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
       <h3 className="mb-3 text-sm font-medium text-gray-900">账单状态</h3>
       <div className="flex flex-wrap gap-2">
         {statusOptions.map((option) => {
-          const count = option.value
-            ? statusCounts[option.value] || 0
-            : Object.values(statusCounts).reduce((sum, count) => sum + count, 0)
+          const count =
+            option.value === null
+              ? presentationStats.totalCount
+              : option.value === 'OPEN'
+                ? presentationStats.openCount
+                : option.value === 'SETTLED'
+                  ? presentationStats.settledCount
+                  : presentationStats.overdueCount
           const isSelected = selectedStatus === option.value
+          const label =
+            option.value === null
+              ? option.label
+              : getBillPresentationStatusLabel(
+                  option.value as BillPresentationStatus
+                )
 
           return (
             <Button
@@ -48,7 +63,7 @@ export function BillStatusFilter({
                 isSelected && 'bg-primary text-primary-foreground'
               )}
             >
-              <span>{option.label}</span>
+              <span>{label}</span>
               <Badge variant="secondary" className="text-xs">
                 {count}
               </Badge>

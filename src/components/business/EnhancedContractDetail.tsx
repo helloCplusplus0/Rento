@@ -25,6 +25,8 @@ import {
 } from 'lucide-react'
 
 import type { BillStatus, ContractStatus } from '@/lib/colors'
+import type { BillStatus as PrismaBillStatus } from '@prisma/client'
+import { buildBillPresentationStats } from '@/lib/bill-semantics'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -202,25 +204,12 @@ export function EnhancedContractDetail({
   }
 
   // 计算账单统计
-  const billStats = {
-    total: contract.bills.length,
-    paid: contract.bills.filter((bill) => bill.status === 'PAID').length,
-    pending: contract.bills.filter((bill) => bill.status === 'PENDING').length,
-    overdue: contract.bills.filter((bill) => {
-      const today = new Date()
-      const dueDate = new Date(bill.dueDate)
-      return today > dueDate && bill.status !== 'PAID'
-    }).length,
-    totalAmount: contract.bills.reduce((sum, bill) => sum + bill.amount, 0),
-    paidAmount: contract.bills.reduce(
-      (sum, bill) => sum + bill.receivedAmount,
-      0
-    ),
-    pendingAmount: contract.bills.reduce(
-      (sum, bill) => sum + bill.pendingAmount,
-      0
-    ),
-  }
+  const billStats = buildBillPresentationStats(
+    contract.bills.map((bill) => ({
+      ...bill,
+      status: bill.status as PrismaBillStatus,
+    }))
+  )
 
   // 按时间排序账单（由近及远）
   const sortedBills = [...contract.bills].sort(
@@ -721,7 +710,7 @@ export function EnhancedContractDetail({
                   <FileText className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="text-2xl font-bold text-blue-600">
-                      {billStats.total}
+                      {billStats.totalCount}
                     </p>
                     <p className="text-sm text-gray-600">总账单</p>
                   </div>
@@ -734,9 +723,9 @@ export function EnhancedContractDetail({
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="text-2xl font-bold text-green-600">
-                      {billStats.paid}
+                      {billStats.settledCount}
                     </p>
-                    <p className="text-sm text-gray-600">已收款</p>
+                    <p className="text-sm text-gray-600">已结清</p>
                   </div>
                 </div>
               </CardContent>
@@ -747,9 +736,9 @@ export function EnhancedContractDetail({
                   <Clock className="h-5 w-5 text-yellow-600" />
                   <div>
                     <p className="text-2xl font-bold text-yellow-600">
-                      {billStats.pending}
+                      {billStats.openCount}
                     </p>
-                    <p className="text-sm text-gray-600">待付款</p>
+                    <p className="text-sm text-gray-600">待处理</p>
                   </div>
                 </div>
               </CardContent>
@@ -760,7 +749,7 @@ export function EnhancedContractDetail({
                   <AlertCircle className="h-5 w-5 text-red-600" />
                   <div>
                     <p className="text-2xl font-bold text-red-600">
-                      {billStats.overdue}
+                      {billStats.overdueCount}
                     </p>
                     <p className="text-sm text-gray-600">已逾期</p>
                   </div>
@@ -787,7 +776,7 @@ export function EnhancedContractDetail({
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(billStats.paidAmount)}
+                    {formatCurrency(billStats.receivedAmount)}
                   </p>
                   <p className="text-sm text-gray-600">已收金额</p>
                 </div>

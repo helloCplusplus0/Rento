@@ -1,12 +1,13 @@
 'use client'
 
 import type { BillWithContract } from '@/types/database'
+import type { BillPresentationStats } from '@/lib/bill-semantics'
 import { formatCurrency } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface BillStatsOverviewProps {
   bills: BillWithContract[]
-  statusCounts: Record<string, number>
+  presentationStats: BillPresentationStats
 }
 
 /**
@@ -15,7 +16,7 @@ interface BillStatsOverviewProps {
  */
 export function BillStatsOverview({
   bills,
-  statusCounts,
+  presentationStats,
 }: BillStatsOverviewProps) {
   // 计算统计数据
   const stats = bills.reduce(
@@ -54,7 +55,7 @@ export function BillStatsOverview({
     {
       title: '已收金额',
       value: formatCurrency(stats.receivedAmount),
-      description: `已付 ${statusCounts.PAID || 0} 笔`,
+      description: `已结清 ${presentationStats.settledCount} 笔`,
       color: 'green',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
@@ -62,7 +63,7 @@ export function BillStatsOverview({
     {
       title: '待收金额',
       value: formatCurrency(stats.pendingAmount),
-      description: `待付 ${statusCounts.PENDING || 0} 笔`,
+      description: `待处理 ${presentationStats.openCount} 笔`,
       color: 'orange',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600',
@@ -70,7 +71,7 @@ export function BillStatsOverview({
     {
       title: '逾期金额',
       value: formatCurrency(stats.overdueAmount),
-      description: `逾期 ${statusCounts.OVERDUE || 0} 笔`,
+      description: `已逾期 ${presentationStats.overdueCount} 笔`,
       color: 'red',
       bgColor: 'bg-red-50',
       textColor: 'text-red-600',

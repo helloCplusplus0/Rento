@@ -108,3 +108,113 @@ export function createBillStatusCountMap() {
     COMPLETED: 0,
   } satisfies Record<BillStatus, number>
 }
+
+export type BillPresentationStatus = 'OPEN' | 'OVERDUE' | 'SETTLED'
+
+export interface BillPresentationLike {
+  status: BillStatus
+  amount?: number
+  receivedAmount?: number
+  pendingAmount?: number
+}
+
+export interface BillPresentationStats {
+  totalCount: number
+  openCount: number
+  overdueCount: number
+  settledCount: number
+  totalAmount: number
+  receivedAmount: number
+  pendingAmount: number
+  openAmount: number
+  overdueAmount: number
+  statusCounts: Record<BillStatus, number>
+}
+
+export function getBillPresentationStatus(
+  bill: Pick<BillPresentationLike, 'status' | 'pendingAmount'>
+): BillPresentationStatus {
+  if (
+    isSettledBillStatus(bill.status) ||
+    (bill.pendingAmount !== undefined && isBillSettled(toBillAmount(bill.pendingAmount)))
+  ) {
+    return 'SETTLED'
+  }
+
+  if (bill.status === 'OVERDUE') {
+    return 'OVERDUE'
+  }
+
+  return 'OPEN'
+}
+
+export function getBillPresentationStatusLabel(
+  status: BillPresentationStatus
+): string {
+  switch (status) {
+    case 'OPEN':
+      return '待处理'
+    case 'OVERDUE':
+      return '已逾期'
+    case 'SETTLED':
+      return '已结清'
+    default:
+      return status
+  }
+}
+
+export function createBillPresentationStats(): BillPresentationStats {
+  return {
+    totalCount: 0,
+    openCount: 0,
+    overdueCount: 0,
+    settledCount: 0,
+    totalAmount: 0,
+    receivedAmount: 0,
+    pendingAmount: 0,
+    openAmount: 0,
+    overdueAmount: 0,
+    statusCounts: createBillStatusCountMap(),
+  }
+}
+
+/**
+ * 统一账单展示统计口径：
+ * - OPEN: `PENDING`
+ * - OVERDUE: `OVERDUE`
+ * - SETTLED: `PAID` + `COMPLETED`
+ *
+ * 展示层不再基于 dueDate 二次推断逾期，统一以账单状态真相源为准。
+ */
+export function buildBillPresentationStats(
+  bills: BillPresentationLike[]
+): BillPresentationStats {
+  return bills.reduce<BillPresentationStats>((stats, bill) => {
+    const presentationStatus = getBillPresentationStatus(bill)
+    const amount = toBillAmount(bill.amount)
+    const receivedAmount = toBillAmount(bill.receivedAmount)
+    const pendingAmount = toBillAmount(bill.pendingAmount)
+
+    stats.totalCount += 1
+    stats.totalAmount = toBillAmount(stats.totalAmount + amount)
+    stats.receivedAmount = toBillAmount(stats.receivedAmount + receivedAmount)
+    stats.pendingAmount = toBillAmount(stats.pendingAmount + pendingAmount)
+    stats.statusCounts[bill.status] += 1
+
+    switch (presentationStatus) {
+      case 'OPEN':
+        stats.openCount += 1
+        stats.openAmount = toBillAmount(stats.openAmount + pendingAmount)
+        break
+      case 'OVERDUE':
+        stats.overdueCount += 1
+        stats.overdueAmount = toBillAmount(stats.overdueAmount + pendingAmount)
+        break
+      case 'SETTLED':
+        stats.settledCount += 1
+        break
+    }
+
+    return stats
+  }, createBillPresentationStats())
+}

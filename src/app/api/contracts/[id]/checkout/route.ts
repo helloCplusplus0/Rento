@@ -6,14 +6,88 @@ import {
   validateRequired,
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
+import { getOptionalSession } from '@/lib/auth/guard'
+import { BILL_AMOUNT_EPSILON, toBillAmount } from '@/lib/bill-semantics'
+import {
+  applyCheckoutSettlementSubmission,
+  buildCheckoutBillStatusAfterSettlement,
+  calculateCheckoutSettlement,
+  type CheckoutSettlementSubmissionItem,
+} from '@/lib/checkout-settlement'
 import { ErrorLogger, ErrorType } from '@/lib/error-logger'
 import { prisma } from '@/lib/prisma'
-import {
-  contractQueries,
-  meterQueries,
-  meterReadingQueries,
-  roomQueries,
-} from '@/lib/queries'
+
+function appendAuditRemark(existingRemark: string | null, auditRemark: string) {
+  return [existingRemark?.trim(), auditRemark.trim()].filter(Boolean).join('\n')
+}
+
+function buildCheckoutSettlementBillData(params: {
+  contractId: string
+  checkoutDate: Date
+  operator: string
+  settlement: ReturnType<typeof applyCheckoutSettlementSubmission>
+  metadata: string
+}) {
+  const billDateKey = params.checkoutDate.toISOString().split('T')[0]
+  const settlementAmount = toBillAmount(Math.abs(params.settlement.summary.netAmount))
+  const settlementType = params.settlement.summary.settlementType
+  const billPrefix =
+    settlementType === 'REFUND'
+      ? 'RF'
+      : settlementType === 'CHARGE'
+        ? 'AD'
+        : 'BL'
+
+  return {
+    billNumber: `${billPrefix}${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+    type: 'OTHER' as const,
+    amount:
+      settlementType === 'REFUND'
+        ? -settlementAmount
+        : settlementType === 'CHARGE'
+          ? settlementAmount
+          : 0,
+    receivedAmount: settlementType === 'CHARGE' ? settlementAmount : 0,
+    pendingAmount: 0,
+    dueDate: params.checkoutDate,
+    paidDate: params.checkoutDate,
+    period: `退租结算-${billDateKey}`,
+    status: 'COMPLETED' as const,
+    contractId: params.contractId,
+    paymentMethod: '退租结算',
+    operator: params.operator,
+    remarks: `退租结算：${params.settlement.description}`,
+    metadata: params.metadata,
+  }
+}
+
+function buildSettlementAuditMetadata(params: {
+  contractId: string
+  checkoutDate: Date
+  checkoutReason: string
+  operator: string
+  settlement: ReturnType<typeof applyCheckoutSettlementSubmission>
+}) {
+  return JSON.stringify({
+    source: 'checkout-settlement',
+    contractId: params.contractId,
+    checkoutDate: params.checkoutDate.toISOString(),
+    checkoutReason: params.checkoutReason,
+    operator: params.operator,
+    generatedAt: new Date().toISOString(),
+    summary: params.settlement.summary,
+    items: params.settlement.submissionItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sourceType: item.sourceType,
+      direction: item.direction,
+      billId: item.billId ?? null,
+      originalAmount: item.originalAmount,
+      adjustedAmount: item.adjustedAmount,
+      adjustmentReason: item.adjustmentReason || null,
+    })),
+  })
+}
 
 /**
  * 合同退租API
@@ -35,10 +109,14 @@ async function handleCheckoutContract(
     damageAssessment = 0,
     finalMeterReadings = {},
     remarks,
+    settlementItems,
   } = body
 
   // 基础字段验证
   validateRequired(body, ['checkoutDate', 'checkoutReason'])
+  if (!Array.isArray(settlementItems) || settlementItems.length === 0) {
+    throw new Error('缺少正式结算明细，请刷新页面后重试')
+  }
 
   // 验证退租日期
   const checkoutDateObj = new Date(checkoutDate)
@@ -57,6 +135,8 @@ async function handleCheckoutContract(
   // 开始数据库事务
   return await prisma.$transaction(async (tx) => {
     const logger = ErrorLogger.getInstance()
+    const session = await getOptionalSession(request)
+    const operatorName = session?.username ?? '管理员'
 
     // 记录退租操作开始
     logger.logInfo('退租操作开始', {
@@ -67,6 +147,7 @@ async function handleCheckoutContract(
       checkoutReason,
       damageAssessment,
       hasFinalMeterReadings: Object.keys(finalMeterReadings).length > 0,
+      operator: operatorName,
     })
     // 1. 查询合同详情
     const contract = await tx.contract.findUnique({
@@ -102,50 +183,72 @@ async function handleCheckoutContract(
     // 这符合实际业务场景：退租当日进行最终结算
 
     // 3. 计算退租结算
-    const settlementResult = calculateCheckoutSettlement(
-      contract,
-      checkoutDateObj,
-      damageAssessment
+    const settlementResult = calculateCheckoutSettlement(contract, {
+      checkoutDate: checkoutDateObj,
+      damageAssessment,
+    })
+    const finalSettlement = applyCheckoutSettlementSubmission(
+      settlementResult,
+      settlementItems as CheckoutSettlementSubmissionItem[],
+      {
+        requireReasonForAdjusted: true,
+      }
     )
+    const contractBillMap = new Map(contract.bills.map((bill) => [bill.id, bill]))
 
-    // 4. 生成结算账单（如果有退款或补缴）
-    if (settlementResult.refundAmount > 0) {
-      // 生成退款账单
-      await tx.bill.create({
-        data: {
-          billNumber: `RF${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          type: 'OTHER',
-          amount: -settlementResult.refundAmount, // 负数表示退款
-          receivedAmount: 0,
-          pendingAmount: -settlementResult.refundAmount,
-          dueDate: checkoutDateObj,
-          period: `退租结算-${checkoutDateObj.toISOString().split('T')[0]}`,
-          status: 'PENDING',
-          contractId: contractId,
-          remarks: `退租结算：${settlementResult.description}`,
-        },
-      })
-    } else if (settlementResult.additionalAmount > 0) {
-      // 生成补缴账单
-      await tx.bill.create({
-        data: {
-          billNumber: `AD${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          type: 'OTHER',
-          amount: settlementResult.additionalAmount,
-          receivedAmount: 0,
-          pendingAmount: settlementResult.additionalAmount,
-          dueDate: checkoutDateObj,
-          period: `退租结算-${checkoutDateObj.toISOString().split('T')[0]}`,
-          status: 'PENDING',
-          contractId: contractId,
-          remarks: `退租结算：${settlementResult.description}`,
-        },
-      })
+    for (const item of finalSettlement.submissionItems) {
+      if (item.sourceType !== 'OPEN_BILL' || !item.billId) {
+        continue
+      }
+
+      const relatedBill = contractBillMap.get(item.billId)
+      if (!relatedBill) {
+        throw new Error(`结算项 ${item.name} 对应的账单不存在或已变化`)
+      }
+
+      const currentPendingAmount = toBillAmount(relatedBill.pendingAmount)
+      const currentReceivedAmount = toBillAmount(relatedBill.receivedAmount)
+      const currentAmount = toBillAmount(relatedBill.amount)
+
+      if (item.adjustedAmount < -BILL_AMOUNT_EPSILON) {
+        throw new Error(`${item.name} 的结算金额不能小于 0`)
+      }
+
+      if (item.adjustedAmount - currentPendingAmount > BILL_AMOUNT_EPSILON) {
+        throw new Error(
+          `${item.name} 的结算金额不能超过当前待收 ${currentPendingAmount.toFixed(2)}`
+        )
+      }
+
+      const projectedReceivedAmount = toBillAmount(
+        currentReceivedAmount + item.adjustedAmount
+      )
+
+      if (projectedReceivedAmount - currentAmount > BILL_AMOUNT_EPSILON) {
+        throw new Error(`${item.name} 的结算结果会覆盖既有已收事实，已被阻止`)
+      }
     }
+    const settlementAuditMetadata = buildSettlementAuditMetadata({
+      contractId,
+      checkoutDate: checkoutDateObj,
+      checkoutReason,
+      operator: operatorName,
+      settlement: finalSettlement,
+    })
 
-    // 4.5. 自动结清所有未付账单
-    // 退租时一次性结清所有权利和义务，将未付账单标记为已支付
-    console.log(`[退租] 开始处理未付账单结清，合同ID: ${contractId}`)
+    // 4. 始终生成一张正式退租结算账单（包含 0 金额平结场景），并直接闭环。
+    await tx.bill.create({
+      data: buildCheckoutSettlementBillData({
+        contractId,
+        checkoutDate: checkoutDateObj,
+        operator: operatorName,
+        settlement: finalSettlement,
+        metadata: settlementAuditMetadata,
+      }),
+    })
+
+    // 4.5. 按正式结算明细受限处理旧未付账单
+    console.log(`[退租] 开始处理旧账单结算，合同ID: ${contractId}`)
 
     // 获取所有未付账单（不依赖contract.bills，直接查询数据库）
     const unpaidBills = await tx.bill.findMany({
@@ -155,26 +258,69 @@ async function handleCheckoutContract(
       },
     })
 
-    console.log(`[退租] 发现${unpaidBills.length}个未付账单需要结清`)
+    console.log(`[退租] 发现${unpaidBills.length}个旧账单待处理`)
 
-    // 逐个更新账单状态
+    let settledOldBillCount = 0
+    let settledOldBillAmount = 0
+    let waivedOldBillAmount = 0
+
     for (const bill of unpaidBills) {
-      console.log(`[退租] 结清账单: ${bill.billNumber}, 金额: ${bill.amount}`)
+      const settlementItem = finalSettlement.submissionItems.find(
+        (item) => item.sourceType === 'OPEN_BILL' && item.billId === bill.id
+      )
+
+      if (!settlementItem) {
+        throw new Error(
+          `旧账单 ${bill.billNumber} 未进入正式退租结算明细，请刷新页面后重试`
+        )
+      }
+
+      const currentPendingAmount = toBillAmount(bill.pendingAmount)
+      const currentReceivedAmount = toBillAmount(bill.receivedAmount)
+      const { settledAmount } = buildCheckoutBillStatusAfterSettlement({
+        currentStatus: bill.status,
+        originalPendingAmount: currentPendingAmount,
+        settledAmount: settlementItem.adjustedAmount,
+      })
+      const waivedAmount = toBillAmount(currentPendingAmount - settledAmount)
+      const nextReceivedAmount = toBillAmount(currentReceivedAmount + settledAmount)
+      const auditRemark = [
+        `[退租结算 ${checkoutDateObj.toISOString().split('T')[0]}]`,
+        `原待收: ${currentPendingAmount.toFixed(2)}`,
+        `本次纳入: ${settledAmount.toFixed(2)}`,
+        `退租减免: ${waivedAmount.toFixed(2)}`,
+        '剩余待收: 0.00',
+        `既有已收: ${currentReceivedAmount.toFixed(2)}`,
+        `退租后已收: ${nextReceivedAmount.toFixed(2)}`,
+        `经办人: ${operatorName}`,
+        settlementItem.adjustmentReason
+          ? `调整原因: ${settlementItem.adjustmentReason}`
+          : waivedAmount > BILL_AMOUNT_EPSILON
+            ? '调整原因: 退租结算按最终协商金额收口，剩余部分已减免'
+            : '调整原因: 按系统原始待收纳入退租结算',
+      ].join(' | ')
+
       await tx.bill.update({
         where: { id: bill.id },
         data: {
-          status: 'PAID',
-          receivedAmount: bill.amount,
+          status: 'COMPLETED',
+          receivedAmount: nextReceivedAmount,
           pendingAmount: 0,
           paidDate: checkoutDateObj,
           paymentMethod: '退租结算',
-          operator: '系统自动',
-          remarks: '退租时自动结清',
+          operator: operatorName,
+          remarks: appendAuditRemark(bill.remarks, auditRemark),
         },
       })
+
+      settledOldBillCount += 1
+      settledOldBillAmount = toBillAmount(settledOldBillAmount + settledAmount)
+      waivedOldBillAmount = toBillAmount(waivedOldBillAmount + waivedAmount)
     }
 
-    console.log(`[退租] 账单结清完成，共处理${unpaidBills.length}个账单`)
+    console.log(
+      `[退租] 旧账单处理完成，共处理${settledOldBillCount}个账单，纳入金额${settledOldBillAmount.toFixed(2)}，减免金额${waivedOldBillAmount.toFixed(2)}`
+    )
 
     // 5. 更新合同状态
     const updatedContract = await tx.contract.update({
@@ -289,7 +435,9 @@ async function handleCheckoutContract(
       operationDetails: {
         contractStatus: { from: 'ACTIVE', to: 'TERMINATED' },
         roomStatus: { from: 'OCCUPIED', to: 'VACANT' },
-        billsProcessed: contract.bills.length,
+        billsProcessed: settledOldBillCount,
+        oldBillsSettledAmount: settledOldBillAmount,
+        oldBillsWaivedAmount: waivedOldBillAmount,
         metersProcessed: meterProcessingResults.length,
         totalMeterUsage: meterProcessingResults.reduce(
           (sum, m) => sum + m.usage,
@@ -299,22 +447,20 @@ async function handleCheckoutContract(
           (sum, m) => sum + m.amount,
           0
         ),
-        settlementAmount:
-          settlementResult.refundAmount ||
-          settlementResult.additionalAmount ||
-          0,
-        settlementType:
-          settlementResult.refundAmount > 0
-            ? 'REFUND'
-            : settlementResult.additionalAmount > 0
-              ? 'CHARGE'
-              : 'BALANCED',
+        settlementAmount: Math.abs(finalSettlement.summary.netAmount),
+        settlementType: finalSettlement.summary.settlementType,
       },
       affectedEntities: {
         contract: { id: contractId, status: 'TERMINATED' },
         room: { id: contract.roomId, status: 'VACANT' },
         renter: { id: contract.renterId, name: contract.renter.name },
-        bills: contract.bills.map((b) => ({ id: b.id, status: 'PAID' })),
+        bills: finalSettlement.submissionItems
+          .filter((item) => item.sourceType === 'OPEN_BILL' && item.billId)
+          .map((item) => ({
+            id: item.billId,
+            adjustedAmount: item.adjustedAmount,
+            hasReason: Boolean(item.adjustmentReason),
+          })),
         meters: meterProcessingResults.map((m) => ({
           id: m.meterId,
           type: m.meterType,
@@ -327,99 +473,10 @@ async function handleCheckoutContract(
 
     return {
       contract: updatedContract,
-      settlement: settlementResult,
+      settlement: finalSettlement,
       meterProcessing: meterProcessingResults,
     }
   })
-}
-
-/**
- * 计算退租结算
- */
-function calculateCheckoutSettlement(
-  contract: any,
-  checkoutDate: Date,
-  damageAssessment: number
-) {
-  const startDate = new Date(contract.startDate)
-  const endDate = new Date(contract.endDate)
-  const monthlyRent = Number(contract.monthlyRent)
-  const deposit = Number(contract.deposit)
-
-  // 计算实际居住天数
-  const actualDays =
-    Math.ceil(
-      (checkoutDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    ) + 1
-
-  // 计算合同总天数
-  const totalDays =
-    Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    ) + 1
-
-  // 计算应付租金（按日计算）
-  const dailyRent = monthlyRent / 30 // 简化计算，按30天/月
-  const shouldPayRent = Math.round(actualDays * dailyRent * 100) / 100
-
-  // 计算已付租金（从totalRent推算）
-  const totalRent = Number(contract.totalRent)
-  const paidRent = totalRent
-
-  // 计算租金差额
-  const rentDifference = paidRent - shouldPayRent
-
-  // 计算押金退还（扣除损坏赔偿）
-  const depositRefund = Math.max(0, deposit - damageAssessment)
-
-  // 计算最终结算
-  let refundAmount = 0
-  let additionalAmount = 0
-  let description = ''
-
-  if (rentDifference > 0) {
-    // 有多付租金，加上押金退还
-    refundAmount = rentDifference + depositRefund
-    description = `多付租金退还: ¥${rentDifference.toFixed(2)}, 押金退还: ¥${depositRefund.toFixed(2)}`
-    if (damageAssessment > 0) {
-      description += `, 扣除损坏赔偿: ¥${damageAssessment.toFixed(2)}`
-    }
-  } else if (rentDifference < 0) {
-    // 需要补缴租金
-    const needPay = Math.abs(rentDifference)
-    if (depositRefund >= needPay) {
-      // 押金足够抵扣
-      refundAmount = depositRefund - needPay
-      description = `押金抵扣欠缴租金: ¥${needPay.toFixed(2)}, 押金退还: ¥${refundAmount.toFixed(2)}`
-    } else {
-      // 押金不够，需要额外支付
-      additionalAmount = needPay - depositRefund
-      description = `押金全部抵扣: ¥${depositRefund.toFixed(2)}, 需补缴: ¥${additionalAmount.toFixed(2)}`
-    }
-    if (damageAssessment > 0) {
-      description += `, 扣除损坏赔偿: ¥${damageAssessment.toFixed(2)}`
-    }
-  } else {
-    // 租金刚好，只退押金
-    refundAmount = depositRefund
-    description = `押金退还: ¥${depositRefund.toFixed(2)}`
-    if (damageAssessment > 0) {
-      description += `, 扣除损坏赔偿: ¥${damageAssessment.toFixed(2)}`
-    }
-  }
-
-  return {
-    actualDays,
-    totalDays,
-    shouldPayRent,
-    paidRent,
-    rentDifference,
-    depositRefund,
-    refundAmount,
-    additionalAmount,
-    damageAssessment,
-    description,
-  }
 }
 
 /**
@@ -436,12 +493,6 @@ async function handleCheckoutContractWithSettlement(
     // 执行退租事务
     const result = await handleCheckoutContract(request, { params })
 
-    // 计算详细结算明细
-    const settlement = calculateDetailedSettlement(
-      result.contract,
-      result.settlement
-    )
-
     // 记录退租成功日志
     logger.logInfo('退租流程成功完成', {
       module: 'checkout-contract-api',
@@ -451,8 +502,8 @@ async function handleCheckoutContractWithSettlement(
         contractTerminated: true,
         settlementCalculated: true,
         meterReadingsProcessed: result.meterProcessing?.length || 0,
-        totalSettlementAmount: settlement.summary?.netAmount || 0,
-        settlementType: settlement.summary?.settlementType || 'BALANCED',
+        totalSettlementAmount: result.settlement.summary.netAmount,
+        settlementType: result.settlement.summary.settlementType,
       },
     })
 
@@ -472,7 +523,7 @@ async function handleCheckoutContractWithSettlement(
             ? Number(result.contract.cleaningFee)
             : null,
         },
-        settlement,
+        settlement: result.settlement,
         meterProcessing: result.meterProcessing,
       },
       '退租成功'
@@ -500,50 +551,6 @@ async function handleCheckoutContractWithSettlement(
     )
 
     throw error
-  }
-}
-
-/**
- * 计算详细结算明细（用于前端展示）
- */
-function calculateDetailedSettlement(contract: any, basicSettlement: any) {
-  const keyDepositRefund = contract.keyDeposit ? Number(contract.keyDeposit) : 0
-
-  return {
-    refundItems: {
-      rentRefund: Math.max(0, basicSettlement.rentDifference),
-      depositRefund: basicSettlement.depositRefund,
-      keyDepositRefund,
-      subtotal:
-        Math.max(0, basicSettlement.rentDifference) +
-        basicSettlement.depositRefund +
-        keyDepositRefund,
-    },
-    chargeItems: {
-      rentCharge: Math.max(0, -basicSettlement.rentDifference),
-      damageCharge: basicSettlement.damageAssessment || 0,
-      cleaningCharge: 0,
-      subtotal:
-        Math.max(0, -basicSettlement.rentDifference) +
-        (basicSettlement.damageAssessment || 0),
-    },
-    summary: {
-      totalRefund:
-        Math.max(0, basicSettlement.rentDifference) +
-        basicSettlement.depositRefund +
-        keyDepositRefund,
-      totalCharge:
-        Math.max(0, -basicSettlement.rentDifference) +
-        (basicSettlement.damageAssessment || 0),
-      netAmount:
-        basicSettlement.refundAmount - basicSettlement.additionalAmount,
-      settlementType:
-        basicSettlement.refundAmount > basicSettlement.additionalAmount
-          ? 'REFUND'
-          : basicSettlement.refundAmount < basicSettlement.additionalAmount
-            ? 'CHARGE'
-            : 'BALANCED',
-    },
   }
 }
 

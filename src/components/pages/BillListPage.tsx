@@ -3,9 +3,13 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { Bill, Building, Contract, Renter, Room } from '@prisma/client'
 import { BarChart3 } from 'lucide-react'
 
+import {
+  buildBillPresentationStats,
+  getBillPresentationStatus,
+  type BillPresentationStatus,
+} from '@/lib/bill-semantics'
 import { Button } from '@/components/ui/button'
 import { BillCard, BillCardSkeleton } from '@/components/business/bill-card'
 import {
@@ -123,7 +127,11 @@ export function BillListPage({ initialBills }: BillListPageProps) {
   const filteredBills = useMemo(() => {
     return initialBills.filter((bill) => {
       // 状态筛选
-      if (selectedStatus && bill.status !== selectedStatus) {
+      if (
+        selectedStatus &&
+        getBillPresentationStatus(bill) !==
+          (selectedStatus as BillPresentationStatus)
+      ) {
         return false
       }
 
@@ -143,16 +151,10 @@ export function BillListPage({ initialBills }: BillListPageProps) {
   }, [initialBills, selectedStatus, searchQuery])
 
   // 计算状态统计
-  const statusCounts = useMemo(() => {
-    const counts = { PENDING: 0, PAID: 0, OVERDUE: 0, COMPLETED: 0 }
-    initialBills.forEach((bill) => {
-      const status = bill.status as keyof typeof counts
-      if (status in counts) {
-        counts[status] = (counts[status] || 0) + 1
-      }
-    })
-    return counts
-  }, [initialBills])
+  const presentationStats = useMemo(
+    () => buildBillPresentationStats(initialBills),
+    [initialBills]
+  )
 
   // 账单点击处理 - 使用 Next.js 路由优化性能
   const handleBillClick = (bill: any) => {
@@ -186,14 +188,14 @@ export function BillListPage({ initialBills }: BillListPageProps) {
         {/* 统计概览 */}
         <BillStatsOverview
           bills={initialBills as any} // 临时类型转换
-          statusCounts={statusCounts}
+          presentationStats={presentationStats}
         />
 
         {/* 状态筛选 */}
         <BillStatusFilter
           selectedStatus={selectedStatus}
           onStatusChange={setSelectedStatus}
-          statusCounts={statusCounts}
+          presentationStats={presentationStats}
         />
 
         {/* 账单网格 */}
