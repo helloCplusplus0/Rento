@@ -13,7 +13,7 @@ import {
 
 export const metadata: Metadata = {
   title: '离线提示 | Rento',
-  description: 'Rento 最小离线兜底页入口，供 phase05 后续 service worker 复用。',
+  description: 'Rento 最小离线兜底页入口，仅用于受控环境下的最小 service worker 退化。',
   robots: {
     index: false,
     follow: false,
@@ -33,8 +33,7 @@ export default function OfflinePage() {
               当前网络不可用
             </CardTitle>
             <CardDescription className="text-sm leading-6 text-slate-600">
-              这里是 `phase05-pwa-delivery-02` 预留的最小离线入口。当前阶段尚未启用
-              service worker 缓存，后续 `phase05-pwa-delivery-03` 会在不扩张业务离线写入的前提下复用此页。
+              这里是 Rento 的最小离线兜底页。当前 service worker 只缓存静态壳资源、`manifest`、图标与本页本身，不缓存动态业务接口和鉴权态业务页面响应。
             </CardDescription>
           </div>
         </CardHeader>
@@ -43,8 +42,8 @@ export default function OfflinePage() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
             <p>建议操作：</p>
             <p>1. 检查 Wi-Fi 或移动网络连接后刷新页面。</p>
-            <p>2. 如已登录，可重新回到工作台继续在线使用。</p>
-            <p>3. 如尚未登录，可先回到登录页等待网络恢复。</p>
+            <p>2. 网络恢复后重新打开工作台或当前业务页面。</p>
+            <p>3. 如当前处于登录态超时，请回到登录页重新进入。</p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">

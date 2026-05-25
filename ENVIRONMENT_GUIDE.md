@@ -25,6 +25,7 @@ HOST_IP=127.0.0.1
 APP_INTERNAL_PORT=3001
 APP_PORT=3001
 NEXTAUTH_URL=http://localhost:3001
+NEXT_PUBLIC_ENABLE_PWA=0
 AUTH_SESSION_SECRET=replace-me
 NEXTAUTH_SECRET=replace-me
 ADMIN_USERNAME=admin
@@ -52,6 +53,7 @@ npm run dev
 - `APP_INTERNAL_PORT`：容器内应用监听端口
 - `APP_PORT`：宿主机暴露端口；默认与 `APP_INTERNAL_PORT` 保持一致
 - `NEXTAUTH_URL`：应用对外访问地址
+- `NEXT_PUBLIC_ENABLE_PWA`：是否在受控测试环境或私有部署生产环境启用最小 PWA / service worker；`npm run dev` 所在的开发环境默认不注册
 - `NEXTAUTH_SECRET`：历史兼容密钥，当前仍可作为 session secret 回退值
 - `AUTH_SESSION_SECRET`：当前最小门禁使用的 session 签名密钥
 
@@ -93,6 +95,10 @@ npm run dev
   - `AUTH_SESSION_SECRET`
   - `ADMIN_USERNAME`
   - `ADMIN_PASSWORD_HASH`
+- 如需验证 `phase05-pwa-delivery-03` 的最小 PWA：
+  - 仅在受控测试环境或私有部署生产环境把 `NEXT_PUBLIC_ENABLE_PWA=1`
+  - 不要把 `npm run dev` 作为 service worker 验证环境
+  - 推荐使用 HTTPS 或 `localhost` 的 `npm run build && npm run start`
 - 推荐先执行 `npm run dev:check`，确认开发态关键变量完整后再执行 `npm run dev`。
 - `npm run dev:check` 现在会校验 `DATABASE_URL` 的真实连通性与认证是否有效，而不只是检查变量是否存在。
 - 当前统一开发入口的阻断项为：
@@ -102,6 +108,13 @@ npm run dev
 - `REDIS_URL` 当前仅作为非阻断提示保留，用于后续缓存依赖接入时保持上下文一致。
 - `scripts/health-check.sh` 与 `scripts/benchmark.js` 默认会复用 `NEXTAUTH_URL` / `APP_PORT` / `APP_INTERNAL_PORT` 推导访问地址，不再单独维护第二套应用 URL 真相。
 - 不要为了开发方便绕过 `middleware` 或移除登录门禁；开发态与浏览器验证应共享同一套认证 / 数据库配置假设。
+
+## 5.1 PWA / Service Worker 最小调试说明
+- 本地开发环境：`npm run dev` 默认不注册 service worker；即使把 `NEXT_PUBLIC_ENABLE_PWA=1` 写进 `.env`，开发态仍按普通 Web 运行，避免缓存干扰调试。
+- 受控测试环境：使用 `npm run build && npm run start`，并显式设置 `NEXT_PUBLIC_ENABLE_PWA=1`，再在真机或桌面浏览器中验证安装、离线兜底与更新提示。
+- 缓存边界：当前只缓存静态壳资源、`manifest`、图标与 `/offline`；动态业务接口、鉴权态业务页面响应和其他动态数据不会进入默认缓存。
+- 更新验证：发布新版本后重新访问页面，若发现新 `service worker` 进入 `waiting`，界面会出现“发现新版本”的提示；点击“立即更新”后页面自动刷新并切换到新版本。
+- 异常回滚：若怀疑旧缓存影响行为，可在浏览器 DevTools 的 Application/Storage 面板取消注册 `sw.js` 并清空站点缓存，然后重新打开页面。
 
 ## 6. 生产环境建议
 - 使用正式域名和 HTTPS

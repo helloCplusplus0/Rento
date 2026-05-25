@@ -1,0 +1,11 @@
+- [x] `phase05_pwa_delivery_architecture_plan.md` 已明确 `phase05-03` 的 SW、缓存边界、更新策略与回滚目标
+- [x] `phase05_pwa_delivery_dev_plan.md` 已明确 `phase05-03` 的目标、范围、重点文件、DoD 与不在范围内的内容
+- [x] `phase05_pwa_delivery_shared_baseline.md` 没有与 `phase05-03` 的 SW 最小化、最小离线壳和渐进增强原则冲突
+- [x] 本子任务已明确 SW 只在受控环境中注册，本地开发环境默认禁用
+- [x] 本子任务已明确允许缓存的边界仅限应用壳静态资源、`manifest`、图标与最小离线兜底资源
+- [x] 本子任务已明确动态业务接口、鉴权态业务页面响应与其他动态数据不得进入默认缓存
+- [x] 本子任务已明确更新发现、版本切换提示、刷新生效与最小回滚说明
+- [x] 本子任务已明确 SW 异常、注册失败或浏览器不支持时必须退化为普通 Web
+- [x] 本子任务没有越界到完整离线数据库、业务 API 全量离线缓存、推送系统或复杂后台同步
+- [x] `public/sw.js` 与 `manifest.json` 在生产形态下不会被登录中间件重定向拦截
+- [x] `public/sw.js` 已不再被 `.gitignore` 忽略，可作为 `phase05-03` 的显式真相源纳入版本控制

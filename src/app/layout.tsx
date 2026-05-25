@@ -5,6 +5,7 @@ import './globals.css'
 
 import { AppLayout } from '@/components/layout'
 import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt'
+import { PwaRuntimeManager } from '@/components/layout/PwaRuntimeManager'
 import { AlertManagerProvider } from '@/components/providers/AlertManagerProvider'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -67,6 +68,7 @@ export default function RootLayout({
         <AlertManagerProvider>
           <>
             <AppLayout>{children}</AppLayout>
+            <PwaRuntimeManager />
             <PwaInstallPrompt />
           </>
         </AlertManagerProvider>

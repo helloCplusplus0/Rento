@@ -57,6 +57,7 @@ npm run dev
 - `npm run dev:check` 会同时验证 `DATABASE_URL` 的真实连通性与认证是否有效。
 - `npm run dev` 会先校验 `.env*` 中的关键变量，再启动 `next dev --port 3001`。
 - `.env` 与 `.env.example` 现在统一作为唯一环境配置入口；宿主机开发与容器运行使用同一组键名，不再允许并列维护第二套真相。
+- `phase05-pwa-delivery-03` 引入的最小 PWA / service worker 只会在受控环境显式开启：开发态默认不注册，避免缓存污染日常调试。
 - 当前启动入口会阻止缺少以下关键变量的开发启动：
   - `DATABASE_URL`
   - `ADMIN_PASSWORD_HASH`
@@ -82,5 +83,11 @@ npm run dev
 - `MAX_PERFORMANCE_METRICS` 控制当前进程内保留的性能样本数量，默认 `1000`。
 - `MEM_WARN_MB` / `MEM_FAIL_MB` 控制主健康入口的内存告警阈值。
 - `LOG_DIR` 控制兼容型文件日志输出目录，默认 `./logs`。
+
+## PWA 调试提示
+- 使用 `NEXT_PUBLIC_ENABLE_PWA=1` 显式开启最小 PWA，仅建议在受控测试环境或私有部署生产环境使用。
+- 当前 service worker 只缓存静态壳资源、`manifest`、图标与 `/offline`；不会缓存动态业务接口和鉴权态业务页面响应。
+- 如需验证更新提示，建议在 `npm run build && npm run start` 后访问应用，再发布一个新的 `sw.js` 版本并重新打开页面。
+- 如怀疑旧缓存干扰行为，可在浏览器 DevTools 中取消注册 `sw.js` 并清空站点缓存。
 
 更多运行说明见：`QUICK_START.md`、`ENVIRONMENT_GUIDE.md`、`DEPLOYMENT.md`。

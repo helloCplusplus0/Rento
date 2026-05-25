@@ -193,7 +193,7 @@ export function PwaInstallPrompt() {
             </div>
           ) : (
             <p className="text-xs leading-5 text-slate-500">
-              后续 `phase05-pwa-delivery-03` 会继续补齐 SW 与最小离线兜底；当前阶段仅收口安装壳入口。
+              当前会继续以普通 Web 退化运行；即使启用最小 PWA，也不会缓存动态业务接口和鉴权态业务页面。
             </p>
           )}
         </div>
