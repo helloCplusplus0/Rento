@@ -13,4 +13,3 @@
 - `docs/fix/fix_issue_template.md` 与 `docs/fix/fix_analysis_template.md` 分别作为 `issue` 与 `analysis` 的模板真相源。
 - 当用户发起 `/plan` 后，必须先同步顶层规范文档，再产出阶段级设计文档；文档产出后必须停下，等待用户审核后才能进入 `/spec`。
 - `phase04-performance-and-ops-01-*` 只允许冻结共享边界、页面初始分类口径与验收方向，不允许提前进入查询优化、观测补强或页面门禁实现。
-- 归档文档默认只读，不再作为当前实现依据。

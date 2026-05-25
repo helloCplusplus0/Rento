@@ -1,0 +1,9 @@
+- [x] `phase05_pwa_delivery_architecture_plan.md` 已明确阶段定位、允许路线、禁止路线、支持矩阵优先级与固定子任务顺序
+- [x] `phase05_pwa_delivery_dev_plan.md` 已明确 `phase05-01` 的目标、范围、DoD 与后续四个子任务顺序
+- [x] `phase05_pwa_delivery_shared_baseline.md` 已明确共享判断标准、允许路线、禁止路线、SW/缓存边界与统一验证要求
+- [x] `AGENTS.md`、`plan.md`、`architecture_map.md` 已与 `phase05` 的正式候选下一阶段口径保持一致
+- [x] `project_rules.md`、`global_skills.md`、`project_skills.md` 已补齐 `phase05` 所需的最小规则、方法与项目技能
+- [x] `fix_008` 已明确在 `analysis` 层完成收口，不再继续作为 PWA 实现真相源
+- [x] `phase05` 已明确正式支持矩阵：`Android + Chrome` 为第一优先级，其他 Chromium 系浏览器仅为次级兼容目标，iOS 不作为本阶段正式承诺目标
+- [x] `phase05` 已明确失败退化原则：安装失败、SW 失效或浏览器不支持时，系统仍可作为普通响应式 Web 正常使用
+- [x] 当前子任务仅冻结支持矩阵、环境分层、退化策略、更新原则与缓存边界，没有提前进入安装实现、SW 实现或页面修复

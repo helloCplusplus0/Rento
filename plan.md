@@ -4,7 +4,8 @@
 - 当前默认工作流：`真实场景验证与 fix 闭环`
 - 当前阶段目标：优先通过真实场景数据验证主链机制，按 `issue -> analysis -> /spec -> 修复 -> 验收 -> 提交` 的闭环方式处理新发现问题，而不是直接扩写新功能。
 - 当前执行方式：新问题先进入 `docs/fix/fix_XXX_issue_<topic>.md`；完成根因与方案分析后，在 `docs/fix/` 下产出 `fix_XXX_analysis_<topic>.md`；未经 `analysis` 文档冻结与审核，不直接进入 `/spec`。
-- 当前下一步：继续围绕 `docs/fix/` 中的真实问题推进 fix 闭环；若后续要重新进入新的 `phase*` 工作流，必须先通过新一轮 `/plan` 冻结边界与目标。
+- 当前下一步：继续围绕 `docs/fix/` 中的真实问题推进 fix 闭环；`fix_008` 已在 `analysis` 层完成收口，后续移动端/PWA 相关正式实施不再挂在 fix 下，而由 `phase05-pwa-delivery-*` 作为正式候选下一阶段承接。
+- 当前正式候选下一阶段：`phase05-pwa-delivery-*`
 
 ## 阶段顺序
 
@@ -80,10 +81,37 @@
   - 已按顺序完成 `phase04-performance-and-ops-01-baseline-and-scope-freeze`、`phase04-performance-and-ops-02-query-performance-closure`、`phase04-performance-and-ops-03-observability-and-health-hardening`、`phase04-performance-and-ops-04-dev-only-entry-classification-and-gating`
   - 当前阶段交付已收口；若需继续推进，必须先进入新一轮 `/plan`，再决定新的阶段目标与工作流
 
+### phase05-pwa-delivery
+- 目标：在保持单一 Next.js Web 主线、单 UI 与低复杂度前提下，把 Rento 收口为受控安卓优先、可安装、可解释、可维护的私有管理 Web App。
+- 关键交付：
+  - 正式支持矩阵、环境分层与退化策略
+  - 安装壳、manifest、图标与启动体验收口
+  - 最小 service worker、更新策略与最小离线兜底
+  - 关键业务页移动端可用性收口
+  - 私有部署、安装流程与发布前验收说明
+- 推荐子任务顺序：
+  - `phase05-pwa-delivery-01-baseline-and-support-matrix-freeze`
+  - `phase05-pwa-delivery-02-install-shell-and-manifest-hardening`
+  - `phase05-pwa-delivery-03-service-worker-and-update-strategy`
+  - `phase05-pwa-delivery-04-mobile-layout-and-key-page-usability-closure`
+  - `phase05-pwa-delivery-05-private-deployment-and-installation-readiness`
+- 验收条件：
+  - 移动端主线已经明确冻结为单一 Web 主线，不回退到 Flutter / 原生双线
+  - 正式支持浏览器中可完成安装、启动、更新与失败退化闭环
+  - 关键业务页面在主流手机尺寸下具备可接受可用性
+  - 安装与缓存增强不破坏正常 Web 访问主线与既有安全边界
+- 当前结论：
+  - 已完成阶段级候选文档冻结：
+    - `docs/phase05_pwa_delivery_architecture_plan.md`
+    - `docs/phase05_pwa_delivery_dev_plan.md`
+    - `docs/phase05_pwa_delivery_shared_baseline.md`
+  - 当前已成为正式候选下一阶段，但尚未切换为默认工作流；未经用户显式切换与后续子任务审核，不直接进入 `phase05` 实现
+
 ## 当前阶段结论
 - 当前项目具备继续演进的业务骨架，不建议重写。
 - 当前最优策略是“真实场景验证与 fix 闭环”，而不是立刻叠加新功能。
-- 当前默认推进方向：先用真实问题验证主链稳定性与数据语义；数据统计分析等扩展功能默认后置，待真实数据与使用反馈进一步明确后再评估
+- 当前默认推进方向：先用真实问题验证主链稳定性与数据语义；数据统计分析等扩展功能默认后置，待真实数据与使用反馈进一步明确后再评估。
+- 当前正式候选下一阶段已冻结为 `phase05-pwa-delivery-*`，用于统一承接移动端/PWA 交付议题；`fix_008` 不再继续进入 `/spec` 或实现。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断的临时承接位。
@@ -98,6 +126,7 @@
   - 经审核后再进入 `/spec`
   - 最后按修复、验收、提交并推送的顺序闭环
 - fix 闭环期间，若问题已经超出局部修补边界，必须重新回到 `/plan`，而不是在单个 fix 中顺手扩写成新阶段。
+- `fix_008` 已作为一次已完成的升级判断示例：当议题从“局部移动端适配”升级为“PWA 交付形态与阶段级支持矩阵”时，应终止 fix 实施路径，转由 `phase05-pwa-delivery-*` 承接。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

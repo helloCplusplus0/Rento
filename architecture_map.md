@@ -80,6 +80,12 @@ Rento/
   - `docs/phase04_performance_and_ops_shared_baseline.md`
 - `phase04-performance-and-ops-01` 至 `phase04-performance-and-ops-04` 已按顺序完成当前阶段收口；若需继续推进，当前应先回到新一轮 `/plan`，再决定是否进入新的 `phase*` 工作流。
 - 当前默认已进入真实场景验证与 fix 闭环：问题先落 `issue` 文档，再落 `analysis` 文档，审核后才进入 `/spec`。
+- `fix_008` 已在 `analysis` 层完成收口，结论为：移动端/PWA 议题已超出单个 fix 的局部修补边界，后续统一由 `phase05-pwa-delivery-*` 承接。
+- `phase05` 候选阶段文档已生成并冻结：
+  - `docs/phase05_pwa_delivery_architecture_plan.md`
+  - `docs/phase05_pwa_delivery_dev_plan.md`
+  - `docs/phase05_pwa_delivery_shared_baseline.md`
+- 当前 `phase05-pwa-delivery-*` 已成为正式候选下一阶段，但尚未切换当前默认工作流。
 - `docs/archive/tasks/`：历史 `task_*.md` 实施记录。
 - `docs/archive/README.md`：归档说明与使用边界。
 - 历史任务文档默认只读，不再代表当前执行计划。

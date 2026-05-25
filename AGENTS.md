@@ -30,6 +30,7 @@
 - 当前主问题：`phase04` 已完成当前阶段收口，当前默认不再直接扩写新功能，而是优先通过真实场景数据验证发现主链问题、修复高优先级偏差，并继续收口完整安全边界、角色控制与最小审计。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](plan.md) 为唯一主真相源。
 - 当前下一步：新发现的问题先写入 `docs/fix/fix_XXX_issue_<topic>.md`，完成系统分析后在 `docs/fix/` 下产出 `fix_XXX_analysis_<topic>.md`；未经分析文档冻结与审核，不直接进入 `/spec` 或修复实现。
+- 当前正式候选下一阶段：`phase05-pwa-delivery-*`；其职责是以单一 Web 主线承接 PWA 安装闭环、更新策略、移动端可用性与私有部署验收，但未经显式切换前，不改变当前默认 fix 工作流。
 - 当前阶段重点：
   - 基于真实场景验证优先发现 `fix-now` 级别的主链问题
   - 对每个问题先收集事实与证据链，再产出根因与方案分析文档
@@ -57,6 +58,7 @@
 - `phase03-consistency-hardening-*` 已完成，结论为：主链一致性、删除门禁、账务语义与迁移兼容项已完成当前阶段收口。
 - `phase04-performance-and-ops-*` 已完成，结论为：关键查询性能、运行可观测性与 dev-only 入口治理已完成当前阶段收口。
 - 当前默认已进入“真实场景验证与 fix 闭环”阶段：真实问题优先进入 `issue -> analysis -> /spec -> 修复 -> 验收 -> 提交` 流程，而不是直接扩写新功能。
+- `fix_008` 已在 `analysis` 层完成收口，结论为：移动端与 PWA 议题已超出单个 fix 局部修补边界，后续由 `phase05-pwa-delivery-*` 作为正式候选下一阶段承接。
 - 当前仍未满足“公网发布”条件，原因是完整安全边界、角色控制与最小审计仍未全部完成；后续需经真实场景验证与新一轮 `/plan` 再决定下一阶段工作流。
 
 ## 7. 全局文档导航
@@ -69,6 +71,9 @@
 - [docs/fix/](docs/fix)：真实场景验证阶段的问题报告目录，存放 `fix_XXX_issue_<topic>.md` 与问题模板。
 - [docs/fix/fix_issue_template.md](docs/fix/fix_issue_template.md)：问题报告模板，只记录事实、复现路径、预期与实际差异。
 - [docs/fix/fix_analysis_template.md](docs/fix/fix_analysis_template.md)：根因与方案分析模板，用于固定 `analysis` 文档结构。
+- [docs/phase05_pwa_delivery_architecture_plan.md](docs/phase05_pwa_delivery_architecture_plan.md)：`phase05-pwa-delivery-*` 的候选阶段架构规划。
+- [docs/phase05_pwa_delivery_dev_plan.md](docs/phase05_pwa_delivery_dev_plan.md)：`phase05-pwa-delivery-*` 的候选阶段开发规划。
+- [docs/phase05_pwa_delivery_shared_baseline.md](docs/phase05_pwa_delivery_shared_baseline.md)：`phase05-pwa-delivery-*` 的候选阶段共享基线。
 - [global_skills.md](global_skills.md)：跨阶段通用方法论、问题分级与文档治理技能。
 - [project_skills.md](project_skills.md)：Rento 专属的合同、账单、仪表、删除门禁与重启验收技能。
 
@@ -104,6 +109,7 @@
 - 对外可见行为优先稳定，对内治理优先清理双重真相；宁可少做，也不带着错误入口继续迭代。
 - `phase04` 已完成当前阶段既定子任务；当前默认优先执行真实场景验证与 fix 闭环，而不是继续直接扩写新功能。
 - 新发现的问题必须先进入 `docs/fix/` 的 `issue` 文档；未完成 `analysis` 文档前，禁止直接进入 `/spec` 或实现。
+- `fix_008` 已确认只负责移动端路线分析与升级判断，不再继续以 fix 形式进入实现；后续统一由 `phase05-pwa-delivery-*` 候选阶段承接。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的问题，必须在 `analysis` 文档中明确：
   - 是否影响历史数据
   - 是否影响其他入口或生成路径
