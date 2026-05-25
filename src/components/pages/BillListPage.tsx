@@ -169,10 +169,10 @@ export function BillListPage({ initialBills }: BillListPageProps) {
     <PageContainer title="账单管理" showBackButton>
       <div className="space-y-6 pb-6">
         {/* 页面头部操作 */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">账单概览</h2>
           <Link href="/bills/stats">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <BarChart3 className="mr-2 h-4 w-4" />
               统计分析
             </Button>

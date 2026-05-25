@@ -64,7 +64,7 @@ export function DetailPageTemplate({
 
         {/* 操作按钮区域 - 统一放在底部 */}
         {actions.length > 0 && (
-          <Card>
+          <Card className="page-safe-bottom">
             <CardHeader>
               <CardTitle className="text-lg">操作</CardTitle>
             </CardHeader>
@@ -76,7 +76,7 @@ export function DetailPageTemplate({
                     variant={action.variant || 'outline'}
                     onClick={action.onClick}
                     disabled={action.disabled}
-                    className={`flex-1 sm:flex-none ${action.className || ''}`}
+                    className={`w-full flex-1 sm:w-auto sm:flex-none ${action.className || ''}`}
                   >
                     {action.icon && <span className="mr-2">{action.icon}</span>}
                     {action.label}

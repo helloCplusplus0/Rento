@@ -5,6 +5,17 @@ import { roomQueries } from '@/lib/queries'
 import { PageContainer } from '@/components/layout'
 import { RoomListPage } from '@/components/pages/RoomListPage'
 
+type RoomsPageSearchParams = Promise<{
+  search?: string | string[] | undefined
+}>
+
+function normalizeSearchParam(
+  search: string | string[] | undefined
+): string {
+  const value = Array.isArray(search) ? search[0] : search
+  return value?.trim() || ''
+}
+
 // 禁用静态生成，强制使用服务端渲染
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +75,14 @@ function RoomListPageSkeleton() {
  * 房源管理页面
  * 展示房间列表、状态管理和租客信息
  */
-export default async function RoomsPage() {
+export default async function RoomsPage({
+  searchParams,
+}: {
+  searchParams?: RoomsPageSearchParams
+}) {
+  const resolvedSearchParams = await searchParams
+  const initialSearchQuery = normalizeSearchParam(resolvedSearchParams?.search)
+
   // 获取房间数据（包含合同信息）
   const rawRooms = await roomQueries.findAll()
 
@@ -91,7 +109,10 @@ export default async function RoomsPage() {
 
   return (
     <Suspense fallback={<RoomListPageSkeleton />}>
-      <RoomListPage initialRooms={rooms} />
+      <RoomListPage
+        initialRooms={rooms}
+        initialSearchQuery={initialSearchQuery}
+      />
     </Suspense>
   )
 }

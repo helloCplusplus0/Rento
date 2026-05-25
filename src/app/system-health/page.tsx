@@ -5,16 +5,13 @@
 
 import { AuxiliaryPageNotice } from '@/components/layout/AuxiliaryPageNotice'
 import { SystemHealthDashboard } from '@/components/business/SystemHealthDashboard'
-import { AppLayout } from '@/components/layout'
 
 export default function SystemHealthPage() {
   return (
-    <AppLayout>
-      <div className="container mx-auto max-w-7xl px-4 py-6">
-        <AuxiliaryPageNotice path="/system-health" className="mb-6" />
-        <SystemHealthDashboard />
-      </div>
-    </AppLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-6">
+      <AuxiliaryPageNotice path="/system-health" className="mb-6" />
+      <SystemHealthDashboard />
+    </div>
   )
 }
 

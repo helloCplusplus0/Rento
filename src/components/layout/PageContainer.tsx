@@ -39,7 +39,7 @@ export function PageContainer({
     return (
       <div
         className={cn(
-          'flex min-h-screen items-center justify-center bg-gray-50',
+          'flex min-h-app items-center justify-center bg-gray-50',
           className
         )}
       >
@@ -55,7 +55,7 @@ export function PageContainer({
     return (
       <div
         className={cn(
-          'flex min-h-screen items-center justify-center bg-gray-50',
+          'flex min-h-app items-center justify-center bg-gray-50',
           className
         )}
       >
@@ -91,14 +91,14 @@ export function PageContainer({
   }
 
   return (
-    <div className={cn('min-h-screen bg-gray-50', className)}>
+    <div className={cn('min-h-app bg-gray-50', className)}>
       {/* 页面头部 */}
       {(title || showBackButton || actions) && (
-        <div className="sticky top-0 z-40 border-b border-gray-200 bg-white">
+        <div className="sticky top-[var(--page-sticky-top)] z-40 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
           <div className="container-mobile sm:container-tablet lg:container-desktop">
-            <div className="flex h-14 items-center justify-between sm:h-16">
+            <div className="flex min-h-14 flex-col gap-3 py-3 sm:h-16 sm:min-h-0 sm:flex-row sm:items-center sm:justify-between sm:py-0">
               {/* 左侧：返回按钮和标题 */}
-              <div className="flex items-center space-x-3">
+              <div className="flex min-w-0 items-center space-x-3">
                 {showBackButton && (
                   <button
                     onClick={handleBack}
@@ -122,8 +122,8 @@ export function PageContainer({
                 )}
 
                 {title && (
-                  <div>
-                    <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
+                  <div className="min-w-0">
+                    <h1 className="truncate text-lg font-semibold text-gray-900 sm:text-xl">
                       {title}
                     </h1>
                     {subtitle && (
@@ -135,7 +135,9 @@ export function PageContainer({
 
               {/* 右侧：操作按钮 */}
               {actions && (
-                <div className="flex items-center space-x-2">{actions}</div>
+                <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+                  {actions}
+                </div>
               )}
             </div>
           </div>
@@ -143,7 +145,7 @@ export function PageContainer({
       )}
 
       {/* 页面内容 */}
-      <main className="container-mobile sm:container-tablet lg:container-desktop py-4 sm:py-6">
+      <main className="page-safe-bottom container-mobile py-4 sm:container-tablet sm:py-6 lg:container-desktop">
         {children}
       </main>
     </div>
@@ -161,7 +163,7 @@ export function PageContainerSkeleton({
   className?: string
 }) {
   return (
-    <div className={cn('min-h-screen bg-gray-50', className)}>
+    <div className={cn('min-h-app bg-gray-50', className)}>
       {showHeader && (
         <div className="border-b border-gray-200 bg-white">
           <div className="container-mobile sm:container-tablet lg:container-desktop">
@@ -179,7 +181,7 @@ export function PageContainerSkeleton({
         </div>
       )}
 
-      <main className="container-mobile sm:container-tablet lg:container-desktop py-4 sm:py-6">
+      <main className="page-safe-bottom container-mobile py-4 sm:container-tablet sm:py-6 lg:container-desktop">
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="space-y-3 rounded-lg bg-white p-4">

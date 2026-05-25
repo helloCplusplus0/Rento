@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
@@ -126,6 +126,7 @@ interface ContractListPageProps {
   initialStats: ContractStats
   initialExpiryAlerts: ContractExpiryAlert[]
   contractExpiryAlertDays?: number
+  initialSearchQuery?: string
 }
 
 export function ContractListPage({
@@ -133,11 +134,16 @@ export function ContractListPage({
   initialStats,
   initialExpiryAlerts,
   contractExpiryAlertDays = 30,
+  initialSearchQuery = '',
 }: ContractListPageProps) {
   const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setSearchQuery(initialSearchQuery)
+  }, [initialSearchQuery])
 
   // 筛选合同数据
   const filteredContracts = useMemo(() => {

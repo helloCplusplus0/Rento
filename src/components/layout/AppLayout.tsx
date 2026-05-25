@@ -1,54 +1,70 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
-import { DesktopLayout } from './DesktopLayout'
-import { MobileLayout } from './MobileLayout'
+import { UnifiedNavigation } from './UnifiedNavigation'
 
 interface AppLayoutProps {
   children: React.ReactNode
 }
 
+const KEYBOARD_OPEN_THRESHOLD = 120
+
 /**
  * 应用主布局组件
- * 根据屏幕尺寸自动选择移动端或桌面端布局
+ * 统一复用一套布局主线，通过 CSS 断点切换导航位置，避免客户端判屏闪烁。
  */
 export function AppLayout({ children }: AppLayoutProps) {
-  const [isMobile, setIsMobile] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-
   useEffect(() => {
-    // 检测屏幕尺寸
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 1024) // lg 断点
+    const root = document.documentElement
+
+    const syncViewportInsets = () => {
+      const viewport = window.visualViewport
+
+      if (!viewport) {
+        root.style.setProperty('--keyboard-inset-height', '0px')
+        root.dataset.virtualKeyboard = 'closed'
+        return
+      }
+
+      const keyboardInset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop
+      )
+
+      root.style.setProperty('--keyboard-inset-height', `${keyboardInset}px`)
+      root.dataset.virtualKeyboard =
+        keyboardInset > KEYBOARD_OPEN_THRESHOLD ? 'open' : 'closed'
     }
 
-    // 初始检测
-    checkScreenSize()
-    setIsLoading(false)
+    syncViewportInsets()
 
-    // 监听窗口大小变化
-    window.addEventListener('resize', checkScreenSize)
+    window.visualViewport?.addEventListener('resize', syncViewportInsets)
+    window.visualViewport?.addEventListener('scroll', syncViewportInsets)
+    window.addEventListener('resize', syncViewportInsets)
 
     return () => {
-      window.removeEventListener('resize', checkScreenSize)
+      window.visualViewport?.removeEventListener('resize', syncViewportInsets)
+      window.visualViewport?.removeEventListener('scroll', syncViewportInsets)
+      window.removeEventListener('resize', syncViewportInsets)
+      root.style.setProperty('--keyboard-inset-height', '0px')
+      root.dataset.virtualKeyboard = 'closed'
     }
   }, [])
 
-  // 避免服务端渲染和客户端渲染不一致。
-  // phase05-02 先沿用现有客户端判屏方案，不在此任务内扩展到布局重构。
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+  return (
+    <div className="min-h-app bg-gray-50">
+      <div className="hidden lg:block">
+        <UnifiedNavigation variant="desktop" />
       </div>
-    )
-  }
 
-  // 根据屏幕尺寸选择布局
-  return isMobile ? (
-    <MobileLayout>{children}</MobileLayout>
-  ) : (
-    <DesktopLayout>{children}</DesktopLayout>
+      <div className="lg:hidden">
+        <UnifiedNavigation variant="mobile" />
+      </div>
+
+      <main className="min-h-app pt-0 pb-[var(--mobile-bottom-offset)] lg:pt-16 lg:pb-0">
+        <div className="lg:mx-auto lg:max-w-7xl lg:px-8">{children}</div>
+      </main>
+    </div>
   )
 }

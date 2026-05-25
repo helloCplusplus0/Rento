@@ -1,4 +1,3 @@
-import { AppLayout } from '@/components/layout'
 import { DashboardPageWithStats } from '@/components/pages/DashboardPageWithStats'
 
 /**
@@ -6,9 +5,5 @@ import { DashboardPageWithStats } from '@/components/pages/DashboardPageWithStat
  * 展示增强的仪表板内容，包含统计卡片
  */
 export default function HomePage() {
-  return (
-    <AppLayout>
-      <DashboardPageWithStats />
-    </AppLayout>
-  )
+  return <DashboardPageWithStats />
 }

@@ -412,7 +412,7 @@ export function ContractForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-6">
       {/* 错误提示 */}
       {error && (
         <SimpleErrorAlert
@@ -510,7 +510,7 @@ export function ContractForm({
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <Label
                         htmlFor={`meter-${meter.id}`}
                         className="text-sm font-medium"
@@ -530,7 +530,7 @@ export function ContractForm({
                         disabled={loading}
                         min="0"
                         step="0.01"
-                        className="w-32"
+                        className="w-full sm:w-32"
                         placeholder="0"
                       />
                       <span className="text-sm text-gray-500">
@@ -850,18 +850,20 @@ export function ContractForm({
       </Card>
 
       {/* 操作按钮 */}
-      <div className="flex justify-end space-x-4">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={loading}
+          className="w-full sm:w-auto"
         >
           取消
         </Button>
         <Button
           type="submit"
           disabled={loading || !selectedRenter || !selectedRoom}
+          className="w-full sm:w-auto"
         >
           {loading ? '处理中...' : mode === 'create' ? '创建合同' : '保存修改'}
         </Button>

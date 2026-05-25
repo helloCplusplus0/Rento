@@ -425,7 +425,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         className
       )}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
           提醒
           <div className="h-2 w-2 rounded-full bg-orange-500"></div>
@@ -451,6 +451,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
             onClick={() => handleAlertClick(alert.type)}
             className={cn(
               'rounded-lg p-3 text-center transition-all hover:shadow-md',
+              'min-h-[88px]',
               selectedAlert === alert.type
                 ? 'bg-blue-50 ring-2 ring-blue-500'
                 : 'hover:bg-gray-50'
@@ -471,7 +472,9 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
             >
               {alert.count}
             </div>
-            <div className="text-xs text-gray-600">{alert.title}</div>
+            <div className="line-clamp-2 text-xs text-gray-600">
+              {alert.title}
+            </div>
           </button>
         ))}
       </div>
@@ -479,10 +482,12 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
       {/* 详细信息展示区域 */}
       {selectedAlert && (
         <div className="border-t border-gray-100 pt-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h4 className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <h4 className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-700">
               {getAlertIcon(selectedAlert)}
-              {alerts.find((a) => a.type === selectedAlert)?.title}详情
+              <span className="break-words">
+                {alerts.find((a) => a.type === selectedAlert)?.title}详情
+              </span>
             </h4>
             <Button
               variant="ghost"
@@ -519,22 +524,20 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
                   onClick={detail.onAction}
                 >
                   <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">
                           {detail.title}
                         </div>
-                        <div className="mt-1 text-xs text-gray-600">
+                        <div className="mt-1 break-words text-xs text-gray-600">
                           {detail.description}
                         </div>
                       </div>
 
                       {detail.onAction && (
-                        <div className="ml-2 flex items-center gap-1 text-xs text-gray-400">
+                        <div className="flex items-center gap-1 text-xs text-gray-400 sm:ml-2">
                           <Eye className="h-3 w-3" />
-                          <span className="hidden sm:inline">
-                            {detail.actionText}
-                          </span>
+                          <span>{detail.actionText}</span>
                         </div>
                       )}
                     </div>

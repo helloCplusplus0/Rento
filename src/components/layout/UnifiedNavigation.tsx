@@ -143,8 +143,11 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
 
     return (
       <>
-        <nav className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white">
-          <div className="flex h-16 items-center justify-around px-2">
+        <nav
+          aria-label="移动端底部导航"
+          className="mobile-bottom-nav fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90"
+        >
+          <div className="flex h-[var(--mobile-nav-total-height)] items-start justify-around px-2 pb-[var(--safe-area-inset-bottom)]">
             {mobileItems.map((item) => {
               const isActive = isActiveRoute(pathname, item.href)
               const IconComponent = iconMap[item.id as keyof typeof iconMap]
@@ -155,7 +158,7 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
                   href={item.href}
                   prefetch={true}
                   className={cn(
-                    'flex min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-lg px-2 py-1 transition-colors',
+                    'flex h-[var(--nav-height-mobile)] min-h-[44px] min-w-[52px] flex-1 flex-col items-center justify-center rounded-lg px-2 py-1 transition-colors',
                     'hover:bg-gray-100 active:bg-gray-200',
                     isActive
                       ? 'text-blue-600'
@@ -173,7 +176,7 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
                   </div>
                   <span
                     className={cn(
-                      'mt-1 text-xs font-medium',
+                      'mt-1 line-clamp-1 text-xs font-medium',
                       isActive ? 'text-blue-600' : 'text-gray-600'
                     )}
                   >
@@ -183,9 +186,6 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
               )
             })}
           </div>
-
-          {/* 安全区域适配 */}
-          <div className="h-[env(safe-area-inset-bottom)] bg-white"></div>
         </nav>
 
         {/* 用户资料抽屉 */}

@@ -694,7 +694,7 @@ export function EnhancedContractDetail({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-4 text-center sm:grid-cols-3 sm:gap-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-gray-900">
                     {formatCurrency(billStats.totalAmount)}
@@ -733,16 +733,16 @@ export function EnhancedContractDetail({
                   {sortedBills.map((bill) => (
                     <div
                       key={bill.id}
-                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors hover:bg-gray-50"
+                      className="flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
                       onClick={() => handleBillClick(bill.id)}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex min-w-0 items-center gap-4">
                         <div className="flex-shrink-0">
                           <BillStatusBadge status={bill.status as BillStatus} />
                         </div>
-                        <div>
-                          <p className="font-medium">{bill.billNumber}</p>
-                          <p className="text-sm text-gray-600">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{bill.billNumber}</p>
+                          <p className="break-words text-sm text-gray-600">
                             {getBillTypeText(bill.type)} · 到期日:{' '}
                             {formatDate(bill.dueDate)}
                           </p>
@@ -753,8 +753,8 @@ export function EnhancedContractDetail({
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-right">
-                        <div>
+                      <div className="flex w-full items-center justify-between gap-2 text-right sm:w-auto sm:justify-end">
+                        <div className="min-w-0">
                           <p className="font-medium">
                             {formatCurrency(bill.amount)}
                           </p>

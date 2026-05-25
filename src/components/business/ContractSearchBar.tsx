@@ -28,7 +28,7 @@ export function ContractSearchBar({
           placeholder="搜索合同号、租客姓名、房间号..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
+          className="h-11 pl-10 text-base"
           disabled={loading}
         />
       </div>
@@ -41,7 +41,7 @@ export function ContractSearchBar({
           onChange={(e) =>
             onStatusChange(e.target.value === 'all' ? null : e.target.value)
           }
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 w-full rounded-md border px-3 py-2 text-base file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           disabled={loading}
         >
           <option value="all">全部状态</option>

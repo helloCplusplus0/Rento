@@ -78,9 +78,21 @@
 
   /* 响应式布局系统变量 */
   --nav-height-mobile: 64px;
-  --nav-height-desktop: 72px;
-  --safe-area-inset-top: env(safe-area-inset-top);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --nav-height-desktop: 64px;
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --keyboard-inset-height: 0px;
+  --mobile-nav-total-height: calc(
+    var(--nav-height-mobile) + var(--safe-area-inset-bottom)
+  );
+  --mobile-bottom-offset: var(--mobile-nav-total-height);
+  --mobile-interactive-offset: max(
+    var(--mobile-bottom-offset),
+    var(--keyboard-inset-height)
+  );
+  --page-sticky-top: 0px;
   --container-padding-mobile: 16px;
   --container-padding-tablet: 24px;
   --container-padding-desktop: 32px;
@@ -121,16 +133,55 @@
 }
 
 @layer base {
+  html {
+    height: 100%;
+    overflow-x: hidden;
+    scroll-padding-top: calc(var(--page-sticky-top) + 1rem);
+    scroll-padding-bottom: calc(var(--mobile-interactive-offset) + 1rem);
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  :where(input, select, textarea, [contenteditable='true']) {
+    scroll-margin-top: calc(var(--page-sticky-top) + 1rem);
+    scroll-margin-bottom: calc(var(--mobile-interactive-offset) + 1rem);
+  }
+
+  @media (max-width: 1023px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --mobile-bottom-offset: 0px;
+      --mobile-interactive-offset: 0px;
+      --page-sticky-top: var(--nav-height-desktop);
+    }
   }
 }
 
 /* 响应式布局工具类 */
 @layer utilities {
+  .min-h-app {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   .container-mobile {
     width: 100%;
     padding-left: var(--container-padding-mobile);
@@ -171,5 +222,24 @@
     height: calc(
       100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom)
     );
+  }
+
+  .mobile-scroll-area {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-safe-bottom {
+    padding-bottom: calc(1rem + var(--mobile-interactive-offset));
+  }
+
+  .mobile-bottom-nav {
+    transition: transform 200ms ease;
+  }
+
+  :root[data-virtual-keyboard='open'] .mobile-bottom-nav {
+    transform: translateY(calc(100% + var(--safe-area-inset-bottom)));
   }
 }

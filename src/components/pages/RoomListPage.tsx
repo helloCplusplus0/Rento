@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Building, Search, X } from 'lucide-react'
 
@@ -13,6 +13,7 @@ import { PageContainer } from '@/components/layout'
 
 interface RoomListPageProps {
   initialRooms: RoomWithBuildingForClient[]
+  initialSearchQuery?: string
 }
 
 /**
@@ -36,18 +37,18 @@ function RoomSearchBar({
       <div className="relative">
         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
         <Input
-          type="text"
+          type="search"
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="pr-10 pl-10"
+          className="h-11 pr-10 pl-10 text-base"
         />
         {value && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onChange('')}
-            className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 transform p-0"
+            className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 transform p-0"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -122,12 +123,19 @@ function BuildingFilter({
  * 房间列表页面组件
  * 实现楼栋-楼层-房间层级展示，支持状态筛选和搜索
  */
-export function RoomListPage({ initialRooms }: RoomListPageProps) {
+export function RoomListPage({
+  initialRooms,
+  initialSearchQuery = '',
+}: RoomListPageProps) {
   const router = useRouter()
   // 状态管理
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
+
+  useEffect(() => {
+    setSearchQuery(initialSearchQuery)
+  }, [initialSearchQuery])
 
   // 数据过滤
   const filteredRooms = useMemo(() => {

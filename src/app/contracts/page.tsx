@@ -4,6 +4,17 @@ import { globalSettings } from '@/lib/global-settings'
 import { contractQueries } from '@/lib/queries'
 import { ContractListPage } from '@/components/pages/ContractListPage'
 
+type ContractsPageSearchParams = Promise<{
+  search?: string | string[] | undefined
+}>
+
+function normalizeSearchParam(
+  search: string | string[] | undefined
+): string {
+  const value = Array.isArray(search) ? search[0] : search
+  return value?.trim() || ''
+}
+
 // 禁用静态生成，强制使用服务端渲染
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +23,14 @@ export const metadata: Metadata = {
   description: '管理租赁合同信息，跟踪合同状态和到期提醒',
 }
 
-export default async function ContractsPage() {
+export default async function ContractsPage({
+  searchParams,
+}: {
+  searchParams?: ContractsPageSearchParams
+}) {
+  const resolvedSearchParams = await searchParams
+  const initialSearchQuery = normalizeSearchParam(resolvedSearchParams?.search)
+
   try {
     // 获取合同数据和统计信息
     const [contracts, stats, expiryAlerts, contractAlertSettingsLoadResult] =
@@ -57,6 +75,7 @@ export default async function ContractsPage() {
         initialStats={stats}
         initialExpiryAlerts={expiryAlerts}
         contractExpiryAlertDays={contractExpiryAlertDays}
+        initialSearchQuery={initialSearchQuery}
       />
     )
   } catch (error) {
@@ -80,6 +99,7 @@ export default async function ContractsPage() {
         }}
         initialExpiryAlerts={[]}
         contractExpiryAlertDays={30}
+        initialSearchQuery={initialSearchQuery}
       />
     )
   }
