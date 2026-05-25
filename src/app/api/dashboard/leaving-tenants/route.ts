@@ -4,22 +4,32 @@ import {
   createSuccessResponse,
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
+import {
+  createContractExpiryAlertDeadline,
+  formatContractExpiryAlertTitle,
+} from '@/lib/contract-alert-semantics'
 import { ErrorType } from '@/lib/error-logger'
+import { globalSettings } from '@/lib/global-settings'
 import { prisma } from '@/lib/prisma'
 
 /**
- * 获取30天内离店的租客信息
+ * 获取统一提醒窗口内离店的租客信息
  */
 async function handleGetLeavingTenants(_request: NextRequest) {
-  const thirtyDaysFromNow = new Date()
-  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+  const contractAlertSettingsLoadResult =
+    await globalSettings.getContractAlertSettings()
+  const contractExpiryAlertDays =
+    contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+  const expiryAlertDeadline = createContractExpiryAlertDeadline(
+    contractExpiryAlertDays
+  )
 
   const contracts = await prisma.contract.findMany({
     where: {
       status: 'ACTIVE',
       endDate: {
         gte: new Date(),
-        lte: thirtyDaysFromNow,
+        lte: expiryAlertDeadline,
       },
     },
     include: {
@@ -64,6 +74,8 @@ async function handleGetLeavingTenants(_request: NextRequest) {
   return createSuccessResponse({
     contracts: contractsData,
     total: contracts.length,
+    alertDays: contractExpiryAlertDays,
+    title: formatContractExpiryAlertTitle(contractExpiryAlertDays),
   })
 }
 

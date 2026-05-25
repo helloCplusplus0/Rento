@@ -85,6 +85,8 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
             : { data: { total: 0 } },
         ])
 
+      const leavingTenantsTitle = leavingTenants.data?.title || '离店提醒'
+
       const dynamicAlerts: AlertItem[] = [
         {
           id: 'room_check',
@@ -96,7 +98,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         {
           id: 'lease_expiry',
           type: 'lease_expiry',
-          title: '30天离店',
+          title: leavingTenantsTitle,
           count: leavingTenants.data?.total || 0,
           color: (leavingTenants.data?.total || 0) > 0 ? 'orange' : 'gray',
         },
@@ -131,7 +133,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         {
           id: 'lease_expiry',
           type: 'lease_expiry',
-          title: '30天离店',
+          title: '离店提醒',
           count: 0,
           color: 'gray',
         },
@@ -210,7 +212,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     )
   }
 
-  // 获取30天离店详情
+  // 获取统一提醒窗口内的离店详情
   const fetchLeavingTenantDetails = async (): Promise<AlertDetail[]> => {
     const response = await fetch('/api/dashboard/leaving-tenants')
     if (!response.ok) throw new Error('获取离店数据失败')

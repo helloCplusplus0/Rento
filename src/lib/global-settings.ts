@@ -1,3 +1,7 @@
+import {
+  DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  sanitizeContractExpiryAlertDays,
+} from '@/lib/contract-alert-semantics'
 import { prisma } from '@/lib/prisma'
 
 /**
@@ -16,6 +20,58 @@ export interface SettingValue {
   type: SettingType
   category: SettingCategory
   description?: string
+}
+
+export interface ReadingSettings {
+  usageAnomalyThreshold: number
+  autoGenerateBills: boolean
+  requireReadingApproval: boolean
+}
+
+export interface ReadingSettingsLoadResult {
+  settings: ReadingSettings
+  fallbackKeys: Array<keyof ReadingSettings>
+  source: 'database' | 'mixed-fallback' | 'default-fallback'
+}
+
+export interface ContractDefaultSettings {
+  defaultRentCycle: string
+  defaultPaymentTiming: string
+  defaultDepositMonths: number
+  autoGenerateContractBills: boolean
+}
+
+export interface ContractDefaultSettingsLoadResult {
+  settings: ContractDefaultSettings
+  fallbackKeys: Array<keyof ContractDefaultSettings>
+  source: 'database' | 'mixed-fallback' | 'default-fallback'
+}
+
+export interface ContractAlertSettings {
+  contractExpiryAlertDays: number
+}
+
+export interface ContractAlertSettingsLoadResult {
+  settings: ContractAlertSettings
+  fallbackKeys: Array<keyof ContractAlertSettings>
+  source: 'database' | 'mixed-fallback' | 'default-fallback'
+}
+
+export const DEFAULT_READING_SETTINGS: ReadingSettings = {
+  usageAnomalyThreshold: 3.0,
+  autoGenerateBills: true,
+  requireReadingApproval: false,
+}
+
+export const DEFAULT_CONTRACT_DEFAULT_SETTINGS: ContractDefaultSettings = {
+  defaultRentCycle: 'monthly',
+  defaultPaymentTiming: '每月1号前',
+  defaultDepositMonths: 2,
+  autoGenerateContractBills: true,
+}
+
+export const DEFAULT_CONTRACT_ALERT_SETTINGS: ContractAlertSettings = {
+  contractExpiryAlertDays: DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
 }
 
 // 默认设置配置
@@ -49,6 +105,27 @@ export const DEFAULT_SETTINGS: SettingValue[] = [
     category: 'billing',
     description: '默认租金周期',
   },
+  {
+    key: 'defaultPaymentTiming',
+    value: '每月1号前',
+    type: 'string',
+    category: 'billing',
+    description: '默认付款时间',
+  },
+  {
+    key: 'defaultDepositMonths',
+    value: 2,
+    type: 'number',
+    category: 'billing',
+    description: '默认押金月数',
+  },
+  {
+    key: 'autoGenerateContractBills',
+    value: true,
+    type: 'boolean',
+    category: 'billing',
+    description: '创建合同后默认自动生成账单',
+  },
 
   // 系统设置
   {
@@ -80,6 +157,13 @@ export const DEFAULT_SETTINGS: SettingValue[] = [
     type: 'number',
     category: 'notification',
     description: '提醒天数',
+  },
+  {
+    key: 'contractExpiryAlertDays',
+    value: DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+    type: 'number',
+    category: 'notification',
+    description: '合同到期提醒窗口天数',
   },
 
   // 抄表设置
@@ -337,6 +421,9 @@ export class GlobalSettingsManager {
     waterPrice: number
     gasPrice: number
     defaultRentCycle: string
+    defaultPaymentTiming: string
+    defaultDepositMonths: number
+    autoGenerateContractBills: boolean
   }> {
     const settings = await this.getSettingsByCategory('billing')
 
@@ -345,6 +432,262 @@ export class GlobalSettingsManager {
       waterPrice: settings.waterPrice || 3.5,
       gasPrice: settings.gasPrice || 2.5,
       defaultRentCycle: settings.defaultRentCycle || 'monthly',
+      defaultPaymentTiming:
+        settings.defaultPaymentTiming || '每月1号前',
+      defaultDepositMonths:
+        typeof settings.defaultDepositMonths === 'number'
+          ? settings.defaultDepositMonths
+          : 2,
+      autoGenerateContractBills:
+        typeof settings.autoGenerateContractBills === 'boolean'
+          ? settings.autoGenerateContractBills
+          : true,
+    }
+  }
+
+  /**
+   * 获取合同创建默认配置，并对缺失或异常值做受控回退
+   */
+  static async getContractDefaultSettings(): Promise<ContractDefaultSettingsLoadResult> {
+    const settings: ContractDefaultSettings = {
+      ...DEFAULT_CONTRACT_DEFAULT_SETTINGS,
+    }
+    const fallbackKeys = new Set<keyof ContractDefaultSettings>([
+      'defaultRentCycle',
+      'defaultPaymentTiming',
+      'defaultDepositMonths',
+      'autoGenerateContractBills',
+    ])
+
+    try {
+      const contractSettings = await prisma.globalSetting.findMany({
+        where: {
+          key: {
+            in: [
+              'defaultRentCycle',
+              'defaultPaymentTiming',
+              'defaultDepositMonths',
+              'autoGenerateContractBills',
+            ],
+          },
+        },
+        select: {
+          key: true,
+          value: true,
+        },
+      })
+
+      for (const item of contractSettings) {
+        try {
+          const parsedValue = JSON.parse(item.value)
+
+          switch (item.key) {
+            case 'defaultRentCycle':
+              if (typeof parsedValue === 'string' && parsedValue.trim()) {
+                settings.defaultRentCycle = parsedValue
+                fallbackKeys.delete('defaultRentCycle')
+              }
+              break
+            case 'defaultPaymentTiming':
+              if (typeof parsedValue === 'string' && parsedValue.trim()) {
+                settings.defaultPaymentTiming = parsedValue
+                fallbackKeys.delete('defaultPaymentTiming')
+              }
+              break
+            case 'defaultDepositMonths':
+              if (
+                typeof parsedValue === 'number' &&
+                Number.isFinite(parsedValue) &&
+                parsedValue >= 0
+              ) {
+                settings.defaultDepositMonths = parsedValue
+                fallbackKeys.delete('defaultDepositMonths')
+              }
+              break
+            case 'autoGenerateContractBills':
+              if (typeof parsedValue === 'boolean') {
+                settings.autoGenerateContractBills = parsedValue
+                fallbackKeys.delete('autoGenerateContractBills')
+              }
+              break
+          }
+        } catch (error) {
+          console.error(`[全局设置] 解析合同默认配置失败: ${item.key}`, error)
+        }
+      }
+
+      const fallbackKeyList = Array.from(fallbackKeys)
+
+      return {
+        settings,
+        fallbackKeys: fallbackKeyList,
+        source:
+          fallbackKeyList.length === 0
+            ? 'database'
+            : fallbackKeyList.length === 4
+              ? 'default-fallback'
+              : 'mixed-fallback',
+      }
+    } catch (error) {
+      console.error('[全局设置] 获取合同默认配置失败，已回退默认值', error)
+
+      return {
+        settings,
+        fallbackKeys: [
+          'defaultRentCycle',
+          'defaultPaymentTiming',
+          'defaultDepositMonths',
+          'autoGenerateContractBills',
+        ],
+        source: 'default-fallback',
+      }
+    }
+  }
+
+  /**
+   * 获取合同到期提醒相关设置，并对缺失或异常值做受控回退
+   */
+  static async getContractAlertSettings(): Promise<ContractAlertSettingsLoadResult> {
+    const settings: ContractAlertSettings = { ...DEFAULT_CONTRACT_ALERT_SETTINGS }
+    const fallbackKeys = new Set<keyof ContractAlertSettings>([
+      'contractExpiryAlertDays',
+    ])
+
+    try {
+      const contractAlertSettings = await prisma.globalSetting.findMany({
+        where: {
+          key: {
+            in: ['contractExpiryAlertDays'],
+          },
+        },
+        select: {
+          key: true,
+          value: true,
+        },
+      })
+
+      for (const item of contractAlertSettings) {
+        try {
+          const parsedValue = JSON.parse(item.value)
+
+          if (item.key === 'contractExpiryAlertDays') {
+            settings.contractExpiryAlertDays =
+              sanitizeContractExpiryAlertDays(parsedValue)
+            fallbackKeys.delete('contractExpiryAlertDays')
+          }
+        } catch (error) {
+          console.error(`[全局设置] 解析合同提醒配置失败: ${item.key}`, error)
+        }
+      }
+
+      const fallbackKeyList = Array.from(fallbackKeys)
+
+      return {
+        settings,
+        fallbackKeys: fallbackKeyList,
+        source:
+          fallbackKeyList.length === 0
+            ? 'database'
+            : fallbackKeyList.length === 1
+              ? 'default-fallback'
+              : 'mixed-fallback',
+      }
+    } catch (error) {
+      console.error('[全局设置] 获取合同提醒配置失败，已回退默认值', error)
+
+      return {
+        settings,
+        fallbackKeys: ['contractExpiryAlertDays'],
+        source: 'default-fallback',
+      }
+    }
+  }
+
+  /**
+   * 获取抄表相关设置，并对缺失或异常值做受控回退
+   */
+  static async getReadingSettings(): Promise<ReadingSettingsLoadResult> {
+    const settings: ReadingSettings = { ...DEFAULT_READING_SETTINGS }
+    const fallbackKeys = new Set<keyof ReadingSettings>([
+      'usageAnomalyThreshold',
+      'autoGenerateBills',
+      'requireReadingApproval',
+    ])
+
+    try {
+      const readingSettings = await prisma.globalSetting.findMany({
+        where: {
+          key: {
+            in: [
+              'usageAnomalyThreshold',
+              'autoGenerateBills',
+              'requireReadingApproval',
+            ],
+          },
+        },
+        select: {
+          key: true,
+          value: true,
+        },
+      })
+
+      for (const item of readingSettings) {
+        try {
+          const parsedValue = JSON.parse(item.value)
+
+          switch (item.key) {
+            case 'usageAnomalyThreshold':
+              if (
+                typeof parsedValue === 'number' &&
+                Number.isFinite(parsedValue) &&
+                parsedValue > 0
+              ) {
+                settings.usageAnomalyThreshold = parsedValue
+                fallbackKeys.delete('usageAnomalyThreshold')
+              }
+              break
+            case 'autoGenerateBills':
+              if (typeof parsedValue === 'boolean') {
+                settings.autoGenerateBills = parsedValue
+                fallbackKeys.delete('autoGenerateBills')
+              }
+              break
+            case 'requireReadingApproval':
+              if (typeof parsedValue === 'boolean') {
+                settings.requireReadingApproval = parsedValue
+                fallbackKeys.delete('requireReadingApproval')
+              }
+              break
+          }
+        } catch (error) {
+          console.error(`[全局设置] 解析抄表设置失败: ${item.key}`, error)
+        }
+      }
+
+      const fallbackKeyList = Array.from(fallbackKeys)
+
+      return {
+        settings,
+        fallbackKeys: fallbackKeyList,
+        source:
+          fallbackKeyList.length === 0
+            ? 'database'
+            : fallbackKeyList.length === 3
+              ? 'default-fallback'
+              : 'mixed-fallback',
+      }
+    } catch (error) {
+      console.error('[全局设置] 获取抄表设置失败，已回退默认值', error)
+
+      return {
+        settings,
+        fallbackKeys: [
+          'usageAnomalyThreshold',
+          'autoGenerateBills',
+          'requireReadingApproval',
+        ],
+        source: 'default-fallback',
+      }
     }
   }
 }

@@ -5,7 +5,9 @@ import type {
   RoomStatus,
 } from '@prisma/client'
 
+import { createContractExpiryAlertDeadline } from './contract-alert-semantics'
 import { createBillStatusCountMap, sortBillsForDisplay } from './bill-semantics'
+import { globalSettings } from './global-settings'
 import { prisma } from './prisma'
 
 function createRestrictedDeleteError(entityName: string, suggestion: string) {
@@ -817,6 +819,14 @@ export const contractQueries = {
 
   // 获取合同统计
   getContractStats: async () => {
+    const contractAlertSettingsLoadResult =
+      await globalSettings.getContractAlertSettings()
+    const contractExpiryAlertDays =
+      contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+    const expiryAlertDeadline = createContractExpiryAlertDeadline(
+      contractExpiryAlertDays
+    )
+
     const [total, active, expired, terminated, expiringSoon, newThisMonth] =
       await Promise.all([
         prisma.contract.count(),
@@ -828,7 +838,7 @@ export const contractQueries = {
             status: 'ACTIVE',
             endDate: {
               gte: new Date(),
-              lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              lte: expiryAlertDeadline,
             },
           },
         }),
@@ -861,15 +871,23 @@ export const contractQueries = {
 
   // 获取到期提醒
   getExpiryAlerts: async () => {
+    const contractAlertSettingsLoadResult =
+      await globalSettings.getContractAlertSettings()
+    const contractExpiryAlertDays =
+      contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+    const expiryAlertDeadline = createContractExpiryAlertDeadline(
+      contractExpiryAlertDays
+    )
+
     const contracts = await prisma.contract.findMany({
       where: {
         OR: [
-          // 30天内到期的活跃合同
+          // 统一提醒窗口内到期的活跃合同
           {
             status: 'ACTIVE',
             endDate: {
               gte: new Date(),
-              lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              lte: expiryAlertDeadline,
             },
           },
           // 已到期但未处理的合同

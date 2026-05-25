@@ -1,0 +1,14 @@
+- [x] 设置页中保留的业务配置项都能在真实业务主链中找到明确消费点
+- [x] `gasPrice` 已在设置页与设置类型中暴露，并可维护
+- [x] 抄表服务端主链不再依赖 `usageAnomalyThreshold`、`autoGenerateBills`、`requireReadingApproval` 的硬编码默认值
+- [x] 抄表服务端读取数据库全局设置失败时仍有可控回退路径
+- [x] 治理入口、业务配置和只读信息在设置页中有清晰分层
+- [x] 未接线配置项不再以“已生效全局配置”姿态展示给用户
+- [x] `npm run lint` 通过
+- [x] `npm run type-check` 通过
+- [x] `contractExpiryAlertDays` 已在设置页与设置类型中暴露，并可维护
+- [x] 合同列表“即将到期”筛选、合同统计与合同详情提醒使用统一的 `contractExpiryAlertDays`
+- [x] Dashboard 离店提醒查询窗口与展示文案使用统一的 `contractExpiryAlertDays`
+- [x] `billReminderDays` 未在缺少真实消费点的前提下被误开放为正式业务配置
+- [x] 第二批改动完成后再次通过 `npm run lint`
+- [x] 第二批改动完成后再次通过 `npm run type-check`

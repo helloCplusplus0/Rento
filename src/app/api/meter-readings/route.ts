@@ -11,16 +11,8 @@ import {
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { globalSettings } from '@/lib/global-settings'
 import { meterReadingQueries } from '@/lib/queries'
-
-// 服务端默认设置 - 避免客户端localStorage依赖
-const getServerSettings = () => ({
-  electricityPrice: 0.6,
-  waterPrice: 3.5,
-  usageAnomalyThreshold: 3.0,
-  autoGenerateBills: true,
-  requireReadingApproval: false,
-})
 
 function resolveReadingDate(
   readingDate: string | Date | undefined,
@@ -184,11 +176,18 @@ async function handlePostMeterReadings(request: NextRequest) {
     throw new Error('请提供有效的抄表数据数组')
   }
 
-  const settings = getServerSettings()
+  const readingSettingsLoadResult = await globalSettings.getReadingSettings()
+  const settings = readingSettingsLoadResult.settings
   const results = []
   const warnings = []
   const errors = []
   const fallbackReadingDate = new Date()
+
+  if (readingSettingsLoadResult.source !== 'database') {
+    warnings.push({
+      warning: `抄表全局设置读取未完全命中数据库，已回退默认值: ${readingSettingsLoadResult.fallbackKeys.join(', ')}`,
+    })
+  }
 
   // 处理每个抄表记录
   for (const readingData of readings) {

@@ -30,6 +30,10 @@ import {
   buildBillPresentationStats,
   sortBillsForDisplay,
 } from '@/lib/bill-semantics'
+import {
+  calculateDaysUntilContractExpiry,
+  isContractExpiringSoon,
+} from '@/lib/contract-alert-semantics'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -50,6 +54,7 @@ interface EnhancedContractDetailProps {
   onViewPDF?: () => void
   onActivate?: () => void // 新增激活回调
   onMeterReading?: () => void // 新增抄表回调
+  contractExpiryAlertDays?: number
   className?: string
 }
 
@@ -66,6 +71,7 @@ export function EnhancedContractDetail({
   onViewPDF,
   onActivate, // 新增激活回调
   onMeterReading, // 新增抄表回调
+  contractExpiryAlertDays = 30,
   className,
 }: EnhancedContractDetailProps) {
   const [activeTab, setActiveTab] = useState<
@@ -75,10 +81,11 @@ export function EnhancedContractDetail({
 
   const isActive = contract.status === 'ACTIVE'
   const isExpired = contract.status === 'EXPIRED'
-  const daysUntilExpiry = Math.ceil(
-    (new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  const daysUntilExpiry = calculateDaysUntilContractExpiry(contract.endDate)
+  const isExpiringSoon = isContractExpiringSoon(
+    contract.endDate,
+    contractExpiryAlertDays
   )
-  const isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0
   const contractBills = contract.bills ?? []
 
   // 处理租客信息卡片点击

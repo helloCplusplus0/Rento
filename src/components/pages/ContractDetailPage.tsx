@@ -10,9 +10,13 @@ import type { ContractWithDetailsForClient } from '@/types/database'
 
 interface ContractDetailPageProps {
   contract: ContractWithDetailsForClient
+  contractExpiryAlertDays?: number
 }
 
-export function ContractDetailPage({ contract }: ContractDetailPageProps) {
+export function ContractDetailPage({
+  contract,
+  contractExpiryAlertDays = 30,
+}: ContractDetailPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [showMeterReadingModal, setShowMeterReadingModal] = useState(false)
@@ -153,6 +157,7 @@ export function ContractDetailPage({ contract }: ContractDetailPageProps) {
       <div className="pb-6">
         <EnhancedContractDetail
           contract={contract}
+          contractExpiryAlertDays={contractExpiryAlertDays}
           onEdit={handleEdit}
           onRenew={handleRenew}
           onTerminate={handleCheckout}

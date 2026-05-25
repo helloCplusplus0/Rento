@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
+import { isContractExpiringSoon } from '@/lib/contract-alert-semantics'
 import type { ContractWithDetails } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { ContractExpiryAlert } from '@/components/business/ContractExpiryAlert'
@@ -124,12 +125,14 @@ interface ContractListPageProps {
   initialContracts: ContractWithDetailsForClient[]
   initialStats: ContractStats
   initialExpiryAlerts: ContractExpiryAlert[]
+  contractExpiryAlertDays?: number
 }
 
 export function ContractListPage({
   initialContracts,
   initialStats,
   initialExpiryAlerts,
+  contractExpiryAlertDays = 30,
 }: ContractListPageProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
@@ -155,13 +158,9 @@ export function ContractListPage({
       // 状态筛选
       if (statusFilter && statusFilter !== 'all') {
         if (statusFilter === 'expiring_soon') {
-          const daysUntilExpiry = Math.ceil(
-            (contract.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-          )
           return (
             contract.status === 'ACTIVE' &&
-            daysUntilExpiry <= 30 &&
-            daysUntilExpiry > 0
+            isContractExpiringSoon(contract.endDate, contractExpiryAlertDays)
           )
         } else {
           return contract.status === statusFilter
@@ -170,7 +169,7 @@ export function ContractListPage({
 
       return true
     })
-  }, [initialContracts, searchQuery, statusFilter])
+  }, [contractExpiryAlertDays, initialContracts, searchQuery, statusFilter])
 
   // 处理合同点击
   const handleContractClick = (contract: ContractWithDetailsForClient) => {

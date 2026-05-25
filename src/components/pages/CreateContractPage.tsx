@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { useSettings } from '@/hooks/useSettings'
 import type {
   RenterWithContractsForClient,
   RoomWithBuildingForClient,
@@ -28,6 +29,7 @@ export function CreateContractPage({
   preselectedRenterId,
 }: CreateContractPageProps) {
   const router = useRouter()
+  const { settings, isLoading: settingsLoading } = useSettings()
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState('')
 
@@ -51,7 +53,7 @@ export function CreateContractPage({
         },
         body: JSON.stringify({
           ...contractData,
-          generateBills: true, // 自动生成账单
+          generateBills: settings.autoGenerateContractBills,
         }),
         signal: controller.signal,
       })
@@ -131,6 +133,12 @@ export function CreateContractPage({
   return (
     <PageContainer title="创建合同" showBackButton>
       <div className="pb-6">
+        {settingsLoading && (
+          <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+            正在加载合同默认配置...
+          </div>
+        )}
+
         {/* 进度提示 */}
         {loading && progress && (
           <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
@@ -150,6 +158,11 @@ export function CreateContractPage({
           onCancel={handleCancel}
           loading={loading}
           mode="create"
+          contractDefaults={{
+            defaultRentCycle: settings.defaultRentCycle,
+            defaultPaymentTiming: settings.defaultPaymentTiming,
+            defaultDepositMonths: settings.defaultDepositMonths,
+          }}
         />
       </div>
     </PageContainer>

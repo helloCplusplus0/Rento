@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { globalSettings } from '@/lib/global-settings'
 import { contractQueries } from '@/lib/queries'
 import { ContractListPage } from '@/components/pages/ContractListPage'
 
@@ -14,11 +15,16 @@ export const metadata: Metadata = {
 export default async function ContractsPage() {
   try {
     // 获取合同数据和统计信息
-    const [contracts, stats, expiryAlerts] = await Promise.all([
+    const [contracts, stats, expiryAlerts, contractAlertSettingsLoadResult] =
+      await Promise.all([
       contractQueries.findAll(),
       contractQueries.getContractStats(),
       contractQueries.getExpiryAlerts(),
-    ])
+        globalSettings.getContractAlertSettings(),
+      ])
+
+    const contractExpiryAlertDays =
+      contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
 
     // 转换数据类型
     const contractsData = contracts.map((contract) => ({
@@ -50,6 +56,7 @@ export default async function ContractsPage() {
         initialContracts={contractsData}
         initialStats={stats}
         initialExpiryAlerts={expiryAlerts}
+        contractExpiryAlertDays={contractExpiryAlertDays}
       />
     )
   } catch (error) {
@@ -72,6 +79,7 @@ export default async function ContractsPage() {
           },
         }}
         initialExpiryAlerts={[]}
+        contractExpiryAlertDays={30}
       />
     )
   }

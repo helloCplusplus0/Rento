@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { globalSettings } from '@/lib/global-settings'
 import { contractQueries } from '@/lib/queries'
 import { ContractDetailPage } from '@/components/pages/ContractDetailPage'
 
@@ -33,11 +34,17 @@ export default async function ContractDetailRoute({
   const { id } = await params
 
   try {
-    const contract = await contractQueries.findById(id)
+    const [contract, contractAlertSettingsLoadResult] = await Promise.all([
+      contractQueries.findById(id),
+      globalSettings.getContractAlertSettings(),
+    ])
 
     if (!contract) {
       notFound()
     }
+
+    const contractExpiryAlertDays =
+      contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
 
     // 转换数据类型
     const contractData = {
@@ -64,7 +71,12 @@ export default async function ContractDetailRoute({
       })),
     }
 
-    return <ContractDetailPage contract={contractData} />
+    return (
+      <ContractDetailPage
+        contract={contractData}
+        contractExpiryAlertDays={contractExpiryAlertDays}
+      />
+    )
   } catch (error) {
     console.error('Failed to load contract:', error)
     notFound()

@@ -1,5 +1,10 @@
+import {
+  createContractExpiryAlertDeadline,
+  formatContractExpiryAlertTitle,
+} from '@/lib/contract-alert-semantics'
 import { prisma } from '@/lib/prisma'
 import { OPEN_BILL_STATUSES, toBillAmount } from '@/lib/bill-semantics'
+import { globalSettings } from '@/lib/global-settings'
 
 /**
  * 增强的仪表板统计数据接口
@@ -248,27 +253,38 @@ export async function getEnhancedDashboardStats(): Promise<EnhancedDashboardStat
  */
 export async function getDashboardAlerts() {
   try {
+    const contractAlertSettingsLoadResult =
+      await globalSettings.getContractAlertSettings()
+    const contractExpiryAlertDays =
+      contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+    const contractExpiryAlertTitle = formatContractExpiryAlertTitle(
+      contractExpiryAlertDays
+    )
+
     // 空房查询
     const vacantRooms = await prisma.room.count({
       where: { status: 'VACANT' },
     })
 
-    // 30天离店 (合同即将到期)
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+    // 统一到期窗口内离店 (合同即将到期)
+    const contractExpiryAlertDeadline = createContractExpiryAlertDeadline(
+      contractExpiryAlertDays
+    )
 
     const expiringContracts = await prisma.contract.count({
       where: {
         status: 'ACTIVE',
         endDate: {
           gte: new Date(),
-          lte: thirtyDaysFromNow,
+          lte: contractExpiryAlertDeadline,
         },
       },
     })
 
     // 30天搬入 (即将生效的合同)
     const today = new Date()
+    const thirtyDaysFromNow = new Date()
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
     const upcomingContracts = await prisma.contract.count({
       where: {
         status: 'PENDING',
@@ -300,7 +316,7 @@ export async function getDashboardAlerts() {
       {
         id: 'lease_expiry',
         type: 'lease_expiry' as const,
-        title: '30天离店',
+        title: contractExpiryAlertTitle,
         count: expiringContracts,
         color: expiringContracts > 0 ? ('orange' as const) : ('gray' as const),
       },
@@ -333,7 +349,7 @@ export async function getDashboardAlerts() {
       {
         id: 'lease_expiry',
         type: 'lease_expiry' as const,
-        title: '30天离店',
+        title: formatContractExpiryAlertTitle(30),
         count: 0,
         color: 'gray' as const,
       },

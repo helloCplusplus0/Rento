@@ -10,12 +10,11 @@ import {
 } from '@/lib/api-error-handler'
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import { ErrorType } from '@/lib/error-logger'
+import { globalSettings } from '@/lib/global-settings'
 import { optimizedContractQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import {
   contractQueries,
-  meterQueries,
-  meterReadingQueries,
   renterQueries,
   roomQueries,
 } from '@/lib/queries'
@@ -39,6 +38,13 @@ async function handleGetContracts(request: NextRequest) {
   const shouldFilterExpiringSoon =
     status === 'expiring_soon' || isExpiringSoon === true
 
+  let expiringDays: number | undefined
+  if (shouldFilterExpiringSoon) {
+    const contractAlertSettingsLoadResult =
+      await globalSettings.getContractAlertSettings()
+    expiringDays = contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+  }
+
   const result = await optimizedContractQueries.findWithPagination(
     { page, limit },
     {
@@ -47,7 +53,7 @@ async function handleGetContracts(request: NextRequest) {
         : {}),
       ...(searchQuery ? { search: searchQuery as string } : {}),
       ...(buildingId ? { buildingId: buildingId as string } : {}),
-      ...(shouldFilterExpiringSoon ? { expiringDays: 30 } : {}),
+      ...(expiringDays ? { expiringDays } : {}),
     }
   )
 
@@ -93,6 +99,25 @@ export const GET = withApiErrorHandler(handleGetContracts, {
   errorType: ErrorType.DATABASE_ERROR,
 })
 
+function normalizeContractPaymentMethod(defaultRentCycle?: string): string {
+  switch (defaultRentCycle) {
+    case 'monthly':
+    case '月付':
+      return '月付'
+    case 'quarterly':
+    case '季付':
+      return '季付'
+    case 'semiannual':
+    case '半年付':
+      return '半年付'
+    case 'yearly':
+    case '年付':
+      return '年付'
+    default:
+      return '月付'
+  }
+}
+
 async function handlePostContracts(request: NextRequest) {
   const startTime = Date.now()
   const body = await parseRequestBody(request)
@@ -110,12 +135,16 @@ async function handlePostContracts(request: NextRequest) {
     signedBy,
     signedDate,
     remarks: contractRemarks,
-    generateBills = true,
+    generateBills,
     // 新增：仪表初始读数
     meterInitialReadings,
   } = body
 
   console.log(`[合同创建] 开始处理，耗时: ${Date.now() - startTime}ms`)
+
+  const contractDefaultSettingsResult =
+    await globalSettings.getContractDefaultSettings()
+  const contractDefaults = contractDefaultSettingsResult.settings
 
   // 基础字段验证
   validateRequired(body, [
@@ -124,7 +153,6 @@ async function handlePostContracts(request: NextRequest) {
     'startDate',
     'endDate',
     'monthlyRent',
-    'deposit',
   ])
 
   // 验证日期
@@ -135,8 +163,13 @@ async function handlePostContracts(request: NextRequest) {
   }
 
   // 验证金额
-  if (monthlyRent <= 0 || deposit <= 0) {
-    throw new Error('租金和押金必须大于0')
+  const effectiveDeposit =
+    deposit !== undefined && deposit !== null
+      ? Number(deposit)
+      : Number(monthlyRent) * contractDefaults.defaultDepositMonths
+
+  if (monthlyRent <= 0 || effectiveDeposit < 0) {
+    throw new Error('租金必须大于0，押金不能小于0')
   }
 
   console.log(`[合同创建] 基础验证完成，耗时: ${Date.now() - startTime}ms`)
@@ -207,6 +240,16 @@ async function handlePostContracts(request: NextRequest) {
   const totalRent = monthlyRent * monthsDiff
 
   // 创建合同
+  const effectivePaymentMethod =
+    paymentMethod ||
+    normalizeContractPaymentMethod(contractDefaults.defaultRentCycle)
+  const effectivePaymentTiming =
+    paymentTiming || contractDefaults.defaultPaymentTiming || undefined
+  const shouldGenerateBills =
+    typeof generateBills === 'boolean'
+      ? generateBills
+      : contractDefaults.autoGenerateContractBills
+
   const contractData = {
     contractNumber,
     roomId,
@@ -215,11 +258,11 @@ async function handlePostContracts(request: NextRequest) {
     endDate: end,
     monthlyRent,
     totalRent,
-    deposit,
+    deposit: effectiveDeposit,
     keyDeposit: keyDeposit || undefined,
     cleaningFee: cleaningFee || undefined,
-    paymentMethod: paymentMethod || undefined,
-    paymentTiming: paymentTiming || undefined,
+    paymentMethod: effectivePaymentMethod,
+    paymentTiming: effectivePaymentTiming,
     signedBy: signedBy || undefined,
     signedDate: signedDate ? new Date(signedDate) : undefined,
     remarks: contractRemarks || undefined,
@@ -313,7 +356,7 @@ async function handlePostContracts(request: NextRequest) {
 
   // 异步处理账单生成，不阻塞响应
   let billGenerationPromise: Promise<any> | null = null
-  if (generateBills) {
+  if (shouldGenerateBills) {
     billGenerationPromise = generateBillsOnContractSigned(result.id).catch(
       (error) => {
         console.error('异步账单生成失败:', error)

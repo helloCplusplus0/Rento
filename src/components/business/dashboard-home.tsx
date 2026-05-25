@@ -233,7 +233,7 @@ export const defaultAlerts: AlertItem[] = [
   {
     id: 'lease_expiry',
     type: 'lease_expiry',
-    title: '30天离店',
+    title: '离店提醒',
     count: 0,
     color: 'gray',
   },

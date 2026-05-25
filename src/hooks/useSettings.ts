@@ -9,7 +9,12 @@ export interface AppSettings {
   // 基础设置
   electricityPrice: number // 电费单价 (元/度)
   waterPrice: number // 水费单价 (元/吨)
-  defaultRentCycle: string // 默认租金周期
+  gasPrice: number // 燃气费单价 (元/立方米)
+  defaultRentCycle: string // 默认收租周期
+  defaultPaymentTiming: string // 默认付款时间
+  defaultDepositMonths: number // 默认押金月数
+  autoGenerateContractBills: boolean // 创建合同后默认自动生成账单
+  contractExpiryAlertDays: number // 合同到期提醒窗口天数
 
   // 系统设置
   autoBackup: boolean // 自动备份
@@ -34,7 +39,12 @@ export interface AppSettings {
 const defaultSettings: AppSettings = {
   electricityPrice: 0.6,
   waterPrice: 3.5,
+  gasPrice: 2.5,
   defaultRentCycle: 'monthly',
+  defaultPaymentTiming: '每月1号前',
+  defaultDepositMonths: 2,
+  autoGenerateContractBills: true,
+  contractExpiryAlertDays: 30,
   autoBackup: true,
   theme: 'light',
   enableNotifications: true,

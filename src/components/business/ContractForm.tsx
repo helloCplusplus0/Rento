@@ -47,6 +47,30 @@ interface ContractFormProps {
   loading?: boolean
   mode: 'create' | 'edit'
   initialData?: Partial<ContractFormData>
+  contractDefaults?: {
+    defaultRentCycle: string
+    defaultPaymentTiming: string
+    defaultDepositMonths: number
+  }
+}
+
+function normalizeDefaultPaymentMethod(defaultRentCycle?: string): string {
+  switch (defaultRentCycle) {
+    case 'monthly':
+    case '月付':
+      return '月付'
+    case 'quarterly':
+    case '季付':
+      return '季付'
+    case 'semiannual':
+    case '半年付':
+      return '半年付'
+    case 'yearly':
+    case '年付':
+      return '年付'
+    default:
+      return '月付'
+  }
 }
 
 /**
@@ -63,6 +87,7 @@ export function ContractForm({
   loading = false,
   mode,
   initialData,
+  contractDefaults,
 }: ContractFormProps) {
   const [selectedRenter, setSelectedRenter] =
     useState<RenterWithContractsForClient | null>(null)
@@ -82,8 +107,10 @@ export function ContractForm({
     deposit: 0,
     keyDeposit: 0,
     cleaningFee: 0,
-    paymentMethod: '月付',
-    paymentTiming: '每月1号前',
+    paymentMethod: normalizeDefaultPaymentMethod(
+      contractDefaults?.defaultRentCycle
+    ),
+    paymentTiming: contractDefaults?.defaultPaymentTiming || '每月1号前',
     signedBy: '',
     signedDate: '',
     remarks: '',
@@ -177,7 +204,10 @@ export function ContractForm({
         ...prev,
         roomId: selectedRoom.id,
         monthlyRent: selectedRoom.rent,
-        deposit: selectedRoom.rent * 2, // 默认2个月押金
+        deposit:
+          mode === 'create'
+            ? selectedRoom.rent * (contractDefaults?.defaultDepositMonths ?? 2)
+            : prev.deposit,
       }))
 
       // 新增：加载房间仪表数据
@@ -185,7 +215,24 @@ export function ContractForm({
         loadRoomMeters(selectedRoom.id)
       }
     }
-  }, [selectedRoom, mode])
+  }, [selectedRoom, mode, contractDefaults?.defaultDepositMonths])
+
+  useEffect(() => {
+    if (mode !== 'create') {
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      paymentMethod: normalizeDefaultPaymentMethod(
+        contractDefaults?.defaultRentCycle
+      ),
+      paymentTiming: contractDefaults?.defaultPaymentTiming || '每月1号前',
+      deposit: selectedRoom
+        ? selectedRoom.rent * (contractDefaults?.defaultDepositMonths ?? 2)
+        : prev.deposit,
+    }))
+  }, [contractDefaults, mode, selectedRoom])
 
   // 当选择租客时，自动填充签约人信息
   useEffect(() => {
