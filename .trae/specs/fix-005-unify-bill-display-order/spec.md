@@ -4,7 +4,7 @@
 当前合同详情页账单历史 Tab 与账单列表页使用了不同的排序真相源，导致同一批账单在不同入口展示顺序不一致。需要冻结一套统一的账单展示排序语义，让用户能优先看到待处理账单，并保证不同入口顺序一致。
 
 ## What Changes
-- 新增统一的账单展示排序能力，收口“未完结优先 + 业务时间由近及远 + 创建时间兜底”的规则
+- 新增统一的账单展示排序能力，收口“未完结优先 + 最早到期优先 + 创建时间兜底”的规则
 - 合同详情页账单历史 Tab 改为复用统一排序能力，不再单独手写本地排序
 - 账单列表页改为复用统一排序能力，确保与合同详情页保持一致
 - 收口查询层与 `/api/bills` 的默认排序口径，避免 SSR 与 API 结果不一致
@@ -31,9 +31,9 @@ The system SHALL provide a shared bill display sorting rule that is reused by th
 - **WHEN** 同一页面同时存在未完结账单和已完结账单
 - **THEN** 未完结账单必须稳定排在已完结账单之前
 
-#### Scenario: 同组内按业务时间倒序
+#### Scenario: 同组内按最早到期优先
 - **WHEN** 多条账单属于同一结算阶段分组
-- **THEN** 账单必须按 `dueDate` 由近及远排序
+- **THEN** 账单必须按 `dueDate` 升序排序，越早到期越靠前
 
 #### Scenario: 同业务时间稳定兜底
 - **WHEN** 两条账单的 `dueDate` 相同
@@ -67,7 +67,7 @@ The system SHALL align SSR query sorting and `/api/bills` default sorting so tha
 
 ## MODIFIED Requirements
 ### Requirement: 账单列表默认顺序
-账单相关页面的默认顺序不再分别依赖“合同详情页本地排序”或“查询层各自的 `orderBy` 实现”，而必须统一遵守“未完结优先、组内按 `dueDate desc`、同日按 `createdAt desc` 兜底”的共享排序规则。
+账单相关页面的默认顺序不再分别依赖“合同详情页本地排序”或“查询层各自的 `orderBy` 实现”，而必须统一遵守“未完结优先、组内按 `dueDate asc`、同日按 `createdAt desc` 兜底”的共享排序规则。
 
 ## REMOVED Requirements
 ### Requirement: 合同详情页本地创建时间倒序

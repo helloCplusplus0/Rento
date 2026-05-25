@@ -166,7 +166,7 @@ function getBillDisplayGroupRank(bill: BillDisplaySortableLike): number {
 /**
  * 统一账单展示排序：
  * - 未完结账单（OPEN / OVERDUE）优先于已结清账单
- * - 组内按 dueDate 倒序
+ * - 组内按 dueDate 升序，越早到期越靠前
  * - 同 dueDate 时按 createdAt 倒序稳定兜底
  */
 export function compareBillsForDisplay(
@@ -178,7 +178,7 @@ export function compareBillsForDisplay(
     return groupDiff
   }
 
-  const dueDateDiff = toBillTimestamp(b.dueDate) - toBillTimestamp(a.dueDate)
+  const dueDateDiff = toBillTimestamp(a.dueDate) - toBillTimestamp(b.dueDate)
   if (dueDateDiff !== 0) {
     return dueDateDiff
   }

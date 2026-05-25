@@ -746,7 +746,7 @@ export const optimizedBillQueries = {
             WHEN b."status" IN ('PENDING', 'OVERDUE') AND b."pendingAmount" > 0.01 THEN 0
             ELSE 1
           END ASC,
-          b."dueDate" DESC,
+          b."dueDate" ASC,
           b."createdAt" DESC
         OFFSET ${skip}
         LIMIT ${limit}

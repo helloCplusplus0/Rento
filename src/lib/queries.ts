@@ -692,7 +692,7 @@ export const contractQueries = {
         },
         renter: true,
         bills: {
-          orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+          orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
         },
       },
     }),
@@ -925,7 +925,7 @@ export const billQueries = {
           },
         },
       },
-      orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
     })
 
     return sortBillsForDisplay(bills)
