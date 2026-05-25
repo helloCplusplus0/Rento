@@ -1,6 +1,8 @@
 import {
   DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS,
   sanitizeContractExpiryAlertDays,
+  sanitizeUpcomingMoveInAlertDays,
 } from '@/lib/contract-alert-semantics'
 import { prisma } from '@/lib/prisma'
 
@@ -49,6 +51,7 @@ export interface ContractDefaultSettingsLoadResult {
 
 export interface ContractAlertSettings {
   contractExpiryAlertDays: number
+  upcomingMoveInAlertDays: number
 }
 
 export interface ContractAlertSettingsLoadResult {
@@ -72,6 +75,7 @@ export const DEFAULT_CONTRACT_DEFAULT_SETTINGS: ContractDefaultSettings = {
 
 export const DEFAULT_CONTRACT_ALERT_SETTINGS: ContractAlertSettings = {
   contractExpiryAlertDays: DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  upcomingMoveInAlertDays: DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS,
 }
 
 // 默认设置配置
@@ -164,6 +168,13 @@ export const DEFAULT_SETTINGS: SettingValue[] = [
     type: 'number',
     category: 'notification',
     description: '合同到期提醒窗口天数',
+  },
+  {
+    key: 'upcomingMoveInAlertDays',
+    value: DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS,
+    type: 'number',
+    category: 'notification',
+    description: '待入住合同提醒窗口天数',
   },
 
   // 抄表设置
@@ -551,13 +562,14 @@ export class GlobalSettingsManager {
     const settings: ContractAlertSettings = { ...DEFAULT_CONTRACT_ALERT_SETTINGS }
     const fallbackKeys = new Set<keyof ContractAlertSettings>([
       'contractExpiryAlertDays',
+      'upcomingMoveInAlertDays',
     ])
 
     try {
       const contractAlertSettings = await prisma.globalSetting.findMany({
         where: {
           key: {
-            in: ['contractExpiryAlertDays'],
+            in: ['contractExpiryAlertDays', 'upcomingMoveInAlertDays'],
           },
         },
         select: {
@@ -575,6 +587,12 @@ export class GlobalSettingsManager {
               sanitizeContractExpiryAlertDays(parsedValue)
             fallbackKeys.delete('contractExpiryAlertDays')
           }
+
+          if (item.key === 'upcomingMoveInAlertDays') {
+            settings.upcomingMoveInAlertDays =
+              sanitizeUpcomingMoveInAlertDays(parsedValue)
+            fallbackKeys.delete('upcomingMoveInAlertDays')
+          }
         } catch (error) {
           console.error(`[全局设置] 解析合同提醒配置失败: ${item.key}`, error)
         }
@@ -588,7 +606,7 @@ export class GlobalSettingsManager {
         source:
           fallbackKeyList.length === 0
             ? 'database'
-            : fallbackKeyList.length === 1
+            : fallbackKeyList.length === 2
               ? 'default-fallback'
               : 'mixed-fallback',
       }
@@ -597,7 +615,7 @@ export class GlobalSettingsManager {
 
       return {
         settings,
-        fallbackKeys: ['contractExpiryAlertDays'],
+        fallbackKeys: ['contractExpiryAlertDays', 'upcomingMoveInAlertDays'],
         source: 'default-fallback',
       }
     }

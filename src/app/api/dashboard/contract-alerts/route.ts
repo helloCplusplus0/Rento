@@ -4,6 +4,10 @@ import {
   createSuccessResponse,
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
+import {
+  calculateDaysUntilContractExpiry,
+  EXPIRED_CONTRACT_ALERT_TITLE,
+} from '@/lib/contract-alert-semantics'
 import { ErrorType } from '@/lib/error-logger'
 import { prisma } from '@/lib/prisma'
 
@@ -47,9 +51,9 @@ async function handleGetContractAlerts(_request: NextRequest) {
 
   // 转换数据类型并计算逾期天数
   const alertsData = expiredContracts.map((contract) => {
-    const daysOverdue = Math.ceil(
-      (today.getTime() - new Date(contract.endDate).getTime()) /
-        (1000 * 60 * 60 * 24)
+    const daysUntilExpiry = calculateDaysUntilContractExpiry(
+      contract.endDate,
+      today
     )
 
     return {
@@ -59,7 +63,7 @@ async function handleGetContractAlerts(_request: NextRequest) {
       renterName: contract.renter.name,
       roomInfo: `${contract.room.building.name} - ${contract.room.roomNumber}`,
       endDate: contract.endDate,
-      daysUntilExpiry: -daysOverdue, // 负数表示已逾期
+      daysUntilExpiry,
       monthlyRent: Number(contract.monthlyRent),
       alertLevel: 'danger' as const,
     }
@@ -68,6 +72,7 @@ async function handleGetContractAlerts(_request: NextRequest) {
   return createSuccessResponse({
     alerts: alertsData,
     total: alertsData.length,
+    title: EXPIRED_CONTRACT_ALERT_TITLE,
     summary: {
       total: alertsData.length,
       warning: 0,

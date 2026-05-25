@@ -1,21 +1,26 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   Calendar,
   Clock,
-  CreditCard,
   Eye,
   Home,
-  LogOut,
   RefreshCw,
   Users,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
+import {
+  DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS,
+  EXPIRED_CONTRACT_ALERT_TITLE,
+  formatContractExpiryAlertTitle,
+  formatUpcomingMoveInAlertTitle,
+} from '@/lib/contract-alert-semantics'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -42,16 +47,92 @@ interface UnifiedAlertsPanelProps {
   className?: string
 }
 
+type AlertType =
+  | 'room_check'
+  | 'lease_expiry'
+  | 'upcoming_contracts'
+  | 'contract_expiry'
+
+type AlertDetailsByType = Record<AlertType, AlertDetail[]>
+
+const EMPTY_ALERT_DETAILS: AlertDetailsByType = {
+  room_check: [],
+  lease_expiry: [],
+  upcoming_contracts: [],
+  contract_expiry: [],
+}
+
 /**
  * 统一提醒面板组件
  * 整合所有类型的提醒信息，提供详细展示和快捷操作
  */
 export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
+  const router = useRouter()
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null)
   const [alertDetails, setAlertDetails] = useState<AlertDetail[]>([])
   const [loading, setLoading] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [alertsLoading, setAlertsLoading] = useState(true)
+  const [alertDetailsByType, setAlertDetailsByType] =
+    useState<AlertDetailsByType>(EMPTY_ALERT_DETAILS)
+
+  const buildVacantRoomDetails = (rooms: any[] = []): AlertDetail[] =>
+    rooms.map((room: any) => ({
+      id: `vacant-${room.id}`,
+      type: 'room_check',
+      title: `${room.building.name} - ${room.roomNumber}`,
+      description: `租金: ${formatCurrency(room.rent)}/月 | 面积: ${room.area || '未知'}㎡`,
+      level: 'info' as const,
+      data: room,
+      actionText: '查看详情',
+      onAction: () => router.push(`/rooms/${room.id}`),
+    }))
+
+  const buildLeavingTenantDetails = (contracts: any[] = []): AlertDetail[] =>
+    contracts.map((contract: any) => ({
+      id: `leaving-${contract.id}`,
+      type: 'lease_expiry',
+      title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
+      description: `合同到期: ${formatDate(contract.endDate)} | 租金: ${formatCurrency(contract.monthlyRent)}/月`,
+      level: 'warning' as const,
+      data: contract,
+      actionText: '联系租客',
+      onAction: () => router.push(`/contracts/${contract.id}`),
+    }))
+
+  const buildUpcomingContractDetails = (
+    contracts: any[] = []
+  ): AlertDetail[] =>
+    contracts.map((contract: any) => ({
+      id: `upcoming-${contract.id}`,
+      type: 'upcoming_contracts',
+      title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
+      description: `待入住生效: ${formatDate(contract.startDate)} | 租金: ${formatCurrency(contract.monthlyRent)}/月 | ${contract.daysUntilStart}天后入住`,
+      level: 'info' as const,
+      data: contract,
+      actionText: '查看合同',
+      onAction: () => router.push(`/contracts/${contract.id}`),
+    }))
+
+  const buildContractExpiryDetails = (alerts: any[] = []): AlertDetail[] =>
+    alerts.map((alert: any) => ({
+      id: `contract-${alert.contractId}`,
+      type: 'contract_expiry',
+      title: `${alert.renterName} - ${alert.roomInfo}`,
+      description:
+        alert.daysUntilExpiry < 0
+          ? `已到期 ${Math.abs(alert.daysUntilExpiry)} 天 | 租金: ${formatCurrency(alert.monthlyRent)}/月`
+          : `${alert.daysUntilExpiry} 天后到期 | 租金: ${formatCurrency(alert.monthlyRent)}/月`,
+      level:
+        alert.daysUntilExpiry < 0
+          ? ('danger' as const)
+          : alert.daysUntilExpiry <= 7
+            ? ('danger' as const)
+            : ('warning' as const),
+      data: alert,
+      actionText: alert.daysUntilExpiry < 0 ? '处理合同' : '续约',
+      onAction: () => router.push(`/contracts/${alert.contractId}`),
+    }))
 
   // 获取动态提醒数据
   const fetchAlerts = async () => {
@@ -85,7 +166,25 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
             : { data: { total: 0 } },
         ])
 
-      const leavingTenantsTitle = leavingTenants.data?.title || '离店提醒'
+      const nextAlertDetailsByType: AlertDetailsByType = {
+        room_check: buildVacantRoomDetails(vacantRooms.data?.rooms),
+        lease_expiry: buildLeavingTenantDetails(
+          leavingTenants.data?.contracts
+        ),
+        upcoming_contracts: buildUpcomingContractDetails(
+          upcomingContracts.data?.contracts
+        ),
+        contract_expiry: buildContractExpiryDetails(contractAlerts.data?.alerts),
+      }
+
+      const leavingTenantsTitle =
+        leavingTenants.data?.title ||
+        formatContractExpiryAlertTitle(DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS)
+      const upcomingContractsTitle =
+        upcomingContracts.data?.title ||
+        formatUpcomingMoveInAlertTitle(DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS)
+      const contractAlertsTitle =
+        contractAlerts.data?.title || EXPIRED_CONTRACT_ALERT_TITLE
 
       const dynamicAlerts: AlertItem[] = [
         {
@@ -105,20 +204,26 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         {
           id: 'upcoming_contracts',
           type: 'upcoming_contracts',
-          title: '30天搬入',
+          title: upcomingContractsTitle,
           count: upcomingContracts.data?.total || 0,
           color: (upcomingContracts.data?.total || 0) > 0 ? 'green' : 'gray',
         },
         {
           id: 'contract_expiry',
           type: 'contract_expiry',
-          title: '合同到期',
+          title: contractAlertsTitle,
           count: contractAlerts.data?.total || 0,
           color: (contractAlerts.data?.total || 0) > 0 ? 'red' : 'gray',
         },
       ]
 
       setAlerts(dynamicAlerts)
+      setAlertDetailsByType(nextAlertDetailsByType)
+      if (selectedAlert && selectedAlert in nextAlertDetailsByType) {
+        setAlertDetails(
+          nextAlertDetailsByType[selectedAlert as keyof AlertDetailsByType]
+        )
+      }
     } catch (error) {
       console.error('获取提醒数据失败:', error)
       // 使用默认数据作为fallback
@@ -133,25 +238,33 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         {
           id: 'lease_expiry',
           type: 'lease_expiry',
-          title: '离店提醒',
+          title: formatContractExpiryAlertTitle(
+            DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS
+          ),
           count: 0,
           color: 'gray',
         },
         {
           id: 'upcoming_contracts',
           type: 'upcoming_contracts',
-          title: '30天搬入',
+          title: formatUpcomingMoveInAlertTitle(
+            DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS
+          ),
           count: 0,
           color: 'gray',
         },
         {
           id: 'contract_expiry',
           type: 'contract_expiry',
-          title: '合同到期',
+          title: EXPIRED_CONTRACT_ALERT_TITLE,
           count: 0,
           color: 'gray',
         },
       ])
+      setAlertDetailsByType(EMPTY_ALERT_DETAILS)
+      if (selectedAlert) {
+        setAlertDetails([])
+      }
     } finally {
       setAlertsLoading(false)
     }
@@ -163,7 +276,16 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
   }, [])
 
   // 获取指定类型的详细提醒数据
-  const fetchAlertDetails = async (alertType: string) => {
+  const fetchAlertDetails = async (
+    alertType: AlertType,
+    forceRefresh = false
+  ) => {
+    if (!forceRefresh) {
+      const cachedDetails = alertDetailsByType[alertType]
+      setAlertDetails(cachedDetails)
+      return
+    }
+
     setLoading(true)
     try {
       let details: AlertDetail[] = []
@@ -184,6 +306,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
       }
 
       setAlertDetails(details)
+      setAlertDetailsByType((current) => ({
+        ...current,
+        [alertType]: details,
+      }))
     } catch (error) {
       console.error('获取提醒详情失败:', error)
       setAlertDetails([])
@@ -198,18 +324,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     if (!response.ok) throw new Error('获取空房数据失败')
     const data = await response.json()
 
-    return (
-      data.data?.rooms?.map((room: any) => ({
-        id: `vacant-${room.id}`,
-        type: 'room_check',
-        title: `${room.building.name} - ${room.roomNumber}`,
-        description: `租金: ${formatCurrency(room.rent)}/月 | 面积: ${room.area || '未知'}㎡`,
-        level: 'info' as const,
-        data: room,
-        actionText: '查看详情',
-        onAction: () => (window.location.href = `/rooms/${room.id}`),
-      })) || []
-    )
+    return buildVacantRoomDetails(data.data?.rooms)
   }
 
   // 获取统一提醒窗口内的离店详情
@@ -218,38 +333,16 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     if (!response.ok) throw new Error('获取离店数据失败')
     const data = await response.json()
 
-    return (
-      data.data?.contracts?.map((contract: any) => ({
-        id: `leaving-${contract.id}`,
-        type: 'lease_expiry',
-        title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
-        description: `合同到期: ${formatDate(contract.endDate)} | 租金: ${formatCurrency(contract.monthlyRent)}/月`,
-        level: 'warning' as const,
-        data: contract,
-        actionText: '联系租客',
-        onAction: () => (window.location.href = `/contracts/${contract.id}`),
-      })) || []
-    )
+    return buildLeavingTenantDetails(data.data?.contracts)
   }
 
-  // 获取30天搬入详情
+  // 获取待入住合同详情
   const fetchUpcomingContractDetails = async (): Promise<AlertDetail[]> => {
     const response = await fetch('/api/dashboard/upcoming-contracts')
     if (!response.ok) throw new Error('获取搬入数据失败')
     const data = await response.json()
 
-    return (
-      data.data?.contracts?.map((contract: any) => ({
-        id: `upcoming-${contract.id}`,
-        type: 'upcoming_contracts',
-        title: `${contract.renter.name} - ${contract.room.building.name}${contract.room.roomNumber}`,
-        description: `合同生效: ${formatDate(contract.startDate)} | 租金: ${formatCurrency(contract.monthlyRent)}/月 | ${contract.daysUntilStart}天后生效`,
-        level: 'info' as const,
-        data: contract,
-        actionText: '查看合同',
-        onAction: () => (window.location.href = `/contracts/${contract.id}`),
-      })) || []
-    )
+    return buildUpcomingContractDetails(data.data?.contracts)
   }
 
   // 获取合同到期详情
@@ -258,31 +351,11 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     if (!response.ok) throw new Error('获取合同到期数据失败')
     const data = await response.json()
 
-    return (
-      data.data?.alerts?.map((alert: any) => ({
-        id: `contract-${alert.contractId}`,
-        type: 'contract_expiry',
-        title: `${alert.renterName} - ${alert.roomInfo}`,
-        description:
-          alert.daysUntilExpiry < 0
-            ? `已逾期 ${Math.abs(alert.daysUntilExpiry)} 天 | 租金: ${formatCurrency(alert.monthlyRent)}/月`
-            : `${alert.daysUntilExpiry} 天后到期 | 租金: ${formatCurrency(alert.monthlyRent)}/月`,
-        level:
-          alert.daysUntilExpiry < 0
-            ? ('danger' as const)
-            : alert.daysUntilExpiry <= 7
-              ? ('danger' as const)
-              : ('warning' as const),
-        data: alert,
-        actionText: alert.daysUntilExpiry < 0 ? '处理逾期' : '续约',
-        onAction: () =>
-          (window.location.href = `/contracts/${alert.contractId}`),
-      })) || []
-    )
+    return buildContractExpiryDetails(data.data?.alerts)
   }
 
   // 处理提醒卡片点击
-  const handleAlertClick = (alertType: string) => {
+  const handleAlertClick = (alertType: AlertType) => {
     if (selectedAlert === alertType) {
       setSelectedAlert(null)
       setAlertDetails([])
@@ -414,7 +487,9 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => fetchAlertDetails(selectedAlert)}
+              onClick={() =>
+                fetchAlertDetails(selectedAlert as AlertType, true)
+              }
               disabled={loading}
               className="h-6 w-6 p-0"
             >

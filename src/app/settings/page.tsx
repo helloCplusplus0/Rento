@@ -121,6 +121,18 @@ export default function SettingsPage() {
       step: 1,
       placeholder: '请输入合同到期提醒窗口',
     },
+    {
+      id: 'upcomingMoveInAlertDays',
+      title: '待入住合同提醒窗口',
+      description: '用于 Dashboard 待入住合同提醒的统一生效窗口',
+      type: 'input' as const,
+      value: settings.upcomingMoveInAlertDays,
+      unit: '天',
+      min: 1,
+      max: 180,
+      step: 1,
+      placeholder: '请输入待入住合同提醒窗口',
+    },
   ]
 
   const governanceEntrySettings: SettingItemConfig[] = [
@@ -172,14 +184,14 @@ export default function SettingsPage() {
   const pendingSettingGroups = [
     {
       title: '提醒相关',
-      items: ['账单提醒天数'],
+      items: ['账单提醒天数（reminderDays）'],
     },
     {
       title: '抄表与账单自动化相关',
       items: [
         '抄表周期',
         '自定义抄表天数',
-        '抄表提醒天数',
+        '抄表提醒天数（readingReminderDays）',
         '异常用量阈值',
         '自动生成账单',
         '抄表审批',
@@ -187,7 +199,7 @@ export default function SettingsPage() {
     },
     {
       title: '系统外观与外围能力相关',
-      items: ['自动备份', '启用通知', '主题模式'],
+      items: ['自动备份', '启用通知（enableNotifications）', '主题模式'],
     },
   ]
 
@@ -221,7 +233,7 @@ export default function SettingsPage() {
         />
 
         <SettingCategory
-          title="合同提醒配置"
+          title="窗口型提醒配置"
           items={contractAlertSettings}
           onValueChange={handleValueChange}
         />
@@ -242,7 +254,7 @@ export default function SettingsPage() {
           <CardContent className="p-6">
             <div className="space-y-3 text-sm leading-6 text-gray-600">
               <p>
-                其余全局字段当前暂未作为正式可编辑配置开放，避免继续造成“可改即可生效”的误解。
+                当前仅开放真正进入 Dashboard 主链的窗口型提醒配置，其余字段暂不作为正式可编辑提醒项开放，避免继续造成“可改即可生效”的误解。
               </p>
               {pendingSettingGroups.map((group) => (
                 <div key={group.title}>

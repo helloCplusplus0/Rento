@@ -15,6 +15,7 @@ export interface AppSettings {
   defaultDepositMonths: number // 默认押金月数
   autoGenerateContractBills: boolean // 创建合同后默认自动生成账单
   contractExpiryAlertDays: number // 合同到期提醒窗口天数
+  upcomingMoveInAlertDays: number // 待入住合同提醒窗口天数
 
   // 系统设置
   autoBackup: boolean // 自动备份
@@ -45,6 +46,7 @@ const defaultSettings: AppSettings = {
   defaultDepositMonths: 2,
   autoGenerateContractBills: true,
   contractExpiryAlertDays: 30,
+  upcomingMoveInAlertDays: 30,
   autoBackup: true,
   theme: 'light',
   enableNotifications: true,

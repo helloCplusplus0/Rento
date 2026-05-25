@@ -1,0 +1,10 @@
+- [x] Dashboard 四个提醒都具有清楚、稳定且互不冲突的业务语义
+- [x] “离店提醒”与“已到期合同/逾期合同”在页面文案和查询条件上清楚区分
+- [x] `upcomingMoveInAlertDays` 已进入全局设置真相源、前端设置类型和正式设置页入口
+- [x] Dashboard 即将生效合同提醒不再依赖硬编码 30 天窗口
+- [x] `contractExpiryAlertDays` 仍是离店提醒的唯一窗口真相源
+- [x] 已到期合同提醒保持为客观待处理事项，没有被改造成可调窗口提醒
+- [x] 首页正式提醒行为不再受并行旧实现干扰
+- [x] `billReminderDays`、`readingReminderDays`、`enableNotifications` 未被误开放为正式提醒配置
+- [x] `npm run lint` 通过
+- [x] `npm run type-check` 通过

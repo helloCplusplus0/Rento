@@ -3,7 +3,6 @@
 import { Suspense } from 'react'
 
 import { useStatistics } from '@/hooks/useStatistics'
-import { DashboardContractAlerts } from '@/components/business/DashboardContractAlerts'
 import {
   FunctionGrid,
   FunctionGridSkeleton,
@@ -63,8 +62,8 @@ export function DashboardPageWithStats() {
           <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
             <div className="animate-pulse">
               <div className="mb-4 h-6 w-1/4 rounded bg-gray-200"></div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-4">
-                {[1, 2, 3, 4, 5].map((i) => (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="text-center">
                     <div className="mx-auto mb-2 h-10 w-10 rounded-lg bg-gray-200 sm:h-12 sm:w-12"></div>
                     <div className="mx-auto h-3 w-16 rounded bg-gray-200"></div>
