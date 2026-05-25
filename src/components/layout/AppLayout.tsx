@@ -35,7 +35,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [])
 
-  // 避免服务端渲染和客户端渲染不一致
+  // 避免服务端渲染和客户端渲染不一致。
+  // phase05-02 先沿用现有客户端判屏方案，不在此任务内扩展到布局重构。
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">

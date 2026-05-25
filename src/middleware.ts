@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { getAuxiliaryPageAccessDecision } from '@/lib/page-governance'
 
-const PUBLIC_PAGE_PATHS = new Set(['/login'])
+const PUBLIC_PAGE_PATHS = new Set(['/login', '/offline'])
 const PUBLIC_API_PREFIXES = ['/api/health', '/api/auth/login', '/api/auth/logout']
 
 function isPublicApiPath(pathname: string) {

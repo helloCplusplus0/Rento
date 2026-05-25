@@ -4,12 +4,14 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 
 import { AppLayout } from '@/components/layout'
+import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt'
 import { AlertManagerProvider } from '@/components/providers/AlertManagerProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Rento - 房屋租赁管理系统',
+  applicationName: 'Rento',
   description:
     '专业的房屋租赁管理系统，提供房源管理、租客管理、合同管理、账单管理等功能',
   keywords: [
@@ -22,6 +24,16 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Rento Team' }],
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: [{ url: '/favicon.ico' }],
+  },
   formatDetection: {
     telephone: false,
   },
@@ -29,6 +41,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'default',
     title: 'Rento',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 }
 
@@ -48,25 +63,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <head>
-        {/* 基础PWA支持 */}
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/icons/icon-72x72.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/icons/icon-72x72.png"
-        />
-      </head>
       <body className={inter.className}>
         <AlertManagerProvider>
-          <AppLayout>{children}</AppLayout>
+          <>
+            <AppLayout>{children}</AppLayout>
+            <PwaInstallPrompt />
+          </>
         </AlertManagerProvider>
       </body>
     </html>

@@ -1,0 +1,8 @@
+- [x] `phase05_pwa_delivery_architecture_plan.md` 已明确安装壳、manifest、图标、启动体验、安装引导与最小离线壳入口的阶段边界
+- [x] `phase05_pwa_delivery_dev_plan.md` 已明确 `phase05-02` 的目标、范围、重点文件、DoD 与不在范围内的内容
+- [x] `phase05_pwa_delivery_shared_baseline.md` 没有与 `phase05-02` 的安装壳收口目标冲突，且仍保持渐进增强、最小 SW、最小离线壳原则
+- [x] 本子任务已明确 `manifest`、`layout.tsx` metadata、`public/icons/*` 与安装提示/引导的职责边界
+- [x] 本子任务已明确安装态、浏览器态与未支持态的差异只落在最小壳层和引导层，不引入第二套业务 UI
+- [x] 本子任务已明确正式支持浏览器中需要具备可解释的安装提示或安装引导
+- [x] 本子任务已明确最小离线壳资源入口只作为 `phase05-pwa-delivery-03` 的承接位，不提前进入复杂缓存策略或完整离线业务
+- [x] 本子任务没有越界到 service worker 复杂缓存、动态业务接口缓存、推送系统或完整离线数据库
