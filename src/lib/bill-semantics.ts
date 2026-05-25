@@ -113,9 +113,9 @@ export type BillPresentationStatus = 'OPEN' | 'OVERDUE' | 'SETTLED'
 
 export interface BillPresentationLike {
   status: BillStatus
-  amount?: number
-  receivedAmount?: number
-  pendingAmount?: number
+  amount?: unknown
+  receivedAmount?: unknown
+  pendingAmount?: unknown
 }
 
 export interface BillPresentationStats {
@@ -129,6 +129,13 @@ export interface BillPresentationStats {
   openAmount: number
   overdueAmount: number
   statusCounts: Record<BillStatus, number>
+}
+
+export type BillDisplayDateValue = Date | string | number
+
+export interface BillDisplaySortableLike extends BillPresentationLike {
+  dueDate: BillDisplayDateValue
+  createdAt: BillDisplayDateValue
 }
 
 export function getBillPresentationStatus(
@@ -146,6 +153,41 @@ export function getBillPresentationStatus(
   }
 
   return 'OPEN'
+}
+
+function toBillTimestamp(value: BillDisplayDateValue): number {
+  return new Date(value).getTime()
+}
+
+function getBillDisplayGroupRank(bill: BillDisplaySortableLike): number {
+  return getBillPresentationStatus(bill) === 'SETTLED' ? 1 : 0
+}
+
+/**
+ * 统一账单展示排序：
+ * - 未完结账单（OPEN / OVERDUE）优先于已结清账单
+ * - 组内按 dueDate 倒序
+ * - 同 dueDate 时按 createdAt 倒序稳定兜底
+ */
+export function compareBillsForDisplay(
+  a: BillDisplaySortableLike,
+  b: BillDisplaySortableLike
+): number {
+  const groupDiff = getBillDisplayGroupRank(a) - getBillDisplayGroupRank(b)
+  if (groupDiff !== 0) {
+    return groupDiff
+  }
+
+  const dueDateDiff = toBillTimestamp(b.dueDate) - toBillTimestamp(a.dueDate)
+  if (dueDateDiff !== 0) {
+    return dueDateDiff
+  }
+
+  return toBillTimestamp(b.createdAt) - toBillTimestamp(a.createdAt)
+}
+
+export function sortBillsForDisplay<T extends BillDisplaySortableLike>(bills: T[]): T[] {
+  return [...bills].sort(compareBillsForDisplay)
 }
 
 export function getBillPresentationStatusLabel(

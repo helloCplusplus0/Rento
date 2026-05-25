@@ -1,4 +1,5 @@
-import type {
+import {
+  Prisma,
   BillStatus,
   BillType,
   ContractStatus,
@@ -707,53 +708,106 @@ export const optimizedBillQueries = {
       ]
     }
 
-    const [bills, total] = await Promise.all([
-      prisma.bill.findMany({
-        where,
-        include: {
-          contract: {
-            select: {
-              id: true,
-              contractNumber: true,
-              monthlyRent: true,
-              totalRent: true,
-              deposit: true,
-              keyDeposit: true,
-              cleaningFee: true,
-              room: {
+    const rawWhereClauses: Prisma.Sql[] = [Prisma.sql`1 = 1`]
+    const searchPattern = search ? `%${search}%` : null
+
+    if (status) rawWhereClauses.push(Prisma.sql`b."status" = ${status}`)
+    if (type) rawWhereClauses.push(Prisma.sql`b."type" = ${type}`)
+    if (contractId) rawWhereClauses.push(Prisma.sql`b."contractId" = ${contractId}`)
+    if (startDate) rawWhereClauses.push(Prisma.sql`b."dueDate" >= ${startDate}`)
+    if (endDate) rawWhereClauses.push(Prisma.sql`b."dueDate" <= ${endDate}`)
+    if (buildingId)
+      rawWhereClauses.push(Prisma.sql`room."buildingId" = ${buildingId}`)
+    if (renterId)
+      rawWhereClauses.push(Prisma.sql`contract."renterId" = ${renterId}`)
+    if (searchPattern) {
+      rawWhereClauses.push(Prisma.sql`
+        (
+          b."billNumber" ILIKE ${searchPattern}
+          OR renter."name" ILIKE ${searchPattern}
+          OR room."roomNumber" ILIKE ${searchPattern}
+          OR building."name" ILIKE ${searchPattern}
+        )
+      `)
+    }
+
+    const [orderedBillIds, total] = await Promise.all([
+      // Prisma 原生 orderBy 无法直接表达“未完结优先”的展示分组，分页列表改为数据库侧 CASE 排序。
+      prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT b."id"
+        FROM "bills" AS b
+        INNER JOIN "contracts" AS contract ON contract."id" = b."contractId"
+        INNER JOIN "rooms" AS room ON room."id" = contract."roomId"
+        INNER JOIN "buildings" AS building ON building."id" = room."buildingId"
+        INNER JOIN "renters" AS renter ON renter."id" = contract."renterId"
+        WHERE ${Prisma.join(rawWhereClauses, ' AND ')}
+        ORDER BY
+          CASE
+            WHEN b."status" IN ('PENDING', 'OVERDUE') AND b."pendingAmount" > 0.01 THEN 0
+            ELSE 1
+          END ASC,
+          b."dueDate" DESC,
+          b."createdAt" DESC
+        OFFSET ${skip}
+        LIMIT ${limit}
+      `),
+      prisma.bill.count({ where }),
+    ])
+
+    const billIds = orderedBillIds.map((row) => row.id)
+    const bills =
+      billIds.length === 0
+        ? []
+        : await prisma.bill.findMany({
+            where: {
+              id: {
+                in: billIds,
+              },
+            },
+            include: {
+              contract: {
                 select: {
                   id: true,
-                  roomNumber: true,
-                  rent: true,
-                  area: true,
-                  building: {
+                  contractNumber: true,
+                  monthlyRent: true,
+                  totalRent: true,
+                  deposit: true,
+                  keyDeposit: true,
+                  cleaningFee: true,
+                  room: {
+                    select: {
+                      id: true,
+                      roomNumber: true,
+                      rent: true,
+                      area: true,
+                      building: {
+                        select: {
+                          id: true,
+                          name: true,
+                          totalRooms: true,
+                        },
+                      },
+                    },
+                  },
+                  renter: {
                     select: {
                       id: true,
                       name: true,
-                      totalRooms: true,
+                      phone: true,
                     },
                   },
                 },
               },
-              renter: {
-                select: {
-                  id: true,
-                  name: true,
-                  phone: true,
-                },
-              },
             },
-          },
-        },
-        orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
-        skip,
-        take: limit,
-      }),
-      prisma.bill.count({ where }),
-    ])
+          })
+
+    const billMap = new Map(bills.map((bill) => [bill.id, bill]))
+    const orderedBills = billIds
+      .map((billId) => billMap.get(billId))
+      .filter((bill): bill is NonNullable<typeof bill> => Boolean(bill))
 
     return {
-      data: bills,
+      data: orderedBills,
       total,
       page,
       limit,

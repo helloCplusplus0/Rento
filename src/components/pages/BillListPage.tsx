@@ -8,6 +8,7 @@ import { BarChart3 } from 'lucide-react'
 import {
   buildBillPresentationStats,
   getBillPresentationStatus,
+  sortBillsForDisplay,
   type BillPresentationStatus,
 } from '@/lib/bill-semantics'
 import { Button } from '@/components/ui/button'
@@ -125,29 +126,31 @@ export function BillListPage({ initialBills }: BillListPageProps) {
 
   // 筛选账单数据
   const filteredBills = useMemo(() => {
-    return initialBills.filter((bill) => {
-      // 状态筛选
-      if (
-        selectedStatus &&
-        getBillPresentationStatus(bill) !==
-          (selectedStatus as BillPresentationStatus)
-      ) {
-        return false
-      }
+    return sortBillsForDisplay(
+      initialBills.filter((bill) => {
+        // 状态筛选
+        if (
+          selectedStatus &&
+          getBillPresentationStatus(bill) !==
+            (selectedStatus as BillPresentationStatus)
+        ) {
+          return false
+        }
 
-      // 搜索筛选
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        return (
-          bill.billNumber.toLowerCase().includes(query) ||
-          bill.contract.renter.name.toLowerCase().includes(query) ||
-          bill.contract.room.roomNumber.toLowerCase().includes(query) ||
-          bill.contract.room.building.name.toLowerCase().includes(query)
-        )
-      }
+        // 搜索筛选
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase()
+          return (
+            bill.billNumber.toLowerCase().includes(query) ||
+            bill.contract.renter.name.toLowerCase().includes(query) ||
+            bill.contract.room.roomNumber.toLowerCase().includes(query) ||
+            bill.contract.room.building.name.toLowerCase().includes(query)
+          )
+        }
 
-      return true
-    })
+        return true
+      })
+    )
   }, [initialBills, selectedStatus, searchQuery])
 
   // 计算状态统计

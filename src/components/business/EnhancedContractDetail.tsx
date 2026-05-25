@@ -25,8 +25,11 @@ import {
 } from 'lucide-react'
 
 import type { BillStatus, ContractStatus } from '@/lib/colors'
-import type { BillStatus as PrismaBillStatus } from '@prisma/client'
-import { buildBillPresentationStats } from '@/lib/bill-semantics'
+import type { ContractWithDetailsForClient } from '@/types/database'
+import {
+  buildBillPresentationStats,
+  sortBillsForDisplay,
+} from '@/lib/bill-semantics'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -37,87 +40,6 @@ import {
   BillStatusBadge,
   ContractStatusBadge,
 } from '@/components/ui/status-badge'
-
-interface ContractWithDetailsForClient {
-  id: string
-  contractNumber: string
-  roomId: string
-  renterId: string
-  startDate: Date
-  endDate: Date
-  isExtended: boolean
-  monthlyRent: number
-  totalRent: number
-  deposit: number
-  keyDeposit: number | null
-  cleaningFee: number | null
-  paymentMethod?: string | null
-  paymentTiming?: string | null
-  status: string
-  businessStatus?: string | null
-  signedBy?: string | null
-  signedDate?: Date | null
-  remarks?: string | null
-  createdAt: Date
-  updatedAt: Date
-  room: {
-    id: string
-    roomNumber: string
-    floorNumber: number
-    buildingId: string
-    roomType: string
-    area: number | null
-    rent: number
-    status: string
-    currentRenter?: string | null
-    overdueDays?: number | null
-    createdAt: Date
-    updatedAt: Date
-    building: {
-      id: string
-      name: string
-      address: string | null
-      totalRooms: number
-      description: string | null
-      createdAt: Date
-      updatedAt: Date
-    }
-  }
-  renter: {
-    id: string
-    name: string
-    gender?: string | null
-    phone: string
-    idCard?: string | null
-    emergencyContact?: string | null
-    emergencyPhone?: string | null
-    occupation?: string | null
-    company?: string | null
-    moveInDate?: Date | null
-    tenantCount?: number | null
-    remarks?: string | null
-    createdAt: Date
-    updatedAt: Date
-  }
-  bills: Array<{
-    id: string
-    billNumber: string
-    type: string
-    amount: number
-    receivedAmount: number
-    pendingAmount: number
-    dueDate: Date
-    paidDate?: Date | null
-    period?: string | null
-    status: string
-    paymentMethod?: string | null
-    operator?: string | null
-    remarks?: string | null
-    contractId: string
-    createdAt: Date
-    updatedAt: Date
-  }>
-}
 
 interface EnhancedContractDetailProps {
   contract: ContractWithDetailsForClient
@@ -157,6 +79,7 @@ export function EnhancedContractDetail({
     (new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   )
   const isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0
+  const contractBills = contract.bills ?? []
 
   // 处理租客信息卡片点击
   const handleRenterClick = () => {
@@ -205,16 +128,13 @@ export function EnhancedContractDetail({
 
   // 计算账单统计
   const billStats = buildBillPresentationStats(
-    contract.bills.map((bill) => ({
+    contractBills.map((bill) => ({
       ...bill,
-      status: bill.status as PrismaBillStatus,
+      status: bill.status,
     }))
   )
 
-  // 按时间排序账单（由近及远）
-  const sortedBills = [...contract.bills].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  const sortedBills = sortBillsForDisplay(contractBills)
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -366,7 +286,7 @@ export function EnhancedContractDetail({
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
             )}
           >
-            账单历史 ({contract.bills.length})
+            账单历史 ({contractBills.length})
           </button>
           <button
             onClick={() => setActiveTab('facilities')}

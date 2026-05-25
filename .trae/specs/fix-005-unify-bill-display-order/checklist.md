@@ -1,0 +1,8 @@
+- [x] 已定义统一账单展示排序规则，并明确未完结账单优先于已完结账单
+- [x] 合同详情页账单历史 Tab 已复用统一排序规则，不再手写 `createdAt desc`
+- [x] 账单列表页初始展示、状态筛选和搜索结果都遵守统一排序规则
+- [x] `billQueries.findAll()` 与 `/api/bills` 的默认排序口径保持一致
+- [x] 同一 `dueDate` 下的账单排序稳定，使用 `createdAt desc` 兜底
+- [x] 桌面端账单网格与移动端账单列表展示顺序一致
+- [x] `npm run lint` 通过
+- [x] `npm run type-check` 通过

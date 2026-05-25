@@ -5,7 +5,7 @@ import type {
   RoomStatus,
 } from '@prisma/client'
 
-import { createBillStatusCountMap } from './bill-semantics'
+import { createBillStatusCountMap, sortBillsForDisplay } from './bill-semantics'
 import { prisma } from './prisma'
 
 function createRestrictedDeleteError(entityName: string, suggestion: string) {
@@ -691,7 +691,9 @@ export const contractQueries = {
           include: { building: true },
         },
         renter: true,
-        bills: true,
+        bills: {
+          orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+        },
       },
     }),
 
@@ -911,8 +913,8 @@ export const contractQueries = {
 // 账单相关查询
 export const billQueries = {
   // 查找所有账单
-  findAll: () =>
-    prisma.bill.findMany({
+  findAll: async () => {
+    const bills = await prisma.bill.findMany({
       include: {
         contract: {
           include: {
@@ -923,8 +925,11 @@ export const billQueries = {
           },
         },
       },
-      orderBy: { dueDate: 'desc' },
-    }),
+      orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+    })
+
+    return sortBillsForDisplay(bills)
+  },
 
   // 根据状态查找账单
   findByStatus: (status: BillStatus) =>
