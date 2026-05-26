@@ -103,8 +103,9 @@ export function EditBillPage({ bill }: EditBillPageProps) {
 
       setSuccess('账单更新成功')
 
-      // 立即跳转，不使用延迟
-      router.push(`/bills/${bill.id}`)
+      // 成功后刷新目标详情页，避免继续看到旧的 RSC 快照
+      router.replace(`/bills/${bill.id}`)
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新账单失败')
     } finally {

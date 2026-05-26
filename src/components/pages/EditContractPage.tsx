@@ -45,8 +45,9 @@ export function EditContractPage({
         throw new Error(error.message || '更新合同失败')
       }
 
-      // 更新成功，跳转回合同详情页
-      router.push(`/contracts/${contract.id}`)
+      // 更新后刷新详情页，避免继续展示旧合同快照
+      router.replace(`/contracts/${contract.id}`)
+      router.refresh()
     } catch (error) {
       console.error('更新合同失败:', error)
       alert(error instanceof Error ? error.message : '更新合同失败，请重试')

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { globalSettings } from '@/lib/global-settings'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 /**
  * 设置初始化API
@@ -12,6 +13,10 @@ export async function POST() {
     console.log('[设置初始化] 开始初始化默认设置')
 
     await globalSettings.initializeDefaultSettings()
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+    })
 
     // 返回初始化后的设置
     const settings = await globalSettings.getAllSettings()

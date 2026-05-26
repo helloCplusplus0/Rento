@@ -8,6 +8,7 @@ import {
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { globalSettings } from '@/lib/global-settings'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 /**
  * 全局设置API
@@ -48,6 +49,10 @@ async function handlePostSettings(request: NextRequest) {
 
   await globalSettings.updateSettings(newSettings)
 
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+  })
+
   // 返回更新后的所有设置
   const updatedSettings = await globalSettings.getAllSettings()
 
@@ -70,6 +75,10 @@ async function handleDeleteSettings() {
   console.log('[设置API] 重置设置为默认值')
 
   await globalSettings.resetToDefaults()
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+  })
 
   // 返回重置后的设置
   const defaultSettings = await globalSettings.getAllSettings()

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { billQueries } from '@/lib/queries'
 
@@ -137,6 +138,11 @@ async function handlePatchBill(
     },
   }
 
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
+    detailPaths: [`/bills/${id}`, `/contracts/${updatedBill.contractId}`],
+  })
+
   return NextResponse.json({
     success: true,
     message: 'Bill updated successfully',
@@ -238,6 +244,13 @@ async function handleDeleteBill(
 
   await prisma.bill.delete({
     where: { id },
+  })
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
+    detailPaths: existingBill.contractId
+      ? [`/bills/${id}`, `/contracts/${existingBill.contractId}`]
+      : [`/bills/${id}`],
   })
 
   return NextResponse.json({

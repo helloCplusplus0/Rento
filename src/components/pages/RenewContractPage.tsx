@@ -210,7 +210,8 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
       // 显示成功弹框提示
       setTimeout(() => {
-        router.push(`/contracts/${result.data.newContract.id}`)
+        router.replace(`/contracts/${result.data.newContract.id}`)
+        router.refresh()
       }, 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : '续租失败，请重试')

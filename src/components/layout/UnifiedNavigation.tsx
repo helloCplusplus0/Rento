@@ -156,7 +156,7 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
                 <Link
                   key={item.id}
                   href={item.href}
-                  prefetch={true}
+                  prefetch={item.prefetch}
                   className={cn(
                     'flex h-[var(--nav-height-mobile)] min-h-[44px] min-w-[52px] flex-1 flex-col items-center justify-center rounded-lg px-2 py-1 transition-colors',
                     'hover:bg-gray-100 active:bg-gray-200',
@@ -225,7 +225,7 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
                     <Link
                       key={item.id}
                       href={item.href}
-                      prefetch={true}
+                      prefetch={item.prefetch}
                       className={cn(
                         'relative rounded-md px-3 py-2 text-sm font-medium transition-colors',
                         isActive

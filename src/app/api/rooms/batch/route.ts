@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { buildingQueries, roomQueries } from '@/lib/queries'
 
@@ -166,6 +167,10 @@ export async function POST(request: NextRequest) {
         totalRooms: Number(room.building.totalRooms),
       },
     }))
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'rooms'],
+    })
 
     return Response.json(
       {

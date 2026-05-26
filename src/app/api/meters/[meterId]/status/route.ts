@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { meterQueries } from '@/lib/queries'
 
 /**
@@ -43,6 +44,11 @@ async function handlePatchMeterStatus(
         amount: Number(reading.amount),
       })) || [],
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
+    detailPaths: updatedMeter.roomId ? [`/rooms/${updatedMeter.roomId}`] : [],
+  })
 
   return NextResponse.json(meterData)
 }

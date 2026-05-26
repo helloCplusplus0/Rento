@@ -7,6 +7,7 @@ import {
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
 import { ErrorLogger, ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { contractQueries } from '@/lib/queries'
 import { performContractDeleteSafetyCheck } from '@/lib/validation'
@@ -87,6 +88,11 @@ async function handleUpdateContract(
       },
     })
 
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [`/contracts/${id}`],
+    })
+
     return createSuccessResponse(updatedContract, '合同签约信息更新成功')
   } else {
     // 对于待生效的合同，允许编辑所有字段
@@ -148,6 +154,11 @@ async function handleUpdateContract(
       },
     })
 
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [`/contracts/${id}`],
+    })
+
     return createSuccessResponse(updatedContract, '合同更新成功')
   }
 }
@@ -164,6 +175,19 @@ async function handleDeleteContract(
 
   // 验证合同ID
   validateRequired({ id }, ['id'])
+
+  const existingContract = await prisma.contract.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      roomId: true,
+      renterId: true,
+    },
+  })
+
+  if (!existingContract) {
+    return NextResponse.json({ error: '合同不存在' }, { status: 404 })
+  }
 
   // 执行删除安全检查
   const safetyCheck = await performContractDeleteSafetyCheck(id)
@@ -212,6 +236,15 @@ async function handleDeleteContract(
       deletedEntities: {
         contract: id,
       },
+    })
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [
+        `/contracts/${id}`,
+        `/rooms/${existingContract.roomId}`,
+        `/renters/${existingContract.renterId}`,
+      ],
     })
 
     return createSuccessResponse(

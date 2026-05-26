@@ -9,6 +9,7 @@ import {
   withErrorLogging,
 } from '@/lib/error-logger'
 import { fallbackManager } from '@/lib/fallback-manager'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { getSettings } from '@/hooks/useSettings'
 
@@ -189,6 +190,11 @@ export async function generateBillsOnContractSigned(contractId: string) {
       billCount: bills.length,
       duration: totalTime,
       module: 'auto-bill-generator',
+    })
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [`/contracts/${contractId}`],
     })
 
     return bills
@@ -453,6 +459,12 @@ export async function generateUtilityBillOnReading(
     console.log(
       `合同 ${contract.contractNumber} 自动生成水电费账单: ${utilityResult.totalCost}元，价格来源: ${JSON.stringify(readingData.meterPrices)}`
     )
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters', 'meters'],
+      detailPaths: [`/contracts/${contractId}`],
+    })
+
     return utilityBill
   } catch (error) {
     console.error('水电抄表自动生成账单失败:', error)

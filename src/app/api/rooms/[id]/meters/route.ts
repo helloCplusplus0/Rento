@@ -10,6 +10,7 @@ import {
   validateDisplayName,
   validateUnitPrice,
 } from '@/lib/meter-utils'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { meterQueries } from '@/lib/queries'
 
 /**
@@ -122,6 +123,11 @@ async function handlePostRoomMeters(
     ...meter,
     unitPrice: Number(meter.unitPrice),
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
+    detailPaths: [`/rooms/${roomId}`],
+  })
 
   return NextResponse.json(meterData, { status: 201 })
 }

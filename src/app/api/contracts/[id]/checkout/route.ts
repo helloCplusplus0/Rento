@@ -15,6 +15,7 @@ import {
   type CheckoutSettlementSubmissionItem,
 } from '@/lib/checkout-settlement'
 import { ErrorLogger, ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 
 function appendAuditRemark(existingRemark: string | null, auditRemark: string) {
@@ -506,6 +507,15 @@ async function handleCheckoutContractWithSettlement(
         totalSettlementAmount: result.settlement.summary.netAmount,
         settlementType: result.settlement.summary.settlementType,
       },
+    })
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters', 'meters'],
+      detailPaths: [
+        `/contracts/${contractId}`,
+        `/rooms/${result.contract.roomId}`,
+        `/renters/${result.contract.renterId}`,
+      ],
     })
 
     // 返回退租成功信息

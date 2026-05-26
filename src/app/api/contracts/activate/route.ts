@@ -7,6 +7,7 @@ import {
 } from '@/lib/api-error-handler'
 import { contractActivationService } from '@/lib/contract-activation'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 /**
  * 合同激活API
@@ -26,6 +27,11 @@ async function handleActivateContracts(
     )
 
     if (result.success) {
+      await revalidateMutationPaths({
+        scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+        detailPaths: [`/contracts/${body.contractId}`],
+      })
+
       return createSuccessResponse({
         message: result.message,
         contractId: body.contractId,
@@ -37,6 +43,10 @@ async function handleActivateContracts(
 
   // 否则执行批量激活
   const result = await contractActivationService.activatePendingContracts()
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+  })
 
   return createSuccessResponse({
     message: `激活任务完成，成功激活 ${result.activated} 个合同`,

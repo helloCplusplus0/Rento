@@ -9,6 +9,7 @@ import {
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { optimizedRenterQueries } from '@/lib/optimized-queries'
 import { renterQueries } from '@/lib/queries'
 
@@ -99,6 +100,12 @@ async function handlePostRenters(request: NextRequest) {
   }
 
   const renter = await renterQueries.create(renterData)
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'renters'],
+    detailPaths: [`/renters/${renter.id}`],
+  })
+
   return createSuccessResponse(renter, '租客创建成功')
 }
 

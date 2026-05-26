@@ -3,6 +3,7 @@ import type { BillStatus, BillType } from '@prisma/client'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { optimizedBillQueries } from '@/lib/optimized-queries'
 import { billQueries, contractQueries } from '@/lib/queries'
 
@@ -137,6 +138,11 @@ async function handlePostBills(request: NextRequest) {
         : null,
     },
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
+    detailPaths: [`/bills/${newBill.id}`, `/contracts/${billData.contractId}`],
+  })
 
   return NextResponse.json(transformedBill)
 }

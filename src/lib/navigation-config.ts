@@ -10,6 +10,7 @@ export interface NavigationItem {
   icon?: React.ComponentType<{ className?: string }>
   badge?: number
   description?: string
+  prefetch?: boolean
   showInMobile?: boolean // 新增：是否在移动端导航栏显示
 }
 
@@ -23,6 +24,7 @@ export const navigationItems: NavigationItem[] = [
     label: '工作台',
     href: '/',
     description: '查看系统概览和统计数据',
+    prefetch: false,
     showInMobile: true,
   },
   {
@@ -30,6 +32,7 @@ export const navigationItems: NavigationItem[] = [
     label: '房源',
     href: '/rooms',
     description: '管理房间信息和状态',
+    prefetch: false,
     showInMobile: true,
   },
   {
@@ -44,6 +47,7 @@ export const navigationItems: NavigationItem[] = [
     label: '合同',
     href: '/contracts',
     description: '管理租赁合同',
+    prefetch: false,
     showInMobile: true,
   },
   {
@@ -51,6 +55,7 @@ export const navigationItems: NavigationItem[] = [
     label: '账单',
     href: '/bills',
     description: '管理收支账单',
+    prefetch: false,
     showInMobile: false, // 不在移动端导航栏显示，因为工作台已有入口
   },
   {

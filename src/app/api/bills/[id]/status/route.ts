@@ -7,6 +7,7 @@ import {
   toBillAmount,
 } from '@/lib/bill-semantics'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { billQueries } from '@/lib/queries'
 
 /**
@@ -150,6 +151,11 @@ async function handlePatchBillStatus(
         : null,
     },
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
+    detailPaths: [`/bills/${id}`, `/contracts/${updatedBill.contractId}`],
+  })
 
   return NextResponse.json(billData)
 }

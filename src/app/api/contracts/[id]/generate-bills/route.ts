@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import type { FallbackResult } from '@/lib/fallback-manager'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 /**
  * 账单数据接口
@@ -41,6 +42,11 @@ export async function POST(
       // 如果是FallbackResult类型，处理回退结果
       const fallbackResult = generatedBills as FallbackResult
       if (fallbackResult.success && Array.isArray(fallbackResult.result)) {
+        await revalidateMutationPaths({
+          scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+          detailPaths: [`/contracts/${id}`],
+        })
+
         const bills = fallbackResult.result as BillData[]
         return Response.json({
           success: true,
@@ -61,6 +67,11 @@ export async function POST(
     }
 
     // 正常的账单数组结果
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [`/contracts/${id}`],
+    })
+
     const bills = generatedBills as BillData[]
     return Response.json({
       success: true,

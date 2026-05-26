@@ -100,7 +100,8 @@ export function CreateContractPage({
       // 短暂显示成功消息后跳转
       setProgress(successMessage)
       setTimeout(() => {
-        router.push(`/contracts/${contractId}`)
+        router.replace(`/contracts/${contractId}`)
+        router.refresh()
       }, 1500)
     } catch (error) {
       console.error('创建合同失败:', error)

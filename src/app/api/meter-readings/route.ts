@@ -12,6 +12,7 @@ import {
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { globalSettings } from '@/lib/global-settings'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { meterReadingQueries } from '@/lib/queries'
 
 function resolveReadingDate(
@@ -182,6 +183,8 @@ async function handlePostMeterReadings(request: NextRequest) {
   const warnings = []
   const errors = []
   const fallbackReadingDate = new Date()
+  const impactedContractIds = new Set<string>()
+  const impactedRoomIds = new Set<string>()
 
   if (readingSettingsLoadResult.source !== 'database') {
     warnings.push({
@@ -207,6 +210,14 @@ async function handlePostMeterReadings(request: NextRequest) {
           error: '仪表不存在',
         })
         continue
+      }
+
+      if (meter.roomId) {
+        impactedRoomIds.add(meter.roomId)
+      }
+
+      if (readingData.contractId) {
+        impactedContractIds.add(readingData.contractId)
       }
 
       // 正式抄表只按 meterId + readingDate + REGULAR_READING 做精确重复门禁，
@@ -334,6 +345,17 @@ async function handlePostMeterReadings(request: NextRequest) {
         warning: '抄表记录已保存，但自动生成账单失败',
       })
     }
+  }
+
+  if (!validateOnly && results.length > 0) {
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'bills', 'contracts', 'rooms', 'meters'],
+      detailPaths: [
+        ...Array.from(impactedContractIds, (contractId) => `/contracts/${contractId}`),
+        ...Array.from(impactedRoomIds, (roomId) => `/rooms/${roomId}`),
+      ],
+      extraTargets: [{ path: '/meter-readings/history' }, { path: '/meter-readings/batch' }],
+    })
   }
 
   return createSuccessResponse(

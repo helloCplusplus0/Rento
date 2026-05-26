@@ -11,6 +11,7 @@ import {
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import { ErrorType } from '@/lib/error-logger'
 import { globalSettings } from '@/lib/global-settings'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { optimizedContractQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import {
@@ -357,12 +358,23 @@ async function handlePostContracts(request: NextRequest) {
   // 异步处理账单生成，不阻塞响应
   let billGenerationPromise: Promise<any> | null = null
   if (shouldGenerateBills) {
-    billGenerationPromise = generateBillsOnContractSigned(result.id).catch(
-      (error) => {
+    billGenerationPromise = generateBillsOnContractSigned(result.id)
+      .then(async (generatedBills) => {
+        await revalidateMutationPaths({
+          scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+          detailPaths: [
+            `/contracts/${result.id}`,
+            `/rooms/${roomId}`,
+            `/renters/${renterId}`,
+          ],
+        })
+
+        return generatedBills
+      })
+      .catch((error) => {
         console.error('异步账单生成失败:', error)
         return []
-      }
-    )
+      })
   }
 
   // 获取完整的合同信息
@@ -371,6 +383,15 @@ async function handlePostContracts(request: NextRequest) {
   if (!fullContract) {
     throw new Error('创建合同后无法获取完整信息')
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+    detailPaths: [
+      `/contracts/${result.id}`,
+      `/rooms/${roomId}`,
+      `/renters/${renterId}`,
+    ],
+  })
 
   console.log(`[合同创建] 合同创建完成，总耗时: ${Date.now() - startTime}ms`)
 

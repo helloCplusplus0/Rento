@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { optimizedRoomQueries } from '@/lib/optimized-queries'
 import { roomQueries } from '@/lib/queries'
 import {
@@ -131,6 +132,11 @@ async function handlePostRooms(request: NextRequest) {
   const newRoom = await roomQueries.create(roomData)
   const transformedRoom = transformRoomDecimalFields(newRoom)
 
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms'],
+    detailPaths: [`/rooms/${newRoom.id}`],
+  })
+
   return NextResponse.json(transformedRoom, { status: 201 })
 }
 
@@ -168,6 +174,10 @@ async function handlePatchRooms(request: NextRequest) {
 
   const result = await roomQueries.batchUpdateStatus(roomIds, status, operator)
   const response = formatBatchUpdateResponse(result)
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'contracts'],
+  })
 
   return NextResponse.json(response)
 }

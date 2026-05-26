@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { renterQueries } from '@/lib/queries'
 
 /**
@@ -80,6 +81,10 @@ export async function PUT(
     }
 
     const updatedRenter = await renterQueries.update(id, updateData)
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'renters', 'contracts', 'bills'],
+      detailPaths: [`/renters/${id}`],
+    })
     return Response.json(updatedRenter)
   } catch (error) {
     console.error('Failed to update renter:', error)
@@ -116,6 +121,10 @@ export async function DELETE(
     }
 
     await renterQueries.delete(id)
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'renters', 'contracts', 'bills'],
+      detailPaths: [`/renters/${id}`],
+    })
     return Response.json({ message: 'Renter deleted successfully' })
   } catch (error) {
     console.error('Failed to delete renter:', error)

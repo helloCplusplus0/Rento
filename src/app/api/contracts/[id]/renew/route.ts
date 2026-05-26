@@ -8,6 +8,7 @@ import {
 } from '@/lib/api-error-handler'
 import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { contractQueries, roomQueries } from '@/lib/queries'
 
@@ -202,6 +203,16 @@ async function handleRenewContractWithBills(
     console.error('续租账单生成失败:', error)
     // 账单生成失败不影响续租成功，记录错误即可
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+    detailPaths: [
+      `/contracts/${(await params).id}`,
+      `/contracts/${newContract.id}`,
+      `/rooms/${newContract.roomId}`,
+      `/renters/${newContract.renterId}`,
+    ],
+  })
 
   // 返回续租成功信息
   return createSuccessResponse(

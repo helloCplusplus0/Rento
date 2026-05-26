@@ -3,6 +3,7 @@ import type { RoomStatus } from '@prisma/client'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { roomQueries } from '@/lib/queries'
 
 /**
@@ -41,6 +42,11 @@ async function handlePatchRoomStatus(
       totalRooms: Number(updatedRoom.building.totalRooms),
     },
   }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'contracts'],
+    detailPaths: [`/rooms/${id}`],
+  })
 
   return NextResponse.json(roomData)
 }

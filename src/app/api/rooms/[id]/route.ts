@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { roomQueries } from '@/lib/queries'
 import { transformRoomDecimalFields } from '@/lib/room-utils'
@@ -183,6 +184,12 @@ async function handlePutRoom(
   }
 
   const roomData = transformRoomDecimalFields(updatedRoom)
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'contracts'],
+    detailPaths: [`/rooms/${id}`],
+  })
+
   return NextResponse.json(roomData)
 }
 
@@ -214,6 +221,11 @@ async function deleteRoomWithoutRelatedHistory(roomId: string) {
     await tx.building.update({
       where: { id: room.buildingId },
       data: { totalRooms: { decrement: 1 } },
+    })
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'rooms', 'contracts'],
+      detailPaths: [`/rooms/${roomId}`],
     })
 
     return {

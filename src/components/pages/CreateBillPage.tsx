@@ -89,8 +89,9 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
         billNumber: newBill.billNumber,
       })
 
-      // 跳转到账单详情页
-      router.push(`/bills/${newBill.id}`)
+      // 跳转后立即刷新详情树，避免沿用写前预取快照
+      router.replace(`/bills/${newBill.id}`)
+      router.refresh()
     } catch (error) {
       const errorRecord: ErrorRecord = {
         id: `bill_creation_${Date.now()}`,

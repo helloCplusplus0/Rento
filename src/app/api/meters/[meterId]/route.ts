@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { validateDisplayName, validateUnitPrice } from '@/lib/meter-utils'
 import { prisma } from '@/lib/prisma'
 import { meterQueries } from '@/lib/queries'
@@ -106,6 +107,11 @@ async function handlePutMeter(
       })) || [],
   }
 
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
+    detailPaths: updatedMeter.roomId ? [`/rooms/${updatedMeter.roomId}`] : [],
+  })
+
   return NextResponse.json(meterData)
 }
 
@@ -170,6 +176,11 @@ async function handleDeleteMeter(
 
     const action = existingMeter.isActive ? 'deactivate' : 'already_inactive'
 
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
+      detailPaths: [`/rooms/${existingMeter.roomId}`],
+    })
+
     return NextResponse.json({
       success: true,
       message:
@@ -192,6 +203,11 @@ async function handleDeleteMeter(
 
   await prisma.meter.delete({
     where: { id: meterId },
+  })
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
+    detailPaths: [`/rooms/${existingMeter.roomId}`],
   })
 
   return NextResponse.json({

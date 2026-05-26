@@ -282,6 +282,7 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
       // 退租成功后直接替换当前路由，避免在成功态重渲染与页面跳转并发时触发
       // App Router 的 RSC 请求中断噪音。
       router.replace(`/contracts/${contract.id}`)
+      router.refresh()
     } catch (error) {
       console.error('退租失败:', error)
       setError(error instanceof Error ? error.message : '退租失败，请重试')
