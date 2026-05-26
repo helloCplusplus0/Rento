@@ -7,7 +7,7 @@
     "dev:check": "node ./scripts/dev-entry.mjs --validate-only",
     "dev:next": "next dev --port 3001",
     "build": "next build",
-    "start": "next start --port 3001",
+    "start": "node ./scripts/start-entry.mjs",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",

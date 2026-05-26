@@ -1,18 +1,84 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 生成兼容的自签名SSL证书用于PWA测试
-# 修复 ERR_SSL_KEY_USAGE_INCOMPATIBLE 错误
+# 生成兼容的自签名证书，用于技术级 HTTPS 调试。
+# 正式的 Android + Chrome + HTTPS 验收仍优先使用 mkcert，并把证书保留在宿主机私有目录。
 
-echo "🔐 生成PWA测试用的兼容SSL证书..."
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_OUTPUT_DIR="${HOME}/rento-local-certs-selfsigned"
+OUTPUT_DIR="${CERT_OUTPUT_DIR:-${DEFAULT_OUTPUT_DIR}}"
+CERT_HOSTS="${CERT_HOSTS:-192.168.31.84,localhost,127.0.0.1}"
+CERT_DAYS="${CERT_DAYS:-365}"
 
-# 创建证书目录
-mkdir -p certs
+note() {
+  printf '[INFO] %s\n' "$1"
+}
 
-# 生成私钥 (使用RSA 2048位)
-openssl genrsa -out certs/server.key 2048
+pass() {
+  printf '[PASS] %s\n' "$1"
+}
 
-# 创建证书签名请求配置 (修复密钥用途)
-cat > certs/server.conf << EOF
+fail() {
+  printf '[FAIL] %s\n' "$1" >&2
+  exit 1
+}
+
+trim_whitespace() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
+ensure_output_dir_is_private() {
+  if [[ "$OUTPUT_DIR" == "$PROJECT_DIR"* ]]; then
+    fail "CERT_OUTPUT_DIR 必须位于仓库外部，当前为：$OUTPUT_DIR"
+  fi
+}
+
+build_subject_alt_names() {
+  local san_entries=""
+  local dns_index=1
+  local ip_index=1
+  local host
+
+  IFS=',' read -r -a cert_hosts <<< "$CERT_HOSTS"
+  for host in "${cert_hosts[@]}"; do
+    host="$(trim_whitespace "$host")"
+    [[ -n "$host" ]] || continue
+
+    if [[ "$host" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+      san_entries+="IP.${ip_index} = ${host}"$'\n'
+      ((ip_index += 1))
+    else
+      san_entries+="DNS.${dns_index} = ${host}"$'\n'
+      ((dns_index += 1))
+    fi
+  done
+
+  [[ -n "$san_entries" ]] || fail 'CERT_HOSTS 至少需要包含一个域名或 IP'
+  printf '%s' "$san_entries"
+}
+
+main() {
+  ensure_output_dir_is_private
+  mkdir -p "$OUTPUT_DIR"
+
+  local cert_conf="${OUTPUT_DIR}/server.conf"
+  local cert_key="${OUTPUT_DIR}/server.key"
+  local cert_crt="${OUTPUT_DIR}/server.crt"
+  local primary_cn
+  local san_entries
+
+  primary_cn="$(trim_whitespace "${CERT_HOSTS%%,*}")"
+  [[ -n "$primary_cn" ]] || fail '无法从 CERT_HOSTS 推导证书 Common Name'
+  san_entries="$(build_subject_alt_names)"
+
+  note "生成自签名证书，输出目录：$OUTPUT_DIR"
+
+  openssl genrsa -out "$cert_key" 2048
+
+  cat > "$cert_conf" <<EOF
 [req]
 distinguished_name = req_distinguished_name
 req_extensions = v3_req
@@ -22,9 +88,9 @@ prompt = no
 C = CN
 ST = Beijing
 L = Beijing
-O = Rento PWA Test
+O = Rento Local HTTPS
 OU = Development
-CN = 192.168.31.84
+CN = ${primary_cn}
 
 [v3_req]
 basicConstraints = CA:FALSE
@@ -33,32 +99,23 @@ extendedKeyUsage = serverAuth
 subjectAltName = @alt_names
 
 [alt_names]
-DNS.1 = localhost
-DNS.2 = 192.168.31.84
-IP.1 = 127.0.0.1
-IP.2 = 192.168.31.84
+${san_entries}
 EOF
 
-# 生成自签名证书 (一步完成，避免CSR问题)
-openssl req -new -x509 -key certs/server.key -out certs/server.crt -days 365 -config certs/server.conf -extensions v3_req
+  openssl req -new -x509 \
+    -key "$cert_key" \
+    -out "$cert_crt" \
+    -days "$CERT_DAYS" \
+    -config "$cert_conf" \
+    -extensions v3_req
 
-# 验证证书
-echo "🔍 验证证书信息..."
-openssl x509 -in certs/server.crt -text -noout | grep -A 5 "X509v3 extensions"
+  note '证书扩展摘要：'
+  openssl x509 -in "$cert_crt" -text -noout | grep -A 5 'X509v3 extensions'
 
-echo "✅ SSL证书生成完成！"
-echo "📁 证书位置: $(pwd)/certs/"
-echo "🔑 私钥: server.key"
-echo "📜 证书: server.crt"
-echo ""
-echo "🔧 修复内容:"
-echo "- 修正了密钥用途 (keyUsage)"
-echo "- 添加了数字签名支持"
-echo "- 使用X.509v3扩展"
-echo ""
-echo "📱 使用说明:"
-echo "1. 在手机浏览器中访问 https://192.168.31.84:3002"
-echo "2. 接受安全警告（自签名证书）"
-echo "3. 重新测试PWA功能"
-echo ""
-echo "⚠️  注意: 自签名证书会显示安全警告，这是正常现象"
+  pass "证书已生成：$cert_crt"
+  pass "私钥已生成：$cert_key"
+  note '该证书仅适用于技术级调试，自签名证书仍会触发浏览器安全提示。'
+  note '正式 Android 真机验收请优先使用 mkcert，并通过 nginx/templates/rento-local-https.env.example 引用宿主机私有证书路径。'
+}
+
+main "$@"

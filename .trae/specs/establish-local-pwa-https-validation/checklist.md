@@ -1,0 +1,11 @@
+- [x] 已明确“永久本地 PWA 验证方案”的范围仅限受控局域网 HTTPS + Android 真机，不越界到公网发布或完整 DevOps 平台
+- [x] 已明确仓库内需要长期保留的本地验证资产类型，包括 Nginx 模板、辅助脚本、环境示例与文档入口
+- [x] 已明确真实证书、私钥和本地根证书不进入版本控制主路径
+- [x] 已明确本地 HTTPS 来源下 `NEXTAUTH_URL`、`ALLOWED_ORIGINS`、`NEXT_PUBLIC_ENABLE_PWA` 与统一启动入口的一致口径
+- [x] 已定义一条从构建、统一启动、反代接入、烟雾检查到 Android 真机验收的连续本地验证路径
+- [x] 已要求文档与脚本之间保持单一真相源，不再让 runbook、README、部署文档和脚本分别维护不同说法
+- [x] 已将 `npm run lint` 与 `npm run type-check` 纳入本任务正式验收
+- [x] 已要求复核仓库内不落入真实本地敏感资产（已通过；`git ls-files` 复核结果为空，`.env`、`certs/`、`nginx/ssl/` 及常见证书/私钥后缀均未继续被 Git 跟踪）
+- [x] 当前宿主机 `.env` 与宿主机私有 Nginx 变量文件已切到 HTTPS + PWA 验收口径，`pwa-local-https-helper.sh validate/checklist` 可对当前机器直接通过
+- [x] 当前宿主机私有证书资产已在仓库外路径生成完成，`rento-local-https.env` 指向的证书与私钥真实存在，可直接供本地 Nginx HTTPS 使用
+- [x] 当前宿主机本地 HTTPS 路径已切换到 compose-managed `local-https-nginx`；`docker-compose.local-https.yml config` 已通过，并在 rootless Podman 高位端口回退（`18443`）下通过 `pwa-smoke-check.sh`；默认 `80/443` 仍需具备特权端口能力后再直接复用

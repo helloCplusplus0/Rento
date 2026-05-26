@@ -1,0 +1,8 @@
+- [x] 已明确正式支持环境的 HTTPS、受控网络、登录门禁与浏览器前提
+- [x] 已明确非正式支持环境的退化路径，不再把普通 Web 启动等同于 PWA 交付完成
+- [x] 已明确 Android 正式支持环境中的安装步骤、更新方式、失败退化与最小回滚说明
+- [x] 已产出最小真机验收清单，覆盖安装、启动、登录、关键页面、更新、离线兜底与移除重装
+- [x] 已明确哪些验证必须在 `Android + Chrome + HTTPS` 环境中完成
+- [x] 已同步 `README.md`、`DEPLOYMENT.md`、`ENVIRONMENT_GUIDE.md` 与必要的 `.env.example` 口径
+- [x] 已确认本子任务未越界到公网 App 分发、完整 DevOps 平台建设或与 PWA 无关的安全体系重构
+- [x] `npm run lint` 与 `npm run type-check` 被列为本子任务的正式验收项

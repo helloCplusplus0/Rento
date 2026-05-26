@@ -18,6 +18,7 @@
 
 # misc
 .DS_Store
+# 本地 mkcert / HTTPS 证书属于宿主机私有资产，不进入仓库
 *.pem
 
 # debug
@@ -51,6 +52,8 @@ Thumbs.db
 .env.*
 /backups/
 /logs/
+# 本地 Nginx 证书与生成物只允许留在宿主机或未纳入版本控制的目录
 /nginx/ssl/
+/nginx/runtime/
 /certs/
 prisma/*.db

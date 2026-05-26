@@ -4,13 +4,17 @@
 - `.env`：本地私有环境配置，真实部署时使用，不应作为共享真相源。
 - `.env.example`：环境模板，提供字段说明和安全占位值。
 - `docker-compose.yml`：本地/测试/生产统一容器编排入口。
+- `docker-compose.local-https.yml`：本地私有 HTTPS 验收专用 Nginx 编排入口。
 - 当前要求 `.env` 与 `.env.example` 使用同一组键名；允许不同的只有具体值，不允许再并列维护第二套环境变量命名真相。
+- 若 `.env` 在历史提交中曾被版本控制追踪，请先执行 `git rm --cached .env`；这只会移除 Git 索引中的追踪状态，不会删除宿主机上的本地私有配置文件。
+- `certs/`、`nginx/ssl/`、`*.crt`、`*.key`、`*.pem` 只允许作为宿主机私有证书路径存在；若历史上曾被 Git 追踪，请先执行 `git rm --cached -r certs nginx/ssl` 清理索引，再保留宿主机私有文件。
 - `PORT`、`HOSTNAME`、`npm_package_version` 等运行时变量由进程或包管理器注入，不属于用户手工维护的 `.env` 键。
 
 ## 2. 当前配置原则
 - PostgreSQL-only：当前主线不再支持 SQLite 开发配置。
 - `.env` 私有：局域网地址、密码、密钥可保留在本地 `.env`，不应同步到共享文档。
 - 域名优先：生产环境使用正式域名，局域网地址仅用于本地或内网调试。
+- PWA 正式验收：仅在受控私有部署、HTTPS、`NODE_ENV=production`、`NEXT_PUBLIC_ENABLE_PWA=1` 的前提下成立。
 - 迁移兼容显式化：当前 Prisma 迁移链仍保留 SQLite 历史兼容，容器初始化脚本中的 `db push` 只是过渡兜底，不是正式 PostgreSQL 迁移基线。
 
 ## 3. 最小配置步骤
@@ -46,14 +50,16 @@ npm run dev
 
 该入口会先按 Next.js 的 `.env*` 加载顺序校验开发态上下文，再启动 `next dev`，避免浏览器验证与脚本验证落在不同环境里。
 
+上面的示例值用于本地开发；若要完成 `phase05-pwa-delivery-05` 的正式 PWA 验收，必须切换到 HTTPS 私有域名，而不是继续使用 `http://localhost:3001` 作为交付口径。
+
 ## 4. 关键字段
 ### 应用相关
 - `NODE_ENV`：运行环境
 - `HOST_IP`：宿主机或局域网访问地址，用于拼装本地访问入口
 - `APP_INTERNAL_PORT`：容器内应用监听端口
 - `APP_PORT`：宿主机暴露端口；默认与 `APP_INTERNAL_PORT` 保持一致
-- `NEXTAUTH_URL`：应用对外访问地址
-- `NEXT_PUBLIC_ENABLE_PWA`：是否在受控测试环境或私有部署生产环境启用最小 PWA / service worker；`npm run dev` 所在的开发环境默认不注册
+- `NEXTAUTH_URL`：应用对外访问地址；正式 PWA 验收时必须是 HTTPS 私有域名，本地 `localhost` 只用于技术验证
+- `NEXT_PUBLIC_ENABLE_PWA`：是否在受控测试环境或私有部署生产环境启用最小 PWA / service worker；`npm run dev` 所在的开发环境默认不注册；设为 `0` 是最小回退路径
 - `NEXTAUTH_SECRET`：历史兼容密钥，当前仍可作为 session secret 回退值
 - `AUTH_SESSION_SECRET`：当前最小门禁使用的 session 签名密钥
 
@@ -70,7 +76,7 @@ npm run dev
 - 容器部署时，应用实际拿到的是 `docker-compose.yml` 注入后的 `DATABASE_URL=${CONTAINER_DATABASE_URL}`；不要把宿主机开发用 `DATABASE_URL` 误读为容器内连接串
 
 ### 安全与网络
-- `ALLOWED_ORIGINS`：允许的来源地址
+- `ALLOWED_ORIGINS`：允许的来源地址；正式 PWA 验收时应与 `NEXTAUTH_URL` 收口到同一 HTTPS 私有来源
 - `CORS_ENABLED`：是否开启 CORS 校验
 - `MAX_REQUEST_SIZE`：请求体限制，当前按字节解析，不接受 `10mb` 这类带单位写法
 - `REQUEST_TIMEOUT`：请求超时
@@ -98,7 +104,7 @@ npm run dev
 - 如需验证 `phase05-pwa-delivery-03` 的最小 PWA：
   - 仅在受控测试环境或私有部署生产环境把 `NEXT_PUBLIC_ENABLE_PWA=1`
   - 不要把 `npm run dev` 作为 service worker 验证环境
-  - 推荐使用 HTTPS 或 `localhost` 的 `npm run build && npm run start`
+  - 推荐先执行 `npm run build`，再通过统一入口 `npm run start` 验证；当前项目为 `output: 'standalone'`，不要直接调用裸 `next start`
 - 推荐先执行 `npm run dev:check`，确认开发态关键变量完整后再执行 `npm run dev`。
 - `npm run dev:check` 现在会校验 `DATABASE_URL` 的真实连通性与认证是否有效，而不只是检查变量是否存在。
 - 当前统一开发入口的阻断项为：
@@ -111,10 +117,61 @@ npm run dev
 
 ## 5.1 PWA / Service Worker 最小调试说明
 - 本地开发环境：`npm run dev` 默认不注册 service worker；即使把 `NEXT_PUBLIC_ENABLE_PWA=1` 写进 `.env`，开发态仍按普通 Web 运行，避免缓存干扰调试。
-- 受控测试环境：使用 `npm run build && npm run start`，并显式设置 `NEXT_PUBLIC_ENABLE_PWA=1`，再在真机或桌面浏览器中验证安装、离线兜底与更新提示。
+- 受控测试环境：先执行 `npm run build`，再显式设置 `NEXT_PUBLIC_ENABLE_PWA=1` 并通过统一入口 `npm run start` 启动；该入口会按 `standalone` 产物要求补齐静态资源并启动正式服务。
 - 缓存边界：当前只缓存静态壳资源、`manifest`、图标与 `/offline`；动态业务接口、鉴权态业务页面响应和其他动态数据不会进入默认缓存。
 - 更新验证：发布新版本后重新访问页面，若发现新 `service worker` 进入 `waiting`，界面会出现“发现新版本”的提示；点击“立即更新”后页面自动刷新并切换到新版本。
 - 异常回滚：若怀疑旧缓存影响行为，可在浏览器 DevTools 的 Application/Storage 面板取消注册 `sw.js` 并清空站点缓存，然后重新打开页面。
+
+## 5.2 PWA 私有部署验收环境
+若要把 Rento 作为正式可安装的私有 Web App 交付，至少确认以下组合：
+
+```bash
+NODE_ENV=production
+NEXTAUTH_URL=https://rento.example.internal
+ALLOWED_ORIGINS=https://rento.example.internal
+NEXT_PUBLIC_ENABLE_PWA=1
+AUTH_SESSION_SECRET=replace-with-a-secure-random-secret
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=scrypt:YOUR_SALT:YOUR_HASH
+```
+
+- `https://rento.example.internal` 仅为示例，请替换为真实私有域名
+- 受控私有部署验收必须使用 HTTPS；`http://localhost` 只能用于技术级 smoke test
+- 即使某些浏览器在只有 `manifest` 时仍允许“安装网站”，Rento 的正式验收仍要求显式开启 `NEXT_PUBLIC_ENABLE_PWA=1`，以保证最小 service worker、更新提示与离线兜底路径一致
+- 若浏览器或环境不满足正式支持矩阵，Rento 继续按普通响应式 Web 使用，不计入 PWA 正式验收通过
+- 若当前没有购买域名和公网证书，请参考 [pwa_private_https_android_acceptance_runbook.md](file:///home/dell/Projects/Rento/docs/pwa_private_https_android_acceptance_runbook.md) 中的 `Ubuntu 24 + Nginx + mkcert + Android 真机` 路线搭建私有 HTTPS 验证环境
+- 仓库内长期保留的本地 HTTPS 骨架固定为：
+  - `docker-compose.local-https.yml`：宿主机 3001 -> 本地 HTTPS Nginx 的专用 Compose 编排
+  - `nginx/templates/rento-local-https.conf.template`：Nginx HTTPS 反代模板
+  - `nginx/templates/rento-local-https.env.example`：模板变量示例，只用于渲染 Nginx 配置，不替代应用 `.env`
+  - `scripts/pwa-local-https-helper.sh`：模板渲染、来源一致性校验与连续验收提示入口
+- 推荐把模板变量复制到宿主机私有路径，而不是在仓库内生成真实证书、私钥或最终 Nginx 配置：
+
+```bash
+cp ./nginx/templates/rento-local-https.env.example ~/rento-local-https.env
+git rm --cached .env 2>/dev/null || true
+git rm --cached -r certs nginx/ssl 2>/dev/null || true
+bash ./scripts/pwa-local-https-helper.sh render --nginx-env ~/rento-local-https.env --output ./nginx/runtime/rento-local-https.conf
+bash ./scripts/pwa-local-https-helper.sh validate --env-file ./.env --nginx-env ~/rento-local-https.env
+set -a && source ./.env && source ~/rento-local-https.env && set +a
+docker compose -f docker-compose.local-https.yml config >/tmp/rento-local-https.compose.yaml
+```
+
+- `validate` 会检查 `NEXTAUTH_URL` 是否为 HTTPS、`ALLOWED_ORIGINS` 是否已包含相同来源、当前仓库是否还在跟踪 `.env` / `certs/` / `nginx/ssl/` / 证书私钥、`./nginx/runtime/rento-local-https.conf` 是否已生成，以及 `.next/BUILD_ID` / `.next/standalone/server.js` 是否存在
+- `local-https-nginx` 专用 compose 编排 通过 host network 代理宿主机 `127.0.0.1:3001` 的统一启动入口，不替代现有生产 `nginx` 路径
+- 如需查看最小执行顺序，可运行：
+
+```bash
+bash ./scripts/pwa-local-https-helper.sh checklist --env-file ./.env --nginx-env ~/rento-local-https.env
+```
+
+- `checklist` 会在输出步骤前先检查 `NEXTAUTH_URL`、`NEXT_PUBLIC_ENABLE_PWA` 与 `.env` 跟踪状态：`NEXTAUTH_URL` 非 HTTPS 时直接失败；`NEXT_PUBLIC_ENABLE_PWA!=1` 或 `.env` 仍被 Git 追踪时会给出明确警告，避免把未满足前置条件的环境误判为可验收状态。
+
+## 5.3 PWA 更新与最小回退
+- 当前更新策略依赖 `public/sw.js`、页面更新提示和 `skipWaiting`；用户点击“立即更新”后，页面会自动刷新到新版本
+- 若需要撤回 PWA 能力，可发布一个 `NEXT_PUBLIC_ENABLE_PWA=0` 的版本，让客户端在重新访问时注销 Rento 的 service worker
+- 若仅为排查真机缓存问题，可先清空站点数据或取消注册 `sw.js`；这属于浏览器层面的调试，不会清除 PostgreSQL 中的业务主数据
+- 正式发布前建议先执行 `bash ./scripts/pwa-smoke-check.sh --base-url https://your-private-domain`，再进入 Android 真机安装、更新与离线退化验收
 
 ## 6. 生产环境建议
 - 使用正式域名和 HTTPS

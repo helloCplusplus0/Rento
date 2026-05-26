@@ -1,0 +1,23 @@
+# Rento 本地私有 HTTPS 专用 Compose 编排
+# - 仅用于 Ubuntu 24 宿主机上的本地 PWA / Android 真机验收
+# - 通过 host network 代理宿主机 `npm run start` 暴露的 3001 入口
+# - 不替代现有生产 `docker-compose.yml` 中的 nginx 路径
+version: '3.8'
+
+services:
+  local-https-nginx:
+    image: nginx:stable-alpine
+    container_name: ${CONTAINER_PREFIX:-rento}-local-https-nginx
+    network_mode: host
+    volumes:
+      - ./nginx/runtime/rento-local-https.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${PWA_LOCAL_HTTPS_CERT_PATH}:${PWA_LOCAL_HTTPS_CERT_PATH}:ro
+      - ${PWA_LOCAL_HTTPS_KEY_PATH}:${PWA_LOCAL_HTTPS_KEY_PATH}:ro
+      - ./logs/nginx:/var/log/nginx
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'nginx -t']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

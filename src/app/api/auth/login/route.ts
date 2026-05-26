@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { verifyAdminCredentials } from '@/lib/auth/password'
-import { buildSessionCookie, createSessionToken } from '@/lib/auth/session'
+import {
+  buildSessionCookie,
+  createSessionToken,
+  shouldUseSecureSessionCookie,
+} from '@/lib/auth/session'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +43,10 @@ export async function POST(request: NextRequest) {
     }
 
     const token = await createSessionToken(username)
+    const secureCookie = shouldUseSecureSessionCookie({
+      protocol: request.headers.get('x-forwarded-proto') || request.nextUrl.protocol,
+      hostname: request.nextUrl.hostname,
+    })
     const response = NextResponse.json({
       success: true,
       data: {
@@ -47,7 +55,7 @@ export async function POST(request: NextRequest) {
       },
       timestamp: new Date().toISOString(),
     })
-    const sessionCookie = buildSessionCookie(token)
+    const sessionCookie = buildSessionCookie(token, secureCookie)
 
     response.cookies.set(
       sessionCookie.name,

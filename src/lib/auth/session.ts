@@ -25,6 +25,11 @@ export interface SessionCookie {
   }
 }
 
+export interface SessionCookieSecurityContext {
+  protocol?: string | null
+  hostname?: string | null
+}
+
 function getBase64Api() {
   if (typeof Buffer !== 'undefined') {
     return {
@@ -120,32 +125,54 @@ async function verifySignature(value: string, signature: string) {
   )
 }
 
-export function buildSessionCookie(token: string): SessionCookie {
+export function buildSessionCookie(
+  token: string,
+  secure = process.env.NODE_ENV === 'production'
+): SessionCookie {
   return {
     name: AUTH_COOKIE_NAME,
     value: token,
     options: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure,
       path: '/',
       maxAge: SESSION_MAX_AGE_SECONDS,
     },
   }
 }
 
-export function clearSessionCookie(): SessionCookie {
+export function clearSessionCookie(
+  secure = process.env.NODE_ENV === 'production'
+): SessionCookie {
   return {
     name: AUTH_COOKIE_NAME,
     value: '',
     options: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure,
       path: '/',
       maxAge: 0,
     },
   }
+}
+
+export function shouldUseSecureSessionCookie(
+  context: SessionCookieSecurityContext
+) {
+  const protocol = context.protocol?.replace(/:$/, '').toLowerCase() || ''
+  const hostname = context.hostname?.trim().toLowerCase() || ''
+
+  if (protocol === 'https') {
+    return true
+  }
+
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1'
+  )
 }
 
 export async function createSessionToken(

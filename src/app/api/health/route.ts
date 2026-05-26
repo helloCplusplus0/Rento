@@ -266,10 +266,16 @@ async function checkDisk(): Promise<HealthCheck | null> {
     // 在容器环境中，磁盘检查可能不太准确
     // 这里提供一个基础实现
     const fs = await import('fs/promises')
+    const path = await import('path')
 
     // 检查日志目录是否可写
     const logDir = process.env.LOG_DIR || './logs'
-    const testFile = `${logDir}/.health-check-${Date.now()}`
+    const resolvedLogDir = path.resolve(process.cwd(), logDir)
+    const testFile = path.join(resolvedLogDir, `.health-check-${Date.now()}`)
+
+    // 本地 npm run start 运行态下，日志目录可能尚未由容器挂载或部署脚本预创建。
+    // 健康检查应验证“目录可创建且可写”，而不是因为目录尚不存在就直接判定服务不可用。
+    await fs.mkdir(resolvedLogDir, { recursive: true })
 
     await fs.writeFile(testFile, 'health check')
     await fs.unlink(testFile)
