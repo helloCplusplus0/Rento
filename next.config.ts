@@ -1,8 +1,21 @@
 import type { NextConfig } from 'next'
 
+const devPort = process.env.APP_INTERNAL_PORT || '3001'
+const hostIp = process.env.HOST_IP || '192.168.31.84'
+const allowedDevOrigins = Array.from(
+  new Set([
+    `http://localhost:${devPort}`,
+    `http://127.0.0.1:${devPort}`,
+    `http://${hostIp}:${devPort}`,
+    `https://${hostIp}:18443`,
+  ])
+)
+
 const nextConfig: NextConfig = {
   // 启用standalone输出模式，优化Docker部署
   output: 'standalone',
+
+  allowedDevOrigins,
 
   images: {
     formats: ['image/webp', 'image/avif'],

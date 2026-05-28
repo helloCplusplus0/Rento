@@ -44,6 +44,7 @@ import {
   BillStatusBadge,
   ContractStatusBadge,
 } from '@/components/ui/status-badge'
+import { ContractBillDueSummaryDialog } from '@/components/business/ContractBillDueSummaryDialog'
 
 interface EnhancedContractDetailProps {
   contract: ContractWithDetailsForClient
@@ -258,6 +259,18 @@ export function EnhancedContractDetail({
             抄表录入
           </Button>
         )}
+        <ContractBillDueSummaryDialog
+          contract={contract}
+          trigger={
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-violet-300 text-violet-700 hover:bg-violet-50"
+            >
+              <CreditCard className="h-4 w-4" />
+              本次应催缴汇总
+            </Button>
+          }
+        />
         {onDelete && (
           <Button
             variant="outline"

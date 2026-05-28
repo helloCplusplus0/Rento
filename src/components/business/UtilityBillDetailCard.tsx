@@ -2,7 +2,6 @@
 
 import {
   Calendar,
-  DollarSign,
   Droplets,
   Edit,
   Eye,
@@ -13,8 +12,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { AggregatedBillTemplateCard } from '@/components/business/AggregatedBillTemplateCard'
 
 interface MeterBillDetail {
   meterId: string
@@ -121,196 +119,142 @@ export function UtilityBillDetailCard({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-blue-500" />
-              <CardTitle className="text-lg">水电费账单</CardTitle>
-            </div>
-            <Badge variant="outline" color={getStatusColor(bill.status)}>
-              {bill.status === 'PENDING'
-                ? '待付款'
-                : bill.status === 'PAID'
-                  ? '已收款'
-                  : bill.status === 'OVERDUE'
-                    ? '逾期'
-                    : '已完成'}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            {onViewReading && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewReading(bill.id)}
-              >
-                <Eye className="mr-1 h-4 w-4" />
-                查看抄表
-              </Button>
-            )}
-            {onEditBill && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEditBill(bill.id)}
-              >
-                <Edit className="mr-1 h-4 w-4" />
-                编辑
-              </Button>
-            )}
-          </div>
+    <AggregatedBillTemplateCard
+      title="水电费账单"
+      badgeText={
+        bill.status === 'PENDING'
+          ? '待付款'
+          : bill.status === 'PAID'
+            ? '已收款'
+            : bill.status === 'OVERDUE'
+              ? '逾期'
+              : '已完成'
+      }
+      badgeClassName={`border-current ${getStatusColor(bill.status) === 'orange' ? 'bg-orange-50 text-orange-700' : ''} ${getStatusColor(bill.status) === 'green' ? 'bg-green-50 text-green-700' : ''} ${getStatusColor(bill.status) === 'red' ? 'bg-red-50 text-red-700' : ''} ${getStatusColor(bill.status) === 'blue' ? 'bg-blue-50 text-blue-700' : ''}`}
+      actionSlot={
+        <div className="flex items-center gap-2">
+          {onViewReading && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewReading(bill.id)}
+            >
+              <Eye className="mr-1 h-4 w-4" />
+              查看抄表
+            </Button>
+          )}
+          {onEditBill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEditBill(bill.id)}
+            >
+              <Edit className="mr-1 h-4 w-4" />
+              编辑
+            </Button>
+          )}
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* 基本信息 */}
-        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-          <div>
-            <span className="text-gray-500">账单编号：</span>
-            <span className="block font-medium">{bill.billNumber}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">房间信息：</span>
-            <span className="block font-medium">
-              {bill.contract.room.building.name} -{' '}
-              {bill.contract.room.roomNumber}
+      }
+      metaItems={[
+        {
+          label: '账单编号',
+          value: bill.billNumber,
+        },
+        {
+          label: '房间信息',
+          value: `${bill.contract.room.building.name} - ${bill.contract.room.roomNumber}`,
+        },
+        {
+          label: '租客姓名',
+          value: bill.contract.renter.name,
+        },
+        {
+          label: '账期',
+          value: bill.period,
+        },
+      ]}
+      summaryItems={[
+        {
+          label: '应收金额',
+          value: `¥${bill.amount.toFixed(2)}`,
+          accentClassName: 'text-blue-600',
+        },
+        {
+          label: '已收金额',
+          value: `¥${bill.receivedAmount.toFixed(2)}`,
+          accentClassName: 'text-green-600',
+        },
+        {
+          label: '待收金额',
+          value: `¥${bill.pendingAmount.toFixed(2)}`,
+          accentClassName: 'text-orange-600',
+        },
+        {
+          label: '到期日期',
+          value: (
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="h-5 w-5" />
+              {new Date(bill.dueDate).toLocaleDateString()}
             </span>
+          ),
+          accentClassName: 'text-purple-600',
+        },
+      ]}
+      breakdownTitle="费用明细"
+      breakdownItems={
+        showMeterBreakdown && breakdown
+          ? [
+              ...(breakdown.electricity && breakdown.electricity.usage > 0
+                ? [
+                    {
+                      id: 'electricity',
+                      title: '电费',
+                      description: `${breakdown.electricity.usage}度 × ¥${breakdown.electricity.unitPrice}/度`,
+                      amount: `¥${breakdown.electricity.amount.toFixed(2)}`,
+                      icon: getMeterIcon('ELECTRICITY'),
+                      containerClassName: 'bg-yellow-50',
+                      amountClassName: 'text-yellow-600',
+                    },
+                  ]
+                : []),
+              ...(breakdown.water && breakdown.water.usage > 0
+                ? [
+                    {
+                      id: 'water',
+                      title: '水费',
+                      description: `${breakdown.water.usage}吨 × ¥${breakdown.water.unitPrice}/吨`,
+                      amount: `¥${breakdown.water.amount.toFixed(2)}`,
+                      icon: getMeterIcon('COLD_WATER'),
+                      containerClassName: 'bg-blue-50',
+                      amountClassName: 'text-blue-600',
+                    },
+                  ]
+                : []),
+              ...(breakdown.gas && breakdown.gas.usage > 0
+                ? [
+                    {
+                      id: 'gas',
+                      title: '燃气费',
+                      description: `${breakdown.gas.usage}立方米 × ¥${breakdown.gas.unitPrice}/立方米`,
+                      amount: `¥${breakdown.gas.amount.toFixed(2)}`,
+                      icon: getMeterIcon('GAS'),
+                      containerClassName: 'bg-orange-50',
+                      amountClassName: 'text-orange-600',
+                    },
+                  ]
+                : []),
+            ]
+          : []
+      }
+      emptyBreakdownText="暂无可展示的水电费明细。"
+      footer={
+        bill.remarks ? (
+          <div className="rounded-lg bg-yellow-50 p-3 text-sm text-gray-600">
+            <span className="font-medium">备注: </span>
+            {bill.remarks}
           </div>
-          <div>
-            <span className="text-gray-500">租客姓名：</span>
-            <span className="block font-medium">
-              {bill.contract.renter.name}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-500">账期：</span>
-            <span className="block font-medium">{bill.period}</span>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* 费用汇总 */}
-        <div className="rounded-lg bg-gray-50 p-4">
-          <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                ¥{bill.amount.toFixed(2)}
-              </div>
-              <div className="text-sm text-gray-500">应收金额</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">
-                ¥{bill.receivedAmount.toFixed(2)}
-              </div>
-              <div className="text-sm text-gray-500">已收金额</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                ¥{bill.pendingAmount.toFixed(2)}
-              </div>
-              <div className="text-sm text-gray-500">待收金额</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                <Calendar className="mr-1 inline h-5 w-5" />
-                {new Date(bill.dueDate).toLocaleDateString()}
-              </div>
-              <div className="text-sm text-gray-500">到期日期</div>
-            </div>
-          </div>
-        </div>
-
-        {/* 水电费明细 */}
-        {showMeterBreakdown && breakdown && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="mb-3 flex items-center gap-2 font-medium">
-                <DollarSign className="h-4 w-4" />
-                费用明细
-              </h4>
-              <div className="space-y-3">
-                {/* 电费明细 */}
-                {breakdown.electricity && breakdown.electricity.usage > 0 && (
-                  <div className="flex items-center justify-between rounded-lg bg-yellow-50 p-3">
-                    <div className="flex items-center gap-3">
-                      {getMeterIcon('ELECTRICITY')}
-                      <div>
-                        <div className="font-medium">电费</div>
-                        <div className="text-sm text-gray-500">
-                          {breakdown.electricity.usage}度 × ¥
-                          {breakdown.electricity.unitPrice}/度
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-yellow-600">
-                        ¥{breakdown.electricity.amount.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 水费明细 */}
-                {breakdown.water && breakdown.water.usage > 0 && (
-                  <div className="flex items-center justify-between rounded-lg bg-blue-50 p-3">
-                    <div className="flex items-center gap-3">
-                      {getMeterIcon('COLD_WATER')}
-                      <div>
-                        <div className="font-medium">水费</div>
-                        <div className="text-sm text-gray-500">
-                          {breakdown.water.usage}吨 × ¥
-                          {breakdown.water.unitPrice}/吨
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-blue-600">
-                        ¥{breakdown.water.amount.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 燃气费明细 */}
-                {breakdown.gas && breakdown.gas.usage > 0 && (
-                  <div className="flex items-center justify-between rounded-lg bg-orange-50 p-3">
-                    <div className="flex items-center gap-3">
-                      {getMeterIcon('GAS')}
-                      <div>
-                        <div className="font-medium">燃气费</div>
-                        <div className="text-sm text-gray-500">
-                          {breakdown.gas.usage}立方米 × ¥
-                          {breakdown.gas.unitPrice}/立方米
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-orange-600">
-                        ¥{breakdown.gas.amount.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* 备注信息 */}
-        {bill.remarks && (
-          <>
-            <Separator />
-            <div className="rounded-lg bg-yellow-50 p-3 text-sm text-gray-600">
-              <span className="font-medium">备注: </span>
-              {bill.remarks}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+        ) : undefined
+      }
+    />
   )
 }

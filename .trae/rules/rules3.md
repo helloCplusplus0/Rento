@@ -1,4 +1,4 @@
-- `fix_008` 已在 `analysis` 层完成收口；移动端/PWA 议题后续统一由 `phase05-pwa-delivery-*` 候选阶段承接，不再继续以单个 fix 直接进入 `/spec` 或实现。
+- `fix_008` 已在 `analysis` 层完成收口；移动端/PWA 议题后续已由 `phase05-pwa-delivery-*` 完成承接与落地，不再继续以单个 fix 直接进入 `/spec` 或实现。
 - 归档文档默认只读，不再作为当前实现依据。
 
 ## 6.1 Fix 工作流规则
