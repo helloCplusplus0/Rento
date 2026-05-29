@@ -1,15 +1,12 @@
 'use client'
 
 import { useMemo } from 'react'
-import {
-  Calendar,
-  CreditCard,
-  FileText,
-  Home,
-  Key,
-  Sparkles,
-} from 'lucide-react'
+import { Calendar, CreditCard, FileText } from 'lucide-react'
 
+import {
+  getBillDisplayLabel,
+  getBillVisualConfig,
+} from '@/lib/bill-display'
 import { formatCurrency } from '@/lib/format'
 import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import { Badge } from '@/components/ui/badge'
@@ -34,13 +31,13 @@ interface ContractBillPreviewProps {
 interface PreviewBill {
   id: string
   type: 'DEPOSIT' | 'RENT' | 'OTHER'
+  itemLabel?: string
+  remarks?: string
   billNumber: string
   amount: number
   dueDate: Date
   period: string
   description: string
-  icon: React.ReactNode
-  color: string
 }
 
 /**
@@ -68,8 +65,6 @@ export function ContractBillPreview({
         dueDate: startDate,
         period: `${startDate.toISOString().slice(0, 10)} 至 ${endDate.toISOString().slice(0, 10)}`,
         description: '押金账单 - 合同生效时收取',
-        icon: <Home className="h-4 w-4" />,
-        color: 'bg-blue-500',
       })
     }
 
@@ -83,12 +78,12 @@ export function ContractBillPreview({
         dueDate: startDate,
         period: `${startDate.toISOString().slice(0, 10)} 至 ${endDate.toISOString().slice(0, 10)}`,
         description: '钥匙押金 - 合同生效时收取',
-        icon: <Key className="h-4 w-4" />,
-        color: 'bg-orange-500',
+        itemLabel: '钥匙押金',
+        remarks: '钥匙押金 - 合同自动生成',
       })
     }
 
-    // 3. 清洁费账单
+    // 3. 卫生费账单
     if (contractData.cleaningFee && contractData.cleaningFee > 0) {
       bills.push({
         id: 'cleaningFee',
@@ -97,9 +92,9 @@ export function ContractBillPreview({
         amount: contractData.cleaningFee,
         dueDate: startDate,
         period: `${startDate.toISOString().slice(0, 10)} 至 ${endDate.toISOString().slice(0, 10)}`,
-        description: '清洁费 - 合同生效时收取',
-        icon: <Sparkles className="h-4 w-4" />,
-        color: 'bg-green-500',
+        description: '卫生费 - 合同生效时收取',
+        itemLabel: '卫生费',
+        remarks: '卫生费 - 合同自动生成',
       })
     }
 
@@ -183,50 +178,55 @@ export function ContractBillPreview({
               key={bill.id + index}
               className="flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50"
             >
+              {(() => {
+                const visualConfig = getBillVisualConfig(bill)
+                const Icon = visualConfig.icon
+
+                return (
+                  <>
               {/* 账单图标 */}
-              <div
-                className={`h-10 w-10 rounded-full ${bill.color} flex items-center justify-center text-white`}
-              >
-                {bill.icon}
-              </div>
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full ${visualConfig.iconClassName}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
 
               {/* 账单信息 */}
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-center gap-2">
-                  <p className="truncate text-sm font-medium">
-                    {bill.description}
-                  </p>
-                  <Badge variant="outline" className="text-xs">
-                    {bill.type === 'RENT'
-                      ? '租金'
-                      : bill.type === 'DEPOSIT'
-                        ? '押金'
-                        : '其他'}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {bill.dueDate.toLocaleDateString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CreditCard className="h-3 w-3" />
-                    {bill.billNumber}
-                  </span>
-                </div>
-              </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center gap-2">
+                        <p className="truncate text-sm font-medium">
+                          {bill.description}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {getBillDisplayLabel(bill)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {bill.dueDate.toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CreditCard className="h-3 w-3" />
+                          {bill.billNumber}
+                        </span>
+                      </div>
+                    </div>
 
               {/* 金额 */}
-              <div className="text-right">
-                <p className="text-lg font-semibold">
-                  {formatCurrency(bill.amount)}
-                </p>
-                {index === 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    首期
-                  </Badge>
-                )}
-              </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold">
+                        {formatCurrency(bill.amount)}
+                      </p>
+                      {index === 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          首期
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                )
+              })()}
             </div>
           ))}
         </div>
@@ -266,8 +266,6 @@ function generateRentBillsPreview(
       dueDate: period.dueDate,
       period: period.periodLabel,
       description: `${rentBillPlan.paymentCycleLabel}租金账单 - 第${period.index}期`,
-      icon: <Home className="h-4 w-4" />,
-      color: 'bg-indigo-500',
     }
   })
 }

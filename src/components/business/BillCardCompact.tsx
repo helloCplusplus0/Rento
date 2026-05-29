@@ -1,6 +1,10 @@
 'use client'
 
 import type { BillWithContract } from '@/types/database'
+import {
+  getBillDisplayLabel,
+  getBillVisualConfig,
+} from '@/lib/bill-display'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
@@ -34,21 +38,30 @@ export function BillCardCompact({
     <TouchCard onClick={onClick} className={className}>
       <Card className="overflow-hidden transition-all hover:shadow-md">
         <CardContent className="p-3">
+          {(() => {
+            const visualConfig = getBillVisualConfig(bill)
+            const Icon = visualConfig.icon
+
+            return (
+              <>
           {/* 头部信息行 - 与桌面端功能完全一致 */}
           <div className="mb-2 flex items-center justify-between">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div
                 className={cn(
-                  'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold',
+                  'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded',
                   isOverdue
                     ? 'bg-red-100 text-red-700'
-                    : 'bg-blue-100 text-blue-700'
+                    : visualConfig.iconClassName
                 )}
               >
-                ¥
+                <Icon className="h-3.5 w-3.5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">
+                  {getBillDisplayLabel(bill)}
+                </div>
+                <div className="text-muted-foreground truncate text-[11px]">
                   {bill.billNumber}
                 </div>
                 <div className="text-muted-foreground truncate text-xs">
@@ -157,6 +170,9 @@ export function BillCardCompact({
               </div>
             )}
           </div>
+              </>
+            )
+          })()}
         </CardContent>
       </Card>
     </TouchCard>

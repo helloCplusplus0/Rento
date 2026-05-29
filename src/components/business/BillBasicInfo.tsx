@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ExternalLink } from 'lucide-react'
 
+import { getBillDisplayLabel } from '@/lib/bill-display'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillStatusBadge } from '@/components/ui/status-badge'
@@ -203,7 +204,7 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
         </div>
         <div>
           <label className="text-xs font-medium text-gray-600">账单类型</label>
-          <p className="text-sm">{getBillTypeText(bill.type)}</p>
+          <p className="text-sm">{getBillDisplayLabel(bill)}</p>
         </div>
 
         {/* 租客信息 - 可点击跳转 */}
@@ -375,7 +376,7 @@ function GeneralBillDetails({ bill }: { bill: any }) {
       </div>
       <div>
         <label className="text-xs font-medium text-gray-600">账单类型</label>
-        <p className="text-sm">{getBillTypeText(bill.type)}</p>
+        <p className="text-sm">{getBillDisplayLabel(bill)}</p>
       </div>
       {/* 租客信息 - 可点击跳转 */}
       <div>
@@ -453,17 +454,4 @@ function GeneralBillDetails({ bill }: { bill: any }) {
       )}
     </div>
   )
-}
-
-/**
- * 获取账单类型的中文显示文本
- */
-function getBillTypeText(type: string) {
-  const typeMap = {
-    RENT: '租金',
-    DEPOSIT: '押金',
-    UTILITIES: '水电费',
-    OTHER: '其他',
-  }
-  return typeMap[type as keyof typeof typeMap] || type
 }

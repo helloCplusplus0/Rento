@@ -718,7 +718,7 @@ export function ContractForm({
               )}
             </div>
             <div>
-              <Label htmlFor="cleaningFee">清洁费 (元)</Label>
+              <Label htmlFor="cleaningFee">卫生费 (元)</Label>
               <Input
                 id="cleaningFee"
                 type="number"
@@ -732,7 +732,7 @@ export function ContractForm({
               />
               {mode === 'edit' && (
                 <p className="mt-1 text-xs text-gray-500">
-                  合同生效后不可修改清洁费
+                  合同生效后不可修改卫生费
                 </p>
               )}
             </div>

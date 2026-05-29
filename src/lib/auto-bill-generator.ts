@@ -67,7 +67,7 @@ export interface BillGenerationContext {
  *    - 季付：生成合同期内所有季度的租金账单
  *    - 半年付：生成合同期内所有半年的租金账单
  *    - 年付：生成合同期内所有年度的租金账单
- * 3. 其他费用 - 清洁费、钥匙押金等一次性费用
+ * 3. 其他费用 - 卫生费、钥匙押金等一次性费用
  */
 export async function generateBillsOnContractSigned(contractId: string) {
   const logger = ErrorLogger.getInstance()
@@ -138,6 +138,7 @@ export async function generateBillsOnContractSigned(contractId: string) {
           contractId: contract.id,
           paymentMethod: contract.paymentMethod || '待确定',
           operator: 'SYSTEM',
+          itemLabel: '钥匙押金',
           remarks: `钥匙押金 - 合同${contract.contractNumber}`,
         },
       })
@@ -147,9 +148,9 @@ export async function generateBillsOnContractSigned(contractId: string) {
       )
     }
 
-    // 3. 生成清洁费账单（如果有）
+    // 3. 生成卫生费账单（如果有）
     if (contract.cleaningFee && Number(contract.cleaningFee) > 0) {
-      console.log(`[账单生成] 开始生成清洁费账单`)
+      console.log(`[账单生成] 开始生成卫生费账单`)
       const cleaningFeeBill = await prisma.bill.create({
         data: {
           billNumber: generateBillNumber('OTHER', contract.contractNumber),
@@ -163,12 +164,13 @@ export async function generateBillsOnContractSigned(contractId: string) {
           contractId: contract.id,
           paymentMethod: contract.paymentMethod || '待确定',
           operator: 'SYSTEM',
-          remarks: `清洁费 - 合同${contract.contractNumber}`,
+          itemLabel: '卫生费',
+          remarks: `卫生费 - 合同${contract.contractNumber}`,
         },
       })
       bills.push(cleaningFeeBill)
       console.log(
-        `[账单生成] 清洁费账单生成完成: ${cleaningFeeBill.billNumber}`
+        `[账单生成] 卫生费账单生成完成: ${cleaningFeeBill.billNumber}`
       )
     }
 

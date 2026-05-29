@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { getBillDisplayLabel } from '@/lib/bill-display'
 import { formatCurrency } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +21,7 @@ interface EditBillFormData {
   amount: number
   dueDate: string
   period: string
+  itemLabel: string
   remarks: string
 }
 
@@ -34,6 +36,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
     amount: bill.amount,
     dueDate: new Date(bill.dueDate).toISOString().split('T')[0],
     period: bill.period || '',
+    itemLabel: bill.itemLabel || '',
     remarks: bill.remarks || '',
   })
 
@@ -66,6 +69,10 @@ export function EditBillPage({ bill }: EditBillPageProps) {
       return '到期日期格式不正确'
     }
 
+    if (bill.type === 'OTHER' && !formData.itemLabel.trim()) {
+      return '其他账单必须填写条目名'
+    }
+
     return null
   }
 
@@ -92,6 +99,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
           pendingAmount: formData.amount - bill.receivedAmount, // 重新计算待收金额
           dueDate: new Date(formData.dueDate).toISOString(),
           period: formData.period,
+          itemLabel: bill.type === 'OTHER' ? formData.itemLabel.trim() : null,
           remarks: formData.remarks,
         }),
       })
@@ -165,15 +173,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
                 <Label className="text-sm font-medium text-gray-600">
                   账单类型
                 </Label>
-                <p className="text-sm">
-                  {bill.type === 'RENT'
-                    ? '租金'
-                    : bill.type === 'DEPOSIT'
-                      ? '押金'
-                      : bill.type === 'UTILITIES'
-                        ? '水电费'
-                        : '其他'}
-                </p>
+                <p className="text-sm">{getBillDisplayLabel(bill)}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-600">
@@ -286,6 +286,25 @@ export function EditBillPage({ bill }: EditBillPageProps) {
                   描述此账单对应的时间周期
                 </p>
               </div>
+
+              {bill.type === 'OTHER' && (
+                <div>
+                  <Label htmlFor="itemLabel">条目名 *</Label>
+                  <Input
+                    id="itemLabel"
+                    value={formData.itemLabel}
+                    onChange={(e) =>
+                      handleInputChange('itemLabel', e.target.value)
+                    }
+                    disabled={!canEdit || loading}
+                    placeholder="例如：钥匙押金、卫生费、维修费"
+                    className="mt-1"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    该字段只用于展示其他账单的具体收费项目，不改变正式账单类型。
+                  </p>
+                </div>
+              )}
 
               {/* 备注 */}
               <div>

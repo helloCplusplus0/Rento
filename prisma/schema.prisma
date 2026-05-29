@@ -191,6 +191,7 @@ model Bill {
   
   // 基本信息
   type           BillType   @default(RENT)
+  itemLabel      String?    // OTHER 账单的结构化条目名，仅用于展示语义
   amount         Decimal    // 应收金额
   receivedAmount Decimal    @default(0) // 已收金额
   pendingAmount  Decimal    // 待收金额

@@ -64,6 +64,35 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
         billType,
       })
 
+      // #region debug-point A:create-bill-submit
+      fetch('http://127.0.0.1:7777/event', {
+        method: 'POST',
+        body: JSON.stringify({
+          sessionId: 'other-bill-create-error',
+          runId: 'pre-fix',
+          hypothesisId: 'A',
+          location: 'CreateBillPage.tsx:67',
+          msg: '[DEBUG] create bill submit payload',
+          data: {
+            contractId: selectedContract.id,
+            billType,
+            itemLabel: billData.itemLabel,
+            itemLabelTrimmed:
+              typeof billData.itemLabel === 'string'
+                ? billData.itemLabel.trim()
+                : null,
+            period: billData.period,
+            amount: billData.amount,
+            dueDate:
+              billData.dueDate instanceof Date
+                ? billData.dueDate.toISOString()
+                : String(billData.dueDate),
+          },
+          ts: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
+
       const response = await fetch('/api/bills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,6 +104,24 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
           paymentMethod: '待确定',
         }),
       })
+
+      // #region debug-point B:create-bill-response
+      fetch('http://127.0.0.1:7777/event', {
+        method: 'POST',
+        body: JSON.stringify({
+          sessionId: 'other-bill-create-error',
+          runId: 'pre-fix',
+          hypothesisId: 'B',
+          location: 'CreateBillPage.tsx:96',
+          msg: '[DEBUG] create bill response status',
+          data: {
+            status: response.status,
+            ok: response.ok,
+          },
+          ts: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
 
       if (!response.ok) {
         const errorData = await response.json()

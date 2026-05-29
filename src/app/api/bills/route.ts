@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { BillStatus, BillType } from '@prisma/client'
+import { readFileSync } from 'fs'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
@@ -85,6 +86,40 @@ export const GET = withApiErrorHandler(handleGetBills, {
  */
 async function handlePostBills(request: NextRequest) {
   const billData = await request.json()
+  const normalizedItemLabel =
+    typeof billData.itemLabel === 'string' ? billData.itemLabel.trim() : ''
+  // #region debug-point C:api-bills-received
+  ;(() => {
+    let debugUrl = 'http://127.0.0.1:7777/event'
+    let sessionId = 'other-bill-create-error'
+    try {
+      const envText = readFileSync('.dbg/other-bill-create-error.env', 'utf8')
+      debugUrl =
+        envText.match(/DEBUG_SERVER_URL=(.+)/)?.[1]?.trim() || debugUrl
+      sessionId =
+        envText.match(/DEBUG_SESSION_ID=(.+)/)?.[1]?.trim() || sessionId
+    } catch {}
+    fetch(debugUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        sessionId,
+        runId: 'pre-fix',
+        hypothesisId: 'C',
+        location: 'src/app/api/bills/route.ts:88',
+        msg: '[DEBUG] api received create bill payload',
+        data: {
+          type: billData.type,
+          itemLabel: billData.itemLabel,
+          normalizedItemLabel,
+          billNumber: billData.billNumber,
+          amount: billData.amount,
+          dueDate: billData.dueDate,
+        },
+        ts: Date.now(),
+      }),
+    }).catch(() => {})
+  })()
+  // #endregion
 
   // 基础字段验证
   if (
@@ -106,9 +141,43 @@ async function handlePostBills(request: NextRequest) {
   }
 
   // 创建账单
+  // #region debug-point D:api-bills-before-create
+  ;(() => {
+    let debugUrl = 'http://127.0.0.1:7777/event'
+    let sessionId = 'other-bill-create-error'
+    try {
+      const envText = readFileSync('.dbg/other-bill-create-error.env', 'utf8')
+      debugUrl =
+        envText.match(/DEBUG_SERVER_URL=(.+)/)?.[1]?.trim() || debugUrl
+      sessionId =
+        envText.match(/DEBUG_SESSION_ID=(.+)/)?.[1]?.trim() || sessionId
+    } catch {}
+    fetch(debugUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        sessionId,
+        runId: 'pre-fix',
+        hypothesisId: 'D',
+        location: 'src/app/api/bills/route.ts:142',
+        msg: '[DEBUG] api create bill normalized data',
+        data: {
+          type: billData.type || 'OTHER',
+          itemLabel:
+            (billData.type || 'OTHER') === 'OTHER'
+              ? normalizedItemLabel
+              : undefined,
+          remarks: billData.remarks,
+        },
+        ts: Date.now(),
+      }),
+    }).catch(() => {})
+  })()
+  // #endregion
   const newBill = await billQueries.create({
     billNumber: billData.billNumber,
     type: billData.type || 'OTHER',
+    itemLabel:
+      (billData.type || 'OTHER') === 'OTHER' ? normalizedItemLabel : undefined,
     amount: billData.amount,
     pendingAmount: billData.pendingAmount || billData.amount,
     dueDate: new Date(billData.dueDate),
@@ -155,6 +224,16 @@ export const POST = withApiErrorHandler(handlePostBills, {
 
 // 验证函数
 async function validateBillCreation(data: any) {
+  const isBeforeToday = (date: Date) => {
+    const candidate = new Date(date)
+    candidate.setHours(0, 0, 0, 0)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    return candidate < today
+  }
+
   // 合同验证
   try {
     const contract = await contractQueries.findById(data.contractId)
@@ -176,13 +255,22 @@ async function validateBillCreation(data: any) {
 
   // 日期验证
   const dueDate = new Date(data.dueDate)
-  if (Number.isNaN(dueDate.getTime()) || dueDate < new Date()) {
+  if (Number.isNaN(dueDate.getTime()) || isBeforeToday(dueDate)) {
     return { valid: false, error: '到期日期格式错误或早于今天' }
   }
 
   // 账单编号格式验证
   if (!/^BILL[A-Z0-9]{6,12}$/.test(data.billNumber)) {
     return { valid: false, error: '账单编号格式不正确' }
+  }
+
+  if (data.type === 'OTHER') {
+    const itemLabel =
+      typeof data.itemLabel === 'string' ? data.itemLabel.trim() : ''
+
+    if (!itemLabel) {
+      return { valid: false, error: '其他账单必须填写条目名' }
+    }
   }
 
   return { valid: true }

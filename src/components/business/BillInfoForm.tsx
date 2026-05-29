@@ -36,11 +36,22 @@ export function BillInfoForm({
   onSubmit,
   isSubmitting,
 }: BillInfoFormProps) {
+  const isBeforeToday = (date: Date) => {
+    const candidate = new Date(date)
+    candidate.setHours(0, 0, 0, 0)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    return candidate < today
+  }
+
   const [formData, setFormData] = useState<BillFormData>({
     billNumber: '',
     amount: 0,
     dueDate: new Date(),
     period: '',
+    itemLabel: '',
     remarks: '',
   })
 
@@ -68,6 +79,15 @@ export function BillInfoForm({
     setFormData((prev) => ({ ...prev, billNumber }))
   }, [billType, contract.contractNumber])
 
+  useEffect(() => {
+    if (billType !== 'OTHER' && formData.itemLabel) {
+      setFormData((prev) => ({
+        ...prev,
+        itemLabel: '',
+      }))
+    }
+  }, [billType, formData.itemLabel])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -90,7 +110,11 @@ export function BillInfoForm({
       newErrors.period = '账单周期不能为空'
     }
 
-    if (formData.dueDate < new Date()) {
+    if (billType === 'OTHER' && !formData.itemLabel.trim()) {
+      newErrors.itemLabel = '其他账单必须填写条目名'
+    }
+
+    if (isBeforeToday(formData.dueDate)) {
       newErrors.dueDate = '到期日期不能早于今天'
     }
 
@@ -153,6 +177,23 @@ export function BillInfoForm({
             error={errors.period}
             dueDateError={errors.dueDate}
           />
+
+          {billType === 'OTHER' && (
+            <MobileInput
+              label="条目名"
+              value={formData.itemLabel}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  itemLabel: e.target.value,
+                }))
+              }
+              error={errors.itemLabel}
+              required
+              placeholder="例如：钥匙押金、卫生费、维修费"
+              description="用于展示其他账单的具体收费项目，不会改变正式账单类型。"
+            />
+          )}
 
           {/* 备注 */}
           <MobileTextarea

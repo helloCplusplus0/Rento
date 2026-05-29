@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarRange, RotateCcw } from 'lucide-react'
 
+import { getBillDisplayLabel } from '@/lib/bill-display'
 import {
   buildBillDueSummarySelection,
   type BillDueSummarySelection,
@@ -187,13 +188,7 @@ export function ContractBillDueSummaryDialog({
                             <div>
                               <div className="text-gray-500">账单类型</div>
                               <div className="font-medium">
-                                {bill.type === 'RENT'
-                                  ? '租金'
-                                  : bill.type === 'DEPOSIT'
-                                    ? '押金'
-                                    : bill.type === 'UTILITIES'
-                                      ? '水电费'
-                                      : '其他费用'}
+                                {getBillDisplayLabel(bill)}
                               </div>
                             </div>
                             <div>

@@ -3,12 +3,12 @@
 import {
   Calendar,
   CreditCard,
-  Droplets,
-  FileText,
-  Home,
-  ReceiptText,
 } from 'lucide-react'
 
+import {
+  getBillDisplayLabel,
+  getBillVisualConfig,
+} from '@/lib/bill-display'
 import type { BillDueSummaryWindow } from '@/lib/bill-due-summary'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { ContractWithDetailsForClient } from '@/types/database'
@@ -21,66 +21,6 @@ interface BillDueSummaryCardProps {
   contract: ContractWithDetailsForClient
   selectedBills: ContractBill[]
   window: BillDueSummaryWindow
-}
-
-function getBillTypeLabel(type: ContractBill['type']): string {
-  switch (type) {
-    case 'RENT':
-      return '租金'
-    case 'DEPOSIT':
-      return '押金'
-    case 'UTILITIES':
-      return '水电费'
-    case 'OTHER':
-      return '其他费用'
-    default:
-      return type
-  }
-}
-
-function getBillTypeIcon(type: ContractBill['type']) {
-  switch (type) {
-    case 'RENT':
-      return <Home className="h-4 w-4 text-blue-600" />
-    case 'DEPOSIT':
-      return <ReceiptText className="h-4 w-4 text-violet-600" />
-    case 'UTILITIES':
-      return <Droplets className="h-4 w-4 text-cyan-600" />
-    case 'OTHER':
-      return <FileText className="h-4 w-4 text-amber-600" />
-    default:
-      return <FileText className="h-4 w-4 text-gray-600" />
-  }
-}
-
-function getBillTypeRowStyle(type: ContractBill['type']) {
-  switch (type) {
-    case 'RENT':
-      return {
-        containerClassName: 'bg-blue-50',
-        amountClassName: 'text-blue-700',
-      }
-    case 'DEPOSIT':
-      return {
-        containerClassName: 'bg-violet-50',
-        amountClassName: 'text-violet-700',
-      }
-    case 'UTILITIES':
-      return {
-        containerClassName: 'bg-cyan-50',
-        amountClassName: 'text-cyan-700',
-      }
-    case 'OTHER':
-      return {
-        containerClassName: 'bg-amber-50',
-        amountClassName: 'text-amber-700',
-      }
-    default:
-      return {
-        containerClassName: 'bg-gray-50',
-        amountClassName: 'text-gray-700',
-      }
-  }
 }
 
 export function BillDueSummaryCard({
@@ -197,13 +137,14 @@ export function BillDueSummaryCard({
       ]}
       breakdownTitle="账单明细"
       breakdownItems={selectedBills.map((bill) => {
-        const rowStyle = getBillTypeRowStyle(bill.type)
+        const visualConfig = getBillVisualConfig(bill)
+        const Icon = visualConfig.icon
 
         return {
           id: bill.id,
           title: (
             <div className="break-all">
-              {getBillTypeLabel(bill.type)} · {bill.billNumber}
+              {getBillDisplayLabel(bill)} · {bill.billNumber}
             </div>
           ),
           description: (
@@ -227,9 +168,9 @@ export function BillDueSummaryCard({
             </div>
           ),
           amount: formatCurrency(bill.pendingAmount),
-          icon: getBillTypeIcon(bill.type),
-          containerClassName: rowStyle.containerClassName,
-          amountClassName: rowStyle.amountClassName,
+          icon: <Icon className="h-4 w-4" />,
+          containerClassName: visualConfig.containerClassName,
+          amountClassName: visualConfig.amountClassName,
         }
       })}
       emptyBreakdownText="当前没有可展示的账单项目，请先在左侧选择本次需要汇总的账单。"

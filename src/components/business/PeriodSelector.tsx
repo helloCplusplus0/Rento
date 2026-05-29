@@ -31,10 +31,26 @@ export function PeriodSelector({
   error,
   dueDateError,
 }: PeriodSelectorProps) {
+  const formatDateInput = (date: Date) => {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  const parseDateInput = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number)
+
+    if (!year || !month || !day) {
+      return new Date(value)
+    }
+
+    return new Date(year, month - 1, day, 12, 0, 0, 0)
+  }
+
   const [period, setPeriod] = useState(value)
-  const [dueDateStr, setDueDateStr] = useState(
-    dueDate.toISOString().split('T')[0]
-  )
+  const [dueDateStr, setDueDateStr] = useState(formatDateInput(dueDate))
 
   // 同步外部值变化
   useEffect(() => {
@@ -42,7 +58,7 @@ export function PeriodSelector({
   }, [value])
 
   useEffect(() => {
-    setDueDateStr(dueDate.toISOString().split('T')[0])
+    setDueDateStr(formatDateInput(dueDate))
   }, [dueDate])
 
   // 自动生成周期
@@ -88,21 +104,21 @@ export function PeriodSelector({
     }
 
     setPeriod(periodStr)
-    setDueDateStr(dueDateObj.toISOString().split('T')[0])
+    setDueDateStr(formatDateInput(dueDateObj))
     onPeriodChange(periodStr, dueDateObj)
   }
 
   // 手动更新周期
   const handlePeriodChange = (newPeriod: string) => {
     setPeriod(newPeriod)
-    const dueDateObj = new Date(dueDateStr)
+    const dueDateObj = parseDateInput(dueDateStr)
     onPeriodChange(newPeriod, dueDateObj)
   }
 
   // 手动更新到期日期
   const handleDueDateChange = (newDueDate: string) => {
     setDueDateStr(newDueDate)
-    const dueDateObj = new Date(newDueDate)
+    const dueDateObj = parseDateInput(newDueDate)
     onPeriodChange(period, dueDateObj)
   }
 
@@ -142,7 +158,7 @@ export function PeriodSelector({
           type="date"
           value={dueDateStr}
           onChange={(e) => handleDueDateChange(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
+          min={formatDateInput(new Date())}
         />
       </MobileFormField>
     </div>

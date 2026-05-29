@@ -1007,6 +1007,7 @@ export const billQueries = {
     pendingAmount: number
     dueDate: Date
     period?: string
+    itemLabel?: string
     contractId: string
     paymentMethod?: string
     operator?: string
@@ -1036,6 +1037,7 @@ export const billQueries = {
       pendingAmount?: number
       dueDate?: Date
       period?: string
+      itemLabel?: string
       paidDate?: Date
       paymentMethod?: string
       operator?: string

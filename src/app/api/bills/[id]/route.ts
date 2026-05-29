@@ -79,7 +79,7 @@ async function handlePatchBill(
   }
 
   // 提取可编辑的字段
-  const { amount, pendingAmount, dueDate, period, remarks } = body
+  const { amount, pendingAmount, dueDate, period, itemLabel, remarks } = body
 
   // 构建更新数据
   const updateData: any = {}
@@ -111,6 +111,21 @@ async function handlePatchBill(
 
   if (period !== undefined) {
     updateData.period = period
+  }
+
+  if (itemLabel !== undefined) {
+    const normalizedItemLabel =
+      typeof itemLabel === 'string' ? itemLabel.trim() : ''
+
+    if (existingBill.type === 'OTHER' && !normalizedItemLabel) {
+      return NextResponse.json(
+        { error: '其他账单必须填写条目名' },
+        { status: 400 }
+      )
+    }
+
+    updateData.itemLabel =
+      existingBill.type === 'OTHER' ? normalizedItemLabel : null
   }
 
   if (remarks !== undefined) {

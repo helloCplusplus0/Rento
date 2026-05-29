@@ -30,6 +30,7 @@ import {
   buildBillPresentationStats,
   sortBillsForDisplay,
 } from '@/lib/bill-semantics'
+import { getBillDisplayLabel, getBillVisualConfig } from '@/lib/bill-display'
 import {
   calculateDaysUntilContractExpiry,
   isContractExpiringSoon,
@@ -113,22 +114,6 @@ export function EnhancedContractDetail({
         return '合租'
       case 'WHOLE':
         return '整租'
-      default:
-        return type
-    }
-  }
-
-  // 账单类型文本转换
-  const getBillTypeText = (type: string) => {
-    switch (type) {
-      case 'RENT':
-        return '租金'
-      case 'DEPOSIT':
-        return '押金'
-      case 'UTILITIES':
-        return '水电费'
-      case 'OTHER':
-        return '其他'
       default:
         return type
     }
@@ -743,42 +728,55 @@ export function EnhancedContractDetail({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {sortedBills.map((bill) => (
-                    <div
-                      key={bill.id}
-                      className="flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
-                      onClick={() => handleBillClick(bill.id)}
-                    >
-                      <div className="flex min-w-0 items-center gap-4">
-                        <div className="flex-shrink-0">
-                          <BillStatusBadge status={bill.status as BillStatus} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{bill.billNumber}</p>
-                          <p className="break-words text-sm text-gray-600">
-                            {getBillTypeText(bill.type)} · 到期日:{' '}
-                            {formatDate(bill.dueDate)}
-                          </p>
-                          {bill.period && (
-                            <p className="text-xs text-gray-500">
-                              账期: {bill.period}
+                  {sortedBills.map((bill) => {
+                    const visualConfig = getBillVisualConfig(bill)
+                    const BillTypeIcon = visualConfig.icon
+
+                    return (
+                      <div
+                        key={bill.id}
+                        className="flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
+                        onClick={() => handleBillClick(bill.id)}
+                      >
+                        <div className="flex min-w-0 items-center gap-4">
+                          <div className="flex-shrink-0">
+                            <BillStatusBadge status={bill.status as BillStatus} />
+                          </div>
+                          <div
+                            className={cn(
+                              'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg',
+                              visualConfig.iconClassName
+                            )}
+                          >
+                            <BillTypeIcon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{bill.billNumber}</p>
+                            <p className="break-words text-sm text-gray-600">
+                              {getBillDisplayLabel(bill)} · 到期日:{' '}
+                              {formatDate(bill.dueDate)}
                             </p>
-                          )}
+                            {bill.period && (
+                              <p className="text-xs text-gray-500">
+                                账期: {bill.period}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex w-full items-center justify-between gap-2 text-right sm:w-auto sm:justify-end">
+                          <div className="min-w-0">
+                            <p className="font-medium">
+                              {formatCurrency(bill.amount)}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              已收: {formatCurrency(bill.receivedAmount)}
+                            </p>
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-gray-400" />
                         </div>
                       </div>
-                      <div className="flex w-full items-center justify-between gap-2 text-right sm:w-auto sm:justify-end">
-                        <div className="min-w-0">
-                          <p className="font-medium">
-                            {formatCurrency(bill.amount)}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            已收: {formatCurrency(bill.receivedAmount)}
-                          </p>
-                        </div>
-                        <ExternalLink className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>

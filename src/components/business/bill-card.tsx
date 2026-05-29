@@ -1,4 +1,8 @@
 import type { BillWithContract } from '@/types/database'
+import {
+  getBillDisplayLabel,
+  getBillVisualConfig,
+} from '@/lib/bill-display'
 import { calculateOverdueDays, formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,6 +33,12 @@ export function BillCard({ bill, onClick, className }: BillCardProps) {
       <Card className="h-full overflow-hidden transition-all hover:shadow-md">
         {/* 黄金比例布局 */}
         <div className="flex aspect-[1.618/1] flex-col">
+          {(() => {
+            const visualConfig = getBillVisualConfig(bill)
+            const Icon = visualConfig.icon
+
+            return (
+              <>
           {/* 头部区域 - 38.2% */}
           <div
             className={cn(
@@ -41,16 +51,21 @@ export function BillCard({ bill, onClick, className }: BillCardProps) {
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold',
+                  'flex h-8 w-8 items-center justify-center rounded-lg',
                   isOverdue
                     ? 'bg-red-200 text-red-700'
-                    : 'bg-primary/20 text-primary'
+                    : visualConfig.iconClassName
                 )}
               >
-                ¥
+                <Icon className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-sm font-medium">{bill.billNumber}</div>
+                <div className="text-sm font-medium">
+                  {getBillDisplayLabel(bill)}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {bill.billNumber}
+                </div>
                 <div className="text-muted-foreground text-xs">
                   {bill.contract.room.building.name} -{' '}
                   {bill.contract.room.roomNumber}
@@ -162,6 +177,9 @@ export function BillCard({ bill, onClick, className }: BillCardProps) {
               )}
             </div>
           </div>
+              </>
+            )
+          })()}
         </div>
       </Card>
     </TouchCard>
@@ -179,11 +197,31 @@ export function CompactBillCard({ bill, onClick, className }: BillCardProps) {
     <TouchCard onClick={onClick} className={className}>
       <Card className="h-full transition-all hover:shadow-md">
         <CardContent className="p-3">
-          <div className="space-y-2">
+          {(() => {
+            const visualConfig = getBillVisualConfig(bill)
+            const Icon = visualConfig.icon
+
+            return (
+              <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="max-w-[120px] truncate text-sm font-semibold">
-                {bill.billNumber}
-              </span>
+              <div className="flex min-w-0 items-center gap-2">
+                <div
+                  className={cn(
+                    'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md',
+                    visualConfig.iconClassName
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="max-w-[120px] truncate text-sm font-semibold">
+                    {getBillDisplayLabel(bill)}
+                  </div>
+                  <div className="text-muted-foreground truncate text-[11px]">
+                    {bill.billNumber}
+                  </div>
+                </div>
+              </div>
               <BillStatusBadge
                 status={bill.status}
                 showIndicator={true}
@@ -211,7 +249,9 @@ export function CompactBillCard({ bill, onClick, className }: BillCardProps) {
                 逾期{overdueDays}天
               </div>
             )}
-          </div>
+              </div>
+            )
+          })()}
         </CardContent>
       </Card>
     </TouchCard>

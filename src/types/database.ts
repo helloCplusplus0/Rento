@@ -136,5 +136,6 @@ export interface BillFormData {
   amount: number
   dueDate: Date
   period: string
+  itemLabel: string
   remarks: string
 }
