@@ -8,6 +8,7 @@ import type { RoomWithBuildingForClient } from '@/types/database'
 import type { MeterWithReadingsForClient } from '@/types/meter'
 import { RoomActions } from '@/components/business/RoomActions'
 import { RoomBasicInfo } from '@/components/business/RoomBasicInfo'
+import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { RoomMeterManagement } from '@/components/business/RoomMeterManagement'
 import { RoomStatusManagement } from '@/components/business/RoomStatusManagement'
 import { TenantContractInfo } from '@/components/business/TenantContractInfo'
@@ -147,7 +148,7 @@ export function RoomDetailPage({ room }: RoomDetailPageProps) {
 
   return (
     <PageContainer title={`房间 ${room.roomNumber}`} showBackButton>
-      <div className="space-y-6 pb-6">
+      <div className={roomDetailMobileStyles.pageSection}>
         {/* 操作按钮 */}
         <RoomActions
           room={room}

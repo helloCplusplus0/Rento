@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import type { ContractStatus } from '@/lib/colors'
 import type { ContractWithDetailsForClient } from '@/types/database'
+import { formatDate } from '@/lib/format'
+import { contractEditMobileStyles } from '@/components/pages/contract-edit-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ContractStatusBadge } from '@/components/ui/status-badge'
 import { Textarea } from '@/components/ui/textarea'
 import { PageContainer } from '@/components/layout'
 
@@ -71,35 +75,62 @@ export function EditContractPageSimple({
   }
 
   return (
-    <PageContainer
-      title={`编辑合同 - ${contract.contractNumber}`}
-      showBackButton
-    >
-      <div className="mx-auto max-w-2xl pb-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <PageContainer title="编辑合同" showBackButton>
+      <div className={contractEditMobileStyles.pageSection}>
+        <form
+          onSubmit={handleSubmit}
+          className={contractEditMobileStyles.formStack}
+        >
           {/* 合同基本信息展示 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>合同信息</CardTitle>
+          <Card className={contractEditMobileStyles.card}>
+            <CardHeader className={contractEditMobileStyles.cardHeader}>
+              <CardTitle className={contractEditMobileStyles.cardTitle}>
+                合同信息
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <Label className="text-sm text-gray-600">合同编号</Label>
-                  <p className="font-medium">{contract.contractNumber}</p>
+            <CardContent className={contractEditMobileStyles.cardContent}>
+              <div className={contractEditMobileStyles.summaryGrid}>
+                <div className={contractEditMobileStyles.fieldBlock}>
+                  <Label className={contractEditMobileStyles.fieldLabel}>
+                    合同编号
+                  </Label>
+                  <p className={contractEditMobileStyles.fieldValueMono}>
+                    {contract.contractNumber}
+                  </p>
                 </div>
-                <div>
-                  <Label className="text-sm text-gray-600">合同状态</Label>
-                  <p className="font-medium">{contract.status}</p>
+                <div className={contractEditMobileStyles.fieldBlock}>
+                  <Label className={contractEditMobileStyles.fieldLabel}>
+                    合同状态
+                  </Label>
+                  <div className={contractEditMobileStyles.statusBadgeWrapper}>
+                    <ContractStatusBadge
+                      status={contract.status as ContractStatus}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm text-gray-600">租客</Label>
-                  <p className="font-medium">{contract.renter.name}</p>
+                <div className={contractEditMobileStyles.fieldBlock}>
+                  <Label className={contractEditMobileStyles.fieldLabel}>
+                    租客
+                  </Label>
+                  <p className={contractEditMobileStyles.fieldValue}>
+                    {contract.renter.name}
+                  </p>
                 </div>
-                <div>
-                  <Label className="text-sm text-gray-600">房间</Label>
-                  <p className="font-medium">
+                <div className={contractEditMobileStyles.fieldBlock}>
+                  <Label className={contractEditMobileStyles.fieldLabel}>
+                    房间
+                  </Label>
+                  <p className={contractEditMobileStyles.fieldValue}>
                     {contract.room.building.name} - {contract.room.roomNumber}
+                  </p>
+                </div>
+                <div className={contractEditMobileStyles.fieldBlock}>
+                  <Label className={contractEditMobileStyles.fieldLabel}>
+                    合同期限
+                  </Label>
+                  <p className={contractEditMobileStyles.fieldValue}>
+                    {formatDate(contract.startDate)} -{' '}
+                    {formatDate(contract.endDate)}
                   </p>
                 </div>
               </div>
@@ -107,9 +138,9 @@ export function EditContractPageSimple({
           </Card>
 
           {/* 编辑说明 */}
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <h3 className="mb-2 text-sm font-medium text-blue-800">编辑说明</h3>
-            <div className="space-y-1 text-sm text-blue-700">
+          <div className={contractEditMobileStyles.helperCard}>
+            <h3 className={contractEditMobileStyles.helperTitle}>编辑说明</h3>
+            <div className={contractEditMobileStyles.helperList}>
               <p>
                 • 为保证合同的完整性和法律效力，生效中的合同只允许编辑签约信息
               </p>
@@ -119,17 +150,24 @@ export function EditContractPageSimple({
           </div>
 
           {/* 签约信息编辑 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>签约信息</CardTitle>
-              <p className="text-sm text-gray-600">
+          <Card className={contractEditMobileStyles.card}>
+            <CardHeader className={contractEditMobileStyles.cardHeader}>
+              <CardTitle className={contractEditMobileStyles.cardTitle}>
+                签约信息
+              </CardTitle>
+              <p className={contractEditMobileStyles.cardDescription}>
                 签约人通常为租客本人，如有代签情况请确保信息准确
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <CardContent className={contractEditMobileStyles.cardContent}>
+              <div className={contractEditMobileStyles.formGrid}>
                 <div>
-                  <Label htmlFor="signedBy">签约人 *</Label>
+                  <Label
+                    htmlFor="signedBy"
+                    className={contractEditMobileStyles.formLabel}
+                  >
+                    签约人 *
+                  </Label>
                   <Input
                     id="signedBy"
                     value={formData.signedBy}
@@ -139,13 +177,19 @@ export function EditContractPageSimple({
                     disabled={loading}
                     placeholder="签约人姓名"
                     required
+                    className={contractEditMobileStyles.input}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className={contractEditMobileStyles.helperText}>
                     合同签署人，通常为租客本人
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="signedDate">签约日期</Label>
+                  <Label
+                    htmlFor="signedDate"
+                    className={contractEditMobileStyles.formLabel}
+                  >
+                    签约日期
+                  </Label>
                   <Input
                     id="signedDate"
                     type="date"
@@ -154,8 +198,9 @@ export function EditContractPageSimple({
                       handleInputChange('signedDate', e.target.value)
                     }
                     disabled={loading}
+                    className={contractEditMobileStyles.input}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className={contractEditMobileStyles.helperText}>
                     合同正式签署的日期
                   </p>
                 </div>
@@ -163,7 +208,12 @@ export function EditContractPageSimple({
 
               {/* 备注字段 */}
               <div>
-                <Label htmlFor="remarks">备注</Label>
+                <Label
+                  htmlFor="remarks"
+                  className={contractEditMobileStyles.formLabel}
+                >
+                  备注
+                </Label>
                 <Textarea
                   id="remarks"
                   value={formData.remarks}
@@ -171,8 +221,9 @@ export function EditContractPageSimple({
                   disabled={loading}
                   placeholder="合同备注信息（可选）"
                   rows={3}
+                  className={contractEditMobileStyles.textarea}
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractEditMobileStyles.helperText}>
                   可以记录合同相关的特殊说明或注意事项
                 </p>
               </div>
@@ -180,18 +231,25 @@ export function EditContractPageSimple({
           </Card>
 
           {/* 操作按钮 */}
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={loading}
-            >
-              取消
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? '保存中...' : '保存修改'}
-            </Button>
+          <div className={contractEditMobileStyles.actionsCard}>
+            <div className={contractEditMobileStyles.actionsRow}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={loading}
+                className={contractEditMobileStyles.actionButton}
+              >
+                取消
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className={contractEditMobileStyles.actionButton}
+              >
+                {loading ? '保存中...' : '保存修改'}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

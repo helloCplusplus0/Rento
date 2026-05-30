@@ -7,6 +7,7 @@ import {
 } from '@/lib/bill-display'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { Card, CardContent } from '@/components/ui/card'
 import { BillStatusBadge } from '@/components/ui/status-badge'
 import { TouchCard } from '@/components/ui/touch-button'
@@ -36,8 +37,8 @@ export function BillCardCompact({
 
   return (
     <TouchCard onClick={onClick} className={className}>
-      <Card className="overflow-hidden transition-all hover:shadow-md">
-        <CardContent className="p-3">
+      <Card className="gap-0 overflow-hidden py-0 transition-all hover:shadow-md">
+        <CardContent className={billListMobileStyles.compactCardContent}>
           {(() => {
             const visualConfig = getBillVisualConfig(bill)
             const Icon = visualConfig.icon
@@ -45,26 +46,26 @@ export function BillCardCompact({
             return (
               <>
           {/* 头部信息行 - 与桌面端功能完全一致 */}
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className={billListMobileStyles.compactCardHeader}>
+            <div className={billListMobileStyles.compactCardLeading}>
               <div
                 className={cn(
-                  'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded',
+                  billListMobileStyles.compactIconBox,
                   isOverdue
                     ? 'bg-red-100 text-red-700'
                     : visualConfig.iconClassName
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">
+                <div className={billListMobileStyles.compactTitle}>
                   {getBillDisplayLabel(bill)}
                 </div>
-                <div className="text-muted-foreground truncate text-[11px]">
+                <div className={billListMobileStyles.compactMeta}>
                   {bill.billNumber}
                 </div>
-                <div className="text-muted-foreground truncate text-xs">
+                <div className={billListMobileStyles.compactMeta}>
                   {bill.contract.room.building.name} -{' '}
                   {bill.contract.room.roomNumber}
                 </div>
@@ -72,25 +73,39 @@ export function BillCardCompact({
             </div>
             <BillStatusBadge
               status={bill.status}
-              className="ml-2 flex-shrink-0 px-2 py-0.5 text-xs"
+              className={billListMobileStyles.compactBadge}
             />
           </div>
 
           {/* 详细信息区域 - 补齐桌面端的所有功能 */}
-          <div className="space-y-2">
+          <div className={billListMobileStyles.compactDetails}>
             {/* 金额信息 - 与桌面端一致 */}
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">应收金额</span>
-              <span className="text-sm font-semibold">
+            <div className={billListMobileStyles.compactDetailRow}>
+              <span className={billListMobileStyles.compactLabel}>
+                应收金额
+              </span>
+              <span
+                className={cn(
+                  billListMobileStyles.compactValue,
+                  'font-semibold text-gray-900'
+                )}
+              >
                 {formatCurrency(Number(bill.amount))}
               </span>
             </div>
 
             {/* 已收金额 - 补齐桌面端功能 */}
             {Number(bill.receivedAmount) > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">已收金额</span>
-                <span className="text-sm font-medium text-green-600">
+              <div className={billListMobileStyles.compactDetailRow}>
+                <span className={billListMobileStyles.compactLabel}>
+                  已收金额
+                </span>
+                <span
+                  className={cn(
+                    billListMobileStyles.compactValue,
+                    'text-green-600'
+                  )}
+                >
                   {formatCurrency(Number(bill.receivedAmount))}
                 </span>
               </div>
@@ -98,65 +113,91 @@ export function BillCardCompact({
 
             {/* 待收金额 - 补齐桌面端功能 */}
             {Number(bill.pendingAmount) > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">待收金额</span>
-                <span className="text-sm font-medium text-orange-600">
+              <div className={billListMobileStyles.compactDetailRow}>
+                <span className={billListMobileStyles.compactLabel}>
+                  待收金额
+                </span>
+                <span
+                  className={cn(
+                    billListMobileStyles.compactValue,
+                    'text-orange-600'
+                  )}
+                >
                   {formatCurrency(Number(bill.pendingAmount))}
                 </span>
               </div>
             )}
 
             {/* 到期日期 - 与桌面端一致 */}
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">到期日期</span>
-              <span className="text-sm font-medium">
+            <div className={billListMobileStyles.compactDetailRow}>
+              <span className={billListMobileStyles.compactLabel}>
+                到期日期
+              </span>
+              <span
+                className={cn(
+                  billListMobileStyles.compactValue,
+                  'text-gray-900'
+                )}
+              >
                 {formatDate(bill.dueDate)}
               </span>
             </div>
 
             {/* 账期信息 - 补齐桌面端功能 */}
             {bill.period && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">账期</span>
-                <span className="text-xs">{bill.period}</span>
+              <div className={billListMobileStyles.compactDetailPairRow}>
+                <span className={billListMobileStyles.compactDetailPairLabel}>
+                  账期
+                </span>
+                <span className={billListMobileStyles.compactDetailPairValue}>
+                  {bill.period}
+                </span>
               </div>
             )}
 
             {/* 支付方式 - 补齐桌面端功能 */}
             {bill.paymentMethod && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">支付方式</span>
-                <span className="text-xs">{bill.paymentMethod}</span>
+              <div className={billListMobileStyles.compactDetailPairRow}>
+                <span className={billListMobileStyles.compactDetailPairLabel}>
+                  支付方式
+                </span>
+                <span className={billListMobileStyles.compactDetailPairValue}>
+                  {bill.paymentMethod}
+                </span>
               </div>
             )}
 
             {/* 操作员信息 - 补齐桌面端功能 */}
             {bill.operator && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">操作员</span>
-                <span className="text-xs">{bill.operator}</span>
+              <div className={billListMobileStyles.compactDetailPairRow}>
+                <span className={billListMobileStyles.compactDetailPairLabel}>
+                  操作员
+                </span>
+                <span className={billListMobileStyles.compactDetailPairValue}>
+                  {bill.operator}
+                </span>
               </div>
             )}
           </div>
 
           {/* 底部信息 - 与桌面端功能一致 */}
-          <div className="mt-2 border-t border-gray-100 pt-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
+          <div className={billListMobileStyles.compactFooter}>
+            <div className={billListMobileStyles.compactFooterRow}>
+              <div className={billListMobileStyles.compactFooterLeading}>
                 <div
                   className={cn(
-                    'h-1.5 w-1.5 rounded-full',
+                    billListMobileStyles.compactFooterDot,
                     isOverdue ? 'bg-red-500' : 'bg-blue-500'
                   )}
                 ></div>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className={billListMobileStyles.compactMeta}>
                   租客：{bill.contract.renter.name}
                 </span>
               </div>
 
               {/* 逾期信息 - 与桌面端一致 */}
               {isOverdue && (
-                <div className="text-xs font-medium text-red-600">
+                <div className={billListMobileStyles.compactOverdueInfo}>
                   已逾期 {overdueDays} 天
                 </div>
               )}
@@ -164,9 +205,13 @@ export function BillCardCompact({
 
             {/* 备注信息 - 补齐桌面端功能 */}
             {bill.remarks && (
-              <div className="mt-1">
-                <span className="text-muted-foreground text-xs">备注：</span>
-                <span className="ml-1 text-xs">{bill.remarks}</span>
+              <div className={billListMobileStyles.compactRemarks}>
+                <span className={billListMobileStyles.compactLabel}>
+                  备注：
+                </span>
+                <span className={billListMobileStyles.compactRemarksValue}>
+                  {bill.remarks}
+                </span>
               </div>
             )}
           </div>
@@ -184,9 +229,9 @@ export function BillCardCompact({
  */
 export function BillCardCompactSkeleton({ className }: { className?: string }) {
   return (
-    <Card className={`overflow-hidden ${className}`}>
-      <CardContent className="p-3">
-        <div className="mb-2 flex items-center justify-between">
+    <Card className={`gap-0 overflow-hidden py-0 ${className}`}>
+      <CardContent className={billListMobileStyles.compactCardContent}>
+        <div className="mb-1.5 flex items-center justify-between">
           <div className="flex flex-1 items-center gap-2">
             <div className="h-6 w-6 animate-pulse rounded bg-gray-200"></div>
             <div className="flex-1">

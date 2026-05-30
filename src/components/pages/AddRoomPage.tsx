@@ -8,6 +8,7 @@ import { BuildingSelector } from '@/components/business/BuildingSelector'
 import { RoomBatchForm } from '@/components/business/RoomBatchForm'
 import { RoomPreviewList } from '@/components/business/RoomPreviewList'
 import { PageContainer } from '@/components/layout'
+import { addRoomMobileStyles } from '@/components/pages/add-room-mobile-styles'
 
 interface AddRoomPageProps {
   initialBuildings: (Building & { totalRooms: number })[]
@@ -112,10 +113,11 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
 
   return (
     <PageContainer title="添加房间" showBackButton>
-      <div className="space-y-6 pb-6">
+      <div className={addRoomMobileStyles.pageSection}>
         {/* 楼栋选择 */}
         <BuildingSelector
           buildings={buildings}
+          selectedBuildingId={selectedBuilding?.id}
           onBuildingSelect={handleBuildingSelect}
           onNewBuilding={handleNewBuilding}
           onBuildingUpdate={handleBuildingUpdate}

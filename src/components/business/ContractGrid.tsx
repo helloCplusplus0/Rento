@@ -2,6 +2,7 @@
 
 import type { ContractWithDetails } from '@/types/database'
 
+import { contractListMobileStyles } from './contract-list-mobile-styles'
 import { ContractCard } from './contract-card'
 
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
@@ -98,7 +99,7 @@ export function ContractGrid({
 }: ContractGridProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className={contractListMobileStyles.listGrid}>
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="h-48 rounded-lg bg-gray-200"></div>
@@ -110,7 +111,7 @@ export function ContractGrid({
 
   if (contracts.length === 0) {
     return (
-      <div className="py-12 text-center">
+      <div className={contractListMobileStyles.emptyState}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
           <svg
             className="h-8 w-8 text-gray-400"
@@ -126,14 +127,14 @@ export function ContractGrid({
             />
           </svg>
         </div>
-        <h3 className="mb-2 text-lg font-medium text-gray-900">暂无合同</h3>
-        <p className="text-gray-500">还没有任何合同记录</p>
+        <h3 className={contractListMobileStyles.emptyTitle}>暂无合同</h3>
+        <p className={contractListMobileStyles.emptyText}>还没有任何合同记录</p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className={contractListMobileStyles.listGrid}>
       {contracts.map((contract) => (
         <ContractCard
           key={contract.id}

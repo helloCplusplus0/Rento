@@ -6,6 +6,7 @@ import { Check, Home, Search } from 'lucide-react'
 import type { RoomWithBuildingForClient } from '@/types/database'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { contractCreateMobileStyles } from '@/components/business/contract-create-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -28,6 +29,21 @@ export function RoomSelector({
   disabled = false,
 }: RoomSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
+
+  const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    isInteractable: boolean,
+    action: () => void
+  ) => {
+    if (disabled || !isInteractable) {
+      return
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      action()
+    }
+  }
 
   // 筛选房间
   const filteredRooms = useMemo(() => {
@@ -92,63 +108,79 @@ export function RoomSelector({
   }
 
   return (
-    <div className="space-y-4">
+    <div className={contractCreateMobileStyles.selectorStack}>
       {/* 搜索框 */}
-      <div className="relative">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+      <div className={contractCreateMobileStyles.searchWrap}>
+        <Search className={contractCreateMobileStyles.searchIcon} />
         <Input
           placeholder="搜索房间号、楼栋名称或地址..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className={contractCreateMobileStyles.searchInput}
           disabled={disabled}
         />
       </div>
 
       {/* 已选择的房间 */}
       {selectedRoom && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                  <Home className="h-5 w-5 text-blue-600" />
+        <Card className={contractCreateMobileStyles.selectedCard}>
+          <CardContent className={contractCreateMobileStyles.selectedCardContent}>
+            <div className={contractCreateMobileStyles.selectedRow}>
+              <div className={contractCreateMobileStyles.selectedLeading}>
+                <div
+                  className={cn(
+                    contractCreateMobileStyles.avatarBox,
+                    contractCreateMobileStyles.avatarBoxSelected
+                  )}
+                >
+                  <Home
+                    className={cn(
+                      contractCreateMobileStyles.avatarIcon,
+                      contractCreateMobileStyles.avatarIconSelected
+                    )}
+                  />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">
+                  <div className={contractCreateMobileStyles.selectedTitle}>
                     {selectedRoom.building.name} - {selectedRoom.roomNumber}
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className={contractCreateMobileStyles.selectedMeta}>
                     {formatCurrency(selectedRoom.rent)}/月 ·{' '}
                     {getRoomTypeLabel(selectedRoom.roomType)}
                     {selectedRoom.area && ` · ${selectedRoom.area}㎡`}
                   </div>
                   <Badge
                     className={cn(
-                      'mt-1 text-xs',
+                      'mt-1 text-[11px]',
                       getRoomStatusColor(selectedRoom.status)
                     )}
                   >
                     {getRoomStatusLabel(selectedRoom.status)}
                   </Badge>
+                  <div className={contractCreateMobileStyles.selectedSubtle}>
+                    {selectedRoom.floorNumber}楼
+                  </div>
                 </div>
               </div>
-              <Check className="h-5 w-5 text-blue-600" />
+              <Check className={contractCreateMobileStyles.selectedCheck} />
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* 房间列表 */}
-      <div className="max-h-80 space-y-4 overflow-y-auto">
+      <div className={contractCreateMobileStyles.listWrap}>
         {Object.keys(groupedRooms).length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
+          <div className={contractCreateMobileStyles.emptyState}>
             {searchQuery ? '未找到匹配的房间' : '暂无可用房间'}
           </div>
         ) : (
           Object.entries(groupedRooms).map(([buildingName, buildingRooms]) => (
-            <div key={buildingName}>
-              <h4 className="mb-2 px-1 text-sm font-medium text-gray-700">
+            <div
+              key={buildingName}
+              className={contractCreateMobileStyles.listGroup}
+            >
+              <h4 className={contractCreateMobileStyles.listGroupTitle}>
                 {buildingName}
               </h4>
               <div className="space-y-2">
@@ -160,64 +192,88 @@ export function RoomSelector({
                     <Card
                       key={room.id}
                       className={cn(
-                        'cursor-pointer transition-all hover:shadow-sm',
-                        isSelected
-                          ? 'border-blue-200 bg-blue-50'
-                          : 'hover:border-gray-300',
+                        'cursor-pointer hover:border-gray-300',
+                        contractCreateMobileStyles.optionCard,
+                        isSelected && contractCreateMobileStyles.optionCardSelected,
                         !isAvailable && 'opacity-60',
                         disabled && 'cursor-not-allowed opacity-50'
                       )}
                       onClick={() =>
                         !disabled && isAvailable && onRoomSelect(room)
                       }
+                      onKeyDown={(event) =>
+                        handleCardKeyDown(event, isAvailable, () =>
+                          onRoomSelect(room)
+                        )
+                      }
+                      role="button"
+                      tabIndex={!disabled && isAvailable ? 0 : -1}
+                      aria-pressed={isSelected}
+                      aria-disabled={disabled || !isAvailable}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
+                      <CardContent className={contractCreateMobileStyles.optionCardContent}>
+                        <div className={contractCreateMobileStyles.optionRow}>
+                          <div className={contractCreateMobileStyles.optionLeading}>
                             <div
                               className={cn(
-                                'flex h-10 w-10 items-center justify-center rounded-full',
-                                isSelected ? 'bg-blue-100' : 'bg-gray-100'
+                                contractCreateMobileStyles.avatarBox,
+                                isSelected
+                                  ? contractCreateMobileStyles.avatarBoxSelected
+                                  : undefined
                               )}
                             >
                               <Home
                                 className={cn(
-                                  'h-5 w-5',
-                                  isSelected ? 'text-blue-600' : 'text-gray-600'
+                                  contractCreateMobileStyles.avatarIcon,
+                                  isSelected
+                                    ? contractCreateMobileStyles.avatarIconSelected
+                                    : undefined
                                 )}
                               />
                             </div>
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">
+                              <div className={contractCreateMobileStyles.optionTitle}>
                                 房间 {room.roomNumber}
                                 {!isAvailable && (
-                                  <span className="ml-2 text-sm text-gray-500">
+                                  <span
+                                    className={
+                                      contractCreateMobileStyles.optionDisabledText
+                                    }
+                                  >
                                     (不可用)
                                   </span>
                                 )}
                               </div>
-                              <div className="text-sm text-gray-600">
+                              <div className={contractCreateMobileStyles.optionMeta}>
                                 {formatCurrency(room.rent)}/月 ·{' '}
                                 {getRoomTypeLabel(room.roomType)}
                                 {room.area && ` · ${room.area}㎡`}
                               </div>
-                              <div className="mt-1 flex items-center space-x-2">
+                              <div
+                                className={contractCreateMobileStyles.optionBadgeRow}
+                              >
                                 <Badge
                                   className={cn(
-                                    'text-xs',
+                                    'px-2 py-0.5 text-[11px]',
                                     getRoomStatusColor(room.status)
                                   )}
                                 >
                                   {getRoomStatusLabel(room.status)}
                                 </Badge>
-                                <span className="text-xs text-gray-500">
+                                <span
+                                  className={
+                                    contractCreateMobileStyles.optionFloorText
+                                  }
+                                >
                                   {room.floorNumber}楼
                                 </span>
                               </div>
                             </div>
                           </div>
                           {isSelected && (
-                            <Check className="h-5 w-5 text-blue-600" />
+                            <Check
+                              className={contractCreateMobileStyles.optionCheck}
+                            />
                           )}
                         </div>
                       </CardContent>
@@ -232,7 +288,7 @@ export function RoomSelector({
 
       {/* 提示信息 */}
       {filteredRooms.length > 0 && (
-        <div className="text-center text-xs text-gray-500">
+        <div className={contractCreateMobileStyles.resultText}>
           共找到 {filteredRooms.length} 个房间
           {filteredRooms.filter((r) => r.status === 'VACANT').length > 0 && (
             <span className="ml-2">

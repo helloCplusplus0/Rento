@@ -14,7 +14,9 @@ import {
 
 import type { MeterWithReadingsForClient } from '@/types/meter'
 import { formatDate } from '@/lib/format'
-import { formatMeterReading, formatMeterType } from '@/lib/meter-utils'
+import { cn } from '@/lib/utils'
+import { formatMeterReading } from '@/lib/meter-utils'
+import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,19 +89,20 @@ export function MeterCard({
 
   return (
     <Card
-      className={`transition-all duration-200 ${
+      className={cn(
+        roomDetailMobileStyles.meterCard,
+        'transition-all duration-200',
         meter.isActive
           ? 'border-green-200 bg-white'
           : 'border-gray-200 bg-gray-50 opacity-75'
-      }`}
+      )}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <CardHeader className={roomDetailMobileStyles.meterCardHeader}>
+        <div className={roomDetailMobileStyles.meterCardHeaderRow}>
+          <div className={roomDetailMobileStyles.meterCardTitleRow}>
             {getMeterIcon(meter.meterType)}
-            <h3 className="font-medium text-gray-900">{meter.displayName}</h3>
+            <h3 className={roomDetailMobileStyles.meterCardName}>{meter.displayName}</h3>
           </div>
-          {/* 简化状态显示 - 只保留Switch，移除重复的Badge和span */}
           <Switch
             checked={meter.isActive}
             onCheckedChange={handleToggleStatus}
@@ -107,83 +110,80 @@ export function MeterCard({
           />
         </div>
 
-        <div className="text-sm text-gray-500">
-          {formatMeterType(meter.meterType)} · {meter.meterNumber}
-          {/* 状态指示移到这里，更简洁 */}
+        <div className={roomDetailMobileStyles.meterCardMeta}>
+          {meter.meterNumber}
           <span
-            className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+            className={cn(
+              roomDetailMobileStyles.meterStatePill,
               meter.isActive
                 ? 'bg-green-100 text-green-700'
                 : 'bg-gray-100 text-gray-500'
-            }`}
+            )}
           >
             {meter.isActive ? '启用' : '禁用'}
           </span>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
-        {/* 基本信息 */}
-        <div className="space-y-2">
+      <CardContent className={roomDetailMobileStyles.meterCardContent}>
+        <div className={roomDetailMobileStyles.meterInfoStack}>
           {meter.location && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className={roomDetailMobileStyles.meterMetaRow}>
               <MapPin className="h-3 w-3" />
               <span>{meter.location}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">单价</span>
-            <span className="font-medium">
+          <div className={roomDetailMobileStyles.meterInfoRow}>
+            <span className={roomDetailMobileStyles.meterInfoLabel}>单价</span>
+            <span className={roomDetailMobileStyles.meterInfoValue}>
               {meter.unitPrice.toFixed(2)} 元/{meter.unit}
             </span>
           </div>
 
           {latestReading && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">最新读数</span>
-              <span className="font-medium">
+            <div className={roomDetailMobileStyles.meterInfoRow}>
+              <span className={roomDetailMobileStyles.meterInfoLabel}>最新读数</span>
+              <span className={roomDetailMobileStyles.meterInfoValue}>
                 {formatMeterReading(latestReading.currentReading, meter.unit)}
               </span>
             </div>
           )}
 
           {meter.installDate && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className={roomDetailMobileStyles.meterMetaRow}>
               <Calendar className="h-3 w-3" />
               <span>安装于 {formatDate(meter.installDate)}</span>
             </div>
           )}
         </div>
 
-        {/* 备注信息 */}
         {meter.remarks && (
-          <div className="rounded bg-gray-50 p-2 text-sm text-gray-600">
-            {meter.remarks}
-          </div>
+          <div className={roomDetailMobileStyles.meterRemark}>{meter.remarks}</div>
         )}
 
-        {/* 操作按钮 - 简化布局 */}
-        <div className="flex items-center gap-2 border-t pt-2">
+        <div className={roomDetailMobileStyles.meterActions}>
           <Button
             variant="ghost"
             size="sm"
             onClick={onEdit}
             disabled={loading}
-            className="h-8 px-2"
+            className={roomDetailMobileStyles.meterActionButton}
           >
             <Edit className="mr-1 h-3 w-3" />
             编辑
           </Button>
 
-          {/* 删除按钮 - 使用AlertDialog确认 */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={loading}
-                className="h-8 px-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                className={cn(
+                  roomDetailMobileStyles.meterActionButton,
+                  roomDetailMobileStyles.meterActionDanger
+                )}
               >
                 <Trash2 className="mr-1 h-3 w-3" />
                 移除

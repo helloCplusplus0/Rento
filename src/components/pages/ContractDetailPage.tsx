@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
+import { contractDetailMobileStyles } from '@/components/business/contract-detail-mobile-styles'
 import { SingleMeterReadingModal } from '@/components/business/SingleMeterReadingModal'
 import { PageContainer } from '@/components/layout'
 import type { ContractWithDetailsForClient } from '@/types/database'
@@ -154,7 +155,7 @@ export function ContractDetailPage({
 
   return (
     <PageContainer title="合同详情" showBackButton>
-      <div className="pb-6">
+      <div className={contractDetailMobileStyles.pageShell}>
         <EnhancedContractDetail
           contract={contract}
           contractExpiryAlertDays={contractExpiryAlertDays}

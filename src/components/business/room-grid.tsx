@@ -1,5 +1,8 @@
 import type { RoomWithBuildingForClient } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { roomListMobileStyles } from '@/components/business/room-list-mobile-styles'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 import { CompactRoomCard, RoomCardSkeleton } from './room-card'
 
@@ -26,8 +29,8 @@ export function RoomGrid({
 
   if (rooms.length === 0) {
     return (
-      <div className={cn('py-12 text-center', className)}>
-        <div className="text-muted-foreground">暂无房间数据</div>
+      <div className={cn(roomListMobileStyles.emptyState, className)}>
+        <div className={roomListMobileStyles.emptyText}>暂无房间数据</div>
       </div>
     )
   }
@@ -51,7 +54,7 @@ export function RoomGrid({
     .sort((a, b) => b - a)
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn(roomListMobileStyles.pageSection, className)}>
       {sortedFloors.map((floor) => (
         <FloorSection
           key={floor}
@@ -90,16 +93,16 @@ function FloorSection({ floor, rooms, onRoomClick }: FloorSectionProps) {
   )
 
   return (
-    <div className="space-y-3">
+    <div className={roomListMobileStyles.floorSection}>
       {/* 楼层标题和统计 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold">{floor}层</h3>
-          <div className="text-muted-foreground text-sm">
-            共{rooms.length}套
+      <div className={roomListMobileStyles.floorHeader}>
+        <div className={roomListMobileStyles.floorHeadingGroup}>
+          <h3 className={roomListMobileStyles.floorTitle}>{floor}层</h3>
+          <div className={roomListMobileStyles.floorMeta}>
+            共 {rooms.length} 套
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className={roomListMobileStyles.floorStats}>
           {statusCounts.VACANT && (
             <span className="text-green-600">空房{statusCounts.VACANT}</span>
           )}
@@ -118,13 +121,13 @@ function FloorSection({ floor, rooms, onRoomClick }: FloorSectionProps) {
       </div>
 
       {/* 房间网格 */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+      <div className={roomListMobileStyles.grid}>
         {sortedRooms.map((room) => (
           <CompactRoomCard
             key={room.id}
             room={room}
             onClick={() => onRoomClick?.(room)}
-            className="min-h-[100px]"
+            className={roomListMobileStyles.gridCardMinHeight}
           />
         ))}
       </div>
@@ -158,7 +161,7 @@ export function RoomStatusFilter({
   ]
 
   return (
-    <div className={cn('flex flex-wrap gap-2', className)}>
+    <div className={cn(roomListMobileStyles.filterActions, className)}>
       {statusOptions.map((option) => {
         const count = option.key
           ? statusCounts[option.key] || 0
@@ -166,23 +169,24 @@ export function RoomStatusFilter({
         const isSelected = selectedStatus === option.key
 
         return (
-          <button
+          <Button
             key={option.key || 'all'}
             onClick={() => onStatusChange(option.key)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-              'border border-gray-200 hover:border-gray-300',
+              roomListMobileStyles.filterButton,
               isSelected
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background hover:bg-gray-50',
-              option.color
+                ? 'bg-primary text-primary-foreground'
+                : 'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
+              !isSelected && option.color
             )}
           >
             {option.label}
             {count > 0 && (
-              <span className="ml-1 text-xs opacity-75">({count})</span>
+              <Badge variant="secondary" className={roomListMobileStyles.filterCount}>
+                {count}
+              </Badge>
             )}
-          </button>
+          </Button>
         )
       })}
     </div>
@@ -195,23 +199,23 @@ export function RoomStatusFilter({
  */
 export function RoomGridSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn(roomListMobileStyles.pageSection, className)}>
       {[1, 2, 3].map((floor) => (
-        <div key={floor} className="space-y-3">
+        <div key={floor} className={roomListMobileStyles.floorSection}>
           {/* 楼层标题骨架 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className={roomListMobileStyles.floorHeader}>
+            <div className={roomListMobileStyles.floorHeadingGroup}>
               <div className="h-6 w-12 animate-pulse rounded bg-gray-200" />
               <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
             </div>
-            <div className="flex gap-2">
+            <div className={roomListMobileStyles.floorStats}>
               <div className="h-4 w-12 animate-pulse rounded bg-gray-200" />
               <div className="h-4 w-12 animate-pulse rounded bg-gray-200" />
             </div>
           </div>
 
           {/* 房间网格骨架 */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+          <div className={roomListMobileStyles.grid}>
             {Array.from({ length: 6 }).map((_, i) => (
               <RoomCardSkeleton key={i} compact />
             ))}

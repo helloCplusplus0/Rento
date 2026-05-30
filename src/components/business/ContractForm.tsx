@@ -7,7 +7,7 @@ import type {
   RoomWithBuildingForClient,
 } from '@/types/database'
 import { ErrorLogger, ErrorSeverity, ErrorType } from '@/lib/error-logger'
-import { formatCurrency } from '@/lib/format'
+import { contractCreateMobileStyles } from '@/components/business/contract-create-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 import { ContractBillPreview } from './ContractBillPreview'
-import { ErrorAlert, SimpleErrorAlert } from './ErrorAlert'
+import { SimpleErrorAlert } from './ErrorAlert'
 import { RenterSelector } from './RenterSelector'
 import { RoomSelector } from './RoomSelector'
 
@@ -42,7 +42,7 @@ interface ContractFormProps {
   availableRooms: RoomWithBuildingForClient[]
   preselectedRoomId?: string // 预选房间ID
   preselectedRenterId?: string // 预选租客ID
-  onSubmit: (data: ContractFormData) => void
+  onSubmit: (data: ContractFormData) => Promise<void> | void
   onCancel: () => void
   loading?: boolean
   mode: 'create' | 'edit'
@@ -52,6 +52,14 @@ interface ContractFormProps {
     defaultPaymentTiming: string
     defaultDepositMonths: number
   }
+}
+
+function formatDateForInput(date: Date): string {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
 function normalizeDefaultPaymentMethod(defaultRentCycle?: string): string {
@@ -96,7 +104,7 @@ export function ContractForm({
   // 新增：仪表相关状态
   const [roomMeters, setRoomMeters] = useState<MeterForClient[]>([])
   const [metersLoading, setMetersLoading] = useState(false)
-  const [meterReadings, setMeterReadings] = useState<Record<string, number>>({})
+  const [meterReadings, setMeterReadings] = useState<Record<string, string>>({})
 
   const [formData, setFormData] = useState<ContractFormData>({
     renterId: '',
@@ -137,14 +145,14 @@ export function ContractForm({
           setRoomMeters(activeMeters)
 
           // 初始化仪表读数为0
-          const initialReadings: Record<string, number> = {}
+          const initialReadings: Record<string, string> = {}
           activeMeters.forEach((meter: MeterForClient) => {
-            initialReadings[meter.id] = 0
+            initialReadings[meter.id] = ''
           })
           setMeterReadings(initialReadings)
           setFormData((prev) => ({
             ...prev,
-            meterInitialReadings: initialReadings,
+            meterInitialReadings: {},
           }))
         } else {
           setRoomMeters([])
@@ -251,14 +259,14 @@ export function ContractForm({
     const startDate = new Date(today)
 
     // 设置开始日期为今天
-    const startDateStr = startDate.toISOString().split('T')[0]
+    const startDateStr = formatDateForInput(startDate)
 
     // 计算结束日期：开始日期 + 指定月数 - 1天
     const endDate = new Date(startDate)
     endDate.setMonth(endDate.getMonth() + months)
     endDate.setDate(endDate.getDate() - 1) // 减去1天，确保是准确的月数
 
-    const endDateStr = endDate.toISOString().split('T')[0]
+    const endDateStr = formatDateForInput(endDate)
 
     setFormData((prev) => ({
       ...prev,
@@ -287,25 +295,6 @@ export function ContractForm({
     return `${diffDays}天 (约${diffMonths}个月)`
   }
 
-  // 根据支付方式计算租金倍数
-  const calculateRentMultiplier = (paymentMethod: string): number => {
-    if (paymentMethod.includes('季') || paymentMethod.includes('3个月')) {
-      return 3
-    }
-    if (paymentMethod.includes('半年') || paymentMethod.includes('6个月')) {
-      return 6 // 半年付必须在年付之前检查
-    }
-    if (paymentMethod.includes('年') || paymentMethod.includes('12个月')) {
-      return 12
-    }
-    return 1 // 默认月付
-  }
-
-  // 计算实际租金金额（根据支付周期）
-  const actualRentAmount =
-    formData.monthlyRent *
-    calculateRentMultiplier(formData.paymentMethod || '月付')
-
   const handleInputChange = (
     field: keyof ContractFormData,
     value: string | number
@@ -321,16 +310,12 @@ export function ContractForm({
   }
 
   // 新增：处理仪表读数变化
-  const handleMeterReadingChange = (meterId: string, value: number) => {
+  const handleMeterReadingChange = (meterId: string, value: string) => {
     const newReadings = {
       ...meterReadings,
       [meterId]: value,
     }
     setMeterReadings(newReadings)
-    setFormData((prev) => ({
-      ...prev,
-      meterInitialReadings: newReadings,
-    }))
   }
 
   const validateForm = (): string | null => {
@@ -353,14 +338,15 @@ export function ContractForm({
 
     // 新增：仪表配置验证（仅在创建模式下）
     if (mode === 'create' && selectedRoom) {
-      if (roomMeters.length === 0 && !metersLoading) {
-        return '该房间未配置仪表，建议先配置仪表后再创建合同'
-      }
-
-      // 检查是否所有仪表都有初始读数
+      // 仅在房间已配置活跃仪表时要求录入底数；无仪表不阻断合同创建
       for (const meter of roomMeters) {
         const reading = meterReadings[meter.id]
-        if (reading === undefined || reading < 0) {
+        if (reading === undefined || reading.trim() === '') {
+          return `请为仪表"${meter.displayName}"录入当前读数`
+        }
+
+        const parsedReading = Number(reading)
+        if (Number.isNaN(parsedReading) || parsedReading < 0) {
           return `请为仪表"${meter.displayName}"设置有效的初始读数`
         }
       }
@@ -383,7 +369,20 @@ export function ContractForm({
     setError(null)
 
     try {
-      await onSubmit(formData)
+      const submissionData: ContractFormData = {
+        ...formData,
+        meterInitialReadings:
+          mode === 'create' && roomMeters.length > 0
+            ? Object.fromEntries(
+                roomMeters.map((meter) => [
+                  meter.id,
+                  Number(meterReadings[meter.id]),
+                ])
+              )
+            : {},
+      }
+
+      await onSubmit(submissionData)
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : '提交失败，请重试'
@@ -411,8 +410,10 @@ export function ContractForm({
     setError(null)
   }
 
+  const submitting = loading || isSubmitting
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-6">
+    <form onSubmit={handleSubmit} className={contractCreateMobileStyles.form}>
       {/* 错误提示 */}
       {error && (
         <SimpleErrorAlert
@@ -423,51 +424,61 @@ export function ContractForm({
       )}
 
       {/* 租客选择 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>选择租客</CardTitle>
+      <Card className={contractCreateMobileStyles.card}>
+        <CardHeader className={contractCreateMobileStyles.cardHeader}>
+          <CardTitle className={contractCreateMobileStyles.cardTitle}>
+            选择租客
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className={contractCreateMobileStyles.cardContent}>
           <RenterSelector
             renters={renters}
             selectedRenter={selectedRenter}
             onRenterSelect={setSelectedRenter}
-            disabled={loading || mode === 'edit'}
+            disabled={submitting || mode === 'edit'}
           />
           {mode === 'edit' && (
-            <p className="mt-2 text-sm text-gray-500">编辑模式下不能更改租客</p>
+            <p className={contractCreateMobileStyles.helperText}>
+              编辑模式下不能更改租客
+            </p>
           )}
         </CardContent>
       </Card>
 
       {/* 房间选择 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>选择房间</CardTitle>
+      <Card className={contractCreateMobileStyles.card}>
+        <CardHeader className={contractCreateMobileStyles.cardHeader}>
+          <CardTitle className={contractCreateMobileStyles.cardTitle}>
+            选择房间
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className={contractCreateMobileStyles.cardContent}>
           <RoomSelector
             rooms={availableRooms}
             selectedRoom={selectedRoom}
             onRoomSelect={setSelectedRoom}
-            disabled={loading || mode === 'edit'}
+            disabled={submitting || mode === 'edit'}
           />
           {mode === 'edit' && (
-            <p className="mt-2 text-sm text-gray-500">编辑模式下不能更改房间</p>
+            <p className={contractCreateMobileStyles.helperText}>
+              编辑模式下不能更改房间
+            </p>
           )}
         </CardContent>
       </Card>
 
       {/* 新增：仪表初始读数录入 */}
       {mode === 'create' && selectedRoom && (
-        <Card>
-          <CardHeader>
-            <CardTitle>仪表初始读数（底数）</CardTitle>
-            <p className="text-sm text-gray-600">
+        <Card className={contractCreateMobileStyles.card}>
+          <CardHeader className={contractCreateMobileStyles.cardHeader}>
+            <CardTitle className={contractCreateMobileStyles.cardTitle}>
+              仪表初始读数（底数）
+            </CardTitle>
+            <p className={contractCreateMobileStyles.cardDescription}>
               请录入房间内各仪表的当前读数作为租期开始的底数
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className={contractCreateMobileStyles.cardContent}>
             {metersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
@@ -483,23 +494,26 @@ export function ContractForm({
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className={contractCreateMobileStyles.meterList}>
                 {roomMeters.map((meter) => (
-                  <div key={meter.id} className="rounded-lg border p-4">
-                    <div className="mb-3 flex items-center justify-between">
+                  <div
+                    key={meter.id}
+                    className={contractCreateMobileStyles.meterCard}
+                  >
+                    <div className={contractCreateMobileStyles.meterHeader}>
                       <div>
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className={contractCreateMobileStyles.meterTitle}>
                           {meter.displayName}
                         </h4>
-                        <p className="text-sm text-gray-500">
+                        <p className={contractCreateMobileStyles.meterMeta}>
                           {meter.meterNumber} • {meter.location || '未设置位置'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700">
+                        <p className={contractCreateMobileStyles.meterPrice}>
                           单价: ¥{meter.unitPrice}/{meter.unit}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className={contractCreateMobileStyles.meterType}>
                           {meter.meterType === 'ELECTRICITY'
                             ? '电表'
                             : meter.meterType === 'COLD_WATER'
@@ -510,37 +524,34 @@ export function ContractForm({
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className={contractCreateMobileStyles.meterInputRow}>
                       <Label
                         htmlFor={`meter-${meter.id}`}
-                        className="text-sm font-medium"
+                        className={contractCreateMobileStyles.label}
                       >
                         初始读数:
                       </Label>
                       <Input
                         id={`meter-${meter.id}`}
                         type="number"
-                        value={meterReadings[meter.id] || 0}
+                        value={meterReadings[meter.id] ?? ''}
                         onChange={(e) =>
-                          handleMeterReadingChange(
-                            meter.id,
-                            Number(e.target.value) || 0
-                          )
+                          handleMeterReadingChange(meter.id, e.target.value)
                         }
-                        disabled={loading}
+                        disabled={submitting}
                         min="0"
                         step="0.01"
-                        className="w-full sm:w-32"
-                        placeholder="0"
+                        className={contractCreateMobileStyles.meterInput}
+                        placeholder="请输入当前读数"
                       />
-                      <span className="text-sm text-gray-500">
+                      <span className={contractCreateMobileStyles.meterUnit}>
                         {meter.unit}
                       </span>
                     </div>
                   </div>
                 ))}
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="text-sm text-blue-800">
+                <div className={contractCreateMobileStyles.infoBox}>
+                  <p className={contractCreateMobileStyles.infoText}>
                     💡
                     提示：仪表初始读数将作为租期开始的底数，用于后续抄表计费。请确保读数准确无误。
                   </p>
@@ -552,25 +563,27 @@ export function ContractForm({
       )}
 
       {/* 合同基本信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>合同信息</CardTitle>
+      <Card className={contractCreateMobileStyles.card}>
+        <CardHeader className={contractCreateMobileStyles.cardHeader}>
+          <CardTitle className={contractCreateMobileStyles.cardTitle}>
+            合同信息
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className={contractCreateMobileStyles.cardContent}>
           {/* 租期快速选择 */}
           {mode === 'create' && (
-            <div className="mb-4">
-              <Label className="mb-2 block text-sm font-medium text-gray-700">
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label className={contractCreateMobileStyles.label}>
                 租期快速选择
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className={contractCreateMobileStyles.quickActions}>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => handleQuickPeriodSelect(3)}
-                  disabled={loading}
-                  className="text-xs"
+                  disabled={submitting}
+                  className={contractCreateMobileStyles.quickButton}
                 >
                   3个月
                 </Button>
@@ -579,8 +592,8 @@ export function ContractForm({
                   variant="outline"
                   size="sm"
                   onClick={() => handleQuickPeriodSelect(6)}
-                  disabled={loading}
-                  className="text-xs"
+                  disabled={submitting}
+                  className={contractCreateMobileStyles.quickButton}
                 >
                   6个月
                 </Button>
@@ -589,47 +602,53 @@ export function ContractForm({
                   variant="outline"
                   size="sm"
                   onClick={() => handleQuickPeriodSelect(12)}
-                  disabled={loading}
-                  className="text-xs"
+                  disabled={submitting}
+                  className={contractCreateMobileStyles.quickButton}
                 >
                   12个月
                 </Button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className={contractCreateMobileStyles.helperText}>
                 点击快速设置标准租期，或手动选择具体日期
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="startDate">开始日期 *</Label>
+          <div className={contractCreateMobileStyles.fieldGrid}>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label htmlFor="startDate" className={contractCreateMobileStyles.label}>
+                开始日期 *
+              </Label>
               <Input
                 id="startDate"
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 required
+                className={contractCreateMobileStyles.input}
               />
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   编辑模式下不能更改合同日期
                 </p>
               )}
             </div>
-            <div>
-              <Label htmlFor="endDate">结束日期 *</Label>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label htmlFor="endDate" className={contractCreateMobileStyles.label}>
+                结束日期 *
+              </Label>
               <Input
                 id="endDate"
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 required
+                className={contractCreateMobileStyles.input}
               />
               {formData.startDate && formData.endDate && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   租期:{' '}
                   {calculateRentPeriodDisplay(
                     formData.startDate,
@@ -643,20 +662,27 @@ export function ContractForm({
       </Card>
 
       {/* 租金信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>租金信息</CardTitle>
+      <Card className={contractCreateMobileStyles.card}>
+        <CardHeader className={contractCreateMobileStyles.cardHeader}>
+          <CardTitle className={contractCreateMobileStyles.cardTitle}>
+            租金信息
+          </CardTitle>
           {mode === 'edit' && (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-600">
+            <p className={contractCreateMobileStyles.inlineWarning}>
               ⚠️ 为保证合同的完整性和租客信任，合同生效后不建议修改费用信息。
               如需处理额外费用，请使用"创建账单"功能；如需调整租金，请在合同到期后重新签约。
             </p>
           )}
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="monthlyRent">月租金 (元) *</Label>
+        <CardContent className={contractCreateMobileStyles.cardContent}>
+          <div className={contractCreateMobileStyles.fieldGrid}>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label
+                htmlFor="monthlyRent"
+                className={contractCreateMobileStyles.label}
+              >
+                月租金 (元) *
+              </Label>
               <Input
                 id="monthlyRent"
                 type="number"
@@ -664,19 +690,22 @@ export function ContractForm({
                 onChange={(e) =>
                   handleInputChange('monthlyRent', Number(e.target.value))
                 }
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 required
                 min="0"
                 step="0.01"
+                className={contractCreateMobileStyles.input}
               />
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   合同生效后不可修改租金，如需调整请在续约时处理
                 </p>
               )}
             </div>
-            <div>
-              <Label htmlFor="deposit">押金 (元) *</Label>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label htmlFor="deposit" className={contractCreateMobileStyles.label}>
+                押金 (元) *
+              </Label>
               <Input
                 id="deposit"
                 type="number"
@@ -684,22 +713,28 @@ export function ContractForm({
                 onChange={(e) =>
                   handleInputChange('deposit', Number(e.target.value))
                 }
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 required
                 min="0"
                 step="0.01"
+                className={contractCreateMobileStyles.input}
               />
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   合同生效后不可修改押金
                 </p>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="keyDeposit">钥匙押金 (元)</Label>
+          <div className={contractCreateMobileStyles.fieldGrid}>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label
+                htmlFor="keyDeposit"
+                className={contractCreateMobileStyles.label}
+              >
+                钥匙押金 (元)
+              </Label>
               <Input
                 id="keyDeposit"
                 type="number"
@@ -707,18 +742,24 @@ export function ContractForm({
                 onChange={(e) =>
                   handleInputChange('keyDeposit', Number(e.target.value) || 0)
                 }
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 min="0"
                 step="0.01"
+                className={contractCreateMobileStyles.input}
               />
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   合同生效后不可修改钥匙押金
                 </p>
               )}
             </div>
-            <div>
-              <Label htmlFor="cleaningFee">卫生费 (元)</Label>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label
+                htmlFor="cleaningFee"
+                className={contractCreateMobileStyles.label}
+              >
+                卫生费 (元)
+              </Label>
               <Input
                 id="cleaningFee"
                 type="number"
@@ -726,12 +767,13 @@ export function ContractForm({
                 onChange={(e) =>
                   handleInputChange('cleaningFee', Number(e.target.value) || 0)
                 }
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 min="0"
                 step="0.01"
+                className={contractCreateMobileStyles.input}
               />
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   合同生效后不可修改卫生费
                 </p>
               )}
@@ -741,28 +783,35 @@ export function ContractForm({
       </Card>
 
       {/* 支付信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>支付信息</CardTitle>
+      <Card className={contractCreateMobileStyles.card}>
+        <CardHeader className={contractCreateMobileStyles.cardHeader}>
+          <CardTitle className={contractCreateMobileStyles.cardTitle}>
+            支付信息
+          </CardTitle>
           {mode === 'edit' && (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-600">
+            <p className={contractCreateMobileStyles.inlineWarning}>
               ⚠️ 支付信息涉及合同核心条款，生效后不建议修改。
               如有特殊情况需要调整，请在合同续约时处理。
             </p>
           )}
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="paymentMethod">支付方式</Label>
+        <CardContent className={contractCreateMobileStyles.cardContent}>
+          <div className={contractCreateMobileStyles.fieldGrid}>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label
+                htmlFor="paymentMethod"
+                className={contractCreateMobileStyles.label}
+              >
+                支付方式
+              </Label>
               <select
                 id="paymentMethod"
                 value={formData.paymentMethod}
                 onChange={(e) =>
                   handleInputChange('paymentMethod', e.target.value)
                 }
-                disabled={loading || mode === 'edit'}
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={submitting || mode === 'edit'}
+                className={contractCreateMobileStyles.select}
               >
                 <option value="月付">月付</option>
                 <option value="季付">季付</option>
@@ -770,24 +819,30 @@ export function ContractForm({
                 <option value="年付">年付</option>
               </select>
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   支付方式影响账单生成，生效后不可修改
                 </p>
               )}
             </div>
-            <div>
-              <Label htmlFor="paymentTiming">付款时间</Label>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label
+                htmlFor="paymentTiming"
+                className={contractCreateMobileStyles.label}
+              >
+                付款时间
+              </Label>
               <Input
                 id="paymentTiming"
                 value={formData.paymentTiming || ''}
                 onChange={(e) =>
                   handleInputChange('paymentTiming', e.target.value)
                 }
-                disabled={loading || mode === 'edit'}
+                disabled={submitting || mode === 'edit'}
                 placeholder="如：每月1号前"
+                className={contractCreateMobileStyles.input}
               />
               {mode === 'edit' && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={contractCreateMobileStyles.helperText}>
                   付款时间涉及合同条款，生效后不可修改
                 </p>
               )}
@@ -797,31 +852,41 @@ export function ContractForm({
       </Card>
 
       {/* 签约信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>签约信息</CardTitle>
-          <p className="text-sm text-gray-600">
+      <Card className={contractCreateMobileStyles.card}>
+        <CardHeader className={contractCreateMobileStyles.cardHeader}>
+          <CardTitle className={contractCreateMobileStyles.cardTitle}>
+            签约信息
+          </CardTitle>
+          <p className={contractCreateMobileStyles.cardDescription}>
             签约人默认为租客本人，如需代签请修改签约人信息
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="signedBy">签约人 *</Label>
+        <CardContent className={contractCreateMobileStyles.cardContent}>
+          <div className={contractCreateMobileStyles.fieldGrid}>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label htmlFor="signedBy" className={contractCreateMobileStyles.label}>
+                签约人 *
+              </Label>
               <Input
                 id="signedBy"
                 value={formData.signedBy || ''}
                 onChange={(e) => handleInputChange('signedBy', e.target.value)}
-                disabled={loading}
+                disabled={submitting}
                 placeholder="签约人姓名"
                 required
+                className={contractCreateMobileStyles.input}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className={contractCreateMobileStyles.helperText}>
                 合同签署人，默认为租客本人
               </p>
             </div>
-            <div>
-              <Label htmlFor="signedDate">签约日期</Label>
+            <div className={contractCreateMobileStyles.fieldStack}>
+              <Label
+                htmlFor="signedDate"
+                className={contractCreateMobileStyles.label}
+              >
+                签约日期
+              </Label>
               <Input
                 id="signedDate"
                 type="date"
@@ -829,43 +894,49 @@ export function ContractForm({
                 onChange={(e) =>
                   handleInputChange('signedDate', e.target.value)
                 }
-                disabled={loading}
+                disabled={submitting}
+                className={contractCreateMobileStyles.input}
               />
-              <p className="mt-1 text-xs text-gray-500">合同正式签署的日期</p>
+              <p className={contractCreateMobileStyles.helperText}>
+                合同正式签署的日期
+              </p>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="remarks">备注</Label>
+          <div className={contractCreateMobileStyles.fieldStack}>
+            <Label htmlFor="remarks" className={contractCreateMobileStyles.label}>
+              备注
+            </Label>
             <Textarea
               id="remarks"
               value={formData.remarks || ''}
               onChange={(e) => handleInputChange('remarks', e.target.value)}
-              disabled={loading}
+              disabled={submitting}
               placeholder="合同备注信息"
               rows={3}
+              className={contractCreateMobileStyles.textarea}
             />
           </div>
         </CardContent>
       </Card>
 
       {/* 操作按钮 */}
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className={contractCreateMobileStyles.actionsRow}>
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={loading}
-          className="w-full sm:w-auto"
+          disabled={submitting}
+          className={contractCreateMobileStyles.actionButton}
         >
           取消
         </Button>
         <Button
           type="submit"
-          disabled={loading || !selectedRenter || !selectedRoom}
-          className="w-full sm:w-auto"
+          disabled={submitting || !selectedRenter || !selectedRoom}
+          className={contractCreateMobileStyles.actionButton}
         >
-          {loading ? '处理中...' : mode === 'create' ? '创建合同' : '保存修改'}
+          {submitting ? '处理中...' : mode === 'create' ? '创建合同' : '保存修改'}
         </Button>
       </div>
 

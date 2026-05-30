@@ -1,0 +1,50 @@
+export const billDetailMobileStyles = {
+  pageSection: 'space-y-2.5 pb-2.5 sm:space-y-6 sm:pb-6',
+  card: 'rounded-lg border border-gray-100 shadow-sm gap-3 py-3 sm:gap-6 sm:py-6',
+  cardHeader: 'gap-1 px-3 pb-0 sm:gap-1.5 sm:px-6',
+  cardHeaderRow: 'flex items-start justify-between gap-2.5',
+  cardTitle: 'text-base sm:text-lg',
+  headerActionButton:
+    'h-8 gap-1.5 px-3 text-sm text-gray-500 hover:text-gray-700 sm:h-8',
+  cardContent: 'space-y-3 px-3 pt-0 pb-3 sm:space-y-4 sm:px-6 sm:pb-6',
+  summaryCard:
+    'rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 via-green-50 to-blue-50 p-3 sm:p-4',
+  summaryStatusRow: 'mb-3 flex justify-center sm:mb-4',
+  summaryAmountBlock: 'border-y border-blue-200/50 py-2.5 text-center sm:py-3',
+  summaryAmountLabel:
+    'mb-1 text-xs font-medium leading-5 text-gray-600 sm:text-sm',
+  summaryAmountValue:
+    'mb-1.5 text-3xl font-bold leading-none tracking-tight text-green-600 sm:mb-2 sm:text-4xl',
+  summaryMetaRow: 'mt-3.5 flex justify-center gap-5 sm:mt-4 sm:gap-8',
+  summaryMetaBlock: 'text-center',
+  summaryMetaLabel: 'text-[11px] font-medium leading-5 text-gray-500 sm:text-xs',
+  summaryMetaValue: 'text-base font-semibold leading-none sm:text-lg',
+  contentStack: 'space-y-3 sm:space-y-4',
+  fieldsGrid: 'grid grid-cols-2 gap-x-3 gap-y-2.5 sm:gap-x-4 sm:gap-y-3',
+  fieldBlock: 'grid content-start gap-0.5 sm:gap-1',
+  fieldWide: 'col-span-2',
+  fieldLabel: 'text-[11px] font-medium leading-5 text-gray-500 sm:text-xs',
+  fieldValue: 'text-sm leading-6 text-gray-900',
+  fieldValueStrong: 'text-sm font-medium leading-6 text-gray-900',
+  fieldValueMono: 'truncate font-mono text-sm leading-6 text-gray-900',
+  fieldLink:
+    'group inline-flex items-start gap-1 text-left text-sm font-medium leading-6 text-blue-600 transition-colors hover:text-blue-800',
+  fieldLinkMono:
+    'text-left font-mono text-sm font-medium leading-6 text-blue-600 transition-colors hover:text-blue-800',
+  inlineMeta: 'text-xs leading-5 text-gray-500',
+  noteBlock: 'space-y-1',
+  noteText: 'rounded-md bg-gray-50 p-3 text-sm leading-6 text-gray-700',
+  footerMetaGrid: 'grid grid-cols-2 gap-x-3 gap-y-3 border-t pt-3 sm:gap-x-4 sm:pt-4',
+  warningBox: 'rounded-lg border border-red-200 bg-red-50 p-3 sm:p-3.5',
+  warningText: 'text-sm font-medium leading-6 text-red-700',
+  sectionBox: 'rounded-lg bg-gray-50 p-3 sm:p-4',
+  sectionHeader: 'mb-3 flex items-center justify-between gap-2',
+  sectionTitle: 'text-sm font-semibold leading-6 text-gray-900',
+  detailCard: 'rounded-lg border bg-white p-3',
+  detailCardHeader: 'mb-2 flex items-start justify-between gap-2',
+  detailCardMetaRow:
+    'flex flex-col gap-1.5 text-sm sm:flex-row sm:items-center sm:justify-between',
+  actionsCard: 'page-safe-bottom border-0 bg-transparent p-0 shadow-none',
+  actionsRow: 'flex flex-col gap-2.5 sm:flex-row sm:justify-end sm:gap-3',
+  actionButton: 'h-9 w-full text-sm sm:w-auto sm:flex-none',
+} as const

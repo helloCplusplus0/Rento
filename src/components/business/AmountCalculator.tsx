@@ -7,6 +7,7 @@ import type { BillType, ContractWithDetailsForClient } from '@/types/database'
 import { calculateUtilityBillSync } from '@/lib/bill-calculations'
 import { formatCurrency } from '@/lib/format'
 import { getSettings } from '@/hooks/useSettings'
+import { billCreateMobileStyles } from '@/components/business/bill-create-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MobileFormField } from '@/components/ui/mobile-form'
@@ -68,8 +69,8 @@ export function AmountCalculator({
     switch (billType) {
       case 'RENT':
         return (
-          <div className="rounded-lg bg-blue-50 p-3">
-            <div className="mb-2 text-sm text-blue-700">
+          <div className={billCreateMobileStyles.helperBox}>
+            <div className={billCreateMobileStyles.helperText}>
               基于合同月租金: {formatCurrency(contract.monthlyRent)}
             </div>
             <Button
@@ -77,6 +78,7 @@ export function AmountCalculator({
               variant="outline"
               size="sm"
               onClick={handleAutoCalculate}
+              className="mt-2 h-8 px-3 text-sm"
             >
               <Calculator className="mr-2 h-4 w-4" />
               使用合同租金
@@ -86,8 +88,8 @@ export function AmountCalculator({
 
       case 'DEPOSIT':
         return (
-          <div className="rounded-lg bg-green-50 p-3">
-            <div className="mb-2 text-sm text-green-700">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-2.5">
+            <div className="text-sm leading-5 text-green-700">
               基于合同押金: {formatCurrency(contract.deposit)}
             </div>
             <Button
@@ -95,6 +97,7 @@ export function AmountCalculator({
               variant="outline"
               size="sm"
               onClick={handleAutoCalculate}
+              className="mt-2 h-8 px-3 text-sm"
             >
               <Calculator className="mr-2 h-4 w-4" />
               使用合同押金
@@ -105,12 +108,12 @@ export function AmountCalculator({
       case 'UTILITIES':
         const settings = getSettings()
         return (
-          <div className="space-y-3 rounded-lg bg-orange-50 p-3">
-            <div className="text-sm text-orange-700">
+          <div className="space-y-2.5 rounded-lg border border-orange-200 bg-orange-50 p-2.5">
+            <div className="text-sm leading-5 text-orange-700">
               水电费计算 (电费: {settings.electricityPrice}元/度, 水费:{' '}
               {settings.waterPrice}元/吨)
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <Input
                 type="number"
                 placeholder="用电量(度)"
@@ -121,6 +124,7 @@ export function AmountCalculator({
                     electricityUsage: Number(e.target.value) || 0,
                   }))
                 }
+                className="h-10 text-sm placeholder:text-sm"
               />
               <Input
                 type="number"
@@ -132,6 +136,7 @@ export function AmountCalculator({
                     waterUsage: Number(e.target.value) || 0,
                   }))
                 }
+                className="h-10 text-sm placeholder:text-sm"
               />
             </div>
             <Button
@@ -139,7 +144,7 @@ export function AmountCalculator({
               variant="outline"
               size="sm"
               onClick={handleAutoCalculate}
-              className="w-full"
+              className="h-8 w-full text-sm"
             >
               <Calculator className="mr-2 h-4 w-4" />
               计算水电费
@@ -149,8 +154,8 @@ export function AmountCalculator({
 
       default:
         return (
-          <div className="rounded-lg bg-gray-50 p-3">
-            <div className="text-sm text-gray-600">
+          <div className="rounded-lg bg-gray-50 p-2.5">
+            <div className="text-sm leading-5 text-gray-600">
               其他费用需要手动输入金额
             </div>
           </div>
@@ -174,7 +179,7 @@ export function AmountCalculator({
           value={value || ''}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
           placeholder="请输入金额"
-          className="text-lg font-medium"
+          className="h-10 text-sm font-medium placeholder:text-sm sm:h-11 sm:text-base sm:placeholder:text-base"
         />
         {renderCalculator()}
       </div>

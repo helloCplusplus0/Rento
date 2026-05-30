@@ -6,6 +6,7 @@ import {
   type BillPresentationStatus,
 } from '@/lib/bill-semantics'
 import { cn } from '@/lib/utils'
+import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -32,9 +33,9 @@ export function BillStatusFilter({
   presentationStats,
 }: BillStatusFilterProps) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-sm font-medium text-gray-900">账单状态</h3>
-      <div className="flex flex-wrap gap-2">
+    <div className={billListMobileStyles.filterCard}>
+      <h3 className={billListMobileStyles.filterTitle}>账单状态</h3>
+      <div className={billListMobileStyles.filterActions}>
         {statusOptions.map((option) => {
           const count =
             option.value === null
@@ -59,12 +60,15 @@ export function BillStatusFilter({
               size="sm"
               onClick={() => onStatusChange(option.value)}
               className={cn(
-                'flex items-center gap-2',
+                billListMobileStyles.filterButton,
                 isSelected && 'bg-primary text-primary-foreground'
               )}
             >
               <span>{label}</span>
-              <Badge variant="secondary" className="text-xs">
+              <Badge
+                variant="secondary"
+                className={billListMobileStyles.filterCountBadge}
+              >
                 {count}
               </Badge>
             </Button>

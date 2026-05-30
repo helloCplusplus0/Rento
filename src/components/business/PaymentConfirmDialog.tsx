@@ -136,154 +136,163 @@ export function PaymentConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {bill.status === 'PAID' ? '继续收款' : '确认收款'}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:max-w-md">
+        <div className="flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden">
+          <DialogHeader className="shrink-0 border-b px-4 py-4 pr-11 text-left sm:px-6 sm:py-5 sm:pr-12">
+            <DialogTitle className="text-base leading-6 sm:text-lg">
+              {bill.status === 'PAID' ? '继续收款' : '确认收款'}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {/* 错误提示 */}
-          {error && (
-            <SimpleErrorAlert
-              title="操作失败"
-              message={error}
-              onRetry={handleRetry}
-            />
-          )}
-
-          {/* 成功提示 */}
-          {success && (
-            <SuccessAlert
-              title="操作成功"
-              message={success}
-              onDismiss={handleDismissSuccess}
-            />
-          )}
-
-          {/* 账单信息摘要 */}
-          <div className="rounded-lg bg-gray-50 p-3">
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">账单编号：</span>
-                <span className="font-mono">{bill.billNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">应收金额：</span>
-                <span className="font-medium">
-                  {formatCurrency(bill.amount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">已收金额：</span>
-                <span className="font-medium text-green-600">
-                  {formatCurrency(bill.receivedAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">待收金额：</span>
-                <span className="font-medium text-orange-600">
-                  {formatCurrency(bill.pendingAmount)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 收款信息表单 */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="receivedAmount">收款金额 *</Label>
-              <Input
-                id="receivedAmount"
-                type="number"
-                value={paymentData.receivedAmount}
-                onChange={(e) =>
-                  setPaymentData({
-                    ...paymentData,
-                    receivedAmount: Number(e.target.value),
-                  })
-                }
-                max={bill.pendingAmount}
-                min={0}
-                step="0.01"
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            {/* 错误提示 */}
+            {error && (
+              <SimpleErrorAlert
+                title="操作失败"
+                message={error}
+                onRetry={handleRetry}
               />
-              <p className="mt-1 text-xs text-gray-500">
-                {bill.status === 'PAID'
-                  ? `本次可收款金额: ${formatCurrency(bill.pendingAmount)} (剩余待收)`
-                  : `待收金额: ${formatCurrency(bill.pendingAmount)}`}
-              </p>
-            </div>
+            )}
 
-            <div>
-              <Label htmlFor="paymentMethod">收款方式 *</Label>
-              <select
-                id="paymentMethod"
-                value={paymentData.paymentMethod}
-                onChange={(e) =>
-                  setPaymentData({
-                    ...paymentData,
-                    paymentMethod: e.target.value,
-                  })
-                }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value="微信">微信</option>
-                <option value="支付宝">支付宝</option>
-                <option value="现金">现金</option>
-                <option value="银行转账">银行转账</option>
-                <option value="其他">其他</option>
-              </select>
-            </div>
-
-            <div>
-              <Label htmlFor="operator">经办人 *</Label>
-              <Input
-                id="operator"
-                value={paymentData.operator}
-                onChange={(e) =>
-                  setPaymentData({
-                    ...paymentData,
-                    operator: e.target.value,
-                  })
-                }
-                placeholder="收款经办人姓名"
+            {/* 成功提示 */}
+            {success && (
+              <SuccessAlert
+                title="操作成功"
+                message={success}
+                onDismiss={handleDismissSuccess}
               />
+            )}
+
+            {/* 账单信息摘要 */}
+            <div className="rounded-lg bg-gray-50 p-3 sm:p-4">
+              <div className="space-y-2 text-xs leading-5 sm:text-sm">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-gray-600">账单编号：</span>
+                  <span className="font-mono break-all text-right">
+                    {bill.billNumber}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-600">应收金额：</span>
+                  <span className="font-medium break-all text-right">
+                    {formatCurrency(bill.amount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-600">已收金额：</span>
+                  <span className="font-medium break-all text-right text-green-600">
+                    {formatCurrency(bill.receivedAmount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-600">待收金额：</span>
+                  <span className="font-medium break-all text-right text-orange-600">
+                    {formatCurrency(bill.pendingAmount)}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="remarks">备注</Label>
-              <Input
-                id="remarks"
-                value={paymentData.remarks}
-                onChange={(e) =>
-                  setPaymentData({
-                    ...paymentData,
-                    remarks: e.target.value,
-                  })
-                }
-                placeholder="收款备注信息"
-              />
+            {/* 收款信息表单 */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="receivedAmount">收款金额 *</Label>
+                <Input
+                  id="receivedAmount"
+                  type="number"
+                  value={paymentData.receivedAmount}
+                  onChange={(e) =>
+                    setPaymentData({
+                      ...paymentData,
+                      receivedAmount: Number(e.target.value),
+                    })
+                  }
+                  max={bill.pendingAmount}
+                  min={0}
+                  step="0.01"
+                  className="text-base"
+                />
+                <p className="text-xs leading-5 text-gray-500">
+                  {bill.status === 'PAID'
+                    ? `本次可收款金额: ${formatCurrency(bill.pendingAmount)} (剩余待收)`
+                    : `待收金额: ${formatCurrency(bill.pendingAmount)}`}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">收款方式 *</Label>
+                <select
+                  id="paymentMethod"
+                  value={paymentData.paymentMethod}
+                  onChange={(e) =>
+                    setPaymentData({
+                      ...paymentData,
+                      paymentMethod: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none sm:text-sm"
+                >
+                  <option value="微信">微信</option>
+                  <option value="支付宝">支付宝</option>
+                  <option value="现金">现金</option>
+                  <option value="银行转账">银行转账</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="operator">经办人 *</Label>
+                <Input
+                  id="operator"
+                  value={paymentData.operator}
+                  onChange={(e) =>
+                    setPaymentData({
+                      ...paymentData,
+                      operator: e.target.value,
+                    })
+                  }
+                  placeholder="收款经办人姓名"
+                  className="text-base"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="remarks">备注</Label>
+                <Input
+                  id="remarks"
+                  value={paymentData.remarks}
+                  onChange={(e) =>
+                    setPaymentData({
+                      ...paymentData,
+                      remarks: e.target.value,
+                    })
+                  }
+                  placeholder="收款备注信息"
+                  className="text-base"
+                />
+              </div>
             </div>
           </div>
 
           {/* 操作按钮 */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={handlePaymentConfirm}
-              disabled={isSubmitting}
-              className="flex-1 bg-green-600 hover:bg-green-700"
-            >
-              {isSubmitting ? '确认中...' : '确认收款'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              取消
-            </Button>
+          <div className="shrink-0 border-t bg-background px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                onClick={handlePaymentConfirm}
+                disabled={isSubmitting}
+                className="w-full flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {isSubmitting ? '确认中...' : '确认收款'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="w-full flex-1"
+              >
+                取消
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

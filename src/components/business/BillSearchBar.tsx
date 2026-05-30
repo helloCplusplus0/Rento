@@ -2,7 +2,9 @@
 
 import { Search } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 
 interface BillSearchBarProps {
   placeholder?: string
@@ -22,14 +24,14 @@ export function BillSearchBar({
   className,
 }: BillSearchBarProps) {
   return (
-    <div className={`relative ${className}`}>
-      <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+    <div className={cn('relative', className)}>
+      <Search className={billListMobileStyles.searchIcon} />
       <Input
         type="search"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full pr-4 pl-10 text-base"
+        className={billListMobileStyles.searchInput}
       />
     </div>
   )

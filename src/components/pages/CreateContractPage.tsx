@@ -8,6 +8,7 @@ import type {
   RenterWithContractsForClient,
   RoomWithBuildingForClient,
 } from '@/types/database'
+import { contractCreateMobileStyles } from '@/components/business/contract-create-mobile-styles'
 import { ContractForm } from '@/components/business/ContractForm'
 import { PageContainer } from '@/components/layout'
 
@@ -118,10 +119,7 @@ export function CreateContractPage({
         }
       }
 
-      // 使用更友好的错误提示
-      alert(
-        `❌ ${errorMessage}\n\n💡 建议：\n• 检查网络连接是否正常\n• 确认所有必填信息已正确填写\n• 如问题持续存在，请联系系统管理员`
-      )
+      throw new Error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -133,19 +131,30 @@ export function CreateContractPage({
 
   return (
     <PageContainer title="创建合同" showBackButton>
-      <div className="pb-6">
+      <div className={contractCreateMobileStyles.pageSection}>
         {settingsLoading && (
-          <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
-            正在加载合同默认配置...
+          <div
+            className={`${contractCreateMobileStyles.noticeCard} ${contractCreateMobileStyles.noticeMuted}`}
+          >
+            <div className={contractCreateMobileStyles.noticeRow}>
+              <div className={contractCreateMobileStyles.noticeSpinner}></div>
+              <span className={contractCreateMobileStyles.noticeText}>
+                正在加载合同默认配置...
+              </span>
+            </div>
           </div>
         )}
 
         {/* 进度提示 */}
         {loading && progress && (
-          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600"></div>
-              <span className="text-sm text-blue-800">{progress}</span>
+          <div
+            className={`${contractCreateMobileStyles.noticeCard} ${contractCreateMobileStyles.noticeInfo}`}
+          >
+            <div className={contractCreateMobileStyles.noticeRow}>
+              <div className={contractCreateMobileStyles.noticeSpinner}></div>
+              <span className={contractCreateMobileStyles.noticeText}>
+                {progress}
+              </span>
             </div>
           </div>
         )}

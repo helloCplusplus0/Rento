@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle, Save, X } from 'lucide-react'
 
+import { MeterTypeIcon } from '@/components/business/MeterTypeIcon'
 import { useSettings } from '@/hooks/useSettings'
+import { validateMeterReadingInput } from '@/lib/meter-utils'
+import { meterReadingEntryMobileStyles } from '@/components/business/meter-reading-entry-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,6 +22,7 @@ import {
 interface Meter {
   id: string
   displayName: string
+  meterNumber?: string
   meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
   unitPrice: number
   unit: string
@@ -60,6 +64,9 @@ export function SingleMeterReadingModal({
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({})
+  const [validationWarnings, setValidationWarnings] = useState<
+    Record<string, string>
+  >({})
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -75,6 +82,7 @@ export function SingleMeterReadingModal({
     if (!isOpen) {
       setReadings({})
       setValidationErrors({})
+      setValidationWarnings({})
     }
   }, [isOpen])
 
@@ -112,22 +120,20 @@ export function SingleMeterReadingModal({
     if (!meter) return
 
     const lastReading = Math.round(meter.lastReading || 0)
-    const usage = currentReading - lastReading
-    const amount = usage * meter.unitPrice
-
-    // 验证逻辑
-    const errors: Record<string, string> = {}
-
-    if (currentReading < lastReading) {
-      errors[meterId] = '本次读数不能小于上次读数'
-    } else if (usage > lastReading * (settings.usageAnomalyThreshold || 3.0)) {
-      errors[meterId] =
-        `用量异常偏高（超过${settings.usageAnomalyThreshold || 3.0}倍历史读数）`
-    }
+    const validation = validateMeterReadingInput({
+      currentReading,
+      previousReading: lastReading,
+      unitPrice: meter.unitPrice,
+      anomalyThreshold: settings.usageAnomalyThreshold,
+    })
 
     setValidationErrors((prev) => ({
       ...prev,
-      [meterId]: errors[meterId] || '',
+      [meterId]: validation.error || '',
+    }))
+    setValidationWarnings((prev) => ({
+      ...prev,
+      [meterId]: validation.warning || '',
     }))
 
     if (currentReading > 0) {
@@ -137,8 +143,8 @@ export function SingleMeterReadingModal({
           meterId,
           currentReading,
           readingDate: new Date(),
-          usage,
-          amount,
+          usage: validation.usage,
+          amount: validation.amount,
         },
       }))
     } else {
@@ -150,42 +156,11 @@ export function SingleMeterReadingModal({
     }
   }
 
-  // 获取仪表类型颜色
-  const getMeterTypeColor = (type: string) => {
-    switch (type) {
-      case 'ELECTRICITY':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'COLD_WATER':
-        return 'bg-blue-100 text-blue-800'
-      case 'HOT_WATER':
-        return 'bg-red-100 text-red-800'
-      case 'GAS':
-        return 'bg-purple-100 text-purple-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  // 获取仪表类型标签
-  const getMeterTypeLabel = (type: string) => {
-    switch (type) {
-      case 'ELECTRICITY':
-        return '电表'
-      case 'COLD_WATER':
-        return '冷水表'
-      case 'HOT_WATER':
-        return '热水表'
-      case 'GAS':
-        return '燃气表'
-      default:
-        return '未知'
-    }
-  }
-
   // 处理关闭
   const handleClose = () => {
     setReadings({})
     setValidationErrors({})
+    setValidationWarnings({})
     onClose()
   }
 
@@ -203,7 +178,15 @@ export function SingleMeterReadingModal({
     // 检查是否有验证错误
     const hasErrors = Object.values(validationErrors).some((error) => error)
     if (hasErrors) {
-      const confirmed = confirm('检测到异常数据，是否仍要提交？')
+      alert('请修正所有错误后再提交')
+      return
+    }
+
+    const activeWarnings = Object.values(validationWarnings).filter(Boolean)
+    if (activeWarnings.length > 0) {
+      const confirmed = confirm(
+        `检测到 ${activeWarnings.length} 条异常用量警告，是否仍要提交？`
+      )
       if (!confirmed) return
     }
 
@@ -281,10 +264,12 @@ export function SingleMeterReadingModal({
   }
 
   const readingsCount = Object.keys(readings).length
+  const hasValidationErrors = Object.values(validationErrors).some(Boolean)
   const totalAmount = Object.values(readings).reduce(
     (sum, r) => sum + r.amount,
     0
   )
+  const warningCount = Object.values(validationWarnings).filter(Boolean).length
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -299,7 +284,10 @@ export function SingleMeterReadingModal({
             )}
           </DialogTitle>
           <DialogDescription>
-            为该合同房间的所有仪表录入当前读数，系统将自动计算用量和费用，并生成聚合账单
+            为该合同房间的所有仪表录入当前读数，系统将自动计算用量和费用
+            {settings.autoGenerateBills
+              ? '，并按固定聚合策略生成账单'
+              : '。当前仅保存抄表记录，不自动生成账单'}
           </DialogDescription>
         </DialogHeader>
 
@@ -319,29 +307,39 @@ export function SingleMeterReadingModal({
               {meters.map((meter) => {
                 const reading = readings[meter.id]
                 const error = validationErrors[meter.id]
+                const warning = validationWarnings[meter.id]
                 const hasReading = reading && reading.currentReading > 0
 
                 return (
                   <Card
                     key={meter.id}
-                    className={`${hasReading && !error ? 'border-green-200 bg-green-50' : error ? 'border-red-200 bg-red-50' : ''}`}
+                    className={`${meterReadingEntryMobileStyles.meterCard} ${
+                      hasReading && !error
+                        ? 'border-green-200 bg-green-50'
+                        : error
+                          ? 'border-red-200 bg-red-50'
+                          : ''
+                    }`}
                   >
-                    <CardContent className="p-3">
-                      {/* 仪表信息头部 */}
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            className={getMeterTypeColor(meter.meterType)}
-                            variant="secondary"
-                          >
-                            {getMeterTypeLabel(meter.meterType)}
-                          </Badge>
-                          <div>
-                            <div className="text-sm font-medium">
+                    <CardContent
+                      className={meterReadingEntryMobileStyles.meterCardContent}
+                    >
+                      <div className={meterReadingEntryMobileStyles.meterCardHeader}>
+                        <div className={meterReadingEntryMobileStyles.meterInfoGroup}>
+                          <MeterTypeIcon meterType={meter.meterType} />
+                          <div className={meterReadingEntryMobileStyles.meterIdentity}>
+                            <div className={meterReadingEntryMobileStyles.meterName}>
                               {meter.displayName}
                             </div>
-                            <div className="text-xs text-gray-500">
-                              ¥{meter.unitPrice}/{meter.unit}
+                            <div className={meterReadingEntryMobileStyles.meterMetaRow}>
+                              {meter.meterNumber ? (
+                                <span className={meterReadingEntryMobileStyles.meterMeta}>
+                                  {meter.meterNumber}
+                                </span>
+                              ) : null}
+                              <span className={meterReadingEntryMobileStyles.meterMeta}>
+                                ¥{meter.unitPrice}/{meter.unit}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -350,23 +348,24 @@ export function SingleMeterReadingModal({
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           ) : error ? (
                             <AlertTriangle className="h-4 w-4 text-red-500" />
+                          ) : warning ? (
+                            <AlertTriangle className="h-4 w-4 text-orange-500" />
                           ) : (
                             <div className="h-4 w-4 rounded-full border border-gray-300"></div>
                           )}
                         </div>
                       </div>
 
-                      {/* 读数录入区域 */}
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                      <div className={meterReadingEntryMobileStyles.fieldsGrid}>
                         <div>
-                          <label className="text-xs text-gray-500">
+                          <label className={meterReadingEntryMobileStyles.fieldLabel}>
                             上次读数
                           </label>
-                          <div className="font-mono text-sm font-medium">
+                          <div className={meterReadingEntryMobileStyles.fieldValue}>
                             {Math.round(meter.lastReading || 0)} {meter.unit}
                           </div>
                           {meter.lastReadingDate && (
-                            <div className="text-xs text-gray-400">
+                            <div className={meterReadingEntryMobileStyles.meterMeta}>
                               {meter.lastReadingDate instanceof Date
                                 ? meter.lastReadingDate.toLocaleDateString()
                                 : new Date(
@@ -377,7 +376,7 @@ export function SingleMeterReadingModal({
                         </div>
 
                         <div>
-                          <label className="text-xs text-gray-500">
+                          <label className={meterReadingEntryMobileStyles.fieldLabel}>
                             本次读数 *
                           </label>
                           <input
@@ -385,7 +384,7 @@ export function SingleMeterReadingModal({
                             min={Math.round(meter.lastReading || 0)}
                             step="1"
                             placeholder="请输入"
-                            className={`w-full rounded border px-2 py-1 text-center font-mono text-sm ${
+                            className={`${meterReadingEntryMobileStyles.input} ${
                               error
                                 ? 'border-red-300 bg-red-50'
                                 : 'border-gray-300'
@@ -400,19 +399,23 @@ export function SingleMeterReadingModal({
                         {hasReading && (
                           <>
                             <div>
-                              <label className="text-xs text-gray-500">
+                              <label className={meterReadingEntryMobileStyles.fieldLabel}>
                                 用量
                               </label>
-                              <div className="font-mono text-sm font-medium text-blue-600">
+                              <div
+                                className={meterReadingEntryMobileStyles.resultValueUsage}
+                              >
                                 {reading.usage.toFixed(1)} {meter.unit}
                               </div>
                             </div>
 
                             <div>
-                              <label className="text-xs text-gray-500">
+                              <label className={meterReadingEntryMobileStyles.fieldLabel}>
                                 费用
                               </label>
-                              <div className="font-mono text-sm font-medium text-green-600">
+                              <div
+                                className={meterReadingEntryMobileStyles.resultValueAmount}
+                              >
                                 ¥{reading.amount.toFixed(2)}
                               </div>
                             </div>
@@ -420,11 +423,16 @@ export function SingleMeterReadingModal({
                         )}
                       </div>
 
-                      {/* 错误提示 */}
                       {error && (
-                        <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+                        <div className={meterReadingEntryMobileStyles.errorRow}>
                           <AlertTriangle className="h-3 w-3" />
                           <span>{error}</span>
+                        </div>
+                      )}
+                      {!error && warning && (
+                        <div className={meterReadingEntryMobileStyles.warningRow}>
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>{warning}</span>
                         </div>
                       )}
                     </CardContent>
@@ -435,16 +443,25 @@ export function SingleMeterReadingModal({
 
             {/* 汇总信息 */}
             {readingsCount > 0 && (
-              <Card className="border-blue-200 bg-blue-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-blue-800">
+              <Card className={meterReadingEntryMobileStyles.summaryCard}>
+                <CardContent className={meterReadingEntryMobileStyles.summaryContent}>
+                  <div className={meterReadingEntryMobileStyles.summaryRow}>
+                    <div className={meterReadingEntryMobileStyles.summaryText}>
                       <span className="font-medium">抄表汇总：</span>
                       已录入 {readingsCount} 个仪表，总费用 ¥
                       {totalAmount.toFixed(2)}
                     </div>
-                    <div className="text-xs text-blue-600">
-                      将生成一个聚合水电费账单
+                    <div className="text-right">
+                      <div className={meterReadingEntryMobileStyles.summaryHint}>
+                        {settings.autoGenerateBills
+                          ? '将按固定聚合策略生成账单'
+                          : '当前仅保存抄表记录'}
+                      </div>
+                      {warningCount > 0 && (
+                        <div className="mt-1 text-xs leading-5 text-orange-600">
+                          {warningCount} 条异常用量警告待确认
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -465,7 +482,7 @@ export function SingleMeterReadingModal({
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={readingsCount === 0 || submitting}
+                disabled={readingsCount === 0 || submitting || hasValidationErrors}
                 className="flex items-center gap-1"
               >
                 {submitting ? (

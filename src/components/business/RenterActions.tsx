@@ -1,7 +1,8 @@
 import { Edit, FileText, Plus, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
+import { renterDetailMobileStyles } from '@/components/business/renter-detail-mobile-styles'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 
 interface RenterActionsProps {
   renter: any
@@ -36,68 +37,55 @@ export function RenterActions({
   }
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex flex-wrap gap-2">
-          {/* 编辑租客 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            编辑租客
-          </Button>
+    <div className={renterDetailMobileStyles.actionsRow}>
+      {/* 编辑租客 */}
+      <Button
+        variant="outline"
+        onClick={onEdit}
+        disabled={isLoading}
+        className={renterDetailMobileStyles.actionButton}
+      >
+        <Edit className="h-4 w-4" />
+        编辑租客
+      </Button>
 
-          {/* 添加合同 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddContract}
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            添加合同
-          </Button>
+      {/* 添加合同 */}
+      <Button
+        variant="outline"
+        onClick={handleAddContract}
+        disabled={isLoading}
+        className={renterDetailMobileStyles.actionButton}
+      >
+        <Plus className="h-4 w-4" />
+        添加合同
+      </Button>
 
-          {/* 查看合同 */}
-          {renter.contracts && renter.contracts.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleViewContracts}
-              disabled={isLoading}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              查看合同
-            </Button>
-          )}
+      {/* 查看合同 */}
+      {renter.contracts && renter.contracts.length > 0 && (
+        <Button
+          variant="outline"
+          onClick={handleViewContracts}
+          disabled={isLoading}
+          className={renterDetailMobileStyles.actionButton}
+        >
+          <FileText className="h-4 w-4" />
+          查看合同
+        </Button>
+      )}
 
-          {/* 删除租客 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onDelete}
-            disabled={hasActiveContract || isLoading}
-            className="flex items-center gap-2 text-red-600 hover:border-red-300 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-            删除租客
-          </Button>
-        </div>
-
-        {/* 删除提示 */}
-        {hasActiveContract && (
-          <div className="mt-3 text-sm text-gray-500">
-            <span className="text-yellow-600">⚠️</span>{' '}
-            该租客有活跃合同，无法删除
-          </div>
+      {/* 删除租客 */}
+      <Button
+        variant="outline"
+        onClick={onDelete}
+        disabled={hasActiveContract || isLoading}
+        className={cn(
+          renterDetailMobileStyles.actionButton,
+          'border-red-300 text-red-600 hover:bg-red-50'
         )}
-      </CardContent>
-    </Card>
+      >
+        <Trash2 className="h-4 w-4" />
+        删除租客
+      </Button>
+    </div>
   )
 }

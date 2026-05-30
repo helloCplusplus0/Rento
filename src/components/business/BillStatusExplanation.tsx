@@ -60,29 +60,29 @@ export function BillStatusExplanation() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="py-4 sm:py-6">
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="flex items-center gap-2 text-base leading-6 sm:text-lg">
           <Info className="h-5 w-5 text-blue-600" />
           账单状态说明
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 sm:px-6">
         {statusExplanations.map((item) => (
-          <div key={item.status} className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center gap-3">
+          <div key={item.status} className="space-y-3 rounded-lg border p-3 sm:p-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Badge
                 className={`${getStatusColor(item.color)} flex items-center gap-1`}
               >
                 {item.icon}
                 {item.label}
               </Badge>
-              <span className="font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 sm:text-base">
                 {item.description}
               </span>
             </div>
 
-            <div className="grid gap-4 text-sm md:grid-cols-2">
+            <div className="grid gap-4 text-xs leading-5 sm:text-sm md:grid-cols-2">
               <div>
                 <h4 className="mb-2 font-medium text-gray-700">适用场景：</h4>
                 <ul className="space-y-1 text-gray-600">
@@ -111,16 +111,16 @@ export function BillStatusExplanation() {
         ))}
 
         {/* 状态流转图 */}
-        <div className="mt-6 rounded-lg bg-gray-50 p-4">
+        <div className="mt-6 rounded-lg bg-gray-50 p-3 sm:p-4">
           <h4 className="mb-3 font-medium text-gray-900">状态流转路径：</h4>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
             <Badge className="bg-yellow-100 text-yellow-800">待付</Badge>
             <span className="text-gray-400">→</span>
             <Badge className="bg-green-100 text-green-800">已收款</Badge>
             <span className="text-gray-400">→</span>
             <Badge className="bg-blue-100 text-blue-800">已完成</Badge>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
             <Badge className="bg-yellow-100 text-yellow-800">待付</Badge>
             <span className="text-gray-400">→</span>
             <Badge className="bg-red-100 text-red-800">逾期</Badge>
@@ -133,7 +133,7 @@ export function BillStatusExplanation() {
         <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
           <div className="flex items-start gap-2">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-            <div className="text-sm text-blue-800">
+            <div className="text-xs leading-5 text-blue-800 sm:text-sm">
               <p className="mb-1 font-medium">💡 设计理念：</p>
               <p>
                 部分收款不再单独占用状态，而是统一由“已收金额 / 待收金额”表达；

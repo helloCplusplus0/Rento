@@ -3,6 +3,8 @@
 import type { BillWithContract } from '@/types/database'
 import type { BillPresentationStats } from '@/lib/bill-semantics'
 import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface BillStatsOverviewProps {
@@ -79,20 +81,30 @@ export function BillStatsOverview({
   ]
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>财务概览</CardTitle>
+    <Card className={billListMobileStyles.statsCard}>
+      <CardHeader className={billListMobileStyles.statsHeader}>
+        <CardTitle className={billListMobileStyles.statsTitle}>财务概览</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <CardContent className={billListMobileStyles.statsContent}>
+        <div className={billListMobileStyles.statsGrid}>
           {statsCards.map((stat, index) => (
-            <div key={index} className={`rounded-lg p-4 ${stat.bgColor}`}>
+            <div
+              key={index}
+              className={cn(billListMobileStyles.statsItem, stat.bgColor)}
+            >
               <div className="text-center">
-                <div className={`text-2xl font-bold ${stat.textColor}`}>
+                <div
+                  className={cn(
+                    billListMobileStyles.statsValue,
+                    stat.textColor
+                  )}
+                >
                   {stat.value}
                 </div>
-                <div className="mt-1 text-sm text-gray-600">{stat.title}</div>
-                <div className="mt-1 text-xs text-gray-500">
+                <div className={billListMobileStyles.statsLabel}>
+                  {stat.title}
+                </div>
+                <div className={billListMobileStyles.statsDescription}>
                   {stat.description}
                 </div>
               </div>

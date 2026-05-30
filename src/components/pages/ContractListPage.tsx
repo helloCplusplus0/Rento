@@ -2,15 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
 import { isContractExpiringSoon } from '@/lib/contract-alert-semantics'
 import type { ContractWithDetails } from '@/types/database'
-import { Button } from '@/components/ui/button'
-import { ContractExpiryAlert } from '@/components/business/ContractExpiryAlert'
+import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
 import { ContractGrid } from '@/components/business/ContractGrid'
 import { ContractSearchBar } from '@/components/business/ContractSearchBar'
-import { ContractStatsOverview } from '@/components/business/ContractStatsOverview'
 import { PageContainer } from '@/components/layout'
 
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
@@ -139,7 +136,7 @@ export function ContractListPage({
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading] = useState(false)
 
   useEffect(() => {
     setSearchQuery(initialSearchQuery)
@@ -177,14 +174,21 @@ export function ContractListPage({
     })
   }, [contractExpiryAlertDays, initialContracts, searchQuery, statusFilter])
 
+  const filterCounts = useMemo(
+    () => ({
+      total: initialStats.totalCount,
+      active: initialStats.activeCount,
+      pending: initialStats.statusDistribution.pending,
+      expiringSoon: initialStats.expiringSoonCount,
+      expired: initialStats.expiredCount,
+      terminated: initialStats.terminatedCount,
+    }),
+    [initialStats]
+  )
+
   // 处理合同点击
   const handleContractClick = (contract: ContractWithDetailsForClient) => {
     router.push(`/contracts/${contract.id}`)
-  }
-
-  // 处理添加合同
-  const handleAddContract = () => {
-    router.push('/contracts/new')
   }
 
   // 处理续约
@@ -193,32 +197,21 @@ export function ContractListPage({
   }
 
   return (
-    <PageContainer
-      title="合同管理"
-      showBackButton
-      actions={
-        <Button onClick={handleAddContract} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          添加合同
-        </Button>
-      }
-    >
-      <div className="space-y-6 pb-6">
+    <PageContainer title="合同管理" showBackButton>
+      <div className={contractListMobileStyles.pageSection}>
         {/* 搜索栏 */}
         <ContractSearchBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          filterCounts={filterCounts}
           loading={loading}
         />
 
-        {/* 统计概览 */}
-        <ContractStatsOverview stats={initialStats} />
-
         {/* 结果统计 */}
         {(searchQuery || statusFilter) && (
-          <div className="text-sm text-gray-600">
+          <div className={contractListMobileStyles.resultText}>
             找到 {filteredContracts.length} 个合同
             {searchQuery && ` (搜索: ${searchQuery})`}
             {statusFilter &&

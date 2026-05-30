@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { addRoomMobileStyles } from '@/components/pages/add-room-mobile-styles'
 
 interface RoomBatchFormProps {
   building: Building
@@ -82,17 +83,19 @@ export function RoomBatchForm({
     batchConfig.roomsPerFloor
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>批量添加房间</CardTitle>
-        <p className="text-sm text-gray-500">为 {building.name} 批量创建房间</p>
+    <Card className={addRoomMobileStyles.card}>
+      <CardHeader className={addRoomMobileStyles.cardHeader}>
+        <CardTitle className={addRoomMobileStyles.cardTitle}>批量添加房间</CardTitle>
+        <p className={addRoomMobileStyles.cardDescription}>
+          为 {building.name} 批量创建房间
+        </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={addRoomMobileStyles.cardContent}>
         {/* 楼层范围 */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className={addRoomMobileStyles.twoColGrid}>
+          <div className={addRoomMobileStyles.fieldStack}>
             <Label htmlFor="startFloor">起始楼层</Label>
-            <div className="flex items-center space-x-2">
+            <div className={addRoomMobileStyles.numberGroup}>
               <Input
                 id="startFloor"
                 type="number"
@@ -105,9 +108,9 @@ export function RoomBatchForm({
                     startFloor: Math.max(1, parseInt(e.target.value) || 1),
                   }))
                 }
-                className="flex-1"
+                className={addRoomMobileStyles.numberInput}
               />
-              <div className="flex flex-col">
+              <div className={addRoomMobileStyles.stepperWrap}>
                 <button
                   type="button"
                   onClick={() =>
@@ -116,7 +119,7 @@ export function RoomBatchForm({
                       startFloor: Math.min(50, prev.startFloor + 1),
                     }))
                   }
-                  className="rounded-t border border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButton}
                 >
                   ▲
                 </button>
@@ -128,16 +131,16 @@ export function RoomBatchForm({
                       startFloor: Math.max(1, prev.startFloor - 1),
                     }))
                   }
-                  className="rounded-b border border-t-0 border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButtonBottom}
                 >
                   ▼
                 </button>
               </div>
             </div>
           </div>
-          <div>
+          <div className={addRoomMobileStyles.fieldStack}>
             <Label htmlFor="endFloor">结束楼层</Label>
-            <div className="flex items-center space-x-2">
+            <div className={addRoomMobileStyles.numberGroup}>
               <Input
                 id="endFloor"
                 type="number"
@@ -153,9 +156,9 @@ export function RoomBatchForm({
                     ),
                   }))
                 }
-                className="flex-1"
+                className={addRoomMobileStyles.numberInput}
               />
-              <div className="flex flex-col">
+              <div className={addRoomMobileStyles.stepperWrap}>
                 <button
                   type="button"
                   onClick={() =>
@@ -164,7 +167,7 @@ export function RoomBatchForm({
                       endFloor: Math.min(50, prev.endFloor + 1),
                     }))
                   }
-                  className="rounded-t border border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButton}
                 >
                   ▲
                 </button>
@@ -176,7 +179,7 @@ export function RoomBatchForm({
                       endFloor: Math.max(prev.startFloor, prev.endFloor - 1),
                     }))
                   }
-                  className="rounded-b border border-t-0 border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButtonBottom}
                 >
                   ▼
                 </button>
@@ -186,10 +189,10 @@ export function RoomBatchForm({
         </div>
 
         {/* 房间配置 */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className={addRoomMobileStyles.twoColGrid}>
+          <div className={addRoomMobileStyles.fieldStack}>
             <Label htmlFor="roomsPerFloor">每层房间数</Label>
-            <div className="flex items-center space-x-2">
+            <div className={addRoomMobileStyles.numberGroup}>
               <Input
                 id="roomsPerFloor"
                 type="number"
@@ -202,9 +205,9 @@ export function RoomBatchForm({
                     roomsPerFloor: Math.max(1, parseInt(e.target.value) || 1),
                   }))
                 }
-                className="flex-1"
+                className={addRoomMobileStyles.numberInput}
               />
-              <div className="flex flex-col">
+              <div className={addRoomMobileStyles.stepperWrap}>
                 <button
                   type="button"
                   onClick={() =>
@@ -213,7 +216,7 @@ export function RoomBatchForm({
                       roomsPerFloor: Math.min(20, prev.roomsPerFloor + 1),
                     }))
                   }
-                  className="rounded-t border border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButton}
                 >
                   ▲
                 </button>
@@ -225,19 +228,20 @@ export function RoomBatchForm({
                       roomsPerFloor: Math.max(1, prev.roomsPerFloor - 1),
                     }))
                   }
-                  className="rounded-b border border-t-0 border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButtonBottom}
                 >
                   ▼
                 </button>
               </div>
             </div>
           </div>
-          <div>
+          <div className={addRoomMobileStyles.fieldStack}>
             <Label htmlFor="roomPrefix">房间号前缀</Label>
             <Input
               id="roomPrefix"
               placeholder="如: A"
               maxLength={3}
+              className={addRoomMobileStyles.input}
               value={batchConfig.roomPrefix}
               onChange={(e) =>
                 setBatchConfig((prev) => ({
@@ -250,7 +254,7 @@ export function RoomBatchForm({
         </div>
 
         {/* 房间类型 */}
-        <div>
+        <div className={addRoomMobileStyles.fieldStack}>
           <Label htmlFor="roomType">房间类型</Label>
           <select
             id="roomType"
@@ -261,7 +265,7 @@ export function RoomBatchForm({
                 roomType: e.target.value as RoomType,
               }))
             }
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className={addRoomMobileStyles.select}
           >
             <option value="SHARED">合租</option>
             <option value="WHOLE">整租</option>
@@ -270,10 +274,10 @@ export function RoomBatchForm({
         </div>
 
         {/* 默认信息 */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className={addRoomMobileStyles.twoColGrid}>
+          <div className={addRoomMobileStyles.fieldStack}>
             <Label htmlFor="defaultArea">默认面积 (㎡)</Label>
-            <div className="flex items-center space-x-2">
+            <div className={addRoomMobileStyles.numberGroup}>
               <Input
                 id="defaultArea"
                 type="number"
@@ -286,9 +290,9 @@ export function RoomBatchForm({
                     defaultArea: Math.max(10, parseInt(e.target.value) || 25),
                   }))
                 }
-                className="flex-1"
+                className={addRoomMobileStyles.numberInput}
               />
-              <div className="flex flex-col">
+              <div className={addRoomMobileStyles.stepperWrap}>
                 <button
                   type="button"
                   onClick={() =>
@@ -297,7 +301,7 @@ export function RoomBatchForm({
                       defaultArea: Math.min(200, prev.defaultArea + 5),
                     }))
                   }
-                  className="rounded-t border border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButton}
                 >
                   ▲
                 </button>
@@ -309,16 +313,16 @@ export function RoomBatchForm({
                       defaultArea: Math.max(10, prev.defaultArea - 5),
                     }))
                   }
-                  className="rounded-b border border-t-0 border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButtonBottom}
                 >
                   ▼
                 </button>
               </div>
             </div>
           </div>
-          <div>
-            <Label htmlFor="defaultRent">默认租金 (元)</Label>
-            <div className="flex items-center space-x-2">
+          <div className={addRoomMobileStyles.fieldStack}>
+            <Label htmlFor="defaultRent">默认月租 (元)</Label>
+            <div className={addRoomMobileStyles.numberGroup}>
               <Input
                 id="defaultRent"
                 type="number"
@@ -334,9 +338,9 @@ export function RoomBatchForm({
                     ),
                   }))
                 }
-                className="flex-1"
+                className={addRoomMobileStyles.numberInput}
               />
-              <div className="flex flex-col">
+              <div className={addRoomMobileStyles.stepperWrap}>
                 <button
                   type="button"
                   onClick={() =>
@@ -345,7 +349,7 @@ export function RoomBatchForm({
                       defaultRent: Math.min(50000, prev.defaultRent + 100),
                     }))
                   }
-                  className="rounded-t border border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButton}
                 >
                   ▲
                 </button>
@@ -357,7 +361,7 @@ export function RoomBatchForm({
                       defaultRent: Math.max(100, prev.defaultRent - 100),
                     }))
                   }
-                  className="rounded-b border border-t-0 border-gray-300 bg-gray-100 px-2 py-1 text-xs hover:bg-gray-200"
+                  className={addRoomMobileStyles.stepperButtonBottom}
                 >
                   ▼
                 </button>
@@ -367,13 +371,13 @@ export function RoomBatchForm({
         </div>
 
         {/* 预览信息 */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+        <div className={addRoomMobileStyles.infoBox}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-900">
+              <p className={addRoomMobileStyles.infoText}>
                 将创建 {totalRooms} 间房间
               </p>
-              <p className="mt-1 text-xs text-blue-700">
+              <p className="mt-1 text-xs leading-4 text-blue-700">
                 房间号示例: {batchConfig.roomPrefix}
                 {batchConfig.startFloor}01, {batchConfig.roomPrefix}
                 {batchConfig.startFloor}02...
@@ -384,14 +388,14 @@ export function RoomBatchForm({
 
         <Button
           onClick={generateRooms}
-          className="w-full"
+          className={addRoomMobileStyles.primaryButton}
           disabled={totalRooms <= 0 || totalRooms > 100}
         >
           生成房间列表
         </Button>
 
         {totalRooms > 100 && (
-          <p className="text-center text-xs text-red-500">
+          <p className={addRoomMobileStyles.errorText}>
             单次最多创建100间房间，请调整配置
           </p>
         )}

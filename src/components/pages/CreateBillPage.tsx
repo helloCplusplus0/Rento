@@ -14,6 +14,7 @@ import {
   ErrorType,
   type ErrorRecord,
 } from '@/lib/error-logger'
+import { billCreateMobileStyles } from '@/components/business/bill-create-mobile-styles'
 import { BillInfoForm } from '@/components/business/BillInfoForm'
 import { BillTypeSelector } from '@/components/business/BillTypeSelector'
 import { ContractSelector } from '@/components/business/ContractSelector'
@@ -64,35 +65,6 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
         billType,
       })
 
-      // #region debug-point A:create-bill-submit
-      fetch('http://127.0.0.1:7777/event', {
-        method: 'POST',
-        body: JSON.stringify({
-          sessionId: 'other-bill-create-error',
-          runId: 'pre-fix',
-          hypothesisId: 'A',
-          location: 'CreateBillPage.tsx:67',
-          msg: '[DEBUG] create bill submit payload',
-          data: {
-            contractId: selectedContract.id,
-            billType,
-            itemLabel: billData.itemLabel,
-            itemLabelTrimmed:
-              typeof billData.itemLabel === 'string'
-                ? billData.itemLabel.trim()
-                : null,
-            period: billData.period,
-            amount: billData.amount,
-            dueDate:
-              billData.dueDate instanceof Date
-                ? billData.dueDate.toISOString()
-                : String(billData.dueDate),
-          },
-          ts: Date.now(),
-        }),
-      }).catch(() => {})
-      // #endregion
-
       const response = await fetch('/api/bills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,24 +76,6 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
           paymentMethod: '待确定',
         }),
       })
-
-      // #region debug-point B:create-bill-response
-      fetch('http://127.0.0.1:7777/event', {
-        method: 'POST',
-        body: JSON.stringify({
-          sessionId: 'other-bill-create-error',
-          runId: 'pre-fix',
-          hypothesisId: 'B',
-          location: 'CreateBillPage.tsx:96',
-          msg: '[DEBUG] create bill response status',
-          data: {
-            status: response.status,
-            ok: response.ok,
-          },
-          ts: Date.now(),
-        }),
-      }).catch(() => {})
-      // #endregion
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -177,9 +131,18 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
     setError(null)
   }
 
+  const handleCancel = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+      return
+    }
+
+    router.replace('/bills')
+  }
+
   return (
     <PageContainer title="创建账单" showBackButton loading={isSubmitting}>
-      <div className="space-y-6 pb-6">
+      <div className={billCreateMobileStyles.pageSection}>
         {/* 错误提示 */}
         {error && (
           <ErrorAlert
@@ -190,12 +153,9 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
           />
         )}
 
-        {/* 使用说明 */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <h3 className="mb-2 text-sm font-medium text-blue-800">使用说明</h3>
-          <p className="text-sm text-blue-700">
-            手动创建账单主要用于处理临时费用、特殊收费等情况。
-            大部分常规账单（租金、押金、水电费）会在合同签订和抄表时自动生成。
+        <div className={billCreateMobileStyles.helperBox}>
+          <p className={billCreateMobileStyles.helperText}>
+            手动创建更适合补录或临时费用。常规租金、押金和水电账单优先走合同签订或抄表后的自动生成链路。
           </p>
         </div>
 
@@ -211,7 +171,6 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
           <BillTypeSelector
             selectedType={billType}
             onTypeChange={setBillType}
-            contract={selectedContract}
           />
         )}
 
@@ -220,6 +179,7 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
           <BillInfoForm
             billType={billType}
             contract={selectedContract}
+            onCancel={handleCancel}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
           />

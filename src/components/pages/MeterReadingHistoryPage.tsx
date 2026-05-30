@@ -1,11 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Calendar, Download, Edit, Search } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  Download,
+  Edit,
+  RefreshCw,
+  Search,
+  Wrench,
+} from 'lucide-react'
 
+import { MeterTypeIcon } from '@/components/business/MeterTypeIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -14,8 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ReadingStatusChecker } from '@/components/business/ReadingStatusChecker'
 import { PageContainer } from '@/components/layout'
+import { meterReadingHistoryMobileStyles } from '@/components/pages/meter-reading-history-mobile-styles'
 
 type MeterReadingRecordType =
   | 'INITIAL_BASELINE'
@@ -102,6 +112,7 @@ interface MeterReadingHistory {
   // 关联数据
   meter?: {
     displayName: string
+    meterNumber?: string
     room?: {
       roomNumber: string
       building?: {
@@ -125,6 +136,63 @@ interface FilterOptions {
   recordType: 'all' | MeterReadingRecordType
 }
 
+interface StatusCheckResult {
+  success: boolean
+  data: {
+    isConsistent: boolean
+    inconsistencies: number
+    details: {
+      orphanedReadings: number
+      inconsistentReadings: number
+    }
+    orphanedReadings: Array<{
+      id: string
+      meterName: string
+      meterType: string
+      status: string
+      isBilled: boolean
+      roomInfo?: {
+        buildingName?: string
+        roomNumber?: string
+      }
+    }>
+    inconsistentReadings: Array<{
+      id: string
+      meterName: string
+      meterType: string
+      status: string
+      isBilled: boolean
+      billDetailsCount: number
+      roomInfo?: {
+        buildingName?: string
+        roomNumber?: string
+      }
+    }>
+    statistics?: {
+      summary: {
+        totalReadings: number
+        totalBilled: number
+        billedPercentage: number
+        recentChanges: number
+      }
+    }
+  }
+  message: string
+}
+
+interface RepairResult {
+  success: boolean
+  data: {
+    repairedOrphaned: number
+    repairedInconsistent: number
+    errors: string[]
+    preRepairInconsistencies: number
+    postRepairInconsistencies: number
+    fullyRepaired: boolean
+  }
+  message: string
+}
+
 /**
  * 抄表历史页面组件
  * 提供抄表历史查询、筛选和管理功能
@@ -132,6 +200,10 @@ interface FilterOptions {
 export function MeterReadingHistoryPage() {
   const [readings, setReadings] = useState<MeterReadingHistory[]>([])
   const [loading, setLoading] = useState(true)
+  const [checking, setChecking] = useState(false)
+  const [repairing, setRepairing] = useState(false)
+  const [checkResult, setCheckResult] = useState<StatusCheckResult | null>(null)
+  const [repairResult, setRepairResult] = useState<RepairResult | null>(null)
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     meterType: 'all',
@@ -194,6 +266,45 @@ export function MeterReadingHistoryPage() {
     console.log('编辑抄表记录:', reading.id)
   }
 
+  const handleCheck = async () => {
+    setChecking(true)
+    setRepairResult(null)
+
+    try {
+      const response = await fetch('/api/meter-readings/status-check')
+      const data = await response.json()
+      setCheckResult(data)
+    } catch (error) {
+      console.error('状态检查失败:', error)
+      alert('状态检查失败，请稍后重试')
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const handleRepair = async () => {
+    setRepairing(true)
+
+    try {
+      const response = await fetch('/api/meter-readings/repair-status', {
+        method: 'POST',
+      })
+      const data = await response.json()
+      setRepairResult(data)
+
+      if (data.success) {
+        setTimeout(() => {
+          handleCheck()
+        }, 1000)
+      }
+    } catch (error) {
+      console.error('状态修复失败:', error)
+      alert('状态修复失败，请稍后重试')
+    } finally {
+      setRepairing(false)
+    }
+  }
+
   // 导出数据
   const handleExport = () => {
     // TODO: 实现数据导出
@@ -236,12 +347,15 @@ export function MeterReadingHistoryPage() {
   // 获取状态颜色
   const getStatusColor = (status: string) => {
     const colors = {
-      PENDING: 'bg-orange-100 text-orange-800',
-      CONFIRMED: 'bg-green-100 text-green-800',
-      BILLED: 'bg-blue-100 text-blue-800',
-      CANCELLED: 'bg-gray-100 text-gray-800',
+      PENDING: 'border-orange-200 bg-orange-50 text-orange-700',
+      CONFIRMED: 'border-green-200 bg-green-50 text-green-700',
+      BILLED: 'border-blue-200 bg-blue-50 text-blue-700',
+      CANCELLED: 'border-gray-200 bg-gray-50 text-gray-600',
     }
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+    return (
+      colors[status as keyof typeof colors] ||
+      'border-gray-200 bg-gray-50 text-gray-600'
+    )
   }
 
   const getRecordTypeBadge = (reading: MeterReadingHistory) => {
@@ -254,6 +368,17 @@ export function MeterReadingHistoryPage() {
     )
   }
 
+  const summaryStats = useMemo(
+    () => ({
+      totalRecords: readings.length,
+      totalAmount: readings.reduce((sum, reading) => sum + reading.amount, 0),
+      pendingCount: readings.filter((reading) => reading.status === 'PENDING')
+        .length,
+      billedCount: readings.filter((reading) => reading.isBilled).length,
+    }),
+    [readings]
+  )
+
   if (loading) {
     return (
       <PageContainer title="抄表历史" showBackButton>
@@ -265,274 +390,478 @@ export function MeterReadingHistoryPage() {
   }
 
   return (
-    <PageContainer
-      title="抄表历史"
-      showBackButton
-      actions={
-        <Button
-          onClick={handleExport}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          导出
-        </Button>
-      }
-    >
-      <div className="space-y-6 pb-6">
-        {/* 状态一致性检查器 */}
-        <ReadingStatusChecker />
+    <PageContainer title="抄表历史" showBackButton>
+      <div className={meterReadingHistoryMobileStyles.pageSection}>
+        <div className={meterReadingHistoryMobileStyles.actionsGrid}>
+          <Button
+            variant="outline"
+            className={meterReadingHistoryMobileStyles.actionButton}
+            onClick={handleExport}
+          >
+            <Download data-icon="inline-start" />
+            导出记录
+          </Button>
+          <Button
+            variant="outline"
+            className={meterReadingHistoryMobileStyles.actionButton}
+            onClick={handleCheck}
+            disabled={checking || repairing}
+          >
+            <RefreshCw
+              data-icon="inline-start"
+              className={checking ? 'animate-spin' : undefined}
+            />
+            {checking ? '检查中...' : '检查状态'}
+          </Button>
+          {checkResult && !checkResult.data.isConsistent ? (
+            <Button
+              className={meterReadingHistoryMobileStyles.actionButton}
+              onClick={handleRepair}
+              disabled={checking || repairing}
+            >
+              <Wrench data-icon="inline-start" />
+              {repairing ? '修复中...' : '自动修复'}
+            </Button>
+          ) : null}
+        </div>
 
-        {/* 筛选区域 */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-4 lg:flex-row">
-              {/* 搜索框 */}
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+        {checkResult ? (
+          <div className={meterReadingHistoryMobileStyles.statusPanel}>
+            <div className={meterReadingHistoryMobileStyles.statusPanelHeader}>
+              <div>
+                <div className={meterReadingHistoryMobileStyles.statusPanelTitle}>
+                  抄表状态一致性检查
+                </div>
+                <div className={meterReadingHistoryMobileStyles.statusPanelText}>
+                  {checkResult.message}
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={
+                  checkResult.data.isConsistent
+                    ? 'border-green-200 bg-green-50 text-green-700'
+                    : 'border-yellow-200 bg-yellow-50 text-yellow-700'
+                }
+              >
+                {checkResult.data.isConsistent ? (
+                  <CheckCircle data-icon="inline-start" />
+                ) : (
+                  <AlertCircle data-icon="inline-start" />
+                )}
+                {checkResult.data.isConsistent ? '状态一致' : '存在异常'}
+              </Badge>
+            </div>
+
+            {checkResult.data.statistics?.summary ? (
+              <div className={meterReadingHistoryMobileStyles.statusPanelSection}>
+                <div className={meterReadingHistoryMobileStyles.statusPanelList}>
+                  <div>
+                    总抄表记录：{checkResult.data.statistics.summary.totalReadings}
+                  </div>
+                  <div>
+                    已生成账单：
+                    {checkResult.data.statistics.summary.totalBilled} 条（
+                    {checkResult.data.statistics.summary.billedPercentage}%）
+                  </div>
+                  <div>
+                    最近 7 天变更：
+                    {checkResult.data.statistics.summary.recentChanges} 条
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {!checkResult.data.isConsistent ? (
+              <div className={meterReadingHistoryMobileStyles.statusPanelSection}>
+                <div className={meterReadingHistoryMobileStyles.statusPanelText}>
+                  孤立记录 {checkResult.data.details.orphanedReadings} 条，不一致记录{' '}
+                  {checkResult.data.details.inconsistentReadings} 条。
+                </div>
+                <div className={meterReadingHistoryMobileStyles.issueList}>
+                  {checkResult.data.orphanedReadings.map((reading) => (
+                    <div
+                      key={reading.id}
+                      className={meterReadingHistoryMobileStyles.issueCard}
+                    >
+                      <div className={meterReadingHistoryMobileStyles.issueTitleRow}>
+                        <div className={meterReadingHistoryMobileStyles.issueTitle}>
+                          {reading.meterName}
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="border-yellow-200 bg-yellow-100 text-yellow-700"
+                        >
+                          孤立记录
+                        </Badge>
+                      </div>
+                      <div className={meterReadingHistoryMobileStyles.issueMeta}>
+                        {reading.roomInfo?.buildingName} - {reading.roomInfo?.roomNumber}
+                      </div>
+                      <div className={meterReadingHistoryMobileStyles.issueText}>
+                        状态：{reading.status}，已生成账单：
+                        {reading.isBilled ? '是' : '否'}
+                      </div>
+                    </div>
+                  ))}
+                  {checkResult.data.inconsistentReadings.map((reading) => (
+                    <div
+                      key={reading.id}
+                      className={meterReadingHistoryMobileStyles.issueCard}
+                    >
+                      <div className={meterReadingHistoryMobileStyles.issueTitleRow}>
+                        <div className={meterReadingHistoryMobileStyles.issueTitle}>
+                          {reading.meterName}
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="border-yellow-200 bg-yellow-100 text-yellow-700"
+                        >
+                          状态不一致
+                        </Badge>
+                      </div>
+                      <div className={meterReadingHistoryMobileStyles.issueMeta}>
+                        {reading.roomInfo?.buildingName} - {reading.roomInfo?.roomNumber}
+                      </div>
+                      <div className={meterReadingHistoryMobileStyles.issueText}>
+                        状态：{reading.status}，已生成账单：
+                        {reading.isBilled ? '是' : '否'}，账单明细：
+                        {reading.billDetailsCount} 条
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {repairResult ? (
+          <div className={meterReadingHistoryMobileStyles.statusPanel}>
+            <div className={meterReadingHistoryMobileStyles.statusPanelHeader}>
+              <div>
+                <div className={meterReadingHistoryMobileStyles.statusPanelTitle}>
+                  自动修复结果
+                </div>
+                <div className={meterReadingHistoryMobileStyles.statusPanelText}>
+                  {repairResult.message}
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={
+                  repairResult.success
+                    ? 'border-green-200 bg-green-50 text-green-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+                }
+              >
+                {repairResult.success ? (
+                  <CheckCircle data-icon="inline-start" />
+                ) : (
+                  <AlertCircle data-icon="inline-start" />
+                )}
+                {repairResult.success ? '修复完成' : '修复失败'}
+              </Badge>
+            </div>
+            <div className={meterReadingHistoryMobileStyles.statusPanelList}>
+              <div>
+                修复前不一致记录：{repairResult.data.preRepairInconsistencies} 条
+              </div>
+              <div>
+                修复后不一致记录：{repairResult.data.postRepairInconsistencies} 条
+              </div>
+              <div>孤立记录修复：{repairResult.data.repairedOrphaned} 条</div>
+              <div>不一致记录修复：{repairResult.data.repairedInconsistent} 条</div>
+            </div>
+          </div>
+        ) : null}
+
+        <Card className={meterReadingHistoryMobileStyles.toolbarCard}>
+          <CardContent className="p-0">
+            <div className={meterReadingHistoryMobileStyles.toolbarStack}>
+              <div className={meterReadingHistoryMobileStyles.toolbarRow}>
+                <div className={meterReadingHistoryMobileStyles.searchWrap}>
+                  <Search className={meterReadingHistoryMobileStyles.searchIcon} />
                   <Input
                     placeholder="搜索房间号、租客姓名或备注..."
                     value={filters.search}
                     onChange={(e) =>
                       handleFilterChange('search', e.target.value)
                     }
-                    className="pl-10"
+                    className={meterReadingHistoryMobileStyles.searchInput}
                   />
                 </div>
+                <div className={meterReadingHistoryMobileStyles.filtersRow}>
+                  <Select
+                    value={filters.recordType}
+                    onValueChange={(value) =>
+                      handleFilterChange('recordType', value)
+                    }
+                  >
+                    <SelectTrigger
+                      className={meterReadingHistoryMobileStyles.selectTrigger}
+                    >
+                      <SelectValue placeholder="记录类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部记录</SelectItem>
+                      <SelectItem value="REGULAR_READING">正常抄表</SelectItem>
+                      <SelectItem value="INITIAL_BASELINE">初始底数</SelectItem>
+                      <SelectItem value="CHECKOUT_FINAL">退租结算</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={filters.meterType}
+                    onValueChange={(value) =>
+                      handleFilterChange('meterType', value)
+                    }
+                  >
+                    <SelectTrigger
+                      className={meterReadingHistoryMobileStyles.selectTrigger}
+                    >
+                      <SelectValue placeholder="仪表类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部类型</SelectItem>
+                      <SelectItem value="ELECTRICITY">电表</SelectItem>
+                      <SelectItem value="COLD_WATER">冷水表</SelectItem>
+                      <SelectItem value="HOT_WATER">热水表</SelectItem>
+                      <SelectItem value="GAS">燃气表</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={filters.status}
+                    onValueChange={(value) => handleFilterChange('status', value)}
+                  >
+                    <SelectTrigger
+                      className={meterReadingHistoryMobileStyles.selectTrigger}
+                    >
+                      <SelectValue placeholder="状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部状态</SelectItem>
+                      <SelectItem value="PENDING">待确认</SelectItem>
+                      <SelectItem value="CONFIRMED">已确认</SelectItem>
+                      <SelectItem value="BILLED">已生成账单</SelectItem>
+                      <SelectItem value="CANCELLED">已取消</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={filters.dateRange}
+                    onValueChange={(value) =>
+                      handleFilterChange('dateRange', value)
+                    }
+                  >
+                    <SelectTrigger
+                      className={meterReadingHistoryMobileStyles.selectTrigger}
+                    >
+                      <SelectValue placeholder="时间范围" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部时间</SelectItem>
+                      <SelectItem value="today">今天</SelectItem>
+                      <SelectItem value="week">本周</SelectItem>
+                      <SelectItem value="month">本月</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              {/* 筛选选项 */}
-              <div className="flex flex-wrap gap-2">
-                {/* 记录类型筛选 */}
-                <Select
-                  value={filters.recordType}
-                  onValueChange={(value) =>
-                    handleFilterChange('recordType', value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="记录类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部记录</SelectItem>
-                    <SelectItem value="REGULAR_READING">正常抄表</SelectItem>
-                    <SelectItem value="INITIAL_BASELINE">初始底数</SelectItem>
-                    <SelectItem value="CHECKOUT_FINAL">退租结算</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* 仪表类型筛选 */}
-                <Select
-                  value={filters.meterType}
-                  onValueChange={(value) =>
-                    handleFilterChange('meterType', value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="仪表类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部类型</SelectItem>
-                    <SelectItem value="ELECTRICITY">电表</SelectItem>
-                    <SelectItem value="COLD_WATER">冷水表</SelectItem>
-                    <SelectItem value="HOT_WATER">热水表</SelectItem>
-                    <SelectItem value="GAS">燃气表</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* 状态筛选 */}
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) => handleFilterChange('status', value)}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="状态" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部状态</SelectItem>
-                    <SelectItem value="PENDING">待确认</SelectItem>
-                    <SelectItem value="CONFIRMED">已确认</SelectItem>
-                    <SelectItem value="BILLED">已生成账单</SelectItem>
-                    <SelectItem value="CANCELLED">已取消</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* 时间范围筛选 */}
-                <Select
-                  value={filters.dateRange}
-                  onValueChange={(value) =>
-                    handleFilterChange('dateRange', value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="时间范围" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部时间</SelectItem>
-                    <SelectItem value="today">今天</SelectItem>
-                    <SelectItem value="week">本周</SelectItem>
-                    <SelectItem value="month">本月</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className={meterReadingHistoryMobileStyles.resultText}>
+                当前筛选结果：共 {summaryStats.totalRecords} 条记录，待确认{' '}
+                {summaryStats.pendingCount} 条，已关联账单 {summaryStats.billedCount}{' '}
+                条。
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 text-sm text-gray-600">
-            当前阶段默认保留抄表历史事实，历史页不提供删除入口；如需处理错误记录，应通过受控修复流程完成。
-          </CardContent>
-        </Card>
+        <div className={meterReadingHistoryMobileStyles.statsGrid}>
+          <Card className={meterReadingHistoryMobileStyles.statsCard}>
+            <CardContent className={meterReadingHistoryMobileStyles.statsContent}>
+              <div className={meterReadingHistoryMobileStyles.statsInner}>
+                <div>
+                  <div className={meterReadingHistoryMobileStyles.statsLabel}>
+                    当前记录数
+                  </div>
+                  <div className="mt-0.5 text-xl font-bold leading-6 text-blue-600 sm:mt-1 sm:text-2xl">
+                    {summaryStats.totalRecords}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* 统计信息 */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {readings.length}
+          <Card className={meterReadingHistoryMobileStyles.statsCard}>
+            <CardContent className={meterReadingHistoryMobileStyles.statsContent}>
+              <div className={meterReadingHistoryMobileStyles.statsInner}>
+                <div>
+                  <div className={meterReadingHistoryMobileStyles.statsLabel}>
+                    当前费用合计
+                  </div>
+                  <div className="mt-0.5 text-xl font-bold leading-6 text-green-600 sm:mt-1 sm:text-2xl">
+                    ¥{summaryStats.totalAmount.toFixed(2)}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-500">总记录数</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  ¥{readings.reduce((sum, r) => sum + r.amount, 0).toFixed(2)}
-                </div>
-                <div className="text-sm text-gray-500">总费用</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-600">
-                  {readings.filter((r) => r.status === 'PENDING').length}
-                </div>
-                <div className="text-sm text-gray-500">待确认</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-600">
-                  {readings.filter((r) => r.status === 'BILLED').length}
-                </div>
-                <div className="text-sm text-gray-500">已生成账单</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* 抄表记录列表 */}
+          <Card className={meterReadingHistoryMobileStyles.statsCard}>
+            <CardContent className={meterReadingHistoryMobileStyles.statsContent}>
+              <div className={meterReadingHistoryMobileStyles.statsInner}>
+                <div>
+                  <div className={meterReadingHistoryMobileStyles.statsLabel}>
+                    待确认
+                  </div>
+                  <div className="mt-0.5 text-xl font-bold leading-6 text-orange-600 sm:mt-1 sm:text-2xl">
+                    {summaryStats.pendingCount}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={meterReadingHistoryMobileStyles.statsCard}>
+            <CardContent className={meterReadingHistoryMobileStyles.statsContent}>
+              <div className={meterReadingHistoryMobileStyles.statsInner}>
+                <div>
+                  <div className={meterReadingHistoryMobileStyles.statsLabel}>
+                    已关联账单
+                  </div>
+                  <div className="mt-0.5 text-xl font-bold leading-6 text-purple-600 sm:mt-1 sm:text-2xl">
+                    {summaryStats.billedCount}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {readings.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="text-gray-500">暂无抄表记录</div>
+          <Card className={meterReadingHistoryMobileStyles.emptyState}>
+            <CardContent className="py-10">
+              <div className={meterReadingHistoryMobileStyles.emptyTitle}>
+                暂无抄表记录
+              </div>
+              <div className={meterReadingHistoryMobileStyles.emptyText}>
+                可以调整搜索条件或筛选项后重试。
+              </div>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className={meterReadingHistoryMobileStyles.listStack}>
             {readings.map((reading) => (
-              <Card key={reading.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {/* 头部信息 - 房间和仪表信息 */}
-                      <div className="mb-2 flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              className={getMeterTypeColor(reading.meterType)}
-                            >
-                              {getMeterTypeLabel(reading.meterType)}
-                            </Badge>
-                            {getRecordTypeBadge(reading)}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {reading.meter?.displayName ||
-                                `${getMeterTypeLabel(reading.meterType)}表`}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {reading.meter?.room?.building?.name} -{' '}
-                              {reading.meter?.room?.roomNumber}
-                              {reading.contract?.renter?.name && (
-                                <span className="ml-2">
-                                  • {reading.contract.renter.name}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={getStatusColor(reading.status)}>
-                            {getStatusLabel(reading.status)}
-                          </Badge>
+              <Card key={reading.id} className={meterReadingHistoryMobileStyles.card}>
+                <CardContent className={meterReadingHistoryMobileStyles.cardContent}>
+                  <div className={meterReadingHistoryMobileStyles.cardHeader}>
+                    <div className={meterReadingHistoryMobileStyles.cardLeading}>
+                      <div className={meterReadingHistoryMobileStyles.cardTitleRow}>
+                        <MeterTypeIcon meterType={reading.meterType} />
+                        <div className={meterReadingHistoryMobileStyles.cardTitle}>
+                          {reading.meter?.displayName ||
+                            `${getMeterTypeLabel(reading.meterType)}表`}
                         </div>
                       </div>
-
-                      {/* 核心抄表数据 */}
-                      <div className="mb-2 grid grid-cols-2 gap-3 rounded bg-gray-50 p-2 text-sm sm:grid-cols-4">
-                        <div>
-                          <span className="text-gray-500">上次读数：</span>
-                          <span className="block font-medium">
-                            {reading.previousReading || 0}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">本次读数：</span>
-                          <span className="block font-medium">
-                            {reading.currentReading}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">用量：</span>
-                          <span className="block font-medium text-blue-600">
-                            {reading.usage}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">费用：</span>
-                          <span className="block font-medium text-green-600">
-                            ¥{reading.amount.toFixed(2)}
-                          </span>
-                        </div>
+                      <div className={meterReadingHistoryMobileStyles.cardMeta}>
+                        {reading.meter?.meterNumber
+                          ? `${reading.meter.meterNumber} · `
+                          : ''}
+                        {reading.meter?.room?.building?.name} -{' '}
+                        {reading.meter?.room?.roomNumber}
+                        {reading.contract?.renter?.name ? (
+                          <span> • {reading.contract.renter.name}</span>
+                        ) : null}
                       </div>
-
-                      {/* 抄表时间和操作信息 */}
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {new Date(reading.readingDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {reading.operator && (
-                          <div>
-                            <span>操作员: {reading.operator}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 备注信息 */}
-                      {reading.remarks && (
-                        <div className="mt-2 rounded bg-yellow-50 p-2 text-sm text-gray-600">
-                          <span className="font-medium">备注: </span>
-                          {reading.remarks}
-                        </div>
-                      )}
                     </div>
+                    <div className={meterReadingHistoryMobileStyles.badgeRow}>
+                      {getRecordTypeBadge(reading)}
+                      <Badge variant="outline" className={getStatusColor(reading.status)}>
+                        {getStatusLabel(reading.status)}
+                      </Badge>
+                    </div>
+                  </div>
 
-                    {/* 操作按钮 */}
-                    <div className="ml-3 flex gap-1">
+                  <div className={meterReadingHistoryMobileStyles.summaryGrid}>
+                    <div className={meterReadingHistoryMobileStyles.summaryItem}>
+                      <div className={meterReadingHistoryMobileStyles.summaryLabel}>
+                        上次读数
+                      </div>
+                      <div className={meterReadingHistoryMobileStyles.summaryValue}>
+                        {reading.previousReading || 0}
+                      </div>
+                    </div>
+                    <div className={meterReadingHistoryMobileStyles.summaryItem}>
+                      <div className={meterReadingHistoryMobileStyles.summaryLabel}>
+                        本次读数
+                      </div>
+                      <div className={meterReadingHistoryMobileStyles.summaryValue}>
+                        {reading.currentReading}
+                      </div>
+                    </div>
+                    <div className={meterReadingHistoryMobileStyles.summaryItem}>
+                      <div className={meterReadingHistoryMobileStyles.summaryLabel}>
+                        用量
+                      </div>
+                      <div
+                        className={
+                          meterReadingHistoryMobileStyles.summaryValueUsage
+                        }
+                      >
+                        {reading.usage}
+                      </div>
+                    </div>
+                    <div className={meterReadingHistoryMobileStyles.summaryItem}>
+                      <div className={meterReadingHistoryMobileStyles.summaryLabel}>
+                        费用
+                      </div>
+                      <div
+                        className={
+                          meterReadingHistoryMobileStyles.summaryValueAmount
+                        }
+                      >
+                        ¥{reading.amount.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={meterReadingHistoryMobileStyles.footerRow}>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>
+                        {new Date(reading.readingDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {reading.operator ? <div>操作员：{reading.operator}</div> : null}
+                    {reading.isBilled ? <div>已关联账单</div> : null}
+                  </div>
+
+                  {reading.remarks ? (
+                    <div className={meterReadingHistoryMobileStyles.remarkBox}>
+                      <div className={meterReadingHistoryMobileStyles.remarkText}>
+                        <span className="font-medium">备注：</span>
+                        {reading.remarks}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-2 flex justify-end">
+                    <div className={meterReadingHistoryMobileStyles.cardActions}>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(reading)}
                         disabled={reading.status === 'BILLED'}
-                        className="h-8 w-8 p-0"
+                        className={meterReadingHistoryMobileStyles.cardActionButton}
                         title={
                           reading.status === 'BILLED'
                             ? '已生成账单的记录不可编辑'
                             : '编辑抄表记录'
                         }
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit />
                       </Button>
                     </div>
                   </div>

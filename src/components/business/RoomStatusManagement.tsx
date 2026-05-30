@@ -1,6 +1,8 @@
 import type { RoomStatus } from '@prisma/client'
+import { cn } from '@/lib/utils'
 
 import type { RoomWithBuildingForClient } from '@/types/database'
+import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoomStatusBadge } from '@/components/ui/status-badge'
@@ -57,55 +59,56 @@ export function RoomStatusManagement({
   )
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>状态管理</CardTitle>
+    <Card className={roomDetailMobileStyles.card}>
+      <CardHeader className={roomDetailMobileStyles.cardHeader}>
+        <CardTitle className={roomDetailMobileStyles.cardTitle}>状态管理</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 当前状态 */}
+      <CardContent className={roomDetailMobileStyles.cardContent}>
         <div>
-          <label className="text-muted-foreground mb-2 block text-sm">
+          <label className={`${roomDetailMobileStyles.fieldLabel} mb-2 block`}>
             当前状态
           </label>
-          <div className="flex items-center gap-3">
+          <div className={roomDetailMobileStyles.currentStatusRow}>
             <RoomStatusBadge status={room.status} />
-            <div>
-              <p className="font-medium">{currentStatus?.label}</p>
-              <p className="text-muted-foreground text-sm">
+            <div className={roomDetailMobileStyles.currentStatusMeta}>
+              <p className={roomDetailMobileStyles.currentStatusTitle}>
+                {currentStatus?.label}
+              </p>
+              <p className={roomDetailMobileStyles.currentStatusText}>
                 {currentStatus?.description}
               </p>
             </div>
           </div>
         </div>
 
-        {/* 状态切换 */}
         <div>
-          <label className="text-muted-foreground mb-3 block text-sm">
+          <label className={`${roomDetailMobileStyles.fieldLabel} mb-2.5 block`}>
             切换状态
           </label>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <div className={roomDetailMobileStyles.statusOptionsGrid}>
             {statusOptions.map((option) => (
               <Button
                 key={option.value}
                 variant={room.status === option.value ? 'default' : 'outline'}
-                size="sm"
-                className={`flex h-auto flex-col items-center gap-1 p-3 ${
+                className={cn(
+                  roomDetailMobileStyles.statusOptionButton,
                   room.status === option.value ? '' : option.color
-                }`}
+                )}
                 onClick={() => onStatusChange(option.value)}
                 disabled={isLoading || room.status === option.value}
               >
                 <RoomStatusBadge status={option.value} />
-                <span className="text-xs font-medium">{option.label}</span>
+                <span className={roomDetailMobileStyles.statusOptionText}>
+                  {option.label}
+                </span>
               </Button>
             ))}
           </div>
         </div>
 
-        {/* 状态说明 */}
-        <div className="border-t pt-4">
-          <h4 className="mb-2 font-medium">状态说明</h4>
-          <div className="text-muted-foreground space-y-2 text-sm">
+        <div className={roomDetailMobileStyles.sectionBlock}>
+          <h4 className={roomDetailMobileStyles.sectionTitle}>状态说明</h4>
+          <div className={roomDetailMobileStyles.explanationList}>
             <p>
               <strong>空房可租</strong>: 房间空置，可以安排新租客入住
             </p>
@@ -121,10 +124,9 @@ export function RoomStatusManagement({
           </div>
         </div>
 
-        {/* 操作提示 */}
         {isLoading && (
-          <div className="py-2 text-center">
-            <p className="text-muted-foreground text-sm">正在更新状态...</p>
+          <div className="py-1 text-center">
+            <p className={roomDetailMobileStyles.hintText}>正在更新状态...</p>
           </div>
         )}
       </CardContent>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
@@ -46,6 +46,28 @@ import {
   ContractStatusBadge,
 } from '@/components/ui/status-badge'
 import { ContractBillDueSummaryDialog } from '@/components/business/ContractBillDueSummaryDialog'
+import { contractDetailMobileStyles } from '@/components/business/contract-detail-mobile-styles'
+
+interface ContractDetailFieldProps {
+  label: string
+  children: ReactNode
+  className?: string
+}
+
+function ContractDetailField({
+  label,
+  children,
+  className,
+}: ContractDetailFieldProps) {
+  return (
+    <div className={cn(contractDetailMobileStyles.detailFieldBlock, className)}>
+      <label className={contractDetailMobileStyles.detailLabel}>{label}</label>
+      <div className={contractDetailMobileStyles.detailFieldValueSlot}>
+        {children}
+      </div>
+    </div>
+  )
+}
 
 interface EnhancedContractDetailProps {
   contract: ContractWithDetailsForClient
@@ -128,656 +150,908 @@ export function EnhancedContractDetail({
   )
 
   const sortedBills = sortBillsForDisplay(contractBills)
+  const billCountCards = [
+    {
+      title: '总账单',
+      value: billStats.totalCount,
+      icon: FileText,
+      iconClassName: 'text-blue-600',
+      valueClassName: 'text-blue-600',
+    },
+    {
+      title: '已结清',
+      value: billStats.settledCount,
+      icon: CheckCircle,
+      iconClassName: 'text-green-600',
+      valueClassName: 'text-green-600',
+    },
+    {
+      title: '待处理',
+      value: billStats.openCount,
+      icon: Clock,
+      iconClassName: 'text-yellow-600',
+      valueClassName: 'text-yellow-600',
+    },
+    {
+      title: '已逾期',
+      value: billStats.overdueCount,
+      icon: AlertCircle,
+      iconClassName: 'text-red-600',
+      valueClassName: 'text-red-600',
+    },
+  ] as const
+  const billAmountCards = [
+    {
+      title: '总金额',
+      value: formatCurrency(billStats.totalAmount),
+      valueClassName: 'text-gray-900',
+    },
+    {
+      title: '已收金额',
+      value: formatCurrency(billStats.receivedAmount),
+      valueClassName: 'text-green-600',
+    },
+    {
+      title: '待收金额',
+      value: formatCurrency(billStats.pendingAmount),
+      valueClassName: 'text-yellow-600',
+    },
+  ] as const
 
   return (
-    <div className={cn('space-y-6', className)}>
-      {/* 顶部状态栏 */}
-      <div
-        className={cn(
-          'rounded-lg p-6 text-white',
-          isActive
-            ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-            : isExpired
-              ? 'bg-gradient-to-r from-red-500 to-red-600'
-              : 'bg-gradient-to-r from-gray-500 to-gray-600'
-        )}
-      >
-        <div className="mb-4 flex items-start justify-between">
-          <div>
-            <h1 className="mb-2 text-2xl font-bold">
-              {contract.room.building.name} - {contract.room.roomNumber}
-            </h1>
-            <p className="text-lg text-white/90">
-              {contract.renter.name} · {contract.contractNumber}
-            </p>
+    <div className={cn(contractDetailMobileStyles.detailRoot, className)}>
+      <div className={contractDetailMobileStyles.topSectionStack}>
+        {/* 顶部状态栏 */}
+        <div
+          className={cn(
+            contractDetailMobileStyles.heroCard,
+            isActive
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+              : isExpired
+                ? 'bg-gradient-to-r from-red-500 to-red-600'
+                : 'bg-gradient-to-r from-gray-500 to-gray-600'
+          )}
+        >
+          <div className={contractDetailMobileStyles.heroHeader}>
+            <div className={contractDetailMobileStyles.heroHeadingBlock}>
+              <h1 className={contractDetailMobileStyles.heroTitle}>
+                {contract.room.building.name} - {contract.room.roomNumber}
+              </h1>
+              <p className={contractDetailMobileStyles.heroSubtitle}>
+                <span className={contractDetailMobileStyles.heroSubtitlePrimary}>
+                  {contract.renter.name}
+                </span>
+                <span className={contractDetailMobileStyles.heroSubtitleDivider}>
+                  ·
+                </span>
+                <span className={contractDetailMobileStyles.heroSubtitleSecondary}>
+                  {contract.contractNumber}
+                </span>
+              </p>
+            </div>
+            <ContractStatusBadge
+              status={contract.status as ContractStatus}
+              className={contractDetailMobileStyles.heroStatusBadge}
+            />
           </div>
-          <ContractStatusBadge
-            status={contract.status as ContractStatus}
-            className="border-white/30 bg-white/20 text-white"
-          />
-        </div>
 
-        {/* 关键信息快览 */}
-        <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-          <div>
-            <p className="text-white/70">合同期限</p>
-            <p className="font-medium">
-              {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
-            </p>
-          </div>
-          <div>
-            <p className="text-white/70">月租金</p>
-            <p className="text-lg font-medium">
-              {formatCurrency(contract.monthlyRent)}
-            </p>
-          </div>
-          <div>
-            <p className="text-white/70">押金</p>
-            <p className="font-medium">{formatCurrency(contract.deposit)}</p>
-          </div>
-          <div>
-            <p className="text-white/70">付款方式</p>
-            <p className="font-medium">{contract.paymentMethod || '月付'}</p>
-          </div>
-        </div>
-
-        {/* 到期提醒 */}
-        {isExpiringSoon && (
-          <div className="mt-4 rounded-lg border border-yellow-300/30 bg-yellow-500/20 p-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                合同将在 {daysUntilExpiry} 天后到期，请及时处理续约事宜
-              </span>
+          {/* 关键信息快览 */}
+          <div className={contractDetailMobileStyles.heroQuickGrid}>
+            <div
+              className={cn(
+                contractDetailMobileStyles.heroQuickItem,
+                contractDetailMobileStyles.heroQuickWideItem
+              )}
+            >
+              <p className={contractDetailMobileStyles.heroQuickLabel}>合同期限</p>
+              <p className={contractDetailMobileStyles.heroQuickValue}>
+                {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
+              </p>
+            </div>
+            <div className={contractDetailMobileStyles.heroQuickItem}>
+              <p className={contractDetailMobileStyles.heroQuickLabel}>月租金</p>
+              <p className={contractDetailMobileStyles.heroQuickValueEmphasis}>
+                {formatCurrency(contract.monthlyRent)}
+              </p>
+            </div>
+            <div className={contractDetailMobileStyles.heroQuickItem}>
+              <p className={contractDetailMobileStyles.heroQuickLabel}>押金</p>
+              <p className={contractDetailMobileStyles.heroQuickValue}>
+                {formatCurrency(contract.deposit)}
+              </p>
+            </div>
+            <div className={contractDetailMobileStyles.heroQuickItem}>
+              <p className={contractDetailMobileStyles.heroQuickLabel}>付款方式</p>
+              <p className={contractDetailMobileStyles.heroQuickValue}>
+                {contract.paymentMethod || '月付'}
+              </p>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* 操作按钮 */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {onEdit && (
-          <Button
-            variant="outline"
-            onClick={onEdit}
-            className="flex items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            编辑合同
-          </Button>
-        )}
-        {contract.status === 'PENDING' && onActivate && (
-          <Button
-            onClick={onActivate}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-          >
-            <CheckCircle className="h-4 w-4" />
-            激活合同
-          </Button>
-        )}
-        {isActive && onRenew && (
-          <Button
-            onClick={onRenew}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-          >
-            <RefreshCw className="h-4 w-4" />
-            续租
-          </Button>
-        )}
-        {isActive && onTerminate && (
-          <Button
-            variant="outline"
-            onClick={onTerminate}
-            className="flex items-center gap-2 border-orange-300 text-orange-600 hover:bg-orange-50"
-          >
-            <UserX className="h-4 w-4" />
-            退租
-          </Button>
-        )}
-        {isActive && onMeterReading && (
-          <Button
-            variant="outline"
-            onClick={onMeterReading}
-            className="flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-50"
-          >
-            <Gauge className="h-4 w-4" />
-            抄表录入
-          </Button>
-        )}
-        <ContractBillDueSummaryDialog
-          contract={contract}
-          trigger={
+          {/* 到期提醒 */}
+          {isExpiringSoon && (
+            <div className={contractDetailMobileStyles.heroAlert}>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  合同将在 {daysUntilExpiry} 天后到期，请及时处理续约事宜
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 操作按钮 */}
+        <div className={contractDetailMobileStyles.actionsGrid}>
+          {onEdit && (
             <Button
               variant="outline"
-              className="flex items-center gap-2 border-violet-300 text-violet-700 hover:bg-violet-50"
+              onClick={onEdit}
+              className={contractDetailMobileStyles.actionButton}
             >
-              <CreditCard className="h-4 w-4" />
-              本次应催缴汇总
+              <FileText className="h-4 w-4" />
+              编辑合同
             </Button>
-          }
-        />
-        {onDelete && (
-          <Button
-            variant="outline"
-            onClick={onDelete}
-            className="flex items-center gap-2 border-red-300 text-red-600 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" />
-            删除
-          </Button>
-        )}
+          )}
+          {contract.status === 'PENDING' && onActivate && (
+            <Button
+              onClick={onActivate}
+              className={cn(
+                contractDetailMobileStyles.actionButton,
+                'bg-blue-600 hover:bg-blue-700'
+              )}
+            >
+              <CheckCircle className="h-4 w-4" />
+              激活合同
+            </Button>
+          )}
+          {isActive && onRenew && (
+            <Button
+              onClick={onRenew}
+              className={cn(
+                contractDetailMobileStyles.actionButton,
+                'bg-green-600 hover:bg-green-700'
+              )}
+            >
+              <RefreshCw className="h-4 w-4" />
+              续租
+            </Button>
+          )}
+          {isActive && onTerminate && (
+            <Button
+              variant="outline"
+              onClick={onTerminate}
+              className={cn(
+                contractDetailMobileStyles.actionButton,
+                'border-orange-300 text-orange-600 hover:bg-orange-50'
+              )}
+            >
+              <UserX className="h-4 w-4" />
+              退租
+            </Button>
+          )}
+          {isActive && onMeterReading && (
+            <Button
+              variant="outline"
+              onClick={onMeterReading}
+              className={cn(
+                contractDetailMobileStyles.actionButton,
+                'border-blue-300 text-blue-600 hover:bg-blue-50'
+              )}
+            >
+              <Gauge className="h-4 w-4" />
+              抄表录入
+            </Button>
+          )}
+          <ContractBillDueSummaryDialog
+            contract={contract}
+            trigger={
+              <Button
+                variant="outline"
+                className={cn(
+                  contractDetailMobileStyles.actionButton,
+                  'border-violet-300 text-violet-700 hover:bg-violet-50'
+                )}
+              >
+                <CreditCard className="h-4 w-4" />
+                本次应催缴汇总
+              </Button>
+            }
+          />
+          {onDelete && (
+            <Button
+              variant="outline"
+              onClick={onDelete}
+              className={cn(
+                contractDetailMobileStyles.actionButton,
+                'border-red-300 text-red-600 hover:bg-red-50'
+              )}
+            >
+              <Trash2 className="h-4 w-4" />
+              删除
+            </Button>
+          )}
+        </div>
+
+        {/* 标签页导航 */}
+        <div className={contractDetailMobileStyles.tabsContainer}>
+          <nav className={contractDetailMobileStyles.tabsNav}>
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={cn(
+                contractDetailMobileStyles.tabButton,
+                activeTab === 'overview'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              )}
+            >
+              合同概览
+            </button>
+            <button
+              onClick={() => setActiveTab('bills')}
+              className={cn(
+                contractDetailMobileStyles.tabButton,
+                activeTab === 'bills'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              )}
+            >
+              账单历史 ({contractBills.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('facilities')}
+              className={cn(
+                contractDetailMobileStyles.tabButton,
+                activeTab === 'facilities'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              )}
+            >
+              房间设施
+            </button>
+          </nav>
+        </div>
+
       </div>
 
-      {/* 标签页导航 */}
-      <div className="border-b">
-        <nav className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={cn(
-              'border-b-2 px-1 py-2 text-sm font-medium',
-              activeTab === 'overview'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            )}
-          >
-            合同概览
-          </button>
-          <button
-            onClick={() => setActiveTab('bills')}
-            className={cn(
-              'border-b-2 px-1 py-2 text-sm font-medium',
-              activeTab === 'bills'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            )}
-          >
-            账单历史 ({contractBills.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('facilities')}
-            className={cn(
-              'border-b-2 px-1 py-2 text-sm font-medium',
-              activeTab === 'facilities'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            )}
-          >
-            房间设施
-          </button>
-        </nav>
-      </div>
-
-      {/* 标签页内容 */}
+      {/* 统一标签页内容区的顶部节奏来源，避免 overview 额外叠加 topSectionStack 的间距 */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* 租客信息 - 添加点击跳转功能 */}
-          <Card
-            className="cursor-pointer transition-shadow hover:shadow-md"
-            onClick={handleRenterClick}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-blue-600" />
-                  租客信息
-                </div>
-                <ExternalLink className="h-4 w-4 text-gray-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-600">姓名</label>
-                  <p className="font-medium">{contract.renter.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">性别</label>
-                  <p className="font-medium">
-                    {contract.renter.gender || '未填写'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">手机号</label>
-                  <p className="flex items-center gap-1 font-medium">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    {contract.renter.phone}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">身份证号</label>
-                  <p className="font-medium">
-                    {contract.renter.idCard || '未填写'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">职业</label>
-                  <p className="font-medium">
-                    {contract.renter.occupation || '未填写'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">公司</label>
-                  <p className="font-medium">
-                    {contract.renter.company || '未填写'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">入住日期</label>
-                  <p className="font-medium">
-                    {contract.renter.moveInDate
-                      ? formatDate(contract.renter.moveInDate)
-                      : '未填写'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">入住人数</label>
-                  <p className="font-medium">
-                    {contract.renter.tenantCount || 1}人
-                  </p>
-                </div>
-              </div>
-
-              {contract.renter.emergencyContact && (
-                <>
-                  <Separator />
-                  <div>
-                    <label className="text-sm text-gray-600">紧急联系人</label>
-                    <p className="font-medium">
-                      {contract.renter.emergencyContact}
+        <div className={contractDetailMobileStyles.tabPanelSection}>
+          <div className={contractDetailMobileStyles.overviewGrid}>
+            {/* 租客信息 - 添加点击跳转功能 */}
+            <Card
+              className={cn(
+                contractDetailMobileStyles.overviewCard,
+                contractDetailMobileStyles.overviewInteractiveCard
+              )}
+              onClick={handleRenterClick}
+            >
+              <CardHeader className={contractDetailMobileStyles.overviewCardHeader}>
+                <CardTitle className={contractDetailMobileStyles.overviewCardTitle}>
+                  <div className={contractDetailMobileStyles.overviewIconTitle}>
+                    <User className="h-5 w-5 text-blue-600" />
+                    租客信息
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-gray-400" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className={contractDetailMobileStyles.overviewCardContent}>
+                <div className={contractDetailMobileStyles.overviewFieldsGrid}>
+                  <ContractDetailField label="姓名">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.name}
                     </p>
-                    {contract.renter.emergencyPhone && (
-                      <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-                        <Phone className="h-3 w-3" />
-                        {contract.renter.emergencyPhone}
+                  </ContractDetailField>
+                  <ContractDetailField label="性别">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.gender || '未填写'}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="手机号">
+                    <p className={contractDetailMobileStyles.detailIconValue}>
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      {contract.renter.phone}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="身份证号">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.idCard || '未填写'}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="职业">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.occupation || '未填写'}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="公司">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.company || '未填写'}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="入住日期">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.moveInDate
+                        ? formatDate(contract.renter.moveInDate)
+                        : '未填写'}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="入住人数">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.renter.tenantCount || 1}人
+                    </p>
+                  </ContractDetailField>
+                </div>
+
+                {contract.renter.emergencyContact && (
+                  <>
+                    <Separator className={contractDetailMobileStyles.divider} />
+                    <div className={contractDetailMobileStyles.detailSectionBlock}>
+                      <label className={contractDetailMobileStyles.detailLabel}>紧急联系人</label>
+                      <p className={contractDetailMobileStyles.detailValueStrong}>
+                        {contract.renter.emergencyContact}
                       </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {contract.renter.remarks && (
-                <>
-                  <Separator />
-                  <div>
-                    <label className="text-sm text-gray-600">备注</label>
-                    <p className="text-sm text-gray-700">
-                      {contract.renter.remarks}
-                    </p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 房间信息 - 添加点击跳转功能 */}
-          <Card
-            className="cursor-pointer transition-shadow hover:shadow-md"
-            onClick={handleRoomClick}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Home className="h-5 w-5 text-green-600" />
-                  房间信息
-                </div>
-                <ExternalLink className="h-4 w-4 text-gray-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-600">房间号</label>
-                  <p className="text-lg font-medium">
-                    {contract.room.roomNumber}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">楼栋</label>
-                  <p className="flex items-center gap-1 font-medium">
-                    <Building className="h-4 w-4 text-gray-400" />
-                    {contract.room.building.name}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">楼层</label>
-                  <p className="font-medium">{contract.room.floorNumber}层</p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">房间类型</label>
-                  <p className="flex items-center gap-1 font-medium">
-                    <Bed className="h-4 w-4 text-gray-400" />
-                    {getRoomTypeText(contract.room.roomType)}
-                  </p>
-                </div>
-                {contract.room.area && (
-                  <div>
-                    <label className="text-sm text-gray-600">面积</label>
-                    <p className="flex items-center gap-1 font-medium">
-                      <Ruler className="h-4 w-4 text-gray-400" />
-                      {contract.room.area}㎡
-                    </p>
-                  </div>
+                      {contract.renter.emergencyPhone && (
+                        <p className="mt-1 flex items-center gap-1 text-sm leading-6 text-gray-500">
+                          <Phone className="h-3 w-3" />
+                          {contract.renter.emergencyPhone}
+                        </p>
+                      )}
+                    </div>
+                  </>
                 )}
-                <div>
-                  <label className="text-sm text-gray-600">房间状态</label>
-                  <Badge
-                    variant={
-                      contract.room.status === 'OCCUPIED'
-                        ? 'default'
-                        : 'secondary'
-                    }
+
+                {contract.renter.remarks && (
+                  <>
+                    <Separator className={contractDetailMobileStyles.divider} />
+                    <div className={contractDetailMobileStyles.detailSectionBlock}>
+                      <label className={contractDetailMobileStyles.noteLabel}>备注</label>
+                      <p className={contractDetailMobileStyles.noteText}>
+                        {contract.renter.remarks}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 房间信息 - 添加点击跳转功能 */}
+            <Card
+              className={cn(
+                contractDetailMobileStyles.overviewCard,
+                contractDetailMobileStyles.overviewInteractiveCard
+              )}
+              onClick={handleRoomClick}
+            >
+              <CardHeader className={contractDetailMobileStyles.overviewCardHeader}>
+                <CardTitle className={contractDetailMobileStyles.overviewCardTitle}>
+                  <div className={contractDetailMobileStyles.overviewIconTitle}>
+                    <Home className="h-5 w-5 text-green-600" />
+                    房间信息
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-gray-400" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className={contractDetailMobileStyles.overviewCardContent}>
+                <div className={contractDetailMobileStyles.overviewFieldsGrid}>
+                  <ContractDetailField label="房间号">
+                    <p className={contractDetailMobileStyles.detailValueLarge}>
+                      {contract.room.roomNumber}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="楼栋">
+                    <p className={contractDetailMobileStyles.detailIconValue}>
+                      <Building className="h-4 w-4 text-gray-400" />
+                      {contract.room.building.name}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="楼层">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.room.floorNumber}层
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="房间类型">
+                    <p className={contractDetailMobileStyles.detailIconValue}>
+                      <Bed className="h-4 w-4 text-gray-400" />
+                      {getRoomTypeText(contract.room.roomType)}
+                    </p>
+                  </ContractDetailField>
+                  {contract.room.area && (
+                    <ContractDetailField label="面积">
+                      <p className={contractDetailMobileStyles.detailIconValue}>
+                        <Ruler className="h-4 w-4 text-gray-400" />
+                        {contract.room.area}㎡
+                      </p>
+                    </ContractDetailField>
+                  )}
+                  <ContractDetailField label="房间状态">
+                    <Badge
+                      variant={
+                        contract.room.status === 'OCCUPIED'
+                          ? 'default'
+                          : 'secondary'
+                      }
+                    >
+                      {contract.room.status === 'OCCUPIED' ? '已出租' : '空闲'}
+                    </Badge>
+                  </ContractDetailField>
+                </div>
+
+                {contract.room.building.address && (
+                  <>
+                    <Separator className={contractDetailMobileStyles.divider} />
+                    <div className={contractDetailMobileStyles.detailSectionBlock}>
+                      <label className={contractDetailMobileStyles.detailLabel}>楼栋地址</label>
+                      <p className={contractDetailMobileStyles.detailIconValue}>
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        {contract.room.building.address}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 合同详情 */}
+            <Card
+              className={cn(contractDetailMobileStyles.overviewCard, 'lg:col-span-2')}
+            >
+              <CardHeader className={contractDetailMobileStyles.overviewCardHeader}>
+                <CardTitle className={contractDetailMobileStyles.overviewCardTitle}>
+                  <FileText className="h-5 w-5 text-purple-600" />
+                  合同详情
+                </CardTitle>
+              </CardHeader>
+              <CardContent className={contractDetailMobileStyles.overviewCardContent}>
+                <div className={contractDetailMobileStyles.contractFieldsGrid}>
+                  <ContractDetailField
+                    label="合同编号"
+                    className={contractDetailMobileStyles.overviewWideField}
                   >
-                    {contract.room.status === 'OCCUPIED' ? '已出租' : '空闲'}
-                  </Badge>
-                </div>
-              </div>
-
-              {contract.room.building.address && (
-                <>
-                  <Separator />
-                  <div>
-                    <label className="text-sm text-gray-600">楼栋地址</label>
-                    <p className="flex items-center gap-1 font-medium">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      {contract.room.building.address}
+                    <p className={contractDetailMobileStyles.detailValueMono}>
+                      {contract.contractNumber}
                     </p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 合同详情 */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-purple-600" />
-                合同详情
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-                <div>
-                  <label className="text-sm text-gray-600">合同编号</label>
-                  <p className="font-mono text-sm font-medium">
-                    {contract.contractNumber}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">合同状态</label>
-                  <ContractStatusBadge
-                    status={contract.status as ContractStatus}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">签约人</label>
-                  <p className="font-medium">
-                    {contract.signedBy || contract.renter.name}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">签约时间</label>
-                  <p className="font-medium">
-                    {contract.signedDate
-                      ? formatDate(contract.signedDate)
-                      : formatDate(contract.createdAt)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">合同开始</label>
-                  <p className="font-medium">
-                    {formatDate(contract.startDate)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">合同结束</label>
-                  <p className="font-medium">{formatDate(contract.endDate)}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">月租金</label>
-                  <p className="font-medium text-green-600">
-                    {formatCurrency(contract.monthlyRent)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">总租金</label>
-                  <p className="font-medium text-green-600">
-                    {formatCurrency(contract.totalRent)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600">押金</label>
-                  <p className="font-medium">
-                    {formatCurrency(contract.deposit)}
-                  </p>
-                </div>
-                {contract.keyDeposit && (
-                  <div>
-                    <label className="text-sm text-gray-600">门卡押金</label>
-                    <p className="font-medium">
-                      {formatCurrency(contract.keyDeposit)}
+                  </ContractDetailField>
+                  <ContractDetailField label="合同状态">
+                    <ContractStatusBadge
+                      status={contract.status as ContractStatus}
+                    />
+                  </ContractDetailField>
+                  <ContractDetailField label="签约人">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.signedBy || contract.renter.name}
                     </p>
-                  </div>
-                )}
-                {contract.cleaningFee && (
-                  <div>
-                    <label className="text-sm text-gray-600">保洁费</label>
-                    <p className="font-medium">
-                      {formatCurrency(contract.cleaningFee)}
+                  </ContractDetailField>
+                  <ContractDetailField label="签约时间">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.signedDate
+                        ? formatDate(contract.signedDate)
+                        : formatDate(contract.createdAt)}
                     </p>
-                  </div>
-                )}
-                <div>
-                  <label className="text-sm text-gray-600">付款方式</label>
-                  <p className="font-medium">
-                    {contract.paymentMethod || '月付'}
-                  </p>
-                </div>
-                {contract.paymentTiming && (
-                  <div>
-                    <label className="text-sm text-gray-600">支付时间</label>
-                    <p className="font-medium">{contract.paymentTiming}</p>
-                  </div>
-                )}
-                {contract.isExtended && (
-                  <div>
-                    <label className="text-sm text-gray-600">是否延期</label>
-                    <Badge variant="secondary">已延期</Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* 备注信息 - 如果有备注则显示 */}
-              {contract.remarks && (
-                <>
-                  <Separator className="my-4" />
-                  <div>
-                    <label className="mb-2 block text-sm text-gray-600">
-                      合同备注
-                    </label>
-                    <div className="rounded-lg border bg-gray-50 p-3">
-                      <p className="text-sm whitespace-pre-wrap text-gray-700">
-                        {contract.remarks}
+                  </ContractDetailField>
+                  <ContractDetailField label="合同开始">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {formatDate(contract.startDate)}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="合同结束">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {formatDate(contract.endDate)}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="月租金">
+                    <p className={contractDetailMobileStyles.detailValueAccent}>
+                      {formatCurrency(contract.monthlyRent)}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="总租金">
+                    <p className={contractDetailMobileStyles.detailValueAccent}>
+                      {formatCurrency(contract.totalRent)}
+                    </p>
+                  </ContractDetailField>
+                  <ContractDetailField label="押金">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {formatCurrency(contract.deposit)}
+                    </p>
+                  </ContractDetailField>
+                  {contract.keyDeposit && (
+                    <ContractDetailField label="门卡押金">
+                      <p className={contractDetailMobileStyles.detailValueStrong}>
+                        {formatCurrency(contract.keyDeposit)}
                       </p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 业务状态信息 - 如果有则显示 */}
-              {contract.businessStatus && (
-                <>
-                  <Separator className="my-4" />
-                  <div>
-                    <label className="mb-2 block text-sm text-gray-600">
-                      业务状态
-                    </label>
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                      <p className="text-sm text-blue-700">
-                        {contract.businessStatus}
+                    </ContractDetailField>
+                  )}
+                  {contract.cleaningFee && (
+                    <ContractDetailField label="保洁费">
+                      <p className={contractDetailMobileStyles.detailValueStrong}>
+                        {formatCurrency(contract.cleaningFee)}
                       </p>
+                    </ContractDetailField>
+                  )}
+                  <ContractDetailField label="付款方式">
+                    <p className={contractDetailMobileStyles.detailValueStrong}>
+                      {contract.paymentMethod || '月付'}
+                    </p>
+                  </ContractDetailField>
+                  {contract.paymentTiming && (
+                    <ContractDetailField label="支付时间">
+                      <p className={contractDetailMobileStyles.detailValueStrong}>
+                        {contract.paymentTiming}
+                      </p>
+                    </ContractDetailField>
+                  )}
+                  {contract.isExtended && (
+                    <ContractDetailField label="是否延期">
+                      <Badge variant="secondary">已延期</Badge>
+                    </ContractDetailField>
+                  )}
+                </div>
+
+                {/* 备注信息 - 如果有备注则显示 */}
+                {contract.remarks && (
+                  <>
+                    <Separator className={contractDetailMobileStyles.divider} />
+                    <div className={contractDetailMobileStyles.detailSectionBlock}>
+                      <label className={contractDetailMobileStyles.noteLabel}>
+                        合同备注
+                      </label>
+                      <div className={contractDetailMobileStyles.noteBox}>
+                        <p className={contractDetailMobileStyles.noteText}>
+                          {contract.remarks}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                  </>
+                )}
+
+                {/* 业务状态信息 - 如果有则显示 */}
+                {contract.businessStatus && (
+                  <>
+                    <Separator className={contractDetailMobileStyles.divider} />
+                    <div className={contractDetailMobileStyles.detailSectionBlock}>
+                      <label className={contractDetailMobileStyles.noteLabel}>
+                        业务状态
+                      </label>
+                      <div className={contractDetailMobileStyles.infoBox}>
+                        <p className={contractDetailMobileStyles.infoText}>
+                          {contract.businessStatus}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
       {activeTab === 'bills' && (
-        <div className="space-y-6">
+        <div
+          className={cn(
+            contractDetailMobileStyles.tabPanelSection,
+            contractDetailMobileStyles.billsSection
+          )}
+        >
           {/* 账单统计 */}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {billStats.totalCount}
-                    </p>
-                    <p className="text-sm text-gray-600">总账单</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">
-                      {billStats.settledCount}
-                    </p>
-                    <p className="text-sm text-gray-600">已结清</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-yellow-600" />
-                  <div>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {billStats.openCount}
-                    </p>
-                    <p className="text-sm text-gray-600">待处理</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                  <div>
-                    <p className="text-2xl font-bold text-red-600">
-                      {billStats.overdueCount}
-                    </p>
-                    <p className="text-sm text-gray-600">已逾期</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className={contractDetailMobileStyles.billsStatsGrid}>
+            {billCountCards.map((stat) => {
+              const StatIcon = stat.icon
+
+              return (
+                <Card
+                  key={stat.title}
+                  className={contractDetailMobileStyles.billsStatsCard}
+                >
+                  <CardContent
+                    className={contractDetailMobileStyles.billsStatsCardContent}
+                  >
+                    <div className={contractDetailMobileStyles.billsStatsInline}>
+                      <StatIcon
+                        className={cn(
+                          contractDetailMobileStyles.billsStatsIcon,
+                          stat.iconClassName
+                        )}
+                      />
+                      <div>
+                        <p
+                          className={cn(
+                            contractDetailMobileStyles.billsStatsCount,
+                            stat.valueClassName
+                          )}
+                        >
+                          {stat.value}
+                        </p>
+                        <p className={contractDetailMobileStyles.billsStatsLabel}>
+                          {stat.title}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
 
           {/* 金额统计 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className={contractDetailMobileStyles.billsAmountCard}>
+            <CardHeader className={contractDetailMobileStyles.billsAmountHeader}>
+              <CardTitle className={contractDetailMobileStyles.billsAmountTitle}>
                 <DollarSign className="h-5 w-5 text-green-600" />
                 金额统计
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 text-center sm:grid-cols-3 sm:gap-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(billStats.totalAmount)}
-                  </p>
-                  <p className="text-sm text-gray-600">总金额</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(billStats.receivedAmount)}
-                  </p>
-                  <p className="text-sm text-gray-600">已收金额</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {formatCurrency(billStats.pendingAmount)}
-                  </p>
-                  <p className="text-sm text-gray-600">待收金额</p>
-                </div>
+            <CardContent
+              className={contractDetailMobileStyles.billsAmountContent}
+            >
+              <div className={contractDetailMobileStyles.billsAmountGrid}>
+                {billAmountCards.map((stat) => (
+                  <div
+                    key={stat.title}
+                    className={contractDetailMobileStyles.billsAmountItem}
+                  >
+                    <p
+                      className={cn(
+                        contractDetailMobileStyles.billsAmountValue,
+                        stat.valueClassName
+                      )}
+                    >
+                      {stat.value}
+                    </p>
+                    <p className={contractDetailMobileStyles.billsAmountLabel}>
+                      {stat.title}
+                    </p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
           {/* 账单列表 - 添加点击跳转功能 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>账单历史</CardTitle>
+          <Card className={contractDetailMobileStyles.billsHistoryCard}>
+            <CardHeader className={contractDetailMobileStyles.billsHistoryHeader}>
+              <CardTitle className={contractDetailMobileStyles.billsHistoryTitle}>
+                账单历史
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent
+              className={contractDetailMobileStyles.billsHistoryContent}
+            >
               {sortedBills.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">
+                <div className={contractDetailMobileStyles.billsHistoryEmpty}>
                   <FileText className="mx-auto mb-4 h-12 w-12 text-gray-300" />
                   <p>暂无账单记录</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {sortedBills.map((bill) => {
-                    const visualConfig = getBillVisualConfig(bill)
-                    const BillTypeIcon = visualConfig.icon
+                <>
+                  <div className={contractDetailMobileStyles.billsHistoryMobileList}>
+                    {sortedBills.map((bill) => {
+                      const visualConfig = getBillVisualConfig(bill)
+                      const BillTypeIcon = visualConfig.icon
 
-                    return (
-                      <div
-                        key={bill.id}
-                        className="flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
-                        onClick={() => handleBillClick(bill.id)}
-                      >
-                        <div className="flex min-w-0 items-center gap-4">
-                          <div className="flex-shrink-0">
-                            <BillStatusBadge status={bill.status as BillStatus} />
+                      return (
+                        <Card
+                          key={bill.id}
+                          className={contractDetailMobileStyles.billsHistoryMobileCard}
+                          onClick={() => handleBillClick(bill.id)}
+                        >
+                          <CardContent
+                            className={
+                              contractDetailMobileStyles.billsHistoryMobileCardContent
+                            }
+                          >
+                            <div
+                              className={
+                                contractDetailMobileStyles.billsHistoryMobileHeader
+                              }
+                            >
+                              <div
+                                className={
+                                  contractDetailMobileStyles.billsHistoryMobileLeading
+                                }
+                              >
+                                <div
+                                  className={cn(
+                                    contractDetailMobileStyles.billsHistoryMobileIconBox,
+                                    visualConfig.iconClassName
+                                  )}
+                                >
+                                  <BillTypeIcon className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={
+                                      contractDetailMobileStyles.billsHistoryMobileTitle
+                                    }
+                                  >
+                                    {getBillDisplayLabel(bill)}
+                                  </p>
+                                  <p
+                                    className={
+                                      contractDetailMobileStyles.billsHistoryMobileMeta
+                                    }
+                                  >
+                                    {bill.billNumber}
+                                  </p>
+                                  <p
+                                    className={
+                                      contractDetailMobileStyles.billsHistoryMobileMeta
+                                    }
+                                  >
+                                    到期日：{formatDate(bill.dueDate)}
+                                  </p>
+                                </div>
+                              </div>
+                              <BillStatusBadge
+                                status={bill.status as BillStatus}
+                                className={
+                                  contractDetailMobileStyles.billsHistoryMobileBadge
+                                }
+                              />
+                            </div>
+
+                            <div
+                              className={
+                                contractDetailMobileStyles.billsHistoryMobileDetails
+                              }
+                            >
+                              <div
+                                className={
+                                  contractDetailMobileStyles.billsHistoryMobileRow
+                                }
+                              >
+                                <span
+                                  className={
+                                    contractDetailMobileStyles.billsHistoryMobileLabel
+                                  }
+                                >
+                                  应收金额
+                                </span>
+                                <span
+                                  className={cn(
+                                    contractDetailMobileStyles.billsHistoryMobileValue,
+                                    'font-semibold text-gray-900'
+                                  )}
+                                >
+                                  {formatCurrency(bill.amount)}
+                                </span>
+                              </div>
+
+                              <div
+                                className={
+                                  contractDetailMobileStyles.billsHistoryMobileRow
+                                }
+                              >
+                                <span
+                                  className={
+                                    contractDetailMobileStyles.billsHistoryMobileLabel
+                                  }
+                                >
+                                  已收金额
+                                </span>
+                                <span
+                                  className={cn(
+                                    contractDetailMobileStyles.billsHistoryMobileValue,
+                                    'text-green-600'
+                                  )}
+                                >
+                                  {formatCurrency(bill.receivedAmount)}
+                                </span>
+                              </div>
+
+                              {bill.period && (
+                                <div
+                                  className={
+                                    contractDetailMobileStyles.billsHistoryMobileRow
+                                  }
+                                >
+                                  <span
+                                    className={
+                                      contractDetailMobileStyles.billsHistoryMobileLabel
+                                    }
+                                  >
+                                    账期
+                                  </span>
+                                  <span
+                                    className={
+                                      contractDetailMobileStyles.billsHistoryMobileSecondaryValue
+                                    }
+                                  >
+                                    {bill.period}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div
+                              className={
+                                contractDetailMobileStyles.billsHistoryMobileFooter
+                              }
+                            >
+                              <div
+                                className={
+                                  contractDetailMobileStyles.billsHistoryMobileFooterRow
+                                }
+                              >
+                                <span
+                                  className={
+                                    contractDetailMobileStyles.billsHistoryMobileFooterText
+                                  }
+                                >
+                                  {getBillDisplayLabel(bill)}
+                                </span>
+                                <ExternalLink
+                                  className={
+                                    contractDetailMobileStyles.billsHistoryMobileLinkIcon
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+
+                  <div className={contractDetailMobileStyles.billsHistoryDesktopList}>
+                    {sortedBills.map((bill) => {
+                      const visualConfig = getBillVisualConfig(bill)
+                      const BillTypeIcon = visualConfig.icon
+
+                      return (
+                        <div
+                          key={bill.id}
+                          className={contractDetailMobileStyles.billsHistoryDesktopItem}
+                          onClick={() => handleBillClick(bill.id)}
+                        >
+                          <div
+                            className={
+                              contractDetailMobileStyles.billsHistoryDesktopMain
+                            }
+                          >
+                            <div className="flex-shrink-0">
+                              <BillStatusBadge status={bill.status as BillStatus} />
+                            </div>
+                            <div
+                              className={cn(
+                                contractDetailMobileStyles.billsHistoryDesktopIconBox,
+                                visualConfig.iconClassName
+                              )}
+                            >
+                              <BillTypeIcon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">{bill.billNumber}</p>
+                              <p className="break-words text-sm text-gray-600">
+                                {getBillDisplayLabel(bill)} · 到期日:{' '}
+                                {formatDate(bill.dueDate)}
+                              </p>
+                              {bill.period && (
+                                <p className="text-xs text-gray-500">
+                                  账期: {bill.period}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div
-                            className={cn(
-                              'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg',
-                              visualConfig.iconClassName
-                            )}
+                            className={
+                              contractDetailMobileStyles.billsHistoryDesktopAmountBlock
+                            }
                           >
-                            <BillTypeIcon className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{bill.billNumber}</p>
-                            <p className="break-words text-sm text-gray-600">
-                              {getBillDisplayLabel(bill)} · 到期日:{' '}
-                              {formatDate(bill.dueDate)}
-                            </p>
-                            {bill.period && (
-                              <p className="text-xs text-gray-500">
-                                账期: {bill.period}
+                            <div className="min-w-0">
+                              <p className="font-medium">
+                                {formatCurrency(bill.amount)}
                               </p>
-                            )}
+                              <p className="text-sm text-gray-600">
+                                已收: {formatCurrency(bill.receivedAmount)}
+                              </p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-gray-400" />
                           </div>
                         </div>
-                        <div className="flex w-full items-center justify-between gap-2 text-right sm:w-auto sm:justify-end">
-                          <div className="min-w-0">
-                            <p className="font-medium">
-                              {formatCurrency(bill.amount)}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              已收: {formatCurrency(bill.receivedAmount)}
-                            </p>
-                          </div>
-                          <ExternalLink className="h-4 w-4 text-gray-400" />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -785,7 +1059,7 @@ export function EnhancedContractDetail({
       )}
 
       {activeTab === 'facilities' && (
-        <Card>
+        <Card className={contractDetailMobileStyles.tabPanelSection}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Home className="h-5 w-5 text-blue-600" />

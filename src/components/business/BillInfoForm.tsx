@@ -7,6 +7,7 @@ import type {
   BillType,
   ContractWithDetailsForClient,
 } from '@/types/database'
+import { billCreateMobileStyles } from '@/components/business/bill-create-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -22,6 +23,7 @@ import { PeriodSelector } from './PeriodSelector'
 interface BillInfoFormProps {
   billType: BillType
   contract: ContractWithDetailsForClient
+  onCancel: () => void
   onSubmit: (data: BillFormData) => void
   isSubmitting: boolean
 }
@@ -33,6 +35,7 @@ interface BillInfoFormProps {
 export function BillInfoForm({
   billType,
   contract,
+  onCancel,
   onSubmit,
   isSubmitting,
 }: BillInfoFormProps) {
@@ -129,15 +132,17 @@ export function BillInfoForm({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">账单信息</CardTitle>
-        <p className="text-sm text-gray-600">
+    <Card className={billCreateMobileStyles.card}>
+      <CardHeader className={billCreateMobileStyles.cardHeader}>
+        <CardTitle className={billCreateMobileStyles.cardTitle}>
+          账单信息
+        </CardTitle>
+        <p className={billCreateMobileStyles.cardDescription}>
           填写账单的详细信息，带 * 的字段为必填项
         </p>
       </CardHeader>
-      <CardContent>
-        <MobileForm onSubmit={handleSubmit}>
+      <CardContent className={billCreateMobileStyles.cardContent}>
+        <MobileForm onSubmit={handleSubmit} className={billCreateMobileStyles.form}>
           {/* 账单编号 */}
           <MobileInput
             label="账单编号"
@@ -211,8 +216,21 @@ export function BillInfoForm({
           />
 
           {/* 提交按钮 */}
-          <MobileFormActions>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <MobileFormActions className={billCreateMobileStyles.actionRow}>
+            <Button
+              type="button"
+              variant="outline"
+              className={billCreateMobileStyles.actionButton}
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              取消
+            </Button>
+            <Button
+              type="submit"
+              className={billCreateMobileStyles.actionButton}
+              disabled={isSubmitting}
+            >
               {isSubmitting ? '创建中...' : '创建账单'}
             </Button>
           </MobileFormActions>

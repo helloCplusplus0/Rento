@@ -1,7 +1,11 @@
 'use client'
 
-import { Filter, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
+import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 interface ContractSearchBarProps {
@@ -9,6 +13,14 @@ interface ContractSearchBarProps {
   onSearchChange: (query: string) => void
   statusFilter: string | null
   onStatusChange: (status: string | null) => void
+  filterCounts: {
+    total: number
+    active: number
+    pending: number
+    expiringSoon: number
+    expired: number
+    terminated: number
+  }
   loading?: boolean
 }
 
@@ -17,40 +29,82 @@ export function ContractSearchBar({
   onSearchChange,
   statusFilter,
   onStatusChange,
+  filterCounts,
   loading = false,
 }: ContractSearchBarProps) {
+  const filterOptions = [
+    { value: 'all', label: '全部', count: filterCounts.total },
+    { value: 'ACTIVE', label: '生效中', count: filterCounts.active },
+    { value: 'PENDING', label: '待生效', count: filterCounts.pending },
+    { value: 'expiring_soon', label: '即将到期', count: filterCounts.expiringSoon },
+    { value: 'EXPIRED', label: '已到期', count: filterCounts.expired },
+    { value: 'TERMINATED', label: '已终止', count: filterCounts.terminated },
+  ]
+
   return (
-    <div className="flex flex-col gap-4 sm:flex-row">
-      {/* 搜索输入框 */}
-      <div className="relative flex-1">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-        <Input
-          placeholder="搜索合同号、租客姓名、房间号..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="h-11 pl-10 text-base"
-          disabled={loading}
-        />
+    <div className={contractListMobileStyles.toolbarStack}>
+      <div className={contractListMobileStyles.toolbarCard}>
+        <div className={contractListMobileStyles.toolbarRow}>
+          <div className={contractListMobileStyles.searchWrap}>
+            <Search className={contractListMobileStyles.searchIcon} />
+            <Input
+              placeholder="搜索合同号、租客姓名、房间号..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className={contractListMobileStyles.searchInput}
+              disabled={loading}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* 状态筛选 */}
-      <div className="flex items-center gap-2 sm:w-48">
-        <Filter className="h-4 w-4 text-gray-400" />
-        <select
-          value={statusFilter || 'all'}
-          onChange={(e) =>
-            onStatusChange(e.target.value === 'all' ? null : e.target.value)
-          }
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 w-full rounded-md border px-3 py-2 text-base file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={loading}
-        >
-          <option value="all">全部状态</option>
-          <option value="ACTIVE">生效中</option>
-          <option value="PENDING">待生效</option>
-          <option value="EXPIRED">已到期</option>
-          <option value="TERMINATED">已终止</option>
-          <option value="expiring_soon">即将到期</option>
-        </select>
+      <div className={contractListMobileStyles.filterCard}>
+        <div className={contractListMobileStyles.filterSection}>
+          <div className={contractListMobileStyles.filterHeader}>状态筛选</div>
+          <div className={contractListMobileStyles.filterActions}>
+            {filterOptions.map((option) => {
+              const isActive =
+                (statusFilter ?? 'all') ===
+                (option.value === 'all' ? 'all' : option.value)
+              const isExpiryOption = option.value === 'expiring_soon'
+              const shouldHighlightExpiry = isExpiryOption && option.count > 0
+
+              return (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() =>
+                    onStatusChange(option.value === 'all' ? null : option.value)
+                  }
+                  disabled={loading}
+                  className={cn(
+                    contractListMobileStyles.filterButton,
+                    shouldHighlightExpiry &&
+                      !isActive &&
+                      contractListMobileStyles.filterAlertButton,
+                    shouldHighlightExpiry &&
+                      isActive &&
+                      contractListMobileStyles.filterAlertButtonActive
+                  )}
+                >
+                  <span>{option.label}</span>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      contractListMobileStyles.filterCount,
+                      shouldHighlightExpiry &&
+                        contractListMobileStyles.filterAlertCount
+                    )}
+                  >
+                    {option.count}
+                  </Badge>
+                </Button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </div>
   )

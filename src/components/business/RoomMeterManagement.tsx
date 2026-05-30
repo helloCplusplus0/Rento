@@ -129,16 +129,6 @@ export function RoomMeterManagement({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <p className="font-medium">换表说明</p>
-        <p className="mt-1 leading-6">
-          当前默认换表路径是先停用旧表并保留历史，再新增新表。
-          点击“移除”时，系统会先检查该仪表是否已有抄表或计费历史:
-          有历史则仅停用保留，无历史才会执行硬删除。
-        </p>
-      </div>
-
-      {/* 仪表列表 */}
       <MeterList
         meters={meters}
         loading={loading}

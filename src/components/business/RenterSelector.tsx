@@ -5,7 +5,7 @@ import { Check, Search, User } from 'lucide-react'
 
 import type { RenterWithContractsForClient } from '@/types/database'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { contractCreateMobileStyles } from '@/components/business/contract-create-mobile-styles'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
@@ -28,6 +28,20 @@ export function RenterSelector({
 }: RenterSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
+  const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    action: () => void
+  ) => {
+    if (disabled) {
+      return
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      action()
+    }
+  }
+
   // 筛选租客
   const filteredRenters = useMemo(() => {
     if (!searchQuery) return renters
@@ -47,52 +61,71 @@ export function RenterSelector({
   }
 
   return (
-    <div className="space-y-4">
+    <div className={contractCreateMobileStyles.selectorStack}>
       {/* 搜索框 */}
-      <div className="relative">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+      <div className={contractCreateMobileStyles.searchWrap}>
+        <Search className={contractCreateMobileStyles.searchIcon} />
         <Input
           placeholder="搜索租客姓名、手机号或身份证号..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className={contractCreateMobileStyles.searchInput}
           disabled={disabled}
         />
       </div>
 
       {/* 已选择的租客 */}
       {selectedRenter && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                  <User className="h-5 w-5 text-blue-600" />
+        <Card className={contractCreateMobileStyles.selectedCard}>
+          <CardContent className={contractCreateMobileStyles.selectedCardContent}>
+            <div className={contractCreateMobileStyles.selectedRow}>
+              <div className={contractCreateMobileStyles.selectedLeading}>
+                <div
+                  className={cn(
+                    contractCreateMobileStyles.avatarBox,
+                    contractCreateMobileStyles.avatarBoxSelected
+                  )}
+                >
+                  <User
+                    className={cn(
+                      contractCreateMobileStyles.avatarIcon,
+                      contractCreateMobileStyles.avatarIconSelected
+                    )}
+                  />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">
+                  <div className={contractCreateMobileStyles.selectedTitle}>
                     {selectedRenter.name}
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className={contractCreateMobileStyles.selectedMeta}>
                     {selectedRenter.phone}
                   </div>
+                  {selectedRenter.idCard && (
+                    <div className={contractCreateMobileStyles.selectedSubtle}>
+                      身份证:{' '}
+                      {selectedRenter.idCard.replace(
+                        /(\d{6})\d{8}(\d{4})/,
+                        '$1********$2'
+                      )}
+                    </div>
+                  )}
                   {hasActiveContract(selectedRenter) && (
-                    <div className="mt-1 text-xs text-orange-600">
+                    <div className={contractCreateMobileStyles.selectedWarning}>
                       ⚠️ 该租客已有活跃合同
                     </div>
                   )}
                 </div>
               </div>
-              <Check className="h-5 w-5 text-blue-600" />
+              <Check className={contractCreateMobileStyles.selectedCheck} />
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* 租客列表 */}
-      <div className="max-h-60 space-y-2 overflow-y-auto">
+      <div className={contractCreateMobileStyles.listWrap}>
         {filteredRenters.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
+          <div className={contractCreateMobileStyles.emptyState}>
             {searchQuery ? '未找到匹配的租客' : '暂无租客数据'}
           </div>
         ) : (
@@ -104,39 +137,48 @@ export function RenterSelector({
               <Card
                 key={renter.id}
                 className={cn(
-                  'cursor-pointer transition-all hover:shadow-sm',
-                  isSelected
-                    ? 'border-blue-200 bg-blue-50'
-                    : 'hover:border-gray-300',
+                  'cursor-pointer hover:border-gray-300',
+                  contractCreateMobileStyles.optionCard,
+                  isSelected && contractCreateMobileStyles.optionCardSelected,
                   disabled && 'cursor-not-allowed opacity-50'
                 )}
                 onClick={() => !disabled && onRenterSelect(renter)}
+                onKeyDown={(event) =>
+                  handleCardKeyDown(event, () => onRenterSelect(renter))
+                }
+                role="button"
+                tabIndex={disabled ? -1 : 0}
+                aria-pressed={isSelected}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                <CardContent className={contractCreateMobileStyles.optionCardContent}>
+                  <div className={contractCreateMobileStyles.optionRow}>
+                    <div className={contractCreateMobileStyles.optionLeading}>
                       <div
                         className={cn(
-                          'flex h-10 w-10 items-center justify-center rounded-full',
-                          isSelected ? 'bg-blue-100' : 'bg-gray-100'
+                          contractCreateMobileStyles.avatarBox,
+                          isSelected
+                            ? contractCreateMobileStyles.avatarBoxSelected
+                            : undefined
                         )}
                       >
                         <User
                           className={cn(
-                            'h-5 w-5',
-                            isSelected ? 'text-blue-600' : 'text-gray-600'
+                            contractCreateMobileStyles.avatarIcon,
+                            isSelected
+                              ? contractCreateMobileStyles.avatarIconSelected
+                              : undefined
                           )}
                         />
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">
+                        <div className={contractCreateMobileStyles.optionTitle}>
                           {renter.name}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className={contractCreateMobileStyles.optionMeta}>
                           {renter.phone}
                         </div>
                         {renter.idCard && (
-                          <div className="text-xs text-gray-500">
+                          <div className={contractCreateMobileStyles.optionSubtle}>
                             身份证:{' '}
                             {renter.idCard.replace(
                               /(\d{6})\d{8}(\d{4})/,
@@ -145,13 +187,15 @@ export function RenterSelector({
                           </div>
                         )}
                         {hasActive && (
-                          <div className="mt-1 text-xs text-orange-600">
+                          <div className={contractCreateMobileStyles.optionStatusText}>
                             ⚠️ 已有活跃合同
                           </div>
                         )}
                       </div>
                     </div>
-                    {isSelected && <Check className="h-5 w-5 text-blue-600" />}
+                    {isSelected && (
+                      <Check className={contractCreateMobileStyles.optionCheck} />
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -162,10 +206,10 @@ export function RenterSelector({
 
       {/* 提示信息 */}
       {filteredRenters.length > 0 && (
-        <div className="text-center text-xs text-gray-500">
+        <div className={contractCreateMobileStyles.resultText}>
           共找到 {filteredRenters.length} 个租客
           {selectedRenter && hasActiveContract(selectedRenter) && (
-            <div className="mt-1 text-orange-600">
+            <div className={contractCreateMobileStyles.selectedWarning}>
               注意：选中的租客已有活跃合同，请确认是否需要创建新合同
             </div>
           )}

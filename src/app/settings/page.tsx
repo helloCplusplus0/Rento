@@ -1,6 +1,7 @@
 'use client'
 
 import { useSettings } from '@/hooks/useSettings'
+import { settingsMobileStyles } from '@/components/business/settings-mobile-styles'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   SettingCategory,
@@ -15,6 +16,14 @@ import { PageContainer } from '@/components/layout'
 export default function SettingsPage() {
   const { settings, isLoading, updateSetting, resetSettings, exportSettings } =
     useSettings()
+
+  const openUtilityPage = (path: string) => {
+    const newWindow = window.open(path, '_blank', 'noopener,noreferrer')
+
+    if (!newWindow) {
+      window.location.href = path
+    }
+  }
 
   // 处理设置项值变更
   const handleValueChange = (id: string, value: any) => {
@@ -148,14 +157,14 @@ export default function SettingsPage() {
       title: '系统监控',
       description: '打开系统健康页，查看依赖状态和基础运行信息',
       type: 'button' as const,
-      action: () => window.open('/system-health', '_blank'),
+      action: () => openUtilityPage('/system-health'),
     },
     {
       id: 'dataConsistency',
       title: '数据一致性管理',
       description: '打开治理页，检查并处理数据一致性问题',
       type: 'button' as const,
-      action: () => window.open('/data-consistency', '_blank'),
+      action: () => openUtilityPage('/data-consistency'),
     },
     {
       id: 'resetSettings',
@@ -215,10 +224,12 @@ export default function SettingsPage() {
 
   return (
     <PageContainer title="设置" showBackButton>
-      <div className="space-y-6 pb-6">
-        <p className="text-sm leading-6 text-gray-600">
-          当前仅开放已接入主链的正式全局配置，其余能力按治理入口、只读信息或暂未开放项展示。
-        </p>
+      <div className={settingsMobileStyles.pageSection}>
+        <div className={settingsMobileStyles.introBox}>
+          <p className={settingsMobileStyles.introText}>
+            当前仅开放已接入主链的正式全局配置，其余能力按治理入口、只读信息或暂未开放项展示。
+          </p>
+        </div>
 
         <SettingCategory
           title="业务计费兜底配置"
@@ -250,14 +261,17 @@ export default function SettingsPage() {
           onValueChange={handleValueChange}
         />
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-3 text-sm leading-6 text-gray-600">
+        <Card className={settingsMobileStyles.card}>
+          <CardContent className={settingsMobileStyles.cardContent}>
+            <div className={settingsMobileStyles.noteStack}>
               <p>
                 当前仅开放真正进入 Dashboard 主链的窗口型提醒配置，其余字段暂不作为正式可编辑提醒项开放，避免继续造成“可改即可生效”的误解。
               </p>
               {pendingSettingGroups.map((group) => (
-                <div key={group.title}>
+                <div
+                  key={group.title}
+                  className={settingsMobileStyles.noteGroup}
+                >
                   <strong>{group.title}：</strong>
                   {group.items.join('、')}。
                 </div>

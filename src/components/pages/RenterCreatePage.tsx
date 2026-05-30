@@ -48,8 +48,8 @@ export function RenterCreatePage() {
   }
 
   return (
-    <PageContainer title="添加租客" subtitle="创建新的租客信息" showBackButton>
-      <div className="pb-6">
+    <PageContainer title="添加租客" showBackButton>
+      <div>
         <RenterForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}

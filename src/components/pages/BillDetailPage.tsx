@@ -6,22 +6,13 @@ import {
   CheckCircle,
   CreditCard,
   Edit,
-  HelpCircle,
   RotateCcw,
   Trash2,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { BillBasicInfo } from '@/components/business/BillBasicInfo'
-import { BillStatusExplanation } from '@/components/business/BillStatusExplanation'
 import { ContractRenterInfo } from '@/components/business/ContractRenterInfo'
+import { billDetailMobileStyles } from '@/components/business/bill-detail-mobile-styles'
 import { PaymentConfirmDialog } from '@/components/business/PaymentConfirmDialog'
 import { DetailPageTemplate } from '@/components/layout/DetailPageTemplate'
 
@@ -116,7 +107,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
             onClick: () => setShowPaymentDialog(true),
             disabled: isLoading,
             variant: 'default' as const,
-            className: 'bg-green-600 hover:bg-green-700 text-white',
+            className: `${billDetailMobileStyles.actionButton} bg-green-600 text-white hover:bg-green-700`,
           },
         ]
       : []),
@@ -128,7 +119,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
             onClick: () => handleStatusChange('COMPLETED'),
             disabled: isLoading,
             variant: 'outline' as const,
-            className: 'border-blue-300 text-blue-600 hover:bg-blue-50',
+            className: `${billDetailMobileStyles.actionButton} border-blue-300 text-blue-600 hover:bg-blue-50`,
           },
         ]
       : []),
@@ -140,7 +131,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
             onClick: () => handleStatusChange('PENDING'),
             disabled: isLoading,
             variant: 'outline' as const,
-            className: 'border-orange-300 text-orange-600 hover:bg-orange-50',
+            className: `${billDetailMobileStyles.actionButton} border-orange-300 text-orange-600 hover:bg-orange-50`,
           },
         ]
       : []),
@@ -152,6 +143,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
       onClick: handleEdit,
       disabled: isLoading || bill.status !== 'PENDING',
       variant: 'outline' as const,
+      className: billDetailMobileStyles.actionButton,
     },
 
     // 删除操作
@@ -162,48 +154,23 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
             icon: <Trash2 className="h-4 w-4" />,
             onClick: handleDelete,
             disabled: isLoading,
-            variant: 'destructive' as const,
-            className: 'text-red-600 hover:text-red-700',
+            variant: 'outline' as const,
+            className: `${billDetailMobileStyles.actionButton} border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700`,
           },
         ]
       : []),
   ]
 
-  // 状态说明按钮
-  const statusHelpAction = {
-    label: '状态说明',
-    icon: <HelpCircle className="h-4 w-4" />,
-    onClick: () => {}, // 由Dialog组件处理
-    disabled: false,
-    variant: 'ghost' as const,
-    className: 'text-gray-500 hover:text-gray-700',
-  }
-
   return (
     <>
       <DetailPageTemplate
-        title={`账单详情 - ${bill.billNumber}`}
+        title="账单详情"
         actions={actions}
-        extraActions={
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <HelpCircle className="mr-1 h-4 w-4" />
-                状态说明
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>账单状态说明</DialogTitle>
-              </DialogHeader>
-              <BillStatusExplanation />
-            </DialogContent>
-          </Dialog>
-        }
+        contentClassName={billDetailMobileStyles.pageSection}
+        actionsCardClassName={billDetailMobileStyles.actionsCard}
+        actionsRowClassName={billDetailMobileStyles.actionsRow}
+        actionButtonClassName={billDetailMobileStyles.actionButton}
+        showActionsTitle={false}
       >
         {isLoading && (
           <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">

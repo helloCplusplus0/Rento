@@ -25,17 +25,17 @@ export function MobileFormField({
   className,
 }: MobileFormFieldProps) {
   return (
-    <div className={cn('space-y-2', className)}>
-      <Label className="text-base font-medium">
+    <div className={cn('space-y-1.5', className)}>
+      <Label className="text-sm font-medium text-gray-700">
         {label}
         {required && <span className="ml-1 text-red-500">*</span>}
       </Label>
       {description && (
-        <p className="text-muted-foreground text-sm">{description}</p>
+        <p className="text-xs leading-4 text-gray-500">{description}</p>
       )}
       <div className="relative">{children}</div>
       {error && (
-        <p className="flex items-center gap-1 text-sm text-red-600">
+        <p className="flex items-center gap-1 text-xs leading-4 text-red-600">
           <span className="text-red-500">⚠</span>
           {error}
         </p>
@@ -72,12 +72,8 @@ export function MobileInput({
     >
       <Input
         className={cn(
-          // 移动端友好的高度
-          'h-12',
-          // 更大的字体，防止移动端缩放
-          'text-base',
-          // 更大的内边距
-          'px-4 py-3',
+          'h-10 text-sm placeholder:text-sm sm:h-11 sm:text-base sm:placeholder:text-base',
+          'px-3 py-2.5 sm:px-4',
           // 错误状态样式
           error && 'border-red-500 focus-visible:ring-red-500',
           className
@@ -116,12 +112,8 @@ export function MobileTextarea({
     >
       <Textarea
         className={cn(
-          // 移动端友好的最小高度
-          'min-h-[100px]',
-          // 更大的字体
-          'text-base',
-          // 更大的内边距
-          'px-4 py-3',
+          'min-h-[88px] text-sm placeholder:text-sm sm:min-h-[100px] sm:text-base sm:placeholder:text-base',
+          'px-3 py-2.5 sm:px-4 sm:py-3',
           // 错误状态样式
           error && 'border-red-500 focus-visible:ring-red-500',
           // 禁用调整大小（移动端体验更好）
@@ -165,7 +157,7 @@ export function MobileSelect({
       <select
         className={cn(
           // 基础样式
-          'border-input bg-background flex h-12 w-full rounded-md border px-4 py-3 text-base',
+          'border-input bg-background flex h-10 w-full rounded-md border px-3 py-2.5 text-sm sm:h-11 sm:px-4 sm:text-base',
           'ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium',
           'placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:outline-none',
           'focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
@@ -199,8 +191,7 @@ export function MobileForm({
   return (
     <form
       className={cn(
-        // 移动端友好的间距
-        'space-y-6',
+        'space-y-4 sm:space-y-5',
         // 防止表单在小屏幕上溢出
         'w-full max-w-none',
         className
@@ -226,12 +217,8 @@ export function MobileFormActions({
   return (
     <div
       className={cn(
-        // 移动端按钮布局
-        'flex flex-col gap-3 sm:flex-row sm:gap-4',
-        // 按钮占满宽度（移动端）
-        '[&>button]:w-full sm:[&>button]:w-auto',
-        // 主要按钮在移动端排在前面
-        'flex-col-reverse sm:flex-row sm:justify-end',
+        'grid grid-cols-2 gap-2.5 sm:max-w-sm',
+        '[&>button]:w-full',
         className
       )}
     >

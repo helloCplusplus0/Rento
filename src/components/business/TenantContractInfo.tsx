@@ -1,5 +1,6 @@
 import type { RoomWithBuildingForClient } from '@/types/database'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -49,14 +50,14 @@ export function TenantContractInfo({ room }: TenantContractInfoProps) {
 
   if (!activeContract) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>租客信息</CardTitle>
+      <Card className={roomDetailMobileStyles.card}>
+        <CardHeader className={roomDetailMobileStyles.cardHeader}>
+          <CardTitle className={roomDetailMobileStyles.cardTitle}>租客信息</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground py-8 text-center">
-            <p>暂无租客信息</p>
-            <p className="mt-2 text-sm">房间当前为空房状态</p>
+        <CardContent className={roomDetailMobileStyles.cardContent}>
+          <div className={roomDetailMobileStyles.emptyState}>
+            <p className={roomDetailMobileStyles.emptyTitle}>暂无租客信息</p>
+            <p className={roomDetailMobileStyles.emptyText}>房间当前为空房状态</p>
           </div>
         </CardContent>
       </Card>
@@ -64,61 +65,64 @@ export function TenantContractInfo({ room }: TenantContractInfoProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>租客信息</CardTitle>
+    <Card className={roomDetailMobileStyles.card}>
+      <CardHeader className={roomDetailMobileStyles.cardHeader}>
+        <div className={roomDetailMobileStyles.cardHeaderRow}>
+          <CardTitle className={roomDetailMobileStyles.cardTitle}>租客信息</CardTitle>
           <Badge className={getContractStatusColor(activeContract.status)}>
             {getContractStatusText(activeContract.status)}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* 租客基本信息 */}
+      <CardContent className={roomDetailMobileStyles.cardContent}>
         {activeContract.renter && (
           <div>
-            <h4 className="mb-3 font-medium">租客详情</h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <div>
-                <label className="text-muted-foreground text-sm">姓名</label>
-                <p className="font-medium">{activeContract.renter.name}</p>
+            <h4 className={roomDetailMobileStyles.sectionTitle}>租客详情</h4>
+            <div className={roomDetailMobileStyles.fieldsGrid}>
+              <div className={roomDetailMobileStyles.fieldBlock}>
+                <label className={roomDetailMobileStyles.fieldLabel}>姓名</label>
+                <p className={roomDetailMobileStyles.fieldValueStrong}>
+                  {activeContract.renter.name}
+                </p>
               </div>
-              <div>
-                <label className="text-muted-foreground text-sm">
-                  联系电话
-                </label>
-                <p className="font-medium">{activeContract.renter.phone}</p>
+              <div className={roomDetailMobileStyles.fieldBlock}>
+                <label className={roomDetailMobileStyles.fieldLabel}>联系电话</label>
+                <p className={roomDetailMobileStyles.fieldValueStrong}>
+                  {activeContract.renter.phone}
+                </p>
               </div>
               {activeContract.renter.gender && (
-                <div>
-                  <label className="text-muted-foreground text-sm">性别</label>
-                  <p className="font-medium">{activeContract.renter.gender}</p>
+                <div className={roomDetailMobileStyles.fieldBlock}>
+                  <label className={roomDetailMobileStyles.fieldLabel}>性别</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
+                    {activeContract.renter.gender}
+                  </p>
                 </div>
               )}
               {activeContract.renter.occupation && (
-                <div>
-                  <label className="text-muted-foreground text-sm">职业</label>
-                  <p className="font-medium">
+                <div className={roomDetailMobileStyles.fieldBlock}>
+                  <label className={roomDetailMobileStyles.fieldLabel}>职业</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
                     {activeContract.renter.occupation}
                   </p>
                 </div>
               )}
               {activeContract.renter.emergencyContact && (
-                <div className="col-span-2">
-                  <label className="text-muted-foreground text-sm">
-                    紧急联系人
-                  </label>
-                  <p className="font-medium">
+                <div
+                  className={`${roomDetailMobileStyles.fieldBlock} ${roomDetailMobileStyles.fieldWide}`}
+                >
+                  <label className={roomDetailMobileStyles.fieldLabel}>紧急联系人</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
                     {activeContract.renter.emergencyContact}
                   </p>
                 </div>
               )}
               {activeContract.renter.emergencyPhone && (
-                <div className="col-span-2">
-                  <label className="text-muted-foreground text-sm">
-                    紧急联系电话
-                  </label>
-                  <p className="font-medium">
+                <div
+                  className={`${roomDetailMobileStyles.fieldBlock} ${roomDetailMobileStyles.fieldWide}`}
+                >
+                  <label className={roomDetailMobileStyles.fieldLabel}>紧急联系电话</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
                     {activeContract.renter.emergencyPhone}
                   </p>
                 </div>
@@ -127,58 +131,59 @@ export function TenantContractInfo({ room }: TenantContractInfoProps) {
           </div>
         )}
 
-        {/* 合同信息 */}
-        <div className="border-t pt-4">
-          <h4 className="mb-3 font-medium">合同详情</h4>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <div className="col-span-2">
-              <label className="text-muted-foreground text-sm">合同编号</label>
-              <p className="font-medium">{activeContract.contractNumber}</p>
+        <div className={roomDetailMobileStyles.sectionBlock}>
+          <h4 className={roomDetailMobileStyles.sectionTitle}>合同详情</h4>
+          <div className={roomDetailMobileStyles.fieldsGrid}>
+            <div
+              className={`${roomDetailMobileStyles.fieldBlock} ${roomDetailMobileStyles.fieldWide}`}
+            >
+              <label className={roomDetailMobileStyles.fieldLabel}>合同编号</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>
+                {activeContract.contractNumber}
+              </p>
             </div>
-            <div>
-              <label className="text-muted-foreground text-sm">月租金</label>
-              <p className="font-medium text-blue-600">
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>月租金</label>
+              <p className="text-sm font-medium leading-5 text-blue-600 sm:leading-6">
                 {formatCurrency(activeContract.monthlyRent)}
               </p>
             </div>
-            <div>
-              <label className="text-muted-foreground text-sm">押金</label>
-              <p className="font-medium">
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>押金</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>
                 {formatCurrency(activeContract.deposit)}
               </p>
             </div>
-            <div>
-              <label className="text-muted-foreground text-sm">合同开始</label>
-              <p className="font-medium">
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>合同开始</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>
                 {formatDate(activeContract.startDate)}
               </p>
             </div>
-            <div>
-              <label className="text-muted-foreground text-sm">合同结束</label>
-              <p className="font-medium">
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>合同结束</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>
                 {formatDate(activeContract.endDate)}
               </p>
             </div>
-            <div>
-              <label className="text-muted-foreground text-sm">总租金</label>
-              <p className="font-medium">
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>总租金</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>
                 {formatCurrency(activeContract.totalRent)}
               </p>
             </div>
             {activeContract.keyDeposit && (
-              <div>
-                <label className="text-muted-foreground text-sm">
-                  门卡押金
-                </label>
-                <p className="font-medium">
+              <div className={roomDetailMobileStyles.fieldBlock}>
+                <label className={roomDetailMobileStyles.fieldLabel}>门卡押金</label>
+                <p className={roomDetailMobileStyles.fieldValueStrong}>
                   {formatCurrency(activeContract.keyDeposit)}
                 </p>
               </div>
             )}
             {activeContract.cleaningFee && (
-              <div>
-                <label className="text-muted-foreground text-sm">保洁费</label>
-                <p className="font-medium">
+              <div className={roomDetailMobileStyles.fieldBlock}>
+                <label className={roomDetailMobileStyles.fieldLabel}>保洁费</label>
+                <p className={roomDetailMobileStyles.fieldValueStrong}>
                   {formatCurrency(activeContract.cleaningFee)}
                 </p>
               </div>
@@ -186,50 +191,46 @@ export function TenantContractInfo({ room }: TenantContractInfoProps) {
           </div>
         </div>
 
-        {/* 付款信息 */}
         {(activeContract.paymentMethod || activeContract.paymentTiming) && (
-          <div className="border-t pt-4">
-            <h4 className="mb-3 font-medium">付款信息</h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className={roomDetailMobileStyles.sectionBlock}>
+            <h4 className={roomDetailMobileStyles.sectionTitle}>付款信息</h4>
+            <div className={roomDetailMobileStyles.fieldsGrid}>
               {activeContract.paymentMethod && (
-                <div>
-                  <label className="text-muted-foreground text-sm">
-                    付款方式
-                  </label>
-                  <p className="font-medium">{activeContract.paymentMethod}</p>
+                <div className={roomDetailMobileStyles.fieldBlock}>
+                  <label className={roomDetailMobileStyles.fieldLabel}>付款方式</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
+                    {activeContract.paymentMethod}
+                  </p>
                 </div>
               )}
               {activeContract.paymentTiming && (
-                <div>
-                  <label className="text-muted-foreground text-sm">
-                    收租时间
-                  </label>
-                  <p className="font-medium">{activeContract.paymentTiming}</p>
+                <div className={roomDetailMobileStyles.fieldBlock}>
+                  <label className={roomDetailMobileStyles.fieldLabel}>收租时间</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
+                    {activeContract.paymentTiming}
+                  </p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* 签约信息 */}
         {(activeContract.signedBy || activeContract.signedDate) && (
-          <div className="border-t pt-4">
-            <h4 className="mb-3 font-medium">签约信息</h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className={roomDetailMobileStyles.sectionBlock}>
+            <h4 className={roomDetailMobileStyles.sectionTitle}>签约信息</h4>
+            <div className={roomDetailMobileStyles.fieldsGrid}>
               {activeContract.signedBy && (
-                <div>
-                  <label className="text-muted-foreground text-sm">
-                    签约人
-                  </label>
-                  <p className="font-medium">{activeContract.signedBy}</p>
+                <div className={roomDetailMobileStyles.fieldBlock}>
+                  <label className={roomDetailMobileStyles.fieldLabel}>签约人</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
+                    {activeContract.signedBy}
+                  </p>
                 </div>
               )}
               {activeContract.signedDate && (
-                <div>
-                  <label className="text-muted-foreground text-sm">
-                    签约时间
-                  </label>
-                  <p className="font-medium">
+                <div className={roomDetailMobileStyles.fieldBlock}>
+                  <label className={roomDetailMobileStyles.fieldLabel}>签约时间</label>
+                  <p className={roomDetailMobileStyles.fieldValueStrong}>
                     {formatDate(activeContract.signedDate)}
                   </p>
                 </div>

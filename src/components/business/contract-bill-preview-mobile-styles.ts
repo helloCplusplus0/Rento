@@ -1,0 +1,30 @@
+export const contractBillPreviewMobileStyles = {
+  card: 'rounded-lg border border-gray-100 shadow-sm',
+  header: 'gap-1 px-3 pb-0 sm:gap-1.5 sm:px-6',
+  title: 'flex items-center gap-2 text-base sm:text-lg',
+  description: 'text-[11px] leading-4 text-gray-500 sm:text-sm sm:leading-5',
+  content: 'space-y-3 px-3 pt-0 pb-3 sm:space-y-4 sm:px-6 sm:pb-6',
+  statsGrid: 'grid grid-cols-2 gap-2.5 rounded-lg bg-gray-50 p-3 sm:p-4 md:grid-cols-4 md:gap-4',
+  statsItem: 'text-center',
+  statsValue: 'text-xl font-bold sm:text-2xl',
+  statsLabel: 'mt-0.5 text-xs text-gray-600',
+  list: 'max-h-96 space-y-2.5 overflow-y-auto',
+  listItem:
+    'flex items-start gap-2.5 rounded-lg border p-2.5 transition-colors hover:bg-gray-50 sm:items-center sm:gap-3 sm:p-3',
+  iconBox:
+    'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 sm:rounded-full',
+  icon: 'h-4 w-4',
+  contentBlock: 'min-w-0 flex-1',
+  contentHeader: 'mb-0.5 flex flex-wrap items-center gap-1.5 sm:mb-1 sm:gap-2',
+  titleText: 'truncate text-sm font-medium leading-5 text-gray-900',
+  typeBadge: 'text-[11px]',
+  metaRow:
+    'flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-4 text-gray-600 sm:gap-4 sm:text-xs',
+  metaItem: 'flex min-w-0 items-center gap-1',
+  metaIcon: 'h-3 w-3 shrink-0',
+  amountBlock: 'shrink-0 text-right',
+  amountValue: 'text-base font-semibold leading-5 text-gray-900 sm:text-lg sm:leading-6',
+  firstBadge: 'mt-1 text-[11px]',
+  helperCard: 'rounded-lg border border-blue-200 bg-blue-50 p-2.5 sm:p-3',
+  helperText: 'text-sm leading-5 text-blue-800 sm:leading-6',
+} as const

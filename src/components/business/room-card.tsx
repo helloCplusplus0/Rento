@@ -4,6 +4,7 @@ import type {
 } from '@/types/database'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { roomListMobileStyles } from '@/components/business/room-list-mobile-styles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoomStatusBadge } from '@/components/ui/status-badge'
 import { TouchCard } from '@/components/ui/touch-button'
@@ -60,9 +61,9 @@ export function RoomCard({ room, onClick, className }: RoomCardProps) {
               </span>
             </div>
           )}
-          {room.overdueDays && room.overdueDays > 0 && (
+          {room.status === 'OVERDUE' && room.overdueDays && room.overdueDays > 0 && (
             <div className="text-xs font-medium text-red-600">
-              逾期{room.overdueDays}天
+              逾期 {room.overdueDays} 天
             </div>
           )}
         </CardContent>
@@ -80,50 +81,52 @@ export function CompactRoomCard({
   onClick,
   className,
 }: RoomCardForClientProps) {
-  // 获取租客信息（从currentRenter字段或合同中获取）
   const tenantName = room.currentRenter
-  const overdueDays = room.overdueDays
+  const activeContract = room.contracts?.find((contract) => contract.status === 'ACTIVE')
+  const displayRent =
+    (room.status === 'OCCUPIED' || room.status === 'OVERDUE') &&
+    activeContract?.monthlyRent
+      ? activeContract.monthlyRent
+      : room.rent
 
   return (
     <TouchCard onClick={onClick} className={className}>
-      <Card className="h-full transition-all hover:shadow-md">
-        <CardContent className="space-y-2 p-3">
-          {/* 房间号和状态 */}
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold">{room.roomNumber}</span>
-            <RoomStatusBadge status={room.status} />
+      <Card className={cn('h-full', roomListMobileStyles.card)}>
+        <CardContent className={roomListMobileStyles.cardContent}>
+          <div className={roomListMobileStyles.cardHeader}>
+            <div className="min-w-0 flex-1">
+              <div className={roomListMobileStyles.cardTitle}>{room.roomNumber}</div>
+              <div className={roomListMobileStyles.cardMeta}>{room.building.name}</div>
+            </div>
+            <RoomStatusBadge
+              status={room.status}
+              className={roomListMobileStyles.cardBadge}
+            />
           </div>
 
-          {/* 租金信息 */}
-          <div className="text-muted-foreground text-sm">
-            {formatCurrency(room.rent)}
+          <div className={roomListMobileStyles.cardRent}>
+            {formatCurrency(displayRent)}
           </div>
 
-          {/* 租客信息 */}
-          {tenantName && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">租客: </span>
-              <span className="inline-block max-w-[80px] truncate font-medium">
-                {tenantName}
-              </span>
+          {room.status === 'OVERDUE' && room.overdueDays && room.overdueDays > 0 ? (
+            <div className={cn(roomListMobileStyles.cardHint, 'text-red-600')}>
+              逾期 {room.overdueDays} 天
             </div>
-          )}
+          ) : null}
 
-          {/* 逾期信息 */}
-          {overdueDays && overdueDays > 0 && (
-            <div className="text-sm font-medium text-red-600">
-              逾期 {overdueDays} 天
+          {(tenantName || room.area) && (
+            <div className={roomListMobileStyles.cardFooter}>
+              <div className={roomListMobileStyles.cardFooterRow}>
+                <div className={roomListMobileStyles.cardFooterText}>
+                  {tenantName ? `租客：${tenantName}` : '暂无租客'}
+                </div>
+                {room.area ? (
+                  <span className={roomListMobileStyles.cardFooterMeta}>
+                    {room.area}㎡
+                  </span>
+                ) : null}
+              </div>
             </div>
-          )}
-
-          {/* 空房状态 */}
-          {room.status === 'VACANT' && (
-            <div className="text-sm font-medium text-green-600">空房可租</div>
-          )}
-
-          {/* 维护状态 */}
-          {room.status === 'MAINTENANCE' && (
-            <div className="text-sm font-medium text-gray-600">维护中</div>
           )}
         </CardContent>
       </Card>

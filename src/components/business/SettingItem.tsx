@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { settingsMobileStyles } from '@/components/business/settings-mobile-styles'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 /**
  * 设置项类型定义
@@ -37,84 +38,136 @@ interface SettingItemProps {
  * 输入框设置项
  */
 function InputSettingItem({ config, onValueChange }: SettingItemProps) {
-  const [value, setValue] = useState(config.value || '')
+  const [value, setValue] = useState(String(config.value ?? ''))
   const [isEditing, setIsEditing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setValue(String(config.value ?? ''))
+    setIsEditing(false)
+    setError(null)
+  }, [config.value])
 
   const handleSave = () => {
-    const numericValue =
-      config.type === 'input' && typeof config.value === 'number'
-        ? parseFloat(value) || 0
-        : value
+    const trimmedValue = value.trim()
 
-    onValueChange?.(config.id, numericValue)
+    if (typeof config.value === 'number') {
+      if (trimmedValue === '') {
+        setError('请输入有效数值')
+        return
+      }
+
+      const numericValue = Number(trimmedValue)
+
+      if (Number.isNaN(numericValue)) {
+        setError('请输入有效数值')
+        return
+      }
+
+      if (config.min !== undefined && numericValue < config.min) {
+        setError(`数值不能小于 ${config.min}`)
+        return
+      }
+
+      if (config.max !== undefined && numericValue > config.max) {
+        setError(`数值不能大于 ${config.max}`)
+        return
+      }
+
+      onValueChange?.(config.id, numericValue)
+    } else {
+      if (trimmedValue === '') {
+        setError('请输入有效内容')
+        return
+      }
+
+      onValueChange?.(config.id, trimmedValue)
+    }
+
+    setError(null)
     setIsEditing(false)
   }
 
   const handleCancel = () => {
-    setValue(config.value || '')
+    setValue(String(config.value ?? ''))
     setIsEditing(false)
+    setError(null)
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{config.title}</div>
-        {config.description && (
-          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
-        )}
-      </div>
+    <div className="space-y-1.5">
+      <div className={settingsMobileStyles.itemRow}>
+        <div className={settingsMobileStyles.itemMain}>
+          <div className={settingsMobileStyles.itemTitle}>{config.title}</div>
+          {config.description && (
+            <div className={settingsMobileStyles.itemDescription}>
+              {config.description}
+            </div>
+          )}
+        </div>
 
-      <div className="ml-4 flex items-center gap-2">
-        {isEditing ? (
-          <>
-            <Input
-              type={typeof config.value === 'number' ? 'number' : 'text'}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={config.placeholder}
-              min={config.min}
-              max={config.max}
-              step={config.step}
-              className="h-8 w-24 text-sm"
-            />
-            {config.unit && (
-              <span className="text-sm text-gray-500">{config.unit}</span>
-            )}
-            <Button size="sm" onClick={handleSave} className="h-8 px-2">
-              保存
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCancel}
-              className="h-8 px-2"
-            >
-              取消
-            </Button>
-          </>
-        ) : (
-          <>
-            <span className="min-w-[60px] text-right text-sm text-gray-900">
-              {config.value}
+        <div className={settingsMobileStyles.itemControlRow}>
+          {isEditing ? (
+            <>
+              <Input
+                type={typeof config.value === 'number' ? 'number' : 'text'}
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value)
+                  if (error) {
+                    setError(null)
+                  }
+                }}
+                placeholder={config.placeholder}
+                min={config.min}
+                max={config.max}
+                step={config.step}
+                className={settingsMobileStyles.inlineInput}
+              />
               {config.unit && (
-                <span className="ml-1 text-gray-500">{config.unit}</span>
+                <span className={settingsMobileStyles.itemUnit}>{config.unit}</span>
               )}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setValue(config.value || '')
-                setIsEditing(true)
-              }}
-              disabled={config.disabled}
-              className="h-8 px-2"
-            >
-              编辑
-            </Button>
-          </>
-        )}
+              <Button
+                size="sm"
+                onClick={handleSave}
+                className={settingsMobileStyles.inlineButton}
+              >
+                保存
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                className={settingsMobileStyles.inlineButton}
+              >
+                取消
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className={settingsMobileStyles.itemValue}>
+                {config.value}
+                {config.unit && (
+                  <span className={settingsMobileStyles.itemUnit}>{config.unit}</span>
+                )}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setValue(String(config.value ?? ''))
+                  setIsEditing(true)
+                }}
+                disabled={config.disabled}
+                className={settingsMobileStyles.inlineButton}
+              >
+                编辑
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+      {error && <div className={settingsMobileStyles.inlineError}>{error}</div>}
     </div>
   )
 }
@@ -123,25 +176,23 @@ function InputSettingItem({ config, onValueChange }: SettingItemProps) {
  * 选择器设置项
  */
 function SelectSettingItem({ config, onValueChange }: SettingItemProps) {
-  const currentOption = config.options?.find(
-    (opt) => opt.value === config.value
-  )
-
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{config.title}</div>
+    <div className={settingsMobileStyles.itemRow}>
+      <div className={settingsMobileStyles.itemMain}>
+        <div className={settingsMobileStyles.itemTitle}>{config.title}</div>
         {config.description && (
-          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
+          <div className={settingsMobileStyles.itemDescription}>
+            {config.description}
+          </div>
         )}
       </div>
 
-      <div className="ml-4">
+      <div className={settingsMobileStyles.inlineSelectWrap}>
         <select
           value={config.value}
           onChange={(e) => onValueChange?.(config.id, e.target.value)}
           disabled={config.disabled}
-          className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className={settingsMobileStyles.inlineSelect}
         >
           {config.options?.map((option) => (
             <option key={option.value} value={option.value}>
@@ -149,6 +200,7 @@ function SelectSettingItem({ config, onValueChange }: SettingItemProps) {
             </option>
           ))}
         </select>
+        <ChevronDown className={settingsMobileStyles.inlineSelectIcon} />
       </div>
     </div>
   )
@@ -159,20 +211,26 @@ function SelectSettingItem({ config, onValueChange }: SettingItemProps) {
  */
 function SwitchSettingItem({ config, onValueChange }: SettingItemProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{config.title}</div>
+    <div className={settingsMobileStyles.itemRow}>
+      <div className={settingsMobileStyles.itemMain}>
+        <div className={settingsMobileStyles.itemTitle}>{config.title}</div>
         {config.description && (
-          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
+          <div className={settingsMobileStyles.itemDescription}>
+            {config.description}
+          </div>
         )}
       </div>
 
-      <div className="ml-4">
+      <div className={settingsMobileStyles.itemControlRow}>
         <button
           onClick={() => onValueChange?.(config.id, !config.value)}
           disabled={config.disabled}
+          type="button"
+          role="switch"
+          aria-checked={Boolean(config.value)}
+          aria-label={config.title}
           className={cn(
-            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none',
+            settingsMobileStyles.switchButton,
             config.value ? 'bg-blue-600' : 'bg-gray-200'
           )}
         >
@@ -193,20 +251,23 @@ function SwitchSettingItem({ config, onValueChange }: SettingItemProps) {
  */
 function ButtonSettingItem({ config }: SettingItemProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{config.title}</div>
+    <div className={settingsMobileStyles.itemRow}>
+      <div className={settingsMobileStyles.itemMain}>
+        <div className={settingsMobileStyles.itemTitle}>{config.title}</div>
         {config.description && (
-          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
+          <div className={settingsMobileStyles.itemDescription}>
+            {config.description}
+          </div>
         )}
       </div>
 
-      <div className="ml-4">
+      <div className={settingsMobileStyles.itemControlRow}>
         <Button
           size="sm"
           variant="outline"
           onClick={config.action}
           disabled={config.disabled}
+          className={settingsMobileStyles.inlineButton}
         >
           执行
         </Button>
@@ -220,16 +281,18 @@ function ButtonSettingItem({ config }: SettingItemProps) {
  */
 function InfoSettingItem({ config }: SettingItemProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{config.title}</div>
+    <div className={settingsMobileStyles.itemRow}>
+      <div className={settingsMobileStyles.itemMain}>
+        <div className={settingsMobileStyles.itemTitle}>{config.title}</div>
         {config.description && (
-          <div className="mt-1 text-sm text-gray-500">{config.description}</div>
+          <div className={settingsMobileStyles.itemDescription}>
+            {config.description}
+          </div>
         )}
       </div>
 
-      <div className="ml-4">
-        <span className="text-sm text-gray-600">{config.value}</span>
+      <div className={settingsMobileStyles.itemControlRow}>
+        <span className={settingsMobileStyles.itemValueMuted}>{config.value}</span>
       </div>
     </div>
   )
@@ -271,7 +334,7 @@ export function SettingItem({
 
   return (
     <div
-      className={cn('border-b border-gray-100 py-4 last:border-b-0', className)}
+      className={cn(settingsMobileStyles.item, className)}
     >
       {renderSettingItem()}
     </div>
@@ -295,10 +358,12 @@ export function SettingCategory({
   className,
 }: SettingCategoryProps) {
   return (
-    <Card className={className}>
-      <CardContent className="p-6">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">{title}</h3>
-        <div className="space-y-0">
+    <Card className={cn(settingsMobileStyles.card, className)}>
+      <CardHeader className={settingsMobileStyles.cardHeader}>
+        <CardTitle className={settingsMobileStyles.cardTitle}>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className={settingsMobileStyles.cardContent}>
+        <div className={settingsMobileStyles.itemList}>
           {items.map((item) => (
             <SettingItem
               key={item.id}

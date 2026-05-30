@@ -5,6 +5,8 @@ import { Check, Search } from 'lucide-react'
 
 import type { ContractWithDetailsForClient } from '@/types/database'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { billCreateMobileStyles } from '@/components/business/bill-create-mobile-styles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
@@ -25,6 +27,16 @@ export function ContractSelector({
 }: ContractSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
+  const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    action: () => void
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      action()
+    }
+  }
+
   // 筛选合同
   const filteredContracts = useMemo(() => {
     if (!searchQuery) return contracts
@@ -40,59 +52,78 @@ export function ContractSelector({
   }, [contracts, searchQuery])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">选择合同</CardTitle>
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-          <Input
-            placeholder="搜索合同号、租客姓名、房间号..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+    <Card className={billCreateMobileStyles.card}>
+      <CardHeader className={billCreateMobileStyles.cardHeader}>
+        <CardTitle className={billCreateMobileStyles.cardTitle}>
+          选择合同
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="max-h-64 space-y-3 overflow-y-auto">
-          {filteredContracts.map((contract) => (
-            <div
-              key={contract.id}
-              className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                selectedContract?.id === contract.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => onContractSelect(contract)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {contract.contractNumber}
-                    </span>
-                    {selectedContract?.id === contract.id && (
-                      <Check className="h-4 w-4 text-blue-500" />
-                    )}
-                  </div>
-                  <div className="mt-1 text-sm text-gray-600">
-                    {contract.room.building.name} - {contract.room.roomNumber} |{' '}
-                    {contract.renter.name}
-                  </div>
-                  <div className="mt-1 text-sm text-gray-500">
-                    月租金: {formatCurrency(contract.monthlyRent)} | 到期:{' '}
-                    {formatDate(contract.endDate)}
+      <CardContent className={billCreateMobileStyles.cardContent}>
+        <div className={billCreateMobileStyles.selectorStack}>
+          <div className={billCreateMobileStyles.searchWrap}>
+            <Search className={billCreateMobileStyles.searchIcon} />
+            <Input
+              placeholder="搜索合同号、租客姓名、房间号..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={billCreateMobileStyles.searchInput}
+            />
+          </div>
+
+          <div className={billCreateMobileStyles.listWrap}>
+            {filteredContracts.map((contract) => {
+              const isSelected = selectedContract?.id === contract.id
+
+              return (
+                <div
+                  key={contract.id}
+                  className={cn(
+                    'cursor-pointer hover:border-gray-300',
+                    billCreateMobileStyles.contractCard,
+                    isSelected && billCreateMobileStyles.contractCardSelected
+                  )}
+                  onClick={() => onContractSelect(contract)}
+                  onKeyDown={(event) =>
+                    handleCardKeyDown(event, () => onContractSelect(contract))
+                  }
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                >
+                  <div className={billCreateMobileStyles.contractCardContent}>
+                    <div className={billCreateMobileStyles.contractRow}>
+                      <div className={billCreateMobileStyles.contractLeading}>
+                        <div className={billCreateMobileStyles.contractTitleRow}>
+                          <span className={billCreateMobileStyles.contractTitle}>
+                            {contract.contractNumber}
+                          </span>
+                          {isSelected && (
+                            <Check
+                              className={billCreateMobileStyles.contractCheck}
+                            />
+                          )}
+                        </div>
+                        <div className={billCreateMobileStyles.contractMeta}>
+                          {contract.room.building.name} - {contract.room.roomNumber}{' '}
+                          | {contract.renter.name}
+                        </div>
+                        <div className={billCreateMobileStyles.contractSubtle}>
+                          月租金: {formatCurrency(contract.monthlyRent)} | 到期:{' '}
+                          {formatDate(contract.endDate)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              )
+            })}
 
-          {filteredContracts.length === 0 && (
-            <div className="py-8 text-center text-gray-500">
-              {searchQuery ? '未找到匹配的合同' : '暂无活跃合同'}
-            </div>
-          )}
+            {filteredContracts.length === 0 && (
+              <div className={billCreateMobileStyles.emptyState}>
+                {searchQuery ? '未找到匹配的合同' : '暂无活跃合同'}
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

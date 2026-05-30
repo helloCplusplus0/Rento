@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { addRoomMobileStyles } from '@/components/pages/add-room-mobile-styles'
 
 interface BuildingSelectorProps {
   buildings: (BuildingType & { totalRooms: number })[]
+  selectedBuildingId?: string
   onBuildingSelect: (building: BuildingType) => void
   onNewBuilding: (building: BuildingType) => void
   onBuildingUpdate?: (building: BuildingType & { totalRooms: number }) => void
@@ -23,6 +25,7 @@ interface BuildingSelectorProps {
  */
 export function BuildingSelector({
   buildings,
+  selectedBuildingId,
   onBuildingSelect,
   onNewBuilding,
   onBuildingUpdate,
@@ -169,13 +172,13 @@ export function BuildingSelector({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>选择楼栋</CardTitle>
+    <Card className={addRoomMobileStyles.card}>
+      <CardHeader className={addRoomMobileStyles.cardHeader}>
+        <div className={addRoomMobileStyles.cardTitleRow}>
+          <CardTitle className={addRoomMobileStyles.cardTitle}>选择楼栋</CardTitle>
           <Button
             variant="outline"
-            size="sm"
+            className={addRoomMobileStyles.cardActionButton}
             onClick={() => setShowNewForm(!showNewForm)}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -183,26 +186,28 @@ export function BuildingSelector({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={addRoomMobileStyles.cardContent}>
         {/* 新建楼栋表单 */}
         {showNewForm && (
-          <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
-            <div>
+          <div className={addRoomMobileStyles.formPanel}>
+            <div className={addRoomMobileStyles.fieldStack}>
               <Label htmlFor="buildingName">楼栋名称 *</Label>
               <Input
                 id="buildingName"
                 placeholder="如：平安寓6688_A栋"
+                className={addRoomMobileStyles.input}
                 value={newBuilding.name}
                 onChange={(e) =>
                   setNewBuilding((prev) => ({ ...prev, name: e.target.value }))
                 }
               />
             </div>
-            <div>
+            <div className={addRoomMobileStyles.fieldStack}>
               <Label htmlFor="buildingAddress">楼栋地址</Label>
               <Input
                 id="buildingAddress"
                 placeholder="详细地址"
+                className={addRoomMobileStyles.input}
                 value={newBuilding.address}
                 onChange={(e) =>
                   setNewBuilding((prev) => ({
@@ -212,11 +217,12 @@ export function BuildingSelector({
                 }
               />
             </div>
-            <div>
+            <div className={addRoomMobileStyles.fieldStack}>
               <Label htmlFor="buildingDescription">楼栋描述</Label>
               <Input
                 id="buildingDescription"
                 placeholder="楼栋描述信息"
+                className={addRoomMobileStyles.input}
                 value={newBuilding.description}
                 onChange={(e) =>
                   setNewBuilding((prev) => ({
@@ -226,10 +232,11 @@ export function BuildingSelector({
                 }
               />
             </div>
-            <div className="flex gap-2">
+            <div className={addRoomMobileStyles.actionRow}>
               <Button
                 onClick={handleCreateBuilding}
                 disabled={!newBuilding.name.trim() || isCreating}
+                className={addRoomMobileStyles.cardActionButton}
               >
                 {isCreating ? '创建中...' : '创建'}
               </Button>
@@ -237,6 +244,7 @@ export function BuildingSelector({
                 variant="outline"
                 onClick={() => setShowNewForm(false)}
                 disabled={isCreating}
+                className={addRoomMobileStyles.cardActionButton}
               >
                 取消
               </Button>
@@ -246,34 +254,38 @@ export function BuildingSelector({
 
         {/* 编辑楼栋表单 */}
         {editingBuilding && (
-          <div className="space-y-3 rounded-lg border bg-blue-50 p-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-blue-900">编辑楼栋</h4>
+          <div
+            className={`${addRoomMobileStyles.formPanel} ${addRoomMobileStyles.formPanelAccent}`}
+          >
+            <div className={addRoomMobileStyles.formPanelHeader}>
+              <h4 className={addRoomMobileStyles.formPanelTitle}>编辑楼栋</h4>
               <Button
                 variant="ghost"
-                size="sm"
                 onClick={() => setEditingBuilding(null)}
                 disabled={isUpdating}
+                className={addRoomMobileStyles.iconActionButton}
               >
                 ✕
               </Button>
             </div>
-            <div>
+            <div className={addRoomMobileStyles.fieldStack}>
               <Label htmlFor="editBuildingName">楼栋名称 *</Label>
               <Input
                 id="editBuildingName"
                 placeholder="如：平安寓6688_A栋"
+                className={addRoomMobileStyles.input}
                 value={editBuilding.name}
                 onChange={(e) =>
                   setEditBuilding((prev) => ({ ...prev, name: e.target.value }))
                 }
               />
             </div>
-            <div>
+            <div className={addRoomMobileStyles.fieldStack}>
               <Label htmlFor="editBuildingAddress">楼栋地址</Label>
               <Input
                 id="editBuildingAddress"
                 placeholder="详细地址"
+                className={addRoomMobileStyles.input}
                 value={editBuilding.address}
                 onChange={(e) =>
                   setEditBuilding((prev) => ({
@@ -283,11 +295,12 @@ export function BuildingSelector({
                 }
               />
             </div>
-            <div>
+            <div className={addRoomMobileStyles.fieldStack}>
               <Label htmlFor="editBuildingDescription">楼栋描述</Label>
               <Input
                 id="editBuildingDescription"
                 placeholder="楼栋描述信息"
+                className={addRoomMobileStyles.input}
                 value={editBuilding.description}
                 onChange={(e) =>
                   setEditBuilding((prev) => ({
@@ -297,10 +310,11 @@ export function BuildingSelector({
                 }
               />
             </div>
-            <div className="flex gap-2">
+            <div className={addRoomMobileStyles.actionRow}>
               <Button
                 onClick={handleUpdateBuilding}
                 disabled={!editBuilding.name.trim() || isUpdating}
+                className={addRoomMobileStyles.cardActionButton}
               >
                 {isUpdating ? '更新中...' : '更新'}
               </Button>
@@ -308,6 +322,7 @@ export function BuildingSelector({
                 variant="outline"
                 onClick={() => setEditingBuilding(null)}
                 disabled={isUpdating}
+                className={addRoomMobileStyles.cardActionButton}
               >
                 取消
               </Button>
@@ -317,27 +332,38 @@ export function BuildingSelector({
 
         {/* 现有楼栋列表 */}
         {buildings.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
+          <div className={addRoomMobileStyles.buildingList}>
             {buildings.map((building) => (
               <div
                 key={building.id}
-                className="rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                className={`${addRoomMobileStyles.buildingItem} ${
+                  selectedBuildingId === building.id
+                    ? addRoomMobileStyles.buildingItemSelected
+                    : ''
+                }`}
               >
-                <div className="flex items-center">
-                  <Building className="mr-3 h-5 w-5 text-gray-400" />
+                <div className={addRoomMobileStyles.buildingRow}>
+                  <Building className={addRoomMobileStyles.buildingIcon} />
                   <div
-                    className="flex-1 cursor-pointer"
+                    className={addRoomMobileStyles.buildingContent}
                     onClick={() => onBuildingSelect(building)}
                   >
-                    <h4 className="font-medium">{building.name}</h4>
+                    <h4 className={addRoomMobileStyles.buildingName}>
+                      {building.name}
+                    </h4>
                     {building.address && (
-                      <p className="text-sm text-gray-500">
+                      <p className={addRoomMobileStyles.buildingAddress}>
                         {building.address}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400">
+                    <p className={addRoomMobileStyles.buildingMeta}>
                       共 {building.totalRooms} 间房
                     </p>
+                    {selectedBuildingId === building.id ? (
+                      <p className="mt-1 text-[11px] font-medium leading-4 text-blue-700">
+                        当前已选择
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* 操作按钮 */}
@@ -350,7 +376,7 @@ export function BuildingSelector({
                         handleEditBuilding(building)
                       }}
                       disabled={editingBuilding?.id === building.id}
-                      className="h-8 w-8 p-0"
+                      className={addRoomMobileStyles.iconActionButton}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -362,7 +388,7 @@ export function BuildingSelector({
                         handleDeleteBuilding(building)
                       }}
                       disabled={isDeleting === building.id}
-                      className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      className={`${addRoomMobileStyles.iconActionButton} text-red-600 hover:bg-red-50 hover:text-red-700`}
                     >
                       {isDeleting === building.id ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />

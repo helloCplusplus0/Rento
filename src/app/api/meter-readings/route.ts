@@ -12,7 +12,9 @@ import {
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
 import { globalSettings } from '@/lib/global-settings'
+import { generatePeriodDescription } from '@/lib/meter-utils'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { prisma } from '@/lib/prisma'
 import { meterReadingQueries } from '@/lib/queries'
 
 function resolveReadingDate(
@@ -26,6 +28,53 @@ function resolveReadingDate(
   }
 
   return normalizedDate
+}
+
+function buildRegularReadingPeriodAliases(readingDate: Date, period: string) {
+  return Array.from(
+    new Set([
+      period,
+      `${readingDate.getFullYear()}-${readingDate.getMonth() + 1}`,
+      `${readingDate.getFullYear()}-${String(readingDate.getMonth() + 1).padStart(2, '0')}`,
+    ])
+  )
+}
+
+function buildRegularReadingDuplicateWhere(
+  meterId: string,
+  period: string,
+  readingDate: Date
+): Prisma.MeterReadingWhereInput {
+  const monthStart = new Date(
+    readingDate.getFullYear(),
+    readingDate.getMonth(),
+    1
+  )
+  const monthEnd = new Date(
+    readingDate.getFullYear(),
+    readingDate.getMonth() + 1,
+    1
+  )
+  const periodAliases = buildRegularReadingPeriodAliases(readingDate, period)
+
+  return {
+    meterId,
+    recordType: 'REGULAR_READING',
+    OR: [
+      {
+        period: {
+          in: periodAliases,
+        },
+      },
+      {
+        OR: [{ period: null }, { period: '' }],
+        readingDate: {
+          gte: monthStart,
+          lt: monthEnd,
+        },
+      },
+    ],
+  }
 }
 
 /**
@@ -200,6 +249,10 @@ async function handlePostMeterReadings(request: NextRequest) {
         readingData.readingDate,
         fallbackReadingDate
       )
+      const normalizedPeriod =
+        typeof readingData.period === 'string' && readingData.period.trim()
+          ? readingData.period.trim()
+          : generatePeriodDescription(readingDate)
 
       // 获取仪表信息进行验证
       const { meterQueries } = await import('@/lib/queries')
@@ -220,17 +273,18 @@ async function handlePostMeterReadings(request: NextRequest) {
         impactedContractIds.add(readingData.contractId)
       }
 
-      // 正式抄表只按 meterId + readingDate + REGULAR_READING 做精确重复门禁，
-      // 避免把合同初始底数或退租最终抄表误判成重复提交。
+      // 正式抄表按“仪表 + 正式抄表 + 业务周期”判重。
+      // 为兼容历史 period 为空的旧数据，回退按同月 readingDate 判重。
       const duplicateReading =
-        await meterReadingQueries.findRegularReadingByMeterAndDate(
+        await meterReadingQueries.findRegularReadingByMeterAndPeriod(
           readingData.meterId,
+          normalizedPeriod,
           readingDate
         )
       if (duplicateReading) {
         warnings.push({
           meterId: readingData.meterId,
-          warning: `该抄表时间已存在正式抄表记录，当前读数: ${duplicateReading.currentReading}`,
+          warning: `该周期已存在正式抄表记录（${duplicateReading.period || normalizedPeriod}），当前读数: ${duplicateReading.currentReading}`,
         })
         continue
       }
@@ -244,19 +298,77 @@ async function handlePostMeterReadings(request: NextRequest) {
         const amount = usage * unitPrice
 
         try {
-          const createdReading = await meterReadingQueries.create({
-            meterId: readingData.meterId,
-            contractId: readingData.contractId,
-            currentReading: readingData.currentReading,
-            previousReading: readingData.previousReading || 0,
-            usage,
-            recordType: 'REGULAR_READING',
-            readingDate,
-            unitPrice,
-            amount,
-            operator: readingData.operator || 'system',
-            remarks: readingData.remarks,
-          })
+          const MAX_RETRIES = 3
+          let retryCount = 0
+          let createdReading = null
+
+          while (retryCount < MAX_RETRIES && !createdReading) {
+            try {
+              createdReading = await prisma.$transaction(
+                async (tx) => {
+                  const duplicateInTx = await tx.meterReading.findFirst({
+                    where: buildRegularReadingDuplicateWhere(
+                      readingData.meterId,
+                      normalizedPeriod,
+                      readingDate
+                    ),
+                    select: {
+                      id: true,
+                    },
+                  })
+
+                  if (duplicateInTx) {
+                    return null
+                  }
+
+                  return tx.meterReading.create({
+                    data: {
+                      meterId: readingData.meterId,
+                      contractId: readingData.contractId,
+                      currentReading: readingData.currentReading,
+                      previousReading: readingData.previousReading || 0,
+                      usage,
+                      recordType: 'REGULAR_READING',
+                      readingDate,
+                      period: normalizedPeriod,
+                      unitPrice,
+                      amount,
+                      operator: readingData.operator || 'system',
+                      remarks: readingData.remarks,
+                    },
+                    include: {
+                      meter: {
+                        include: { room: { include: { building: true } } },
+                      },
+                      contract: {
+                        include: { renter: true },
+                      },
+                    },
+                  })
+                },
+                {
+                  isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+                }
+              )
+            } catch (error) {
+              if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2034'
+              ) {
+                retryCount += 1
+                continue
+              }
+              throw error
+            }
+          }
+
+          if (!createdReading) {
+            warnings.push({
+              meterId: readingData.meterId,
+              warning: `该周期已存在正式抄表记录（${normalizedPeriod}），本次提交已跳过`,
+            })
+            continue
+          }
 
           results.push(createdReading)
         } catch (error) {
@@ -266,7 +378,7 @@ async function handlePostMeterReadings(request: NextRequest) {
           ) {
             warnings.push({
               meterId: readingData.meterId,
-              warning: '该抄表时间已存在正式抄表记录，本次提交已跳过',
+              warning: `该周期已存在正式抄表记录（${normalizedPeriod}），本次提交已跳过`,
             })
             continue
           }
@@ -290,6 +402,7 @@ async function handlePostMeterReadings(request: NextRequest) {
         generateAggregatedUtilityBill,
         groupReadingsByContract,
         AggregationStrategy,
+        selectAggregationStrategy,
       } = await import('@/lib/bill-aggregation')
       const { contractQueries } = await import('@/lib/queries')
 
@@ -306,8 +419,13 @@ async function handlePostMeterReadings(request: NextRequest) {
         }
 
         try {
+          const selectedStrategy = selectAggregationStrategy(
+            contractReadings,
+            aggregationMode
+          )
+
           console.log(
-            `[抄表API] 为合同${contractId}生成聚合账单，包含${contractReadings.length}个仪表`
+            `[抄表API] 为合同${contractId}生成账单，策略=${selectedStrategy}，包含${contractReadings.length}个仪表`
           )
 
           // 获取合同信息
@@ -322,15 +440,21 @@ async function handlePostMeterReadings(request: NextRequest) {
           }
 
           // 生成聚合账单
-          const bill = await generateAggregatedUtilityBill(contractReadings, {
-            strategy: AggregationStrategy.AGGREGATED,
+          const billResult = await generateAggregatedUtilityBill(contractReadings, {
+            strategy:
+              selectedStrategy === 'SINGLE'
+                ? AggregationStrategy.SINGLE
+                : AggregationStrategy.AGGREGATED,
             period: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
             contractId: contractId,
             contractNumber: contract.contractNumber,
           })
 
-          generatedBills.push(bill)
-          console.log(`[抄表API] 成功为合同${contractId}生成聚合账单`)
+          const bills = Array.isArray(billResult) ? billResult : [billResult]
+          generatedBills.push(...bills)
+          console.log(
+            `[抄表API] 成功为合同${contractId}生成${bills.length}个${selectedStrategy === 'SINGLE' ? '独立' : '聚合'}账单`
+          )
         } catch (billError) {
           console.error(`[抄表API] 合同${contractId}账单生成失败:`, billError)
           warnings.push({

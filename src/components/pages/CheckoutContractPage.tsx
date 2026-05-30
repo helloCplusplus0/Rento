@@ -6,14 +6,12 @@ import {
   AlertCircle,
   Calculator,
   Calendar,
-  CheckCircle,
   DollarSign,
   FileText,
-  Home,
-  User,
 } from 'lucide-react'
 
 import { formatCurrency, formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,9 +24,12 @@ import {
   applyCheckoutSettlementSubmission,
   calculateCheckoutSettlement,
   createCheckoutSettlementSubmissionItems,
-  type AppliedCheckoutSettlementLineItem,
   type CheckoutSettlementLineItem,
 } from '@/lib/checkout-settlement'
+import {
+  checkoutContractMobileStyles,
+  checkoutSettlementToneStyles,
+} from './checkout-contract-mobile-styles'
 
 // 合同详情类型定义
 interface ContractWithDetailsForClient {
@@ -291,60 +292,88 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     }
   }
 
+  const contractSummaryItems = [
+    {
+      key: 'room',
+      label: '房间',
+      value: `${contract.room.building.name} - ${contract.room.roomNumber}`,
+      valueClassName: checkoutContractMobileStyles.fieldValue,
+      className: undefined,
+    },
+    {
+      key: 'renter',
+      label: '租客',
+      value: contract.renter.name,
+      valueClassName: checkoutContractMobileStyles.fieldValue,
+      className: undefined,
+    },
+    {
+      key: 'period',
+      label: '合同期限',
+      value: `${formatDate(contract.startDate)} 至 ${formatDate(contract.endDate)}`,
+      valueClassName: checkoutContractMobileStyles.fieldValue,
+      className: checkoutContractMobileStyles.contractSummaryWideItem,
+    },
+    {
+      key: 'monthlyRent',
+      label: '月租金',
+      value: formatCurrency(contract.monthlyRent),
+      valueClassName: checkoutContractMobileStyles.fieldValueAccent,
+      className: undefined,
+    },
+  ] as const
+
   return (
     <PageContainer title="退租合同" showBackButton>
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className={checkoutContractMobileStyles.pageSection}>
         {/* 原合同信息展示 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+        <Card className={checkoutContractMobileStyles.card}>
+          <CardHeader className={checkoutContractMobileStyles.cardHeader}>
+            <CardTitle className={checkoutContractMobileStyles.cardTitle}>
+              <FileText className={checkoutContractMobileStyles.titleIcon} />
               合同信息
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-2">
-                <Home className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">房间:</span>
-                <span className="font-medium">
-                  {contract.room.building.name} - {contract.room.roomNumber}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">租客:</span>
-                <span className="font-medium">{contract.renter.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">合同期限:</span>
-                <span className="font-medium">
-                  {formatDate(contract.startDate)} 至{' '}
-                  {formatDate(contract.endDate)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">月租金:</span>
-                <span className="font-medium">
-                  {formatCurrency(contract.monthlyRent)}
-                </span>
-              </div>
+          <CardContent className={checkoutContractMobileStyles.cardContent}>
+            <div className={checkoutContractMobileStyles.contractSummaryGrid}>
+              {contractSummaryItems.map((item) => (
+                <div
+                  key={item.key}
+                  className={cn(
+                    checkoutContractMobileStyles.contractSummaryItem,
+                    item.className
+                  )}
+                >
+                  <span className={checkoutContractMobileStyles.fieldLabel}>
+                    {item.label}
+                  </span>
+                  <span className={item.valueClassName}>{item.value}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
         {/* 退租表单 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>退租信息</CardTitle>
+        <Card className={checkoutContractMobileStyles.card}>
+          <CardHeader className={checkoutContractMobileStyles.cardHeader}>
+            <CardTitle className={checkoutContractMobileStyles.cardTitle}>
+              退租信息
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="checkoutDate">退租日期 *</Label>
+          <CardContent className={checkoutContractMobileStyles.cardContent}>
+            <form
+              onSubmit={handleSubmit}
+              className={checkoutContractMobileStyles.formStack}
+            >
+              <div className={checkoutContractMobileStyles.formGrid}>
+                <div className={checkoutContractMobileStyles.formField}>
+                  <Label
+                    htmlFor="checkoutDate"
+                    className={checkoutContractMobileStyles.formLabel}
+                  >
+                    退租日期 *
+                  </Label>
                   <Input
                     id="checkoutDate"
                     type="date"
@@ -353,13 +382,18 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                       handleInputChange('checkoutDate', e.target.value)
                     }
                     disabled={loading}
-                    className="mt-1"
+                    className={checkoutContractMobileStyles.input}
                     min={new Date().toISOString().split('T')[0]}
                     max={new Date(contract.endDate).toISOString().split('T')[0]}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="damageAssessment">损坏赔偿金额</Label>
+                <div className={checkoutContractMobileStyles.formField}>
+                  <Label
+                    htmlFor="damageAssessment"
+                    className={checkoutContractMobileStyles.formLabel}
+                  >
+                    损坏赔偿金额
+                  </Label>
                   <Input
                     id="damageAssessment"
                     type="number"
@@ -373,17 +407,22 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                       )
                     }
                     disabled={loading}
-                    className="mt-1"
+                    className={checkoutContractMobileStyles.input}
                     placeholder="0.00"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className={checkoutContractMobileStyles.helperText}>
                     房屋损坏需要赔偿的金额
                   </p>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="checkoutReason">退租原因 *</Label>
+              <div className={checkoutContractMobileStyles.formField}>
+                <Label
+                  htmlFor="checkoutReason"
+                  className={checkoutContractMobileStyles.formLabel}
+                >
+                  退租原因 *
+                </Label>
                 <Textarea
                   id="checkoutReason"
                   value={formData.checkoutReason}
@@ -391,78 +430,134 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                     handleInputChange('checkoutReason', e.target.value)
                   }
                   disabled={loading}
-                  className="mt-1"
+                  className={checkoutContractMobileStyles.textarea}
                   placeholder="请填写退租原因..."
                   rows={3}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="remarks">备注</Label>
+              <div className={checkoutContractMobileStyles.formField}>
+                <Label
+                  htmlFor="remarks"
+                  className={checkoutContractMobileStyles.formLabel}
+                >
+                  备注
+                </Label>
                 <Textarea
                   id="remarks"
                   value={formData.remarks}
                   onChange={(e) => handleInputChange('remarks', e.target.value)}
                   disabled={loading}
-                  className="mt-1"
+                  className={checkoutContractMobileStyles.textarea}
                   placeholder="其他需要说明的事项..."
                   rows={2}
                 />
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">{error}</span>
+                <div className={checkoutContractMobileStyles.errorAlert}>
+                  <AlertCircle className={checkoutContractMobileStyles.errorIcon} />
+                  <span className={checkoutContractMobileStyles.errorText}>
+                    {error}
+                  </span>
                 </div>
               )}
 
               {/* 结算预览 */}
               {finalSettlement && (
-                <div className="space-y-4">
+                <div className={checkoutContractMobileStyles.previewSection}>
                   <Separator />
-                  <h3 className="flex items-center gap-2 font-medium">
-                    <Calculator className="h-4 w-4" />
+                  <h3 className={checkoutContractMobileStyles.previewTitle}>
+                    <Calculator
+                      className={checkoutContractMobileStyles.previewTitleIcon}
+                    />
                     结算预览
                   </h3>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className={checkoutContractMobileStyles.previewGrid}>
                     {/* 应退项目 */}
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                      <h4 className="mb-3 font-semibold text-red-800">
+                    <div
+                      className={cn(
+                        checkoutContractMobileStyles.previewPanel,
+                        checkoutSettlementToneStyles.refund.panel
+                      )}
+                    >
+                      <h4
+                        className={cn(
+                          checkoutContractMobileStyles.previewPanelTitle,
+                          checkoutSettlementToneStyles.refund.title
+                        )}
+                      >
                         应退项目
                       </h4>
-                      <div className="space-y-3">
+                      <div className={checkoutContractMobileStyles.previewList}>
                         {finalSettlement.lineItems.refund.length === 0 && (
-                          <div className="text-sm text-gray-500">暂无应退项目</div>
+                          <div className={checkoutContractMobileStyles.emptyState}>
+                            暂无应退项目
+                          </div>
                         )}
                         {finalSettlement.lineItems.refund.map((item) => (
-                          <div key={item.id} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">
+                          <div
+                            key={item.id}
+                            className={checkoutContractMobileStyles.previewItem}
+                          >
+                            <div
+                              className={
+                                checkoutContractMobileStyles.previewItemHeader
+                              }
+                            >
+                              <div
+                                className={
+                                  checkoutContractMobileStyles.previewItemHeading
+                                }
+                              >
+                                <span
+                                  className={
+                                    checkoutContractMobileStyles.previewItemName
+                                  }
+                                >
                                   {item.name}
                                 </span>
                                 {item.editable ? (
-                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                  <Badge
+                                    className={
+                                      checkoutContractMobileStyles.editableBadge
+                                    }
+                                  >
                                     可受限编辑
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline">系统计算项</Badge>
                                 )}
                               </div>
-                              <span className="font-medium text-red-600">
+                              <span
+                                className={cn(
+                                  checkoutContractMobileStyles.previewItemAmount,
+                                  checkoutSettlementToneStyles.refund.amount
+                                )}
+                              >
                                 {formatCurrency(item.adjustedAmount)}
                               </span>
                             </div>
-                            <div className="rounded border bg-white p-2 text-xs text-gray-600">
-                              <span className="font-medium">计算公式：</span>
+                            <div
+                              className={checkoutContractMobileStyles.formulaBox}
+                            >
+                              <span className={checkoutContractMobileStyles.formulaLabel}>
+                                计算公式：
+                              </span>
                               {item.formula}
                             </div>
                             {item.editable ? (
-                              <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                                <div>
-                                  <Label htmlFor={`adjustedRefundAmount-${item.id}`}>
+                              <div
+                                className={checkoutContractMobileStyles.editableBox}
+                              >
+                                <div className={checkoutContractMobileStyles.formField}>
+                                  <Label
+                                    htmlFor={`adjustedRefundAmount-${item.id}`}
+                                    className={
+                                      checkoutContractMobileStyles.formLabel
+                                    }
+                                  >
                                     本次纳入退租结算金额
                                   </Label>
                                   <Input
@@ -479,15 +574,28 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                                       handleSettlementAmountChange(item, event.target.value)
                                     }
                                     disabled={loading}
-                                    className="mt-1"
+                                    className={checkoutContractMobileStyles.input}
                                   />
-                                  <p className="mt-1 text-xs text-amber-700">
+                                  <p
+                                    className={
+                                      checkoutContractMobileStyles.rangeText
+                                    }
+                                  >
                                     允许范围：{formatCurrency(item.minAdjustableAmount)} ~{' '}
                                     {formatCurrency(item.maxAdjustableAmount)}
                                   </p>
                                 </div>
-                                <div>
-                                  <Label htmlFor={`refundAdjustmentReason-${item.id}`}>
+                                <div
+                                  className={
+                                    checkoutContractMobileStyles.compactReasonField
+                                  }
+                                >
+                                  <Label
+                                    htmlFor={`refundAdjustmentReason-${item.id}`}
+                                    className={
+                                      checkoutContractMobileStyles.compactReasonLabel
+                                    }
+                                  >
                                     调整原因
                                   </Label>
                                   <Textarea
@@ -502,19 +610,29 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                                       )
                                     }
                                     disabled={loading}
-                                    className="mt-1"
+                                    className={
+                                      checkoutContractMobileStyles.compactReasonTextarea
+                                    }
                                     placeholder="如与原始应退金额不同，请填写调整原因"
                                     rows={2}
                                   />
                                   {item.isAdjusted &&
                                     !settlementAdjustments[item.id]?.adjustmentReason.trim() && (
-                                      <p className="mt-1 text-xs text-red-600">
+                                      <p
+                                        className={
+                                          checkoutContractMobileStyles.adjustedError
+                                        }
+                                      >
                                         已调整金额时，提交前必须填写调整原因
                                       </p>
                                     )}
                                 </div>
                                 {item.isAdjusted && (
-                                  <div className="text-xs text-amber-700">
+                                  <div
+                                    className={
+                                      checkoutContractMobileStyles.adjustedText
+                                    }
+                                  >
                                     原始金额 {formatCurrency(item.originalAmount)}，当前结算金额{' '}
                                     {formatCurrency(item.adjustedAmount)}
                                   </div>
@@ -522,7 +640,9 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                               </div>
                             ) : (
                               item.lockedReason && (
-                                <div className="text-xs text-gray-500">
+                                <div
+                                  className={checkoutContractMobileStyles.lockedText}
+                                >
                                   {item.lockedReason}
                                 </div>
                               )
@@ -530,10 +650,12 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                           </div>
                         ))}
 
-                        <div className="border-t pt-2 font-semibold">
-                          <div className="flex justify-between">
+                        <div className={checkoutContractMobileStyles.subtotalRow}>
+                          <div
+                            className={checkoutContractMobileStyles.subtotalInner}
+                          >
                             <span>应退小计</span>
-                            <span className="text-red-600">
+                            <span className={checkoutSettlementToneStyles.refund.subtotal}>
                               {formatCurrency(finalSettlement.refundItems.subtotal)}
                             </span>
                           </div>
@@ -542,57 +664,132 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                     </div>
 
                     {/* 应收项目 */}
-                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                      <h4 className="mb-3 font-semibold text-green-800">
+                    <div
+                      className={cn(
+                        checkoutContractMobileStyles.previewPanel,
+                        checkoutSettlementToneStyles.charge.panel
+                      )}
+                    >
+                      <h4
+                        className={cn(
+                          checkoutContractMobileStyles.previewPanelTitle,
+                          checkoutSettlementToneStyles.charge.title
+                        )}
+                      >
                         应收项目
                       </h4>
-                      <div className="space-y-3">
+                      <div className={checkoutContractMobileStyles.previewList}>
                         {finalSettlement.lineItems.charge.length === 0 && (
-                          <div className="text-sm text-gray-500">暂无应收项目</div>
+                          <div className={checkoutContractMobileStyles.emptyState}>
+                            暂无应收项目
+                          </div>
                         )}
                         {finalSettlement.lineItems.charge.map((item) => (
-                          <div key={item.id} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">
+                          <div
+                            key={item.id}
+                            className={checkoutContractMobileStyles.previewItem}
+                          >
+                            <div
+                              className={
+                                checkoutContractMobileStyles.previewItemHeader
+                              }
+                            >
+                              <div
+                                className={
+                                  checkoutContractMobileStyles.previewItemHeading
+                                }
+                              >
+                                <span
+                                  className={
+                                    checkoutContractMobileStyles.previewItemName
+                                  }
+                                >
                                   {item.name}
                                 </span>
                                 {item.editable ? (
-                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                  <Badge
+                                    className={
+                                      checkoutContractMobileStyles.editableBadge
+                                    }
+                                  >
                                     可受限编辑
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline">系统计算项</Badge>
                                 )}
                               </div>
-                              <span className="font-medium text-green-600">
+                              <span
+                                className={cn(
+                                  checkoutContractMobileStyles.previewItemAmount,
+                                  checkoutSettlementToneStyles.charge.amount
+                                )}
+                              >
                                 {formatCurrency(item.adjustedAmount)}
                               </span>
                             </div>
-                            <div className="rounded border bg-white p-2 text-xs text-gray-600">
-                              <span className="font-medium">计算公式：</span>
+                            <div
+                              className={checkoutContractMobileStyles.formulaBox}
+                            >
+                              <span className={checkoutContractMobileStyles.formulaLabel}>
+                                计算公式：
+                              </span>
                               {item.formula}
                             </div>
                             {item.billId && (
-                              <div className="grid grid-cols-1 gap-2 rounded border border-dashed bg-white p-3 text-xs text-gray-600 md:grid-cols-3">
+                              <div className={checkoutContractMobileStyles.billMetaSection}>
                                 <div>
-                                  <span className="font-medium">账单状态：</span>
+                                  <span
+                                    className={
+                                      checkoutContractMobileStyles.billMetaLabel
+                                    }
+                                  >
+                                    账单状态：
+                                  </span>
                                   {item.billStatus === 'OVERDUE' ? '逾期' : '待处理'}
                                 </div>
-                                <div>
-                                  <span className="font-medium">已收金额：</span>
-                                  {formatCurrency(item.billReceivedAmount ?? 0)}
-                                </div>
-                                <div>
-                                  <span className="font-medium">当前待收：</span>
-                                  {formatCurrency(item.billPendingAmount ?? 0)}
+                                <div className={checkoutContractMobileStyles.billMetaAmountsRow}>
+                                  <div
+                                    className={
+                                      checkoutContractMobileStyles.billMetaAmountItem
+                                    }
+                                  >
+                                    <span
+                                      className={
+                                        checkoutContractMobileStyles.billMetaLabel
+                                      }
+                                    >
+                                      已收金额：
+                                    </span>
+                                    {formatCurrency(item.billReceivedAmount ?? 0)}
+                                  </div>
+                                  <div
+                                    className={
+                                      checkoutContractMobileStyles.billMetaAmountItem
+                                    }
+                                  >
+                                    <span
+                                      className={
+                                        checkoutContractMobileStyles.billMetaLabel
+                                      }
+                                    >
+                                      当前待收：
+                                    </span>
+                                    {formatCurrency(item.billPendingAmount ?? 0)}
+                                  </div>
                                 </div>
                               </div>
                             )}
                             {item.editable ? (
-                              <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                                <div>
-                                  <Label htmlFor={`adjustedAmount-${item.id}`}>
+                              <div
+                                className={checkoutContractMobileStyles.editableBox}
+                              >
+                                <div className={checkoutContractMobileStyles.formField}>
+                                  <Label
+                                    htmlFor={`adjustedAmount-${item.id}`}
+                                    className={
+                                      checkoutContractMobileStyles.formLabel
+                                    }
+                                  >
                                     本次纳入退租结算金额
                                   </Label>
                                   <Input
@@ -606,15 +803,28 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                                       handleSettlementAmountChange(item, event.target.value)
                                     }
                                     disabled={loading}
-                                    className="mt-1"
+                                    className={checkoutContractMobileStyles.input}
                                   />
-                                  <p className="mt-1 text-xs text-amber-700">
+                                  <p
+                                    className={
+                                      checkoutContractMobileStyles.rangeText
+                                    }
+                                  >
                                     允许范围：{formatCurrency(item.minAdjustableAmount)} ~{' '}
                                     {formatCurrency(item.maxAdjustableAmount)}
                                   </p>
                                 </div>
-                                <div>
-                                  <Label htmlFor={`adjustmentReason-${item.id}`}>
+                                <div
+                                  className={
+                                    checkoutContractMobileStyles.compactReasonField
+                                  }
+                                >
+                                  <Label
+                                    htmlFor={`adjustmentReason-${item.id}`}
+                                    className={
+                                      checkoutContractMobileStyles.compactReasonLabel
+                                    }
+                                  >
                                     调整原因
                                   </Label>
                                   <Textarea
@@ -629,18 +839,28 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                                       )
                                     }
                                     disabled={loading}
-                                    className="mt-1"
+                                    className={
+                                      checkoutContractMobileStyles.compactReasonTextarea
+                                    }
                                     placeholder="如与原始待收金额不同，请填写调整原因"
                                     rows={2}
                                   />
                                   {item.isAdjusted && !settlementAdjustments[item.id]?.adjustmentReason.trim() && (
-                                    <p className="mt-1 text-xs text-red-600">
+                                    <p
+                                      className={
+                                        checkoutContractMobileStyles.adjustedError
+                                      }
+                                    >
                                       已调整金额时，提交前必须填写调整原因
                                     </p>
                                   )}
                                 </div>
                                 {item.isAdjusted && (
-                                  <div className="text-xs text-amber-700">
+                                  <div
+                                    className={
+                                      checkoutContractMobileStyles.adjustedText
+                                    }
+                                  >
                                     原始金额 {formatCurrency(item.originalAmount)}，当前结算金额{' '}
                                     {formatCurrency(item.adjustedAmount)}
                                   </div>
@@ -648,7 +868,9 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                               </div>
                             ) : (
                               item.lockedReason && (
-                                <div className="text-xs text-gray-500">
+                                <div
+                                  className={checkoutContractMobileStyles.lockedText}
+                                >
                                   {item.lockedReason}
                                 </div>
                               )
@@ -656,10 +878,12 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                           </div>
                         ))}
 
-                        <div className="border-t pt-2 font-semibold">
-                          <div className="flex justify-between">
+                        <div className={checkoutContractMobileStyles.subtotalRow}>
+                          <div
+                            className={checkoutContractMobileStyles.subtotalInner}
+                          >
                             <span>应收小计</span>
-                            <span className="text-green-600">
+                            <span className={checkoutSettlementToneStyles.charge.subtotal}>
                               {formatCurrency(finalSettlement.chargeItems.subtotal)}
                             </span>
                           </div>
@@ -669,12 +893,16 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                   </div>
 
                   {/* 退租结算说明 */}
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
-                      <div className="text-sm text-blue-800">
-                        <p className="mb-1 font-medium">退租结算说明：</p>
-                        <ul className="space-y-1 text-xs">
+                  <div className={checkoutContractMobileStyles.noteBox}>
+                    <div className={checkoutContractMobileStyles.noteRow}>
+                      <AlertCircle
+                        className={checkoutContractMobileStyles.noteIcon}
+                      />
+                      <div className={checkoutContractMobileStyles.noteText}>
+                        <p className={checkoutContractMobileStyles.noteHeading}>
+                          退租结算说明：
+                        </p>
+                        <ul className={checkoutContractMobileStyles.noteList}>
                           <li>
                             • 点击"确认退租"将一次性结清所有合同权利和义务
                           </li>
@@ -691,38 +919,39 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
 
                   {/* 结算汇总 */}
                   <div
-                    className={`rounded-lg border-2 p-4 ${
-                      finalSettlement.summary.settlementType === 'CHARGE'
-                        ? 'border-green-300 bg-green-100'
-                        : finalSettlement.summary.settlementType === 'REFUND'
-                          ? 'border-red-300 bg-red-100'
-                          : 'border-gray-300 bg-gray-100'
-                    }`}
+                    className={cn(
+                      checkoutContractMobileStyles.summaryCard,
+                      checkoutSettlementToneStyles.summary[
+                        finalSettlement.summary.settlementType
+                      ]
+                    )}
                   >
-                    <h4 className="mb-3 text-lg font-bold">结算汇总</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
+                    <h4 className={checkoutContractMobileStyles.summaryTitle}>
+                      结算汇总
+                    </h4>
+                    <div className={checkoutContractMobileStyles.summaryList}>
+                      <div className={checkoutContractMobileStyles.summaryRow}>
                         <span>总应退金额</span>
-                        <span className="text-red-600">
+                        <span className={checkoutSettlementToneStyles.refund.amount}>
                           ¥{finalSettlement.summary.totalRefund.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className={checkoutContractMobileStyles.summaryRow}>
                         <span>总应收金额</span>
-                        <span className="text-green-600">
+                        <span className={checkoutSettlementToneStyles.charge.amount}>
                           ¥{finalSettlement.summary.totalCharge.toFixed(2)}
                         </span>
                       </div>
-                      <div className="border-t-2 pt-2">
-                        <div className="flex justify-between text-xl font-bold">
+                      <div className={checkoutContractMobileStyles.summaryNetBlock}>
+                        <div
+                          className={checkoutContractMobileStyles.summaryNetRow}
+                        >
                           <span>净结算金额</span>
                           <span
                             className={
-                              finalSettlement.summary.settlementType === 'CHARGE'
-                                ? 'text-green-600'
-                                : finalSettlement.summary.settlementType === 'REFUND'
-                                  ? 'text-red-600'
-                                  : 'text-gray-600'
+                              checkoutSettlementToneStyles.summaryAmount[
+                                finalSettlement.summary.settlementType
+                              ]
                             }
                           >
                             {finalSettlement.summary.netAmount >= 0 ? '+' : ''}¥
@@ -735,22 +964,25 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                  disabled={loading}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  {loading ? '处理中...' : '确认退租并结清所有账单'}
-                </Button>
+              <div className={checkoutContractMobileStyles.actionsCard}>
+                <div className={checkoutContractMobileStyles.actionsRow}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    disabled={loading}
+                    className={checkoutContractMobileStyles.actionButton}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className={checkoutContractMobileStyles.actionSubmitButton}
+                  >
+                    {loading ? '处理中...' : '确认退租并结清所有账单'}
+                  </Button>
+                </div>
               </div>
             </form>
           </CardContent>

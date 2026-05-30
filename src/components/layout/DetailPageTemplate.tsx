@@ -29,6 +29,11 @@ interface DetailPageTemplateProps {
   actions?: DetailPageAction[]
   extraActions?: ReactNode
   className?: string
+  contentClassName?: string
+  actionsCardClassName?: string
+  actionsRowClassName?: string
+  actionButtonClassName?: string
+  showActionsTitle?: boolean
 }
 
 /**
@@ -49,6 +54,11 @@ export function DetailPageTemplate({
   actions = [],
   extraActions,
   className,
+  contentClassName,
+  actionsCardClassName,
+  actionsRowClassName,
+  actionButtonClassName,
+  showActionsTitle = true,
 }: DetailPageTemplateProps) {
   return (
     <PageContainer
@@ -58,25 +68,27 @@ export function DetailPageTemplate({
       className={className}
       actions={extraActions}
     >
-      <div className="space-y-6 pb-6">
+      <div className={contentClassName ?? 'space-y-6 pb-6'}>
         {/* 主要内容区域 */}
         {children}
 
         {/* 操作按钮区域 - 统一放在底部 */}
         {actions.length > 0 && (
-          <Card className="page-safe-bottom">
-            <CardHeader>
-              <CardTitle className="text-lg">操作</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-3 sm:flex-row">
+          <Card className={actionsCardClassName ?? 'page-safe-bottom'}>
+            {showActionsTitle ? (
+              <CardHeader>
+                <CardTitle className="text-lg">操作</CardTitle>
+              </CardHeader>
+            ) : null}
+            <CardContent className={showActionsTitle ? undefined : 'p-0'}>
+              <div className={actionsRowClassName ?? 'flex flex-col gap-3 sm:flex-row'}>
                 {actions.map((action, index) => (
                   <Button
                     key={index}
                     variant={action.variant || 'outline'}
                     onClick={action.onClick}
                     disabled={action.disabled}
-                    className={`w-full flex-1 sm:w-auto sm:flex-none ${action.className || ''}`}
+                    className={`${actionButtonClassName ?? 'w-full flex-1 sm:w-auto sm:flex-none'} ${action.className || ''}`}
                   >
                     {action.icon && <span className="mr-2">{action.icon}</span>}
                     {action.label}

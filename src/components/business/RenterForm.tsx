@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { renterFormMobileStyles } from '@/components/business/renter-form-mobile-styles'
 
 import { ErrorAlert, SimpleErrorAlert } from './ErrorAlert'
 
@@ -133,7 +134,7 @@ export function RenterForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="space-y-6">
+      <div className={renterFormMobileStyles.pageSection}>
         {/* 错误提示 */}
         {error && (
           <SimpleErrorAlert
@@ -144,30 +145,43 @@ export function RenterForm({
         )}
 
         {/* 基本信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>基本信息</CardTitle>
+        <Card className={renterFormMobileStyles.card}>
+          <CardHeader className={renterFormMobileStyles.cardHeader}>
+            <CardTitle className={renterFormMobileStyles.cardTitle}>基本信息</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
+          <CardContent className={renterFormMobileStyles.cardContent}>
+            <div className={renterFormMobileStyles.fieldsGrid}>
+              <div className={renterFormMobileStyles.fieldStack}>
                 <Label htmlFor="name">姓名 *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="请输入租客姓名"
+                  className={renterFormMobileStyles.input}
                   required
                 />
               </div>
 
-              <div>
+              <div className={renterFormMobileStyles.fieldStack}>
+                <Label htmlFor="phone">手机号 *</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleChange('phone', e.target.value)}
+                  placeholder="请输入手机号"
+                  className={renterFormMobileStyles.input}
+                  required
+                />
+              </div>
+
+              <div className={renterFormMobileStyles.fieldStack}>
                 <Label htmlFor="gender">性别</Label>
                 <select
                   id="gender"
                   value={formData.gender}
                   onChange={(e) => handleChange('gender', e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className={renterFormMobileStyles.select}
                 >
                   <option value="">请选择性别</option>
                   <option value="男">男</option>
@@ -175,152 +189,137 @@ export function RenterForm({
                 </select>
               </div>
 
-              <div>
-                <Label htmlFor="phone">手机号 *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="请输入手机号"
-                  required
-                />
-              </div>
-
-              <div>
+              <div className={renterFormMobileStyles.fieldStack}>
                 <Label htmlFor="idCard">身份证号</Label>
                 <Input
                   id="idCard"
                   value={formData.idCard}
                   onChange={(e) => handleChange('idCard', e.target.value)}
                   placeholder="请输入身份证号"
+                  className={renterFormMobileStyles.input}
                 />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 联系信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>紧急联系人</CardTitle>
+        {/* 补充信息 */}
+        <Card className={renterFormMobileStyles.card}>
+          <CardHeader className={renterFormMobileStyles.cardHeader}>
+            <CardTitle className={renterFormMobileStyles.cardTitle}>补充信息</CardTitle>
+            <p className={renterFormMobileStyles.cardDescription}>
+              录入紧急联系人、工作与入住等补充资料。
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="emergencyContact">联系人姓名</Label>
-                <Input
-                  id="emergencyContact"
-                  value={formData.emergencyContact}
-                  onChange={(e) =>
-                    handleChange('emergencyContact', e.target.value)
-                  }
-                  placeholder="请输入紧急联系人姓名"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="emergencyPhone">联系人电话</Label>
-                <Input
-                  id="emergencyPhone"
-                  value={formData.emergencyPhone}
-                  onChange={(e) =>
-                    handleChange('emergencyPhone', e.target.value)
-                  }
-                  placeholder="请输入紧急联系人电话"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 职业信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>职业信息</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="occupation">职业</Label>
-                <Input
-                  id="occupation"
-                  value={formData.occupation}
-                  onChange={(e) => handleChange('occupation', e.target.value)}
-                  placeholder="请输入职业"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="company">公司名称</Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) => handleChange('company', e.target.value)}
-                  placeholder="请输入公司名称"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 入住信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>入住信息</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="moveInDate">入住日期</Label>
-                <Input
-                  id="moveInDate"
-                  type="date"
-                  value={formData.moveInDate}
-                  onChange={(e) => handleChange('moveInDate', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="tenantCount">入住人数</Label>
-                <Input
-                  id="tenantCount"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.tenantCount}
-                  onChange={(e) => handleChange('tenantCount', e.target.value)}
-                  placeholder="请输入入住人数"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 备注信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>备注信息</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className={renterFormMobileStyles.cardContent}>
             <div>
-              <Label htmlFor="remarks">备注</Label>
-              <Textarea
-                id="remarks"
-                value={formData.remarks}
-                onChange={(e) => handleChange('remarks', e.target.value)}
-                placeholder="请输入备注信息"
-                rows={3}
-              />
+              <h4 className={renterFormMobileStyles.sectionTitle}>紧急联系人</h4>
+              <div className={renterFormMobileStyles.fieldsGrid}>
+                <div className={renterFormMobileStyles.fieldStack}>
+                  <Label htmlFor="emergencyContact">联系人姓名</Label>
+                  <Input
+                    id="emergencyContact"
+                    value={formData.emergencyContact}
+                    onChange={(e) =>
+                      handleChange('emergencyContact', e.target.value)
+                    }
+                    placeholder="请输入紧急联系人姓名"
+                    className={renterFormMobileStyles.input}
+                  />
+                </div>
+
+                <div className={renterFormMobileStyles.fieldStack}>
+                  <Label htmlFor="emergencyPhone">联系人电话</Label>
+                  <Input
+                    id="emergencyPhone"
+                    value={formData.emergencyPhone}
+                    onChange={(e) =>
+                      handleChange('emergencyPhone', e.target.value)
+                    }
+                    placeholder="请输入紧急联系人电话"
+                    className={renterFormMobileStyles.input}
+                  />
+                </div>
+              </div>
             </div>
+
+            <div className={renterFormMobileStyles.sectionBlock}>
+              <h4 className={renterFormMobileStyles.sectionTitle}>工作与入住</h4>
+              <div className={renterFormMobileStyles.fieldsGrid}>
+                <div className={renterFormMobileStyles.fieldStack}>
+                  <Label htmlFor="occupation">职业</Label>
+                  <Input
+                    id="occupation"
+                    value={formData.occupation}
+                    onChange={(e) => handleChange('occupation', e.target.value)}
+                    placeholder="请输入职业"
+                    className={renterFormMobileStyles.input}
+                  />
+                </div>
+
+                <div className={renterFormMobileStyles.fieldStack}>
+                  <Label htmlFor="company">公司名称</Label>
+                  <Input
+                    id="company"
+                    value={formData.company}
+                    onChange={(e) => handleChange('company', e.target.value)}
+                    placeholder="请输入公司名称"
+                    className={renterFormMobileStyles.input}
+                  />
+                </div>
+
+                <div className={renterFormMobileStyles.fieldStack}>
+                  <Label htmlFor="moveInDate">入住日期</Label>
+                  <Input
+                    id="moveInDate"
+                    type="date"
+                    value={formData.moveInDate}
+                    onChange={(e) => handleChange('moveInDate', e.target.value)}
+                    className={renterFormMobileStyles.input}
+                  />
+                </div>
+
+                <div className={renterFormMobileStyles.fieldStack}>
+                  <Label htmlFor="tenantCount">入住人数</Label>
+                  <Input
+                    id="tenantCount"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.tenantCount}
+                    onChange={(e) => handleChange('tenantCount', e.target.value)}
+                    placeholder="请输入入住人数"
+                    className={renterFormMobileStyles.input}
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 备注 */}
+        <Card className={renterFormMobileStyles.card}>
+          <CardHeader className={renterFormMobileStyles.cardHeader}>
+            <CardTitle className={renterFormMobileStyles.cardTitle}>备注</CardTitle>
+          </CardHeader>
+          <CardContent className={renterFormMobileStyles.cardContent}>
+            <Textarea
+              id="remarks"
+              value={formData.remarks}
+              onChange={(e) => handleChange('remarks', e.target.value)}
+              placeholder="请输入备注信息"
+              className={renterFormMobileStyles.textarea}
+              rows={3}
+            />
           </CardContent>
         </Card>
 
         {/* 操作按钮 */}
-        <div className="flex space-x-4">
+        <div className={renterFormMobileStyles.actionsRow}>
           <Button
             type="submit"
             disabled={loading || isSubmitting}
-            className="flex-1"
+            className={renterFormMobileStyles.actionButton}
           >
             <Save className="mr-2 h-4 w-4" />
             {loading || isSubmitting
@@ -335,7 +334,7 @@ export function RenterForm({
             variant="outline"
             onClick={onCancel}
             disabled={loading || isSubmitting}
-            className="flex-1"
+            className={renterFormMobileStyles.actionButton}
           >
             <X className="mr-2 h-4 w-4" />
             取消

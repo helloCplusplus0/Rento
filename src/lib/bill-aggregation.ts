@@ -61,38 +61,50 @@ async function generateSingleMeterBills(
   readingDataList: MeterReadingData[],
   options: AggregationOptions
 ) {
-  const bills = []
+  return await prisma.$transaction(async (tx) => {
+    const bills = []
 
-  for (const readingData of readingDataList) {
-    const bill = await prisma.bill.create({
-      data: {
-        billNumber: generateBillNumber('UTILITIES', options.contractNumber),
-        type: 'UTILITIES',
-        amount: readingData.amount,
-        receivedAmount: 0,
-        pendingAmount: readingData.amount,
-        dueDate: calculateDueDate(readingData.readingDate),
-        period: options.period,
-        status: 'PENDING',
-        contractId: options.contractId,
+    for (const readingData of readingDataList) {
+      const bill = await tx.bill.create({
+        data: {
+          billNumber: generateBillNumber('UTILITIES', options.contractNumber),
+          type: 'UTILITIES',
+          amount: readingData.amount,
+          receivedAmount: 0,
+          pendingAmount: readingData.amount,
+          dueDate: calculateDueDate(readingData.readingDate),
+          period: options.period,
+          status: 'PENDING',
+          contractId: options.contractId,
 
-        meterReadingId: readingData.meterReadingId, // 向后兼容
-        remarks: generateSingleMeterRemarks(readingData),
-        metadata: JSON.stringify({
-          triggerType: 'UTILITY_READING',
-          generatedAt: new Date().toISOString(),
-          meterType: readingData.meterType,
-          usage: readingData.usage,
-          unitPrice: readingData.unitPrice,
-          priceSource: readingData.priceSource,
-        }),
-      },
-    })
+          meterReadingId: readingData.meterReadingId,
+          remarks: generateSingleMeterRemarks(readingData),
+          metadata: JSON.stringify({
+            triggerType: 'UTILITY_READING',
+            generatedAt: new Date().toISOString(),
+            aggregationStrategy: 'SINGLE',
+            meterType: readingData.meterType,
+            meterName: readingData.meterName,
+            usage: readingData.usage,
+            unitPrice: readingData.unitPrice,
+            priceSource: readingData.priceSource,
+          }),
+        },
+      })
 
-    bills.push(bill)
-  }
+      await tx.meterReading.update({
+        where: { id: readingData.meterReadingId },
+        data: {
+          isBilled: true,
+          status: 'BILLED',
+        },
+      })
 
-  return bills
+      bills.push(bill)
+    }
+
+    return bills
+  })
 }
 
 /**

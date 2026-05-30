@@ -8,10 +8,12 @@ import {
   getBillVisualConfig,
 } from '@/lib/bill-display'
 import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { contractBillPreviewMobileStyles } from './contract-bill-preview-mobile-styles'
 
 interface ContractFormData {
   startDate: string
@@ -130,53 +132,83 @@ export function ContractBillPreview({
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card
+      className={cn(contractBillPreviewMobileStyles.card, className)}
+    >
+      <CardHeader className={contractBillPreviewMobileStyles.header}>
+        <CardTitle className={contractBillPreviewMobileStyles.title}>
           <FileText className="h-5 w-5" />
           账单预览
         </CardTitle>
-        <p className="text-sm text-gray-600">
+        <p className={contractBillPreviewMobileStyles.description}>
           合同创建后将自动生成以下 {stats.totalBills} 个账单
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={contractBillPreviewMobileStyles.content}>
         {/* 统计概览 */}
-        <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">
+        <div className={contractBillPreviewMobileStyles.statsGrid}>
+          <div className={contractBillPreviewMobileStyles.statsItem}>
+            <p
+              className={cn(
+                contractBillPreviewMobileStyles.statsValue,
+                'text-blue-600'
+              )}
+            >
               {stats.totalBills}
             </p>
-            <p className="text-xs text-gray-600">总账单数</p>
+            <p className={contractBillPreviewMobileStyles.statsLabel}>
+              总账单数
+            </p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">
+          <div className={contractBillPreviewMobileStyles.statsItem}>
+            <p
+              className={cn(
+                contractBillPreviewMobileStyles.statsValue,
+                'text-green-600'
+              )}
+            >
               {formatCurrency(stats.totalAmount)}
             </p>
-            <p className="text-xs text-gray-600">总金额</p>
+            <p className={contractBillPreviewMobileStyles.statsLabel}>
+              总金额
+            </p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-orange-600">
+          <div className={contractBillPreviewMobileStyles.statsItem}>
+            <p
+              className={cn(
+                contractBillPreviewMobileStyles.statsValue,
+                'text-orange-600'
+              )}
+            >
               {formatCurrency(stats.firstPaymentAmount)}
             </p>
-            <p className="text-xs text-gray-600">首次缴费</p>
+            <p className={contractBillPreviewMobileStyles.statsLabel}>
+              首次缴费
+            </p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-purple-600">
+          <div className={contractBillPreviewMobileStyles.statsItem}>
+            <p
+              className={cn(
+                contractBillPreviewMobileStyles.statsValue,
+                'text-purple-600'
+              )}
+            >
               {stats.rentBills}
             </p>
-            <p className="text-xs text-gray-600">租金账单</p>
+            <p className={contractBillPreviewMobileStyles.statsLabel}>
+              租金账单
+            </p>
           </div>
         </div>
 
         <Separator />
 
         {/* 账单列表 */}
-        <div className="max-h-96 space-y-3 overflow-y-auto">
+        <div className={contractBillPreviewMobileStyles.list}>
           {previewBills.map((bill, index) => (
             <div
               key={bill.id + index}
-              className="flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50"
+              className={contractBillPreviewMobileStyles.listItem}
             >
               {(() => {
                 const visualConfig = getBillVisualConfig(bill)
@@ -184,42 +216,57 @@ export function ContractBillPreview({
 
                 return (
                   <>
-              {/* 账单图标 */}
+                    {/* 账单图标 */}
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full ${visualConfig.iconClassName}`}
+                      className={cn(
+                        contractBillPreviewMobileStyles.iconBox,
+                        visualConfig.iconClassName
+                      )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className={contractBillPreviewMobileStyles.icon} />
                     </div>
 
-              {/* 账单信息 */}
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <p className="truncate text-sm font-medium">
+                    {/* 账单信息 */}
+                    <div className={contractBillPreviewMobileStyles.contentBlock}>
+                      <div
+                        className={contractBillPreviewMobileStyles.contentHeader}
+                      >
+                        <p className={contractBillPreviewMobileStyles.titleText}>
                           {bill.description}
                         </p>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge
+                          variant="outline"
+                          className={contractBillPreviewMobileStyles.typeBadge}
+                        >
                           {getBillDisplayLabel(bill)}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                      <div className={contractBillPreviewMobileStyles.metaRow}>
+                        <span className={contractBillPreviewMobileStyles.metaItem}>
+                          <Calendar
+                            className={contractBillPreviewMobileStyles.metaIcon}
+                          />
                           {bill.dueDate.toLocaleDateString()}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <CreditCard className="h-3 w-3" />
+                        <span className={contractBillPreviewMobileStyles.metaItem}>
+                          <CreditCard
+                            className={contractBillPreviewMobileStyles.metaIcon}
+                          />
                           {bill.billNumber}
                         </span>
                       </div>
                     </div>
 
-              {/* 金额 */}
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">
+                    {/* 金额 */}
+                    <div className={contractBillPreviewMobileStyles.amountBlock}>
+                      <p className={contractBillPreviewMobileStyles.amountValue}>
                         {formatCurrency(bill.amount)}
                       </p>
                       {index === 0 && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className={contractBillPreviewMobileStyles.firstBadge}
+                        >
                           首期
                         </Badge>
                       )}
@@ -232,8 +279,8 @@ export function ContractBillPreview({
         </div>
 
         {/* 提示信息 */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm text-blue-800">
+        <div className={contractBillPreviewMobileStyles.helperCard}>
+          <p className={contractBillPreviewMobileStyles.helperText}>
             💡 <strong>提示：</strong>
             这些账单将在合同创建成功后自动生成，您可以在合同详情页面查看和管理所有账单。
           </p>

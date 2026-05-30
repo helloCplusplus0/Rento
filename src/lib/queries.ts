@@ -1317,20 +1317,57 @@ export const meterReadingQueries = {
       take: limit,
     }),
 
-  // 精确查找同一仪表、同一抄表时间的正式抄表记录
-  findRegularReadingByMeterAndDate: (meterId: string, readingDate: Date) =>
-    prisma.meterReading.findFirst({
+  // 按正式抄表的业务周期查重，兼容历史 period 为空时按同月 readingDate 回退判重
+  findRegularReadingByMeterAndPeriod: (
+    meterId: string,
+    period: string,
+    readingDate: Date
+  ) => {
+    const legacyPeriods = Array.from(
+      new Set([
+        period,
+        `${readingDate.getFullYear()}-${readingDate.getMonth() + 1}`,
+        `${readingDate.getFullYear()}-${String(readingDate.getMonth() + 1).padStart(2, '0')}`,
+      ])
+    )
+    const monthStart = new Date(
+      readingDate.getFullYear(),
+      readingDate.getMonth(),
+      1
+    )
+    const monthEnd = new Date(
+      readingDate.getFullYear(),
+      readingDate.getMonth() + 1,
+      1
+    )
+
+    return prisma.meterReading.findFirst({
       where: {
         meterId,
-        readingDate,
         recordType: 'REGULAR_READING',
+        OR: [
+          {
+            period: {
+              in: legacyPeriods,
+            },
+          },
+          {
+            OR: [{ period: null }, { period: '' }],
+            readingDate: {
+              gte: monthStart,
+              lt: monthEnd,
+            },
+          },
+        ],
       },
       select: {
         id: true,
         currentReading: true,
         readingDate: true,
+        period: true,
       },
-    }),
+    })
+  },
 
   // 查找所有抄表记录 - 支持筛选条件
   findAll: (
@@ -1399,6 +1436,11 @@ export const meterReadingQueries = {
                 contains: search,
               },
             },
+          },
+        },
+        {
+          remarks: {
+            contains: search,
           },
         },
       ]

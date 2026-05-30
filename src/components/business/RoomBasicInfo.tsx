@@ -1,5 +1,6 @@
 import type { RoomWithBuildingForClient } from '@/types/database'
 import { formatDate } from '@/lib/format'
+import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoomStatusBadge } from '@/components/ui/status-badge'
 
@@ -26,65 +27,68 @@ export function RoomBasicInfo({ room }: RoomBasicInfoProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>基本信息</CardTitle>
+    <Card className={roomDetailMobileStyles.card}>
+      <CardHeader className={roomDetailMobileStyles.cardHeader}>
+        <div className={roomDetailMobileStyles.cardHeaderRow}>
+          <CardTitle className={roomDetailMobileStyles.cardTitle}>基本信息</CardTitle>
           <RoomStatusBadge status={room.status} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 移动端优化：使用2列网格布局，减少空白 */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <div>
-            <label className="text-muted-foreground text-sm">房间号</label>
-            <p className="text-lg font-medium">{room.roomNumber}</p>
+      <CardContent className={roomDetailMobileStyles.cardContent}>
+        <div className={roomDetailMobileStyles.fieldsGrid}>
+          <div className={roomDetailMobileStyles.fieldBlock}>
+            <label className={roomDetailMobileStyles.fieldLabel}>房间号</label>
+            <p className={roomDetailMobileStyles.fieldValueLarge}>{room.roomNumber}</p>
           </div>
-          <div>
-            <label className="text-muted-foreground text-sm">楼栋</label>
-            <p className="font-medium">{room.building.name}</p>
+          <div className={roomDetailMobileStyles.fieldBlock}>
+            <label className={roomDetailMobileStyles.fieldLabel}>楼栋</label>
+            <p className={roomDetailMobileStyles.fieldValueStrong}>{room.building.name}</p>
           </div>
-          <div>
-            <label className="text-muted-foreground text-sm">楼层</label>
-            <p className="font-medium">{room.floorNumber}层</p>
+          <div className={roomDetailMobileStyles.fieldBlock}>
+            <label className={roomDetailMobileStyles.fieldLabel}>楼层</label>
+            <p className={roomDetailMobileStyles.fieldValueStrong}>
+              {room.floorNumber}层
+            </p>
           </div>
-          <div>
-            <label className="text-muted-foreground text-sm">房间类型</label>
-            <p className="font-medium">{getRoomTypeText(room.roomType)}</p>
+          <div className={roomDetailMobileStyles.fieldBlock}>
+            <label className={roomDetailMobileStyles.fieldLabel}>房间类型</label>
+            <p className={roomDetailMobileStyles.fieldValueStrong}>
+              {getRoomTypeText(room.roomType)}
+            </p>
           </div>
           {room.area && (
-            <div className="col-span-1">
-              <label className="text-muted-foreground text-sm">面积</label>
-              <p className="font-medium">{room.area}㎡</p>
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>面积</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>{room.area}㎡</p>
             </div>
           )}
         </div>
 
-        {/* 楼栋地址信息 */}
         {room.building.address && (
-          <div className="border-t pt-4">
-            <label className="text-muted-foreground text-sm">楼栋地址</label>
-            <p className="font-medium">{room.building.address}</p>
+          <div className={roomDetailMobileStyles.sectionBlock}>
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>楼栋地址</label>
+              <p className={roomDetailMobileStyles.fieldValueStrong}>
+                {room.building.address}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* 当前租客信息 */}
         {room.currentRenter && (
-          <div className="border-t pt-4">
+          <div className={roomDetailMobileStyles.sectionBlock}>
             <div className="flex items-center justify-between">
-              <div>
-                <label className="text-muted-foreground text-sm">
-                  当前租客
-                </label>
-                <p className="font-medium">{room.currentRenter}</p>
+              <div className={roomDetailMobileStyles.fieldBlock}>
+                <label className={roomDetailMobileStyles.fieldLabel}>当前租客</label>
+                <p className={roomDetailMobileStyles.fieldValueStrong}>
+                  {room.currentRenter}
+                </p>
               </div>
               {room.overdueDays && room.overdueDays > 0 && (
                 <div className="text-right">
-                  <label className="text-muted-foreground text-sm">
-                    逾期天数
-                  </label>
-                  <p className="font-medium text-red-600">
-                    {room.overdueDays}天
+                  <label className={roomDetailMobileStyles.fieldLabel}>逾期天数</label>
+                  <p className="text-sm font-medium leading-5 text-red-600 sm:leading-6">
+                    {room.overdueDays} 天
                   </p>
                 </div>
               )}
@@ -92,16 +96,19 @@ export function RoomBasicInfo({ room }: RoomBasicInfoProps) {
           </div>
         )}
 
-        {/* 时间信息 */}
-        <div className="border-t pt-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <label className="text-muted-foreground">创建时间</label>
-              <p>{formatDate(room.createdAt)}</p>
+        <div className={roomDetailMobileStyles.sectionBlock}>
+          <div className={roomDetailMobileStyles.fieldsGrid}>
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>创建时间</label>
+              <p className={roomDetailMobileStyles.fieldValue}>
+                {formatDate(room.createdAt)}
+              </p>
             </div>
-            <div>
-              <label className="text-muted-foreground">更新时间</label>
-              <p>{formatDate(room.updatedAt)}</p>
+            <div className={roomDetailMobileStyles.fieldBlock}>
+              <label className={roomDetailMobileStyles.fieldLabel}>更新时间</label>
+              <p className={roomDetailMobileStyles.fieldValue}>
+                {formatDate(room.updatedAt)}
+              </p>
             </div>
           </div>
         </div>

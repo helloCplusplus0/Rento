@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -21,8 +22,9 @@ interface AggregatedBillBreakdownItem {
   id: string
   title: ReactNode
   description?: ReactNode
-  amount: ReactNode
+  amount?: ReactNode
   icon?: ReactNode
+  headerAside?: ReactNode
   containerClassName?: string
   amountClassName?: string
 }
@@ -40,6 +42,14 @@ interface AggregatedBillTemplateCardProps {
   emptyBreakdownText: string
   notice?: ReactNode
   footer?: ReactNode
+  metaGridClassName?: string
+  metaItemLayout?: 'stacked' | 'inline'
+  breakdownListClassName?: string
+  breakdownItemClassName?: string
+  breakdownLeadingClassName?: string
+  breakdownTitleClassName?: string
+  breakdownDescriptionClassName?: string
+  breakdownAmountClassName?: string
 }
 
 export function AggregatedBillTemplateCard({
@@ -55,27 +65,60 @@ export function AggregatedBillTemplateCard({
   emptyBreakdownText,
   notice,
   footer,
+  metaGridClassName,
+  metaItemLayout = 'stacked',
+  breakdownListClassName,
+  breakdownItemClassName,
+  breakdownLeadingClassName,
+  breakdownTitleClassName,
+  breakdownDescriptionClassName,
+  breakdownAmountClassName,
 }: AggregatedBillTemplateCardProps) {
   return (
-    <Card className="w-full min-w-0 overflow-hidden">
-      <CardHeader>
+    <Card className="w-full min-w-0 overflow-x-hidden py-4 sm:py-6">
+      <CardHeader className="px-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-lg">{title}</CardTitle>
-            <Badge variant="outline" className={badgeClassName}>
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+            <CardTitle className="text-base leading-6 sm:text-lg">
+              {title}
+            </CardTitle>
+            <Badge
+              variant="outline"
+              className={`max-w-full break-words text-xs sm:text-sm ${badgeClassName ?? ''}`}
+            >
               {badgeText}
             </Badge>
           </div>
-          {actionSlot}
+          {actionSlot ? <div className="w-full sm:w-auto">{actionSlot}</div> : null}
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+      <CardContent className="space-y-4 px-4 text-sm sm:px-6">
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-3 text-xs leading-5 sm:grid-cols-2 sm:gap-4 sm:text-sm lg:grid-cols-4',
+            metaGridClassName
+          )}
+        >
           {metaItems.map((item) => (
-            <div key={item.label} className="min-w-0">
-              <span className="text-gray-500">{item.label}：</span>
-              <div className="mt-1 font-medium break-words">{item.value}</div>
+            <div
+              key={item.label}
+              className={cn(
+                'min-w-0',
+                metaItemLayout === 'inline'
+                  ? 'flex flex-wrap items-baseline gap-x-1 gap-y-0.5'
+                  : undefined
+              )}
+            >
+              <span className="shrink-0 text-gray-500">{item.label}：</span>
+              <div
+                className={cn(
+                  'min-w-0 font-medium break-words',
+                  metaItemLayout === 'inline' ? 'flex-1' : 'mt-1'
+                )}
+              >
+                {item.value}
+              </div>
             </div>
           ))}
         </div>
@@ -92,14 +135,18 @@ export function AggregatedBillTemplateCard({
         {summarySlot ? (
           summarySlot
         ) : (
-          <div className="rounded-lg bg-gray-50 p-4">
-            <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
+          <div className="rounded-lg bg-gray-50 p-4 sm:p-5">
+            <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4 sm:gap-4">
               {summaryItems.map((item) => (
                 <div key={item.label}>
-                  <div className={`text-2xl font-bold ${item.accentClassName}`}>
+                  <div
+                    className={`text-xl leading-tight font-bold break-all sm:text-2xl ${item.accentClassName}`}
+                  >
                     {item.value}
                   </div>
-                  <div className="text-sm text-gray-500">{item.label}</div>
+                  <div className="mt-1 text-xs text-gray-500 sm:text-sm">
+                    {item.label}
+                  </div>
                 </div>
               ))}
             </div>
@@ -109,38 +156,72 @@ export function AggregatedBillTemplateCard({
         <Separator />
 
         <div>
-          <h4 className="mb-3 font-medium">{breakdownTitle}</h4>
+          <h4 className="mb-3 text-sm font-medium sm:text-base">
+            {breakdownTitle}
+          </h4>
           {breakdownItems.length === 0 ? (
             <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500">
               {emptyBreakdownText}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className={cn('space-y-3', breakdownListClassName)}>
               {breakdownItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex flex-col gap-3 rounded-lg p-3 sm:flex-row sm:items-center sm:justify-between ${item.containerClassName ?? 'bg-gray-50'}`}
+                  className={cn(
+                    'flex flex-col gap-3 rounded-lg p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4',
+                    item.containerClassName ?? 'bg-gray-50',
+                    breakdownItemClassName
+                  )}
                 >
-                  <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex min-w-0 items-center gap-3',
+                      breakdownLeadingClassName
+                    )}
+                  >
                     {item.icon ? (
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white">
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white sm:h-9 sm:w-9">
                         {item.icon}
                       </div>
                     ) : null}
                     <div className="min-w-0">
-                      <div className="break-words font-medium">{item.title}</div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div
+                          className={cn(
+                            'min-w-0 flex-1 break-words text-sm font-medium sm:text-base',
+                            breakdownTitleClassName
+                          )}
+                        >
+                          {item.title}
+                        </div>
+                        {item.headerAside ? (
+                          <div className="shrink-0">{item.headerAside}</div>
+                        ) : null}
+                      </div>
                       {item.description ? (
-                        <div className="break-words text-sm text-gray-500">
+                        <div
+                          className={cn(
+                            'break-words text-xs leading-5 text-gray-500 sm:text-sm',
+                            breakdownDescriptionClassName
+                          )}
+                        >
                           {item.description}
                         </div>
                       ) : null}
                     </div>
                   </div>
-                  <div
-                    className={`self-start text-left font-bold sm:self-auto sm:text-right ${item.amountClassName ?? 'text-gray-900'}`}
-                  >
-                    {item.amount}
-                  </div>
+                  {item.amount !== null && item.amount !== undefined ? (
+                    <div
+                      className={cn(
+                        'self-start text-left text-base leading-6 font-bold break-all sm:self-auto sm:text-right sm:text-lg',
+                        item.amountClassName ?? 'text-gray-900',
+                        breakdownAmountClassName
+                      )}
+                    >
+                      {item.amount}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>

@@ -1,8 +1,9 @@
 import { Edit, Plus, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 import type { RoomWithBuildingForClient } from '@/types/database'
+import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 
 interface RoomActionsProps {
   room: RoomWithBuildingForClient
@@ -27,61 +28,39 @@ export function RoomActions({
   }
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex flex-wrap gap-2">
-          {/* 编辑房间 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            编辑房间
-          </Button>
+    <div className={roomDetailMobileStyles.actionsRow}>
+      <Button
+        variant="outline"
+        onClick={onEdit}
+        disabled={isLoading}
+        className={roomDetailMobileStyles.actionButton}
+      >
+        <Edit className="h-4 w-4" />
+        编辑房间
+      </Button>
 
-          {/* 添加合同 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddContract}
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            添加合同
-          </Button>
+      <Button
+        variant="outline"
+        onClick={handleAddContract}
+        disabled={isLoading}
+        className={roomDetailMobileStyles.actionButton}
+      >
+        <Plus className="h-4 w-4" />
+        添加合同
+      </Button>
 
-          {/* 删除房间 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onDelete}
-            disabled={isLoading}
-            className="flex items-center gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-            删除房间
-          </Button>
-        </div>
-
-        {/* 操作说明 */}
-        <div className="mt-4 border-t pt-4">
-          <div className="text-muted-foreground space-y-1 text-sm">
-            <p>
-              <strong>编辑房间</strong>: 修改房间基本信息，如租金、面积等
-            </p>
-            <p>
-              <strong>添加合同</strong>: 为房间创建新的租赁合同
-            </p>
-            <p>
-              <strong>删除房间</strong>: 永久删除房间信息（谨慎操作）
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <Button
+        variant="outline"
+        onClick={onDelete}
+        disabled={isLoading}
+        className={cn(
+          roomDetailMobileStyles.actionButton,
+          'border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700'
+        )}
+      >
+        <Trash2 className="h-4 w-4" />
+        删除房间
+      </Button>
+    </div>
   )
 }

@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { FileText, User } from 'lucide-react'
 
 import type { ContractWithDetails } from '@/types/database'
 import { calculateOverdueDays, formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,43 +35,80 @@ export function ContractCard({
   className,
 }: ContractCardProps) {
   const overdueDays = calculateOverdueDays(contract.endDate)
+  const isExpiringSoon =
+    contract.status === 'ACTIVE' && overdueDays <= 0 && overdueDays >= -30
 
   return (
     <TouchCard onClick={onClick} className={className}>
-      <Card className="h-full transition-all hover:shadow-md">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">
-              {contract.contractNumber}
-            </CardTitle>
-            <ContractStatusBadge status={contract.status} />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-muted-foreground text-sm">
-            {contract.room.building.name} - {contract.room.roomNumber}
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">租客</span>
-            <span className="font-medium">{contract.renter.name}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">月租金</span>
-            <span className="font-medium">
-              {formatCurrency(Number(contract.monthlyRent))}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">合同期限</span>
-            <span className="text-xs font-medium">
-              {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
-            </span>
-          </div>
-          {contract.status === 'EXPIRED' && overdueDays > 0 && (
-            <div className="text-xs font-medium text-red-600">
-              已过期 {overdueDays} 天
+      <Card className={contractListMobileStyles.card}>
+        <CardContent className={contractListMobileStyles.cardContent}>
+          <div className={contractListMobileStyles.cardHeader}>
+            <div className={contractListMobileStyles.cardLeading}>
+              <div className="flex items-center gap-1.5">
+                <FileText className="h-4 w-4 shrink-0 text-blue-600" />
+                <CardTitle className={contractListMobileStyles.cardTitle}>
+                  {contract.room.building.name} - {contract.room.roomNumber}
+                </CardTitle>
+              </div>
+              <div className={contractListMobileStyles.cardMeta}>
+                {contract.contractNumber}
+              </div>
             </div>
-          )}
+            <ContractStatusBadge
+              status={contract.status}
+              className={contractListMobileStyles.cardBadge}
+            />
+          </div>
+
+          <div className={contractListMobileStyles.detailStack}>
+            <div className={contractListMobileStyles.detailRow}>
+              <span className={contractListMobileStyles.detailLabel}>月租金</span>
+              <span className={contractListMobileStyles.detailValue}>
+                {formatCurrency(Number(contract.monthlyRent))}
+              </span>
+            </div>
+            <div className={contractListMobileStyles.detailRow}>
+              <span className={contractListMobileStyles.detailLabel}>付款方式</span>
+              <span className={contractListMobileStyles.detailValue}>
+                {contract.paymentMethod || '未设置'}
+              </span>
+            </div>
+            <div className={contractListMobileStyles.detailPairRow}>
+              <span className={contractListMobileStyles.detailLabel}>合同期限</span>
+              <span className={contractListMobileStyles.detailPairValue}>
+                {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
+              </span>
+            </div>
+          </div>
+
+          <div className={contractListMobileStyles.footer}>
+            <div className={contractListMobileStyles.footerRow}>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <User className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                <span className={contractListMobileStyles.footerMetaText}>
+                  租客：{contract.renter.name}
+                </span>
+              </div>
+              {contract.room.area ? (
+                <span className={contractListMobileStyles.footerMetaSubtle}>
+                  {contract.room.area}㎡
+                </span>
+              ) : null}
+            </div>
+            {contract.status === 'EXPIRED' && overdueDays > 0 ? (
+              <div className="mt-1 flex justify-end">
+                <span className={cn(contractListMobileStyles.footerHint, 'text-red-600')}>
+                  已过期 {overdueDays} 天
+                </span>
+              </div>
+            ) : isExpiringSoon ? (
+              <div className="mt-1 flex justify-end">
+                <span className={cn(contractListMobileStyles.footerHint, 'text-orange-600')}>
+                  30 天内到期
+                </span>
+              </div>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     </TouchCard>

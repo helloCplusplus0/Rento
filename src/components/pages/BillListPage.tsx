@@ -11,12 +11,14 @@ import {
   sortBillsForDisplay,
   type BillPresentationStatus,
 } from '@/lib/bill-semantics'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { BillCard, BillCardSkeleton } from '@/components/business/bill-card'
 import {
   BillCardCompact,
   BillCardCompactSkeleton,
 } from '@/components/business/BillCardCompact'
+import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { BillSearchBar } from '@/components/business/BillSearchBar'
 import { BillStatsOverview } from '@/components/business/BillStatsOverview'
 import { BillStatusFilter } from '@/components/business/BillStatusFilter'
@@ -45,7 +47,7 @@ function BillGrid({
 }) {
   if (loading) {
     return (
-      <div className={`space-y-3 ${className}`}>
+      <div className={cn(billListMobileStyles.mobileSkeletonList, className)}>
         {/* 移动端显示紧凑型骨架屏 */}
         <div className="block lg:hidden">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -64,7 +66,7 @@ function BillGrid({
 
   if (bills.length === 0) {
     return (
-      <div className={`py-12 text-center ${className}`}>
+      <div className={cn('py-12 text-center', className)}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
           <svg
             className="h-8 w-8 text-gray-400"
@@ -91,7 +93,7 @@ function BillGrid({
   return (
     <>
       {/* 移动端：单列紧凑型卡片 */}
-      <div className="block space-y-3 lg:hidden">
+      <div className={billListMobileStyles.mobileList}>
         {bills.map((bill) => (
           <BillCardCompact
             key={bill.id}
@@ -167,25 +169,27 @@ export function BillListPage({ initialBills }: BillListPageProps) {
 
   return (
     <PageContainer title="账单管理" showBackButton>
-      <div className="space-y-6 pb-6">
-        {/* 页面头部操作 */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">账单概览</h2>
-          <Link href="/bills/stats">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              统计分析
-            </Button>
-          </Link>
-        </div>
-
-        {/* 搜索栏 */}
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <BillSearchBar
-            placeholder="搜索账单号、租客姓名或房间号"
-            value={searchQuery}
-            onChange={setSearchQuery}
-          />
+      <div className={billListMobileStyles.pageSection}>
+        {/* 搜索与统计入口在移动端优先横向排布，减少首屏垂直占用 */}
+        <div className={billListMobileStyles.toolbarCard}>
+          <div className={billListMobileStyles.toolbarRow}>
+            <BillSearchBar
+              className="min-w-0 flex-1"
+              placeholder="搜索账单号、租客姓名或房间号"
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
+            <Link href="/bills/stats" className="shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className={billListMobileStyles.toolbarActionButton}
+              >
+                <BarChart3 className="h-4 w-4 sm:mr-2" />
+                <span className="sr-only sm:not-sr-only">统计分析</span>
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* 统计概览 */}

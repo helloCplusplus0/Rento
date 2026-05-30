@@ -3,13 +3,12 @@
 import {
   AlertTriangle,
   CheckCircle,
-  Clock,
   FileText,
-  XCircle,
+  FileClock,
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface ContractStats {
   totalCount: number
@@ -47,88 +46,45 @@ export function ContractStatsOverview({ stats }: ContractStatsOverviewProps) {
       bgColor: 'bg-green-100',
     },
     {
+      title: '待生效',
+      value: stats.statusDistribution.pending,
+      icon: FileClock,
+      color: 'text-sky-600',
+      bgColor: 'bg-sky-100',
+    },
+    {
       title: '即将到期',
       value: stats.expiringSoonCount,
       icon: AlertTriangle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
     },
-    {
-      title: '本月新增',
-      value: stats.newThisMonth,
-      icon: Clock,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
   ]
 
   return (
-    <div className="space-y-4">
-      {/* 主要统计卡片 */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {statsCards.map((stat, index) => {
-          const IconComponent = stat.icon
-          return (
-            <Card key={index}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div
-                    className={`h-10 w-10 rounded-full ${stat.bgColor} flex items-center justify-center`}
-                  >
-                    <IconComponent className={`h-5 w-5 ${stat.color}`} />
-                  </div>
+    <div className={contractListMobileStyles.statsGrid}>
+      {statsCards.map((stat, index) => {
+        const IconComponent = stat.icon
+        return (
+          <Card key={index} className={contractListMobileStyles.statsCard}>
+            <CardContent className={contractListMobileStyles.statsContent}>
+              <div className={contractListMobileStyles.statsInner}>
+                <div>
+                  <p className={contractListMobileStyles.statsLabel}>{stat.title}</p>
+                  <p className={contractListMobileStyles.statsValue}>
+                    {stat.value}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* 简化的状态分布 - 只显示关键信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">合同状态概览</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm sm:flex sm:items-center sm:justify-between sm:space-y-0">
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 flex-shrink-0 rounded-full bg-green-500"></div>
-                <span className="whitespace-nowrap">
-                  生效中 {stats.activeCount}
-                </span>
+                <div
+                  className={`${contractListMobileStyles.statsIconBox} ${stat.bgColor}`}
+                >
+                  <IconComponent className={`h-5 w-5 ${stat.color}`} />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 flex-shrink-0 rounded-full bg-red-500"></div>
-                <span className="whitespace-nowrap">
-                  已到期 {stats.expiredCount}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 flex-shrink-0 rounded-full bg-gray-500"></div>
-                <span className="whitespace-nowrap">
-                  已终止 {stats.terminatedCount}
-                </span>
-              </div>
-            </div>
-            <div className="text-center text-gray-500 sm:text-right">
-              <span className="whitespace-nowrap">
-                活跃率{' '}
-                {stats.totalCount > 0
-                  ? Math.round((stats.activeCount / stats.totalCount) * 100)
-                  : 0}
-                %
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

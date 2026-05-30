@@ -2,12 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { renterListMobileStyles } from '@/components/business/renter-list-mobile-styles'
 import { RenterGrid } from '@/components/business/RenterGrid'
 import { RenterSearchBar } from '@/components/business/RenterSearchBar'
-import { RenterStatsOverview } from '@/components/business/RenterStatsOverview'
 import { PageContainer } from '@/components/layout'
 
 interface RenterListPageProps {
@@ -26,10 +24,8 @@ export function RenterListPage({
 }: RenterListPageProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [contractStatusFilter, setContractStatusFilter] = useState<
-    string | null
-  >(null)
-  const [loading, setLoading] = useState(false)
+  const [renterFilter, setRenterFilter] = useState<string | null>(null)
+  const loading = false
 
   // 筛选租客数据
   const filteredRenters = useMemo(() => {
@@ -46,83 +42,71 @@ export function RenterListPage({
         }
       }
 
-      // 合同状态筛选
-      if (contractStatusFilter) {
-        if (contractStatusFilter === 'active') {
+      // 状态筛选
+      if (renterFilter) {
+        if (renterFilter === 'active') {
           return renter.contracts.some((c: any) => c.status === 'ACTIVE')
-        } else if (contractStatusFilter === 'inactive') {
+        } else if (renterFilter === 'inactive') {
           return !renter.contracts.some((c: any) => c.status === 'ACTIVE')
+        } else if (renterFilter === 'new_this_month') {
+          const createdAt = renter.createdAt ? new Date(renter.createdAt) : null
+          if (!createdAt || Number.isNaN(createdAt.getTime())) {
+            return false
+          }
+
+          const now = new Date()
+          return (
+            createdAt.getFullYear() === now.getFullYear() &&
+            createdAt.getMonth() === now.getMonth()
+          )
         }
       }
 
       return true
     })
-  }, [initialRenters, searchQuery, contractStatusFilter])
+  }, [initialRenters, searchQuery, renterFilter])
+
+  const filterCounts = useMemo(
+    () => ({
+      total: initialStats.totalCount,
+      active: initialStats.activeCount,
+      inactive: initialStats.inactiveCount,
+      newThisMonth: initialStats.newThisMonth,
+    }),
+    [initialStats]
+  )
 
   // 处理租客点击
   const handleRenterClick = (renter: any) => {
     router.push(`/renters/${renter.id}`)
   }
 
-  // 处理编辑租客
-  const handleRenterEdit = (renter: any) => {
-    router.push(`/renters/${renter.id}/edit`)
-  }
-
-  // 处理删除租客
-  const handleRenterDelete = async (renter: any) => {
-    if (!confirm(`确定要删除租客 ${renter.name} 吗？`)) {
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/renters/${renter.id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        // 刷新页面数据
-        window.location.reload()
-      } else {
-        const error = await response.json()
-        alert(error.error || '删除失败')
-      }
-    } catch (error) {
-      console.error('Delete renter error:', error)
-      alert('删除失败，请重试')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // 处理添加租客
-  const handleAddRenter = () => {
-    router.push('/renters/new')
-  }
-
   return (
     <PageContainer title="租客管理" showBackButton>
-      <div className="space-y-6 pb-6">
+      <div className={renterListMobileStyles.pageSection}>
         {/* 搜索栏 */}
         <RenterSearchBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          contractStatusFilter={contractStatusFilter}
-          onContractStatusChange={setContractStatusFilter}
+          renterFilter={renterFilter}
+          onRenterFilterChange={setRenterFilter}
+          filterCounts={filterCounts}
           loading={loading}
         />
 
-        {/* 统计概览 */}
-        <RenterStatsOverview stats={initialStats} />
-
         {/* 结果统计 */}
-        {(searchQuery || contractStatusFilter) && (
-          <div className="text-sm text-gray-600">
+        {(searchQuery || renterFilter) && (
+          <div className={renterListMobileStyles.resultText}>
             找到 {filteredRenters.length} 个租客
             {searchQuery && ` (搜索: ${searchQuery})`}
-            {contractStatusFilter &&
-              ` (状态: ${contractStatusFilter === 'active' ? '有活跃合同' : '无活跃合同'})`}
+            {renterFilter &&
+              ` (状态: ${
+                renterFilter === 'active'
+                  ? '在租'
+                  : renterFilter === 'inactive'
+                    ? '空闲'
+                    : '本月新增'
+              })`}
           </div>
         )}
 

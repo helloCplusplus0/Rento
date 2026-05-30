@@ -1,19 +1,10 @@
-'use client'
-
 import {
-  Briefcase,
-  Building,
-  Calendar,
-  Edit,
   IdCard,
-  Phone,
-  User,
-  Users,
 } from 'lucide-react'
 
 import { formatDate } from '@/lib/format'
+import { renterDetailMobileStyles } from '@/components/business/renter-detail-mobile-styles'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface RenterBasicInfoProps {
@@ -26,47 +17,44 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
   )
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">基本信息</CardTitle>
+    <Card className={renterDetailMobileStyles.card}>
+      <CardHeader className={renterDetailMobileStyles.cardHeader}>
+        <CardTitle className={renterDetailMobileStyles.cardTitle}>基本信息</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={renterDetailMobileStyles.cardContent}>
         {/* 基本信息 */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="flex items-center space-x-3">
-            <User className="h-5 w-5 text-gray-400" />
-            <div>
-              <div className="text-sm text-gray-500">姓名</div>
-              <div className="font-medium">{renter.name}</div>
+        <div className={renterDetailMobileStyles.fieldsGrid}>
+          <div className={renterDetailMobileStyles.fieldBlock}>
+            <div className={renterDetailMobileStyles.fieldLabel}>姓名</div>
+            <div className={renterDetailMobileStyles.fieldValueStrong}>
+              {renter.name}
             </div>
           </div>
 
           {renter.gender && (
-            <div className="flex items-center space-x-3">
-              <User className="h-5 w-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-500">性别</div>
-                <div className="font-medium">{renter.gender}</div>
+            <div className={renterDetailMobileStyles.fieldBlock}>
+              <div className={renterDetailMobileStyles.fieldLabel}>性别</div>
+              <div className={renterDetailMobileStyles.fieldValueStrong}>
+                {renter.gender}
               </div>
             </div>
           )}
 
-          <div className="flex items-center space-x-3">
-            <Phone className="h-5 w-5 text-gray-400" />
-            <div>
-              <div className="text-sm text-gray-500">手机号</div>
-              <div className="font-medium">{renter.phone}</div>
+          <div className={renterDetailMobileStyles.fieldBlock}>
+            <div className={renterDetailMobileStyles.fieldLabel}>手机号</div>
+            <div className={renterDetailMobileStyles.fieldValueStrong}>
+              {renter.phone}
             </div>
           </div>
 
           {renter.idCard && (
-            <div className="flex items-center space-x-3">
-              <IdCard className="h-5 w-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-500">身份证号</div>
-                <div className="font-mono font-medium">
-                  {renter.idCard.replace(/(\d{6})\d{8}(\d{4})/, '$1********$2')}
-                </div>
+            <div className={renterDetailMobileStyles.fieldBlock}>
+              <div className="flex items-center gap-1.5">
+                <IdCard className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                <div className={renterDetailMobileStyles.fieldLabel}>身份证号</div>
+              </div>
+              <div className={renterDetailMobileStyles.fieldValueMono}>
+                {renter.idCard.replace(/(\d{6})\d{8}(\d{4})/, '$1********$2')}
               </div>
             </div>
           )}
@@ -74,25 +62,23 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
 
         {/* 联系信息 */}
         {(renter.emergencyContact || renter.emergencyPhone) && (
-          <div className="border-t pt-4">
-            <h4 className="mb-3 font-medium text-gray-900">紧急联系人</h4>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className={renterDetailMobileStyles.sectionBlock}>
+            <h4 className={renterDetailMobileStyles.sectionTitle}>紧急联系人</h4>
+            <div className={renterDetailMobileStyles.fieldsGrid}>
               {renter.emergencyContact && (
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <div className="text-sm text-gray-500">联系人</div>
-                    <div className="font-medium">{renter.emergencyContact}</div>
+                <div className={renterDetailMobileStyles.fieldBlock}>
+                  <div className={renterDetailMobileStyles.fieldLabel}>联系人</div>
+                  <div className={renterDetailMobileStyles.fieldValueStrong}>
+                    {renter.emergencyContact}
                   </div>
                 </div>
               )}
 
               {renter.emergencyPhone && (
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <div className="text-sm text-gray-500">联系电话</div>
-                    <div className="font-medium">{renter.emergencyPhone}</div>
+                <div className={renterDetailMobileStyles.fieldBlock}>
+                  <div className={renterDetailMobileStyles.fieldLabel}>联系电话</div>
+                  <div className={renterDetailMobileStyles.fieldValueStrong}>
+                    {renter.emergencyPhone}
                   </div>
                 </div>
               )}
@@ -102,25 +88,23 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
 
         {/* 职业信息 */}
         {(renter.occupation || renter.company) && (
-          <div className="border-t pt-4">
-            <h4 className="mb-3 font-medium text-gray-900">职业信息</h4>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className={renterDetailMobileStyles.sectionBlock}>
+            <h4 className={renterDetailMobileStyles.sectionTitle}>职业信息</h4>
+            <div className={renterDetailMobileStyles.fieldsGrid}>
               {renter.occupation && (
-                <div className="flex items-center space-x-3">
-                  <Briefcase className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <div className="text-sm text-gray-500">职业</div>
-                    <div className="font-medium">{renter.occupation}</div>
+                <div className={renterDetailMobileStyles.fieldBlock}>
+                  <div className={renterDetailMobileStyles.fieldLabel}>职业</div>
+                  <div className={renterDetailMobileStyles.fieldValueStrong}>
+                    {renter.occupation}
                   </div>
                 </div>
               )}
 
               {renter.company && (
-                <div className="flex items-center space-x-3">
-                  <Building className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <div className="text-sm text-gray-500">公司</div>
-                    <div className="font-medium">{renter.company}</div>
+                <div className={renterDetailMobileStyles.fieldBlock}>
+                  <div className={renterDetailMobileStyles.fieldLabel}>公司</div>
+                  <div className={renterDetailMobileStyles.fieldValueStrong}>
+                    {renter.company}
                   </div>
                 </div>
               )}
@@ -129,27 +113,23 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
         )}
 
         {/* 入住信息 */}
-        <div className="border-t pt-4">
-          <h4 className="mb-3 font-medium text-gray-900">入住信息</h4>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className={renterDetailMobileStyles.sectionBlock}>
+          <h4 className={renterDetailMobileStyles.sectionTitle}>入住信息</h4>
+          <div className={renterDetailMobileStyles.fieldsGrid}>
             {renter.moveInDate && (
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-500">入住日期</div>
-                  <div className="font-medium">
-                    {formatDate(renter.moveInDate)}
-                  </div>
+              <div className={renterDetailMobileStyles.fieldBlock}>
+                <div className={renterDetailMobileStyles.fieldLabel}>入住日期</div>
+                <div className={renterDetailMobileStyles.fieldValueStrong}>
+                  {formatDate(renter.moveInDate)}
                 </div>
               </div>
             )}
 
             {renter.tenantCount && (
-              <div className="flex items-center space-x-3">
-                <Users className="h-5 w-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-500">入住人数</div>
-                  <div className="font-medium">{renter.tenantCount} 人</div>
+              <div className={renterDetailMobileStyles.fieldBlock}>
+                <div className={renterDetailMobileStyles.fieldLabel}>入住人数</div>
+                <div className={renterDetailMobileStyles.fieldValueStrong}>
+                  {renter.tenantCount} 人
                 </div>
               </div>
             )}
@@ -157,15 +137,15 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
         </div>
 
         {/* 当前状态 */}
-        <div className="border-t pt-4">
-          <h4 className="mb-3 font-medium text-gray-900">当前状态</h4>
-          <div className="flex items-center space-x-4">
+        <div className={renterDetailMobileStyles.sectionBlock}>
+          <h4 className={renterDetailMobileStyles.sectionTitle}>当前状态</h4>
+          <div className={renterDetailMobileStyles.statusRow}>
             <Badge variant={activeContract ? 'default' : 'secondary'}>
               {activeContract ? '在租' : '空闲'}
             </Badge>
 
             {activeContract && (
-              <div className="text-sm text-gray-600">
+              <div className={renterDetailMobileStyles.statusRoomText}>
                 当前房间: {activeContract.room.building.name} -{' '}
                 {activeContract.room.roomNumber}
               </div>
@@ -175,9 +155,11 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
 
         {/* 备注 */}
         {renter.remarks && (
-          <div className="border-t pt-4">
-            <h4 className="mb-2 font-medium text-gray-900">备注</h4>
-            <p className="text-sm text-gray-600">{renter.remarks}</p>
+          <div className={renterDetailMobileStyles.sectionBlock}>
+            <h4 className={renterDetailMobileStyles.sectionTitle}>备注</h4>
+            <div className={renterDetailMobileStyles.noteBlock}>
+              <p className={renterDetailMobileStyles.noteText}>{renter.remarks}</p>
+            </div>
           </div>
         )}
       </CardContent>

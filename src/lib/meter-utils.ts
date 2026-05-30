@@ -215,6 +215,56 @@ export function calculateAmount(usage: number, unitPrice: number): number {
   return Number((usage * unitPrice).toFixed(2))
 }
 
+export interface MeterReadingValidationResult {
+  usage: number
+  amount: number
+  error?: string
+  warning?: string
+}
+
+/**
+ * 统一抄表录入校验口径
+ * - 硬错误: 本次读数小于上次读数
+ * - 软警告: 用量异常偏高，但允许用户确认后继续提交
+ */
+export function validateMeterReadingInput(params: {
+  currentReading: number
+  previousReading: number
+  unitPrice: number
+  anomalyThreshold?: number
+}): MeterReadingValidationResult {
+  const {
+    currentReading,
+    previousReading,
+    unitPrice,
+    anomalyThreshold = METER_BUSINESS_RULES.abnormalUsageMultiplier,
+  } = params
+
+  const usage = currentReading - previousReading
+  const amount = calculateAmount(usage, unitPrice)
+
+  if (currentReading < previousReading) {
+    return {
+      usage,
+      amount,
+      error: '本次读数不能小于上次读数',
+    }
+  }
+
+  if (previousReading > 0 && usage > previousReading * anomalyThreshold) {
+    return {
+      usage,
+      amount,
+      warning: `用量异常偏高（超过${anomalyThreshold}倍历史读数）`,
+    }
+  }
+
+  return {
+    usage,
+    amount,
+  }
+}
+
 /**
  * 格式化仪表读数
  * @param reading 读数

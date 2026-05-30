@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Calendar } from 'lucide-react'
 
 import type { BillType, ContractWithDetailsForClient } from '@/types/database'
+import { billCreateMobileStyles } from '@/components/business/bill-create-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MobileFormField } from '@/components/ui/mobile-form'
@@ -130,17 +131,19 @@ export function PeriodSelector({
         error={error}
         description="账单对应的服务周期"
       >
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           <Input
             value={period}
             onChange={(e) => handlePeriodChange(e.target.value)}
             placeholder="请输入账单周期"
+            className="h-10 text-sm placeholder:text-sm sm:h-11 sm:text-base sm:placeholder:text-base"
           />
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={generatePeriod}
+            className="h-8 px-3 text-sm"
           >
             <Calendar className="mr-2 h-4 w-4" />
             自动生成周期
@@ -159,6 +162,7 @@ export function PeriodSelector({
           value={dueDateStr}
           onChange={(e) => handleDueDateChange(e.target.value)}
           min={formatDateInput(new Date())}
+          className="h-10 text-sm sm:h-11 sm:text-base"
         />
       </MobileFormField>
     </div>

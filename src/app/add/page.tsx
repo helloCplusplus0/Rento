@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Building, FileText, Plus, Users } from 'lucide-react'
+import { ArrowRight, Building, FileText, Plus, Users } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { PageContainer } from '@/components/layout'
+import { addPageMobileStyles } from '@/app/add/add-page-mobile-styles'
 
 export const metadata: Metadata = {
   title: '添加功能',
@@ -56,65 +57,69 @@ export default function AddPage() {
 
   return (
     <PageContainer title="添加功能" showBackButton>
-      <div className="space-y-6 pb-6">
-        {/* 页面说明 */}
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-            <Plus className="h-8 w-8 text-orange-600" />
-          </div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">添加功能</h2>
-          <p className="text-gray-600">快速添加房源、租客、合同和账单信息</p>
-        </div>
+      <div className={addPageMobileStyles.pageSection}>
+        <Card className={addPageMobileStyles.introCard}>
+          <CardContent className="p-0">
+            <div className={addPageMobileStyles.introTitle}>快捷新增入口</div>
+            <div className={addPageMobileStyles.introText}>
+              选择要新增的业务对象，进入对应正式创建流程。
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* 功能网格 */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className={addPageMobileStyles.grid}>
           {addItems.map((item) => {
             const IconComponent = item.icon
 
             if (item.available) {
               return (
                 <Link key={item.id} href={item.href}>
-                  <Card className="h-full cursor-pointer transition-all hover:shadow-md">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`h-10 w-10 rounded-lg ${item.color} flex items-center justify-center`}
-                        >
-                          <IconComponent className="h-5 w-5 text-white" />
+                  <Card className={`${addPageMobileStyles.card} h-full cursor-pointer`}>
+                    <CardContent className={addPageMobileStyles.cardContent}>
+                      <div className={addPageMobileStyles.cardHeader}>
+                        <div className={addPageMobileStyles.cardLeading}>
+                          <div className={`${addPageMobileStyles.iconBox} ${item.color}`}>
+                            <IconComponent className="h-4 w-4 text-white sm:h-5 sm:w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className={addPageMobileStyles.title}>
+                              {item.title}
+                            </div>
+                            <div className={addPageMobileStyles.description}>
+                              {item.description}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">
-                            {item.title}
-                          </CardTitle>
-                        </div>
+                        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-gray-600">
-                        {item.description}
-                      </p>
                     </CardContent>
                   </Card>
                 </Link>
               )
             } else {
               return (
-                <Card key={item.id} className="h-full opacity-60">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-300">
-                        <IconComponent className="h-5 w-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base text-gray-500">
-                          {item.title}
-                        </CardTitle>
+                <Card key={item.id} className={`${addPageMobileStyles.card} h-full opacity-60`}>
+                  <CardContent className={addPageMobileStyles.cardContent}>
+                    <div className={addPageMobileStyles.cardHeader}>
+                      <div className={addPageMobileStyles.cardLeading}>
+                        <div className={`${addPageMobileStyles.iconBox} bg-gray-200`}>
+                          <IconComponent className="h-4 w-4 text-gray-500 sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className={`${addPageMobileStyles.title} text-gray-500`}>
+                            {item.title}
+                          </div>
+                          <div className="mt-0.5 text-sm leading-5 text-gray-500">
+                            {item.description}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-500">{item.description}</p>
-                    <p className="mt-2 text-xs text-gray-400">即将推出</p>
+                    <div className={addPageMobileStyles.footer}>
+                      <div className={addPageMobileStyles.footerRow}>
+                        <div className={addPageMobileStyles.footerHint}>即将推出</div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )

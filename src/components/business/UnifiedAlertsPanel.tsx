@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   Calendar,
@@ -19,10 +19,11 @@ import {
   formatContractExpiryAlertTitle,
   formatUpcomingMoveInAlertTitle,
 } from '@/lib/contract-alert-semantics'
+import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface AlertDetail {
   id: string
@@ -73,8 +74,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
   const [loading, setLoading] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [alertsLoading, setAlertsLoading] = useState(true)
+  const [alertsError, setAlertsError] = useState<string | null>(null)
   const [alertDetailsByType, setAlertDetailsByType] =
     useState<AlertDetailsByType>(EMPTY_ALERT_DETAILS)
+  const selectedAlertRef = useRef<AlertType | null>(null)
 
   const buildVacantRoomDetails = (rooms: any[] = []): AlertDetail[] =>
     rooms.map((room: any) => ({
@@ -137,7 +140,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
   // 获取动态提醒数据
   const fetchAlerts = async () => {
     try {
-      setAlertsLoading(true)
+      if (alerts.length === 0) {
+        setAlertsLoading(true)
+      }
+      setAlertsError(null)
 
       // 并行获取所有提醒数据
       const [
@@ -190,7 +196,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         {
           id: 'room_check',
           type: 'room_check',
-          title: '空房查询',
+          title: '空房快查',
           count: vacantRooms.data?.total || 0,
           color: (vacantRooms.data?.total || 0) > 0 ? 'blue' : 'gray',
         },
@@ -211,7 +217,7 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         {
           id: 'contract_expiry',
           type: 'contract_expiry',
-          title: contractAlertsTitle,
+          title: '合同到期',
           count: contractAlerts.data?.total || 0,
           color: (contractAlerts.data?.total || 0) > 0 ? 'red' : 'gray',
         },
@@ -219,51 +225,58 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
 
       setAlerts(dynamicAlerts)
       setAlertDetailsByType(nextAlertDetailsByType)
-      if (selectedAlert && selectedAlert in nextAlertDetailsByType) {
+      if (
+        selectedAlertRef.current &&
+        selectedAlertRef.current in nextAlertDetailsByType
+      ) {
         setAlertDetails(
-          nextAlertDetailsByType[selectedAlert as keyof AlertDetailsByType]
+          nextAlertDetailsByType[
+            selectedAlertRef.current as keyof AlertDetailsByType
+          ]
         )
       }
     } catch (error) {
       console.error('获取提醒数据失败:', error)
-      // 使用默认数据作为fallback
-      setAlerts([
-        {
-          id: 'room_check',
-          type: 'room_check',
-          title: '空房查询',
-          count: 0,
-          color: 'gray',
-        },
-        {
-          id: 'lease_expiry',
-          type: 'lease_expiry',
-          title: formatContractExpiryAlertTitle(
-            DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS
-          ),
-          count: 0,
-          color: 'gray',
-        },
-        {
-          id: 'upcoming_contracts',
-          type: 'upcoming_contracts',
-          title: formatUpcomingMoveInAlertTitle(
-            DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS
-          ),
-          count: 0,
-          color: 'gray',
-        },
-        {
-          id: 'contract_expiry',
-          type: 'contract_expiry',
-          title: EXPIRED_CONTRACT_ALERT_TITLE,
-          count: 0,
-          color: 'gray',
-        },
-      ])
-      setAlertDetailsByType(EMPTY_ALERT_DETAILS)
-      if (selectedAlert) {
-        setAlertDetails([])
+      setAlertsError(
+        alerts.length > 0
+          ? '提醒刷新失败，当前展示上次可用数据'
+          : '提醒数据暂时不可用，请稍后重试'
+      )
+      if (alerts.length === 0) {
+        setAlerts([
+          {
+            id: 'room_check',
+            type: 'room_check',
+            title: '空房快查',
+            count: 0,
+            color: 'gray',
+          },
+          {
+            id: 'lease_expiry',
+            type: 'lease_expiry',
+            title: formatContractExpiryAlertTitle(
+              DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS
+            ),
+            count: 0,
+            color: 'gray',
+          },
+          {
+            id: 'upcoming_contracts',
+            type: 'upcoming_contracts',
+            title: formatUpcomingMoveInAlertTitle(
+              DEFAULT_UPCOMING_MOVE_IN_ALERT_DAYS
+            ),
+            count: 0,
+            color: 'gray',
+          },
+          {
+            id: 'contract_expiry',
+            type: 'contract_expiry',
+            title: '合同到期',
+            count: 0,
+            color: 'gray',
+          },
+        ])
       }
     } finally {
       setAlertsLoading(false)
@@ -274,6 +287,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
   useEffect(() => {
     fetchAlerts()
   }, [])
+
+  useEffect(() => {
+    selectedAlertRef.current = selectedAlert as AlertType | null
+  }, [selectedAlert])
 
   // 获取指定类型的详细提醒数据
   const fetchAlertDetails = async (
@@ -303,6 +320,10 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
         case 'contract_expiry':
           details = await fetchContractExpiryDetails()
           break
+      }
+
+      if (selectedAlertRef.current !== alertType) {
+        return
       }
 
       setAlertDetails(details)
@@ -395,175 +416,222 @@ export function UnifiedAlertsPanel({ className }: UnifiedAlertsPanelProps) {
     }
   }
 
-  if (alertsLoading) {
+  const getAlertViewAllHref = (alertType: AlertType) => {
+    switch (alertType) {
+      case 'room_check':
+        return '/rooms?status=VACANT'
+      case 'lease_expiry':
+      case 'upcoming_contracts':
+      case 'contract_expiry':
+        return '/contracts'
+      default:
+        return '/contracts'
+    }
+  }
+
+  if (alertsLoading && alerts.length === 0) {
     return (
-      <div
-        className={cn(
-          'rounded-lg border border-gray-100 bg-white p-4 shadow-sm sm:p-6',
-          className
-        )}
-      >
-        <div className="animate-pulse">
-          <div className="mb-4 h-6 w-1/4 rounded bg-gray-200"></div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="text-center">
-                <div className="mx-auto mb-2 h-10 w-10 rounded-lg bg-gray-200 sm:h-12 sm:w-12"></div>
-                <div className="mx-auto h-3 w-16 rounded bg-gray-200"></div>
-              </div>
-            ))}
+      <Card className={cn(dashboardMobileStyles.alertsCard, className)}>
+        <CardHeader className={dashboardMobileStyles.alertsHeader}>
+          <CardTitle className={dashboardMobileStyles.alertsTitle}>
+            提醒
+          </CardTitle>
+        </CardHeader>
+        <CardContent className={dashboardMobileStyles.alertsContent}>
+          <div className="animate-pulse">
+            <div className={dashboardMobileStyles.alertsGrid}>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-gray-100 p-2.5 text-center"
+                >
+                  <div className="mx-auto mb-1.5 h-9 w-9 rounded-lg bg-gray-200 sm:h-10 sm:w-10"></div>
+                  <div className="mx-auto h-3 w-16 rounded bg-gray-200"></div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div
-      className={cn(
-        'rounded-lg border border-gray-100 bg-white p-4 shadow-sm sm:p-6',
-        className
-      )}
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          提醒
-          <div className="h-2 w-2 rounded-full bg-orange-500"></div>
-        </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={fetchAlerts}
-          disabled={alertsLoading}
-          className="h-6 w-6 p-0"
-        >
-          <RefreshCw
-            className={cn('h-3 w-3', alertsLoading && 'animate-spin')}
-          />
-        </Button>
-      </div>
-
-      {/* 提醒概览网格 */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {alerts.map((alert) => (
-          <button
-            key={alert.id}
-            onClick={() => handleAlertClick(alert.type)}
-            className={cn(
-              'rounded-lg p-3 text-center transition-all hover:shadow-md',
-              'min-h-[88px]',
-              selectedAlert === alert.type
-                ? 'bg-blue-50 ring-2 ring-blue-500'
-                : 'hover:bg-gray-50'
-            )}
-          >
-            <div
-              className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold text-white sm:h-12 sm:w-12 sm:text-xl ${
-                alert.color === 'red'
-                  ? 'bg-red-500'
-                  : alert.color === 'orange'
-                    ? 'bg-orange-500'
-                    : alert.color === 'blue'
-                      ? 'bg-blue-500'
-                      : alert.color === 'green'
-                        ? 'bg-green-500'
-                        : 'bg-gray-500'
-              }`}
-            >
-              {alert.count}
+    <Card className={cn(dashboardMobileStyles.alertsCard, className)}>
+      <CardHeader className={dashboardMobileStyles.alertsHeader}>
+        <div className={dashboardMobileStyles.sectionHeader}>
+          <div className={dashboardMobileStyles.sectionTitleWrap}>
+            <div className={dashboardMobileStyles.alertsTitleRow}>
+              <CardTitle className={dashboardMobileStyles.alertsTitle}>
+                提醒
+              </CardTitle>
+              <div className={dashboardMobileStyles.alertsTitleDot}></div>
             </div>
-            <div className="line-clamp-2 text-xs text-gray-600">
-              {alert.title}
+            <div className={dashboardMobileStyles.sectionSubtle}>
+              {alertsError || '工作台需优先关注的房源与合同提醒'}
             </div>
-          </button>
-        ))}
-      </div>
-
-      {/* 详细信息展示区域 */}
-      {selectedAlert && (
-        <div className="border-t border-gray-100 pt-4">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <h4 className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-700">
-              {getAlertIcon(selectedAlert)}
-              <span className="break-words">
-                {alerts.find((a) => a.type === selectedAlert)?.title}详情
-              </span>
-            </h4>
+          </div>
+          <div className={dashboardMobileStyles.sectionActions}>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() =>
-                fetchAlertDetails(selectedAlert as AlertType, true)
-              }
-              disabled={loading}
-              className="h-6 w-6 p-0"
+              onClick={fetchAlerts}
+              disabled={alertsLoading}
+              className="h-8 w-8 p-0"
+              aria-label="刷新提醒"
             >
-              <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
+              <RefreshCw
+                className={cn('h-3.5 w-3.5', alertsLoading && 'animate-spin')}
+              />
             </Button>
           </div>
-
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-16 animate-pulse rounded bg-gray-100"
-                ></div>
-              ))}
-            </div>
-          ) : alertDetails.length > 0 ? (
-            <div className="max-h-64 space-y-2 overflow-y-auto">
-              {alertDetails.slice(0, 10).map((detail) => (
-                <Card
-                  key={detail.id}
-                  className={cn(
-                    'cursor-pointer border transition-all hover:shadow-md',
-                    getLevelColor(detail.level),
-                    detail.onAction && 'hover:bg-gray-50'
-                  )}
-                  onClick={detail.onAction}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">
-                          {detail.title}
-                        </div>
-                        <div className="mt-1 break-words text-xs text-gray-600">
-                          {detail.description}
-                        </div>
-                      </div>
-
-                      {detail.onAction && (
-                        <div className="flex items-center gap-1 text-xs text-gray-400 sm:ml-2">
-                          <Eye className="h-3 w-3" />
-                          <span>{detail.actionText}</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {alertDetails.length > 10 && (
-                <div className="pt-2 text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-gray-500"
-                  >
-                    查看全部 {alertDetails.length} 项
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-4 text-center text-sm text-gray-500">
-              暂无相关提醒
-            </div>
-          )}
         </div>
-      )}
-    </div>
+      </CardHeader>
+      <CardContent className={dashboardMobileStyles.alertsContent}>
+        <div className={dashboardMobileStyles.alertsGrid}>
+          {alerts.map((alert) => (
+            <button
+              key={alert.id}
+              type="button"
+              onClick={() => handleAlertClick(alert.type)}
+              className={cn(
+                dashboardMobileStyles.alertButton,
+                selectedAlert === alert.type &&
+                  dashboardMobileStyles.alertButtonActive
+              )}
+            >
+              <div
+                className={cn(
+                  dashboardMobileStyles.alertCountPanel,
+                  alert.color === 'red'
+                    ? 'bg-red-50'
+                    : alert.color === 'orange'
+                      ? 'bg-orange-50'
+                      : alert.color === 'blue'
+                        ? 'bg-blue-50'
+                        : alert.color === 'green'
+                          ? 'bg-green-50'
+                          : 'bg-gray-100'
+                )}
+              >
+                <div className={dashboardMobileStyles.alertCountBox}>
+                  {alert.count}
+                </div>
+              </div>
+              <div className={dashboardMobileStyles.alertLabel}>{alert.title}</div>
+            </button>
+          ))}
+        </div>
+
+        {selectedAlert && (
+          <div className={dashboardMobileStyles.alertDetailsSection}>
+            <div className={dashboardMobileStyles.alertDetailsHeader}>
+              <h4 className={dashboardMobileStyles.alertDetailsTitle}>
+                {getAlertIcon(selectedAlert)}
+                <span className="break-words">
+                  {alerts.find((a) => a.type === selectedAlert)?.title}详情
+                </span>
+              </h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  fetchAlertDetails(selectedAlert as AlertType, true)
+                }
+                disabled={loading}
+                className="h-8 w-8 p-0"
+                aria-label="刷新提醒详情"
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className={dashboardMobileStyles.alertDetailsList}>
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-16 animate-pulse rounded-lg bg-gray-100"
+                  ></div>
+                ))}
+              </div>
+            ) : alertDetails.length > 0 ? (
+              <div className={dashboardMobileStyles.alertDetailsList}>
+                {alertDetails.slice(0, 10).map((detail) => (
+                  detail.onAction ? (
+                    <button
+                      key={detail.id}
+                      type="button"
+                      onClick={detail.onAction}
+                      className={cn(
+                        dashboardMobileStyles.alertDetailsCard,
+                        'w-full border text-left hover:bg-gray-50',
+                        getLevelColor(detail.level)
+                      )}
+                    >
+                      <CardContent className={dashboardMobileStyles.alertDetailsContent}>
+                        <div className={dashboardMobileStyles.alertDetailsTop}>
+                          <div className={dashboardMobileStyles.alertDetailsMain}>
+                            <div className={dashboardMobileStyles.alertDetailsCardTitle}>
+                              {detail.title}
+                            </div>
+                            <div className={dashboardMobileStyles.alertDetailsCardText}>
+                              {detail.description}
+                            </div>
+                          </div>
+                          <div className={dashboardMobileStyles.alertDetailsAction}>
+                            <Eye className="h-3 w-3" />
+                            <span>{detail.actionText}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </button>
+                  ) : (
+                    <Card
+                      key={detail.id}
+                      className={cn(
+                        dashboardMobileStyles.alertDetailsCard,
+                        'border',
+                        getLevelColor(detail.level)
+                      )}
+                    >
+                      <CardContent className={dashboardMobileStyles.alertDetailsContent}>
+                        <div className={dashboardMobileStyles.alertDetailsTop}>
+                          <div className={dashboardMobileStyles.alertDetailsMain}>
+                            <div className={dashboardMobileStyles.alertDetailsCardTitle}>
+                              {detail.title}
+                            </div>
+                            <div className={dashboardMobileStyles.alertDetailsCardText}>
+                              {detail.description}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                ))}
+
+                {alertDetails.length > 10 && (
+                  <div className="pt-1 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-gray-500"
+                      onClick={() =>
+                        router.push(getAlertViewAllHref(selectedAlert as AlertType))
+                      }
+                    >
+                      查看全部 {alertDetails.length} 项
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={dashboardMobileStyles.alertEmpty}>暂无相关提醒</div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

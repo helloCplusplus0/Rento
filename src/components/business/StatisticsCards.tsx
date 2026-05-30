@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 
+import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
 import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -62,26 +63,26 @@ export function StatCard({
   }
 
   return (
-    <Card className="relative overflow-hidden transition-shadow hover:shadow-md">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-2">
-        <CardTitle className="truncate text-xs font-medium text-gray-600 sm:text-sm">
+    <Card className={dashboardMobileStyles.statsCard}>
+      <CardHeader className={dashboardMobileStyles.statsHeader}>
+        <CardTitle className={dashboardMobileStyles.statsTitle}>
           {title}
         </CardTitle>
-        <div className={cn('rounded-lg p-1 sm:p-2', colorClasses[color])}>
+        <div className={cn(dashboardMobileStyles.statsIconBox, colorClasses[color])}>
           <div className="h-3 w-3 sm:h-4 sm:w-4">{icon}</div>
         </div>
       </CardHeader>
-      <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-        <div className="mb-1 text-lg font-bold text-gray-900 sm:text-2xl">
+      <CardContent className={dashboardMobileStyles.statsContent}>
+        <div className={dashboardMobileStyles.statsValue}>
           {typeof value === 'number' ? formatCurrency(value) : value}
         </div>
         {subtitle && (
-          <p className="mb-1 line-clamp-2 text-xs text-gray-500 sm:mb-2">
+          <p className={dashboardMobileStyles.statsSubtitle}>
             {subtitle}
           </p>
         )}
         {trend && (
-          <div className="flex items-center text-xs">
+          <div className={dashboardMobileStyles.statsTrend}>
             {trend.isPositive ? (
               <TrendingUp className="mr-1 h-3 w-3 flex-shrink-0 text-green-500" />
             ) : (
@@ -109,12 +110,12 @@ export function StatCard({
  */
 export function StatCardSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-2">
+    <Card className={dashboardMobileStyles.statsCard}>
+      <CardHeader className={dashboardMobileStyles.statsHeader}>
         <Skeleton className="h-3 w-16 sm:h-4 sm:w-20" />
         <Skeleton className="h-6 w-6 rounded-lg sm:h-8 sm:w-8" />
       </CardHeader>
-      <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+      <CardContent className={dashboardMobileStyles.statsContent}>
         <Skeleton className="mb-1 h-5 w-16 sm:h-8 sm:w-24" />
         <Skeleton className="mb-1 h-3 w-24 sm:mb-2 sm:w-32" />
         <Skeleton className="h-3 w-12 sm:w-16" />
@@ -153,7 +154,7 @@ export function StatCardError({
  */
 export function StatisticsCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <div className={dashboardMobileStyles.statsGrid}>
       <StatCardSkeleton />
       <StatCardSkeleton />
       <StatCardSkeleton />
@@ -179,40 +180,59 @@ export function StatisticsCards({
   error = null,
   onRefresh,
 }: StatisticsCardsProps) {
-  if (isLoading || !stats) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">财务统计</h2>
-          {onRefresh && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={isLoading}
-            >
-              <RefreshCw
-                className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')}
-              />
-              刷新
-            </Button>
-          )}
+  const headerContent = (
+    <div className={dashboardMobileStyles.sectionHeader}>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <h2 className={dashboardMobileStyles.sectionTitle}>财务统计</h2>
+        <div className={dashboardMobileStyles.sectionMetaRow}>
+          <span className={dashboardMobileStyles.sectionSubtle}>
+            工作台财务概览
+          </span>
         </div>
-        <StatisticsCardsSkeleton />
       </div>
-    )
-  }
+      {onRefresh && (
+        <div className={dashboardMobileStyles.sectionActions}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className={dashboardMobileStyles.sectionRefreshButton}
+          >
+            <RefreshCw
+              className={cn('mr-1.5 h-4 w-4', isLoading && 'animate-spin')}
+            />
+            刷新
+          </Button>
+        </div>
+      )}
+    </div>
+  )
 
-  if (error) {
+  if (error && !stats) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">财务统计</h2>
+      <div className={dashboardMobileStyles.section}>
+        <div className={dashboardMobileStyles.sectionHeader}>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <h2 className={dashboardMobileStyles.sectionTitle}>财务统计</h2>
+            <div className={dashboardMobileStyles.sectionMetaRow}>
+              <span className={dashboardMobileStyles.sectionSubtle}>
+                工作台财务概览
+              </span>
+            </div>
+          </div>
           {onRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              重试
-            </Button>
+            <div className={dashboardMobileStyles.sectionActions}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                className={dashboardMobileStyles.sectionRefreshButton}
+              >
+                <RefreshCw className="mr-1.5 h-4 w-4" />
+                重试
+              </Button>
+            </div>
           )}
         </div>
         <Card className="border-red-200">
@@ -230,31 +250,47 @@ export function StatisticsCards({
     )
   }
 
+  if (!stats) {
+    return (
+      <div className={dashboardMobileStyles.section}>
+        {headerContent}
+        <StatisticsCardsSkeleton />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">财务统计</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">
-            更新时间: {new Date(stats.lastUpdated).toLocaleTimeString()}
-          </span>
-          {onRefresh && (
+    <div className={dashboardMobileStyles.section}>
+      <div className={dashboardMobileStyles.sectionHeader}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <h2 className={dashboardMobileStyles.sectionTitle}>财务统计</h2>
+          <div className={dashboardMobileStyles.sectionMetaRow}>
+            <span className={dashboardMobileStyles.sectionSubtle}>
+              {error
+                ? '刷新失败，当前展示上次可用数据'
+                : `更新时间: ${new Date(stats.lastUpdated).toLocaleTimeString()}`}
+            </span>
+          </div>
+        </div>
+        {onRefresh && (
+          <div className={dashboardMobileStyles.sectionActions}>
             <Button
               variant="outline"
               size="sm"
               onClick={onRefresh}
               disabled={isLoading}
+              className={dashboardMobileStyles.sectionRefreshButton}
             >
               <RefreshCw
-                className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')}
+                className={cn('mr-1.5 h-4 w-4', isLoading && 'animate-spin')}
               />
               刷新
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className={dashboardMobileStyles.statsGrid}>
         {/* 待收逾期金额 - 修正为待收金额 */}
         <StatCard
           title="待收金额"
@@ -262,7 +298,7 @@ export function StatisticsCards({
           subtitle="所有待收金额"
           trend={{
             value: stats.trends?.receivablesChange || 0,
-            isPositive: (stats.trends?.receivablesChange || 0) >= 0,
+            isPositive: (stats.trends?.receivablesChange || 0) <= 0,
           }}
           icon={<DollarSign />}
           color="orange"

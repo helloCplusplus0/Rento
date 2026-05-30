@@ -6,6 +6,8 @@ import { Building, Search, X } from 'lucide-react'
 
 import type { RoomWithBuildingForClient } from '@/types/database'
 import { cn } from '@/lib/utils'
+import { roomListMobileStyles } from '@/components/business/room-list-mobile-styles'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RoomGrid, RoomStatusFilter } from '@/components/business/room-grid'
@@ -33,15 +35,15 @@ function RoomSearchBar({
   className,
 }: RoomSearchBarProps) {
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn(roomListMobileStyles.searchWrap, className)}>
       <div className="relative">
-        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
+        <Search className={roomListMobileStyles.searchIcon} />
         <Input
           type="search"
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11 pr-10 pl-10 text-base"
+          className={roomListMobileStyles.searchInput}
         />
         {value && (
           <Button
@@ -91,28 +93,29 @@ function BuildingFilter({
   ]
 
   return (
-    <div className={cn('flex flex-wrap gap-2', className)}>
+    <div className={cn(roomListMobileStyles.filterActions, className)}>
       {buildingOptions.map((option) => {
         const isSelected = selectedBuilding === option.key
 
         return (
-          <button
+          <Button
             key={option.key || 'all'}
             onClick={() => onBuildingChange(option.key)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-              'flex items-center gap-1 border border-gray-200 hover:border-gray-300',
+              roomListMobileStyles.filterButton,
               isSelected
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background hover:bg-gray-50'
+                ? 'bg-primary text-primary-foreground'
+                : 'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50'
             )}
           >
             <Building className="h-3 w-3" />
             {option.label}
             {option.count > 0 && (
-              <span className="ml-1 text-xs opacity-75">({option.count})</span>
+              <Badge variant="secondary" className={roomListMobileStyles.filterCount}>
+                {option.count}
+              </Badge>
             )}
-          </button>
+          </Button>
         )
       })}
     </div>
@@ -137,6 +140,15 @@ export function RoomListPage({
     setSearchQuery(initialSearchQuery)
   }, [initialSearchQuery])
 
+  const matchRoomQuery = (room: RoomWithBuildingForClient, queryText: string) => {
+    const query = queryText.toLowerCase()
+    return (
+      room.roomNumber.toLowerCase().includes(query) ||
+      room.building.name.toLowerCase().includes(query) ||
+      room.currentRenter?.toLowerCase().includes(query)
+    )
+  }
+
   // 数据过滤
   const filteredRooms = useMemo(() => {
     return initialRooms.filter((room) => {
@@ -152,12 +164,7 @@ export function RoomListPage({
 
       // 搜索筛选
       if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        return (
-          room.roomNumber.toLowerCase().includes(query) ||
-          room.building.name.toLowerCase().includes(query) ||
-          room.currentRenter?.toLowerCase().includes(query)
-        )
+        return matchRoomQuery(room, searchQuery)
       }
 
       return true
@@ -166,14 +173,26 @@ export function RoomListPage({
 
   // 统计数据 - 基于筛选结果计算状态统计
   const statusCounts = useMemo(() => {
-    return filteredRooms.reduce(
+    const roomsForStatusCounts = initialRooms.filter((room) => {
+      if (selectedBuilding && room.building.id !== selectedBuilding) {
+        return false
+      }
+
+      if (searchQuery) {
+        return matchRoomQuery(room, searchQuery)
+      }
+
+      return true
+    })
+
+    return roomsForStatusCounts.reduce(
       (acc, room) => {
         acc[room.status] = (acc[room.status] || 0) + 1
         return acc
       },
       {} as Record<string, number>
     )
-  }, [filteredRooms])
+  }, [initialRooms, searchQuery, selectedBuilding])
 
   // 楼栋统计数据 - 基于原始数据计算，不受筛选影响
   const buildingCounts = useMemo(() => {
@@ -202,12 +221,7 @@ export function RoomListPage({
         }
 
         if (searchQuery) {
-          const query = searchQuery.toLowerCase()
-          return (
-            room.roomNumber.toLowerCase().includes(query) ||
-            room.building.name.toLowerCase().includes(query) ||
-            room.currentRenter?.toLowerCase().includes(query)
-          )
+          return matchRoomQuery(room, searchQuery)
         }
 
         return true
@@ -243,6 +257,10 @@ export function RoomListPage({
     return allBuildingCounts
   }, [initialRooms, selectedStatus, searchQuery]) // 注意：不依赖 selectedBuilding
 
+  const shouldShowBuildingFilter = useMemo(() => {
+    return Object.keys(buildingCounts).length > 1 || !!selectedBuilding
+  }, [buildingCounts, selectedBuilding])
+
   // 房间点击处理 - 使用 Next.js 路由优化性能
   const handleRoomClick = (room: RoomWithBuildingForClient) => {
     // 使用 Next.js 路由进行客户端导航，比 window.location.href 更快
@@ -251,9 +269,9 @@ export function RoomListPage({
 
   return (
     <PageContainer title="房源管理" showBackButton>
-      <div className="space-y-6 pb-6">
+      <div className={roomListMobileStyles.pageSection}>
         {/* 搜索栏 */}
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+        <div className={roomListMobileStyles.toolbarCard}>
           <RoomSearchBar
             placeholder="搜索房间号、楼栋或租客姓名"
             value={searchQuery}
@@ -261,46 +279,56 @@ export function RoomListPage({
           />
         </div>
 
-        {/* 状态筛选 */}
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-700">
-              按房间状态筛选
-            </h3>
-            <RoomStatusFilter
-              selectedStatus={selectedStatus}
-              onStatusChange={setSelectedStatus}
-              statusCounts={statusCounts}
-            />
+        {/* 筛选面板 */}
+        <div className={roomListMobileStyles.filterCard}>
+          <div className={roomListMobileStyles.filterPanel}>
+            <div className={roomListMobileStyles.filterSubsection}>
+              <h3 className={roomListMobileStyles.filterHeader}>房态筛选</h3>
+              <RoomStatusFilter
+                selectedStatus={selectedStatus}
+                onStatusChange={setSelectedStatus}
+                statusCounts={statusCounts}
+              />
+            </div>
+
+            {shouldShowBuildingFilter && (
+              <div className={roomListMobileStyles.filterSubsection}>
+                <h3 className={roomListMobileStyles.filterHeader}>楼栋筛选</h3>
+                <BuildingFilter
+                  selectedBuilding={selectedBuilding}
+                  onBuildingChange={setSelectedBuilding}
+                  buildingCounts={buildingCounts}
+                />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 楼栋筛选 */}
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-700">按楼栋筛选</h3>
-            <BuildingFilter
-              selectedBuilding={selectedBuilding}
-              onBuildingChange={setSelectedBuilding}
-              buildingCounts={buildingCounts}
-            />
+        {/* 结果统计 */}
+        {(searchQuery || selectedStatus || selectedBuilding) && (
+          <div className={roomListMobileStyles.statsSummary}>
+            找到 {filteredRooms.length} 套房间
+            {searchQuery && ` (搜索: ${searchQuery})`}
+            {selectedStatus &&
+              ` (房态: ${
+                {
+                  VACANT: '空房',
+                  OCCUPIED: '在租',
+                  OVERDUE: '逾期',
+                  MAINTENANCE: '维护',
+                }[selectedStatus] || selectedStatus
+              })`}
+            {selectedBuilding &&
+              ` (楼栋: ${buildingCounts[selectedBuilding]?.name || '已选楼栋'})`}
           </div>
-        </div>
-
-        {/* 统计信息 */}
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <div className="text-muted-foreground flex items-center justify-between text-sm">
-            <span>共 {initialRooms.length} 套房间</span>
-            <span>当前显示 {filteredRooms.length} 套</span>
-          </div>
-        </div>
+        )}
 
         {/* 房间网格 */}
-        <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
+        <div className={roomListMobileStyles.toolbarCard}>
           <RoomGrid
             rooms={filteredRooms}
             onRoomClick={handleRoomClick}
-            className="p-4"
+            className="p-0"
           />
         </div>
       </div>
