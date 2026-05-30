@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertTriangle, CheckCircle, Save } from 'lucide-react'
 
+import { MeterTypeIcon } from '@/components/business/MeterTypeIcon'
 import { useSettings } from '@/hooks/useSettings'
+import { validateMeterReadingInput } from '@/lib/meter-utils'
+import { batchMeterReadingMobileStyles } from '@/components/pages/batch-meter-reading-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,6 +34,7 @@ interface Room {
 interface Meter {
   id: string
   displayName: string
+  meterNumber?: string
   meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
   unitPrice: number
   unit: string
@@ -66,9 +70,52 @@ export function BatchMeterReadingPage() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({})
+  const [validationWarnings, setValidationWarnings] = useState<
+    Record<string, string>
+  >({})
   const [aggregationMode, setAggregationMode] = useState<
     'AGGREGATED' | 'SINGLE'
   >('AGGREGATED')
+
+  const renderDesktopStatus = (
+    hasReading: boolean,
+    error?: string,
+    warning?: string
+  ) => {
+    if (hasReading && !error) {
+      return (
+        <>
+          <CheckCircle className="mx-auto h-4 w-4 text-green-500" />
+          <div className="text-xs leading-4 text-green-600">已录入</div>
+        </>
+      )
+    }
+
+    if (error) {
+      return (
+        <>
+          <AlertTriangle className="mx-auto h-4 w-4 text-red-500" />
+          <div className="text-xs leading-4 text-red-600">错误</div>
+        </>
+      )
+    }
+
+    if (warning) {
+      return (
+        <>
+          <AlertTriangle className="mx-auto h-4 w-4 text-orange-500" />
+          <div className="text-xs leading-4 text-orange-600">警告</div>
+        </>
+      )
+    }
+
+    return (
+      <>
+        <div className="mx-auto h-4 w-4 rounded-full border border-gray-300"></div>
+        <div className="text-xs leading-4 text-gray-400">待录入</div>
+      </>
+    )
+  }
 
   // 加载房间和仪表数据
   useEffect(() => {
@@ -108,27 +155,20 @@ export function BatchMeterReadingPage() {
     if (!meter) return
 
     const lastReading = Math.round(meter.lastReading || 0)
-    const usage = currentReading - lastReading
-    const amount = usage * meter.unitPrice
+    const validation = validateMeterReadingInput({
+      currentReading,
+      previousReading: lastReading,
+      unitPrice: meter.unitPrice,
+      anomalyThreshold: settings.usageAnomalyThreshold,
+    })
 
-    // 简化验证逻辑 - 只检查基本规则
-    const errors: Record<string, string> = {}
-
-    // 1. 基本规则：本次读数不能小于上次读数
-    if (currentReading < lastReading) {
-      errors[meterId] = '本次读数不能小于上次读数'
-    }
-
-    // 2. 负数用量检查（已包含在上面的规则中）
-    // 3. 移除复杂的异常用量检测，避免误判
-    // 注释掉原有的异常检测逻辑：
-    // } else if (usage > lastReading * settings.usageAnomalyThreshold) {
-    //   errors[meterId] = `用量异常偏高（超过${settings.usageAnomalyThreshold}倍历史读数）`
-
-    // 4. 可选：对于极大的用量给出友好提示（但不阻止提交）
     setValidationErrors((prev) => ({
       ...prev,
-      [meterId]: errors[meterId] || '',
+      [meterId]: validation.error || '',
+    }))
+    setValidationWarnings((prev) => ({
+      ...prev,
+      [meterId]: validation.warning || '',
     }))
 
     if (currentReading > 0) {
@@ -138,8 +178,8 @@ export function BatchMeterReadingPage() {
           meterId,
           currentReading,
           readingDate: new Date(),
-          usage,
-          amount,
+          usage: validation.usage,
+          amount: validation.amount,
         },
       }))
     } else {
@@ -161,6 +201,14 @@ export function BatchMeterReadingPage() {
       if (hasErrors) {
         alert('请修正所有错误后再提交')
         return
+      }
+
+      const activeWarnings = Object.values(validationWarnings).filter(Boolean)
+      if (activeWarnings.length > 0) {
+        const confirmed = confirm(
+          `检测到 ${activeWarnings.length} 条异常用量警告，是否仍要提交？`
+        )
+        if (!confirmed) return
       }
 
       const readingsToSubmit = Object.values(readings)
@@ -258,31 +306,16 @@ export function BatchMeterReadingPage() {
     }
   }
 
-  // 获取仪表类型显示名称
-  const getMeterTypeLabel = (type: string) => {
-    const labels = {
-      ELECTRICITY: '电表',
-      COLD_WATER: '冷水表',
-      HOT_WATER: '热水表',
-      GAS: '燃气表',
-    }
-    return labels[type as keyof typeof labels] || type
-  }
-
-  // 获取仪表类型颜色
-  const getMeterTypeColor = (type: string) => {
-    const colors = {
-      ELECTRICITY: 'bg-yellow-100 text-yellow-800',
-      COLD_WATER: 'bg-blue-100 text-blue-800',
-      HOT_WATER: 'bg-red-100 text-red-800',
-      GAS: 'bg-orange-100 text-orange-800',
-    }
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
-  }
-
   const readingsCount = Object.keys(readings).length
   const hasValidationErrors = Object.values(validationErrors).some(Boolean)
+  const warningCount = Object.values(validationWarnings).filter(Boolean).length
   const totalMeterCount = rooms.reduce((sum, room) => sum + room.meters.length, 0)
+  const canChooseAggregation = settings.autoGenerateBills
+  const currentModeHint = !settings.autoGenerateBills
+    ? '当前未启用自动账单生成，本页提交后只保存抄表记录。'
+    : aggregationMode === 'AGGREGATED'
+      ? '同一房间的多个仪表将生成一个聚合账单，便于统一管理。'
+      : '每个仪表将生成独立账单，便于逐表追踪费用。'
 
   if (loading) {
     return (
@@ -295,130 +328,147 @@ export function BatchMeterReadingPage() {
   }
 
   return (
-    <PageContainer
-      title="批量抄表"
-      showBackButton
-      actions={
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting || readingsCount === 0 || hasValidationErrors}
-          className="flex items-center gap-2"
-          data-submit-button="true"
-        >
-          <Save className="h-4 w-4" />
-          {submitting ? '提交中...' : '提交抄表'}
-        </Button>
-      }
-    >
-      <div className="space-y-6 pb-6">
-        {/* 操作说明和设置 */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="mb-4 flex items-start gap-3">
+    <PageContainer title="批量抄表" showBackButton>
+      <div className={batchMeterReadingMobileStyles.pageSection}>
+        <Card className={batchMeterReadingMobileStyles.noteCard}>
+          <CardContent className={batchMeterReadingMobileStyles.noteContent}>
+            <div className={batchMeterReadingMobileStyles.noteRow}>
               <AlertTriangle className="mt-0.5 h-5 w-5 text-orange-500" />
-              <div className="text-sm text-gray-600">
-                <p className="mb-1 font-medium">批量抄表说明：</p>
-                <ul className="space-y-1 text-xs">
-                  <li>• 请按实际仪表读数录入，系统会自动计算用量和费用</li>
-                  <li>• 本次读数不能小于上次读数</li>
-                  <li>• 仅展示激活中的仪表，禁用仪表不会参与批量抄表</li>
-                  <li>• 用量异常偏高时会有警告提示</li>
+              <div>
+                <p className={batchMeterReadingMobileStyles.noteTitle}>
+                  批量抄表说明
+                </p>
+                <ul className={batchMeterReadingMobileStyles.noteList}>
+                  <li>• 请按实际仪表读数录入，系统会自动计算用量和费用。</li>
+                  <li>• 本次读数不能小于上次读数。</li>
+                  <li>• 用量异常偏高时会给出警告，需确认后方可继续提交。</li>
+                  <li>• 仅展示激活中的仪表，禁用仪表不会参与批量抄表。</li>
                   <li>
                     •{' '}
                     {settings.autoGenerateBills
-                      ? '提交后会自动生成水电费账单'
-                      : '提交后需手动生成账单'}
+                      ? '提交后会按当前账单策略自动生成水电费账单。'
+                      : '当前关闭自动账单生成，提交后只保存抄表记录。'}
                   </li>
                 </ul>
-              </div>
-            </div>
-
-            {/* 账单生成模式选择 */}
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    账单生成模式
-                  </label>
-                  <p className="mt-1 text-xs text-gray-500">
-                    选择抄表后的账单生成策略
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAggregationMode('AGGREGATED')}
-                    className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
-                      aggregationMode === 'AGGREGATED'
-                        ? 'border-blue-300 bg-blue-100 text-blue-800'
-                        : 'border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    聚合账单
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAggregationMode('SINGLE')}
-                    className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
-                      aggregationMode === 'SINGLE'
-                        ? 'border-blue-300 bg-blue-100 text-blue-800'
-                        : 'border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    独立账单
-                  </button>
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                {aggregationMode === 'AGGREGATED'
-                  ? '💡 同一房间的多个仪表将生成一个聚合账单，便于管理'
-                  : '💡 每个仪表将生成独立的账单'}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 紧凑表格式抄表界面 - 移动端优化 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between text-lg">
+        <Card className={batchMeterReadingMobileStyles.strategyCard}>
+          <CardHeader className={batchMeterReadingMobileStyles.strategyHeader}>
+            <div className={batchMeterReadingMobileStyles.cardHeaderRow}>
+              <CardTitle className={batchMeterReadingMobileStyles.cardTitle}>
+                账单生成策略
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className={batchMeterReadingMobileStyles.strategyContent}>
+            {canChooseAggregation ? (
+              <>
+                <div className={batchMeterReadingMobileStyles.strategyRow}>
+                  <div className={batchMeterReadingMobileStyles.strategyMeta}>
+                    <p className={batchMeterReadingMobileStyles.strategyLabel}>
+                      选择抄表后的账单生成方式
+                    </p>
+                    <p className={batchMeterReadingMobileStyles.strategyHint}>
+                      该设置影响本次提交生成的水电账单形态。
+                    </p>
+                  </div>
+                  <div className={batchMeterReadingMobileStyles.strategyActions}>
+                    <Button
+                      type="button"
+                      variant={
+                        aggregationMode === 'AGGREGATED' ? 'default' : 'outline'
+                      }
+                      onClick={() => setAggregationMode('AGGREGATED')}
+                      className={batchMeterReadingMobileStyles.strategyButton}
+                    >
+                      聚合账单
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={aggregationMode === 'SINGLE' ? 'default' : 'outline'}
+                      onClick={() => setAggregationMode('SINGLE')}
+                      className={batchMeterReadingMobileStyles.strategyButton}
+                    >
+                      独立账单
+                    </Button>
+                  </div>
+                </div>
+                <div className={batchMeterReadingMobileStyles.strategyFootnote}>
+                  {currentModeHint}
+                </div>
+              </>
+            ) : (
+              <div className={batchMeterReadingMobileStyles.strategyInfoBox}>
+                <p className={batchMeterReadingMobileStyles.strategyInfoText}>
+                  {currentModeHint}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className={batchMeterReadingMobileStyles.readingCard}>
+          <CardHeader className={batchMeterReadingMobileStyles.readingHeader}>
+            <CardTitle className={batchMeterReadingMobileStyles.readingTitleRow}>
               <span>抄表录入</span>
-              <div className="text-sm text-gray-500">
+              <div className={batchMeterReadingMobileStyles.readingCountText}>
                 共 {totalMeterCount} 个激活仪表
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className={batchMeterReadingMobileStyles.readingContent}>
             {/* 移动端卡片式布局 */}
-            <div className="block md:hidden">
+            <div className={batchMeterReadingMobileStyles.mobileList}>
               {rooms.map((room) =>
                 room.meters.map((meter, index) => {
                   const reading = readings[meter.id]
                   const error = validationErrors[meter.id]
+                  const warning = validationWarnings[meter.id]
                   const hasReading = Boolean(reading)
 
                   return (
-                    <div key={meter.id} className="space-y-3 border-b p-4">
-                      {/* 房间和仪表信息 */}
-                      <div className="flex items-center justify-between">
+                    <div
+                      key={meter.id}
+                      className={batchMeterReadingMobileStyles.mobileItem}
+                    >
+                      <div className={batchMeterReadingMobileStyles.mobileItemHeader}>
                         <div>
-                          <div className="font-medium">
+                          <div className={batchMeterReadingMobileStyles.mobileRoomTitle}>
                             {room.roomNumber} - {room.building.name}
                           </div>
-                          <div className="mt-1 flex items-center gap-2">
-                            <Badge
-                              className={getMeterTypeColor(meter.meterType)}
-                              variant="secondary"
-                            >
-                              {getMeterTypeLabel(meter.meterType)}
-                            </Badge>
-                            <span className="text-sm text-gray-600">
-                              {meter.displayName}
-                            </span>
-                            {/* 优化：显示详细的合同关联状态 */}
+                          <div className={batchMeterReadingMobileStyles.mobileMetaRow}>
+                            <div className={batchMeterReadingMobileStyles.meterInfoGroup}>
+                              <MeterTypeIcon meterType={meter.meterType} />
+                              <div className={batchMeterReadingMobileStyles.meterIdentity}>
+                                <div
+                                  className={
+                                    batchMeterReadingMobileStyles.mobileMeterName
+                                  }
+                                >
+                                  {meter.displayName}
+                                </div>
+                                {meter.meterNumber ? (
+                                  <div
+                                    className={
+                                      batchMeterReadingMobileStyles.meterMetaRow
+                                    }
+                                  >
+                                    <span
+                                      className={
+                                        batchMeterReadingMobileStyles.mobileContractMeta
+                                      }
+                                    >
+                                      {meter.meterNumber}
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
                             {meter.contractId ? (
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Badge
                                   variant="default"
                                   className="bg-green-100 text-xs text-green-800"
@@ -426,12 +476,20 @@ export function BatchMeterReadingPage() {
                                   已关联合同
                                 </Badge>
                                 {meter.contractNumber && (
-                                  <span className="text-xs text-gray-500">
+                                  <span
+                                    className={
+                                      batchMeterReadingMobileStyles.mobileContractMeta
+                                    }
+                                  >
                                     {meter.contractNumber}
                                   </span>
                                 )}
                                 {meter.renterName && (
-                                  <span className="text-xs text-gray-500">
+                                  <span
+                                    className={
+                                      batchMeterReadingMobileStyles.mobileContractMeta
+                                    }
+                                  >
                                     • {meter.renterName}
                                   </span>
                                 )}
@@ -451,24 +509,25 @@ export function BatchMeterReadingPage() {
                             <CheckCircle className="h-5 w-5 text-green-500" />
                           ) : error ? (
                             <AlertTriangle className="h-5 w-5 text-red-500" />
+                          ) : warning ? (
+                            <AlertTriangle className="h-5 w-5 text-orange-500" />
                           ) : (
                             <div className="h-5 w-5 rounded-full border border-gray-300"></div>
                           )}
                         </div>
                       </div>
 
-                      {/* 读数信息 */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className={batchMeterReadingMobileStyles.mobileFieldsGrid}>
                         <div>
-                          <label className="text-xs text-gray-500">
+                          <label className={batchMeterReadingMobileStyles.mobileFieldLabel}>
                             上次读数
                           </label>
-                          <div className="font-mono text-sm font-medium">
+                          <div className={batchMeterReadingMobileStyles.mobileFieldValue}>
                             {Math.round(meter.lastReading || 0)} {meter.unit}
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs text-gray-500">
+                          <label className={batchMeterReadingMobileStyles.mobileFieldLabel}>
                             本次抄表
                           </label>
                           <input
@@ -476,7 +535,7 @@ export function BatchMeterReadingPage() {
                             min={Math.round(meter.lastReading || 0)}
                             step="1"
                             placeholder="请输入"
-                            className={`w-full rounded border px-2 py-1 text-center font-mono text-sm ${
+                            className={`${batchMeterReadingMobileStyles.mobileInput} ${
                               error
                                 ? 'border-red-300 bg-red-50'
                                 : 'border-gray-300'
@@ -487,29 +546,31 @@ export function BatchMeterReadingPage() {
                             }}
                           />
                           {error && (
-                            <div className="mt-1 text-xs text-red-600">
-                              {error}
+                            <div className={batchMeterReadingMobileStyles.fieldError}>{error}</div>
+                          )}
+                          {!error && warning && (
+                            <div className={batchMeterReadingMobileStyles.fieldWarning}>
+                              {warning}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* 计算结果 */}
                       {hasReading && !error && (
-                        <div className="grid grid-cols-2 gap-4 border-t pt-2">
+                        <div className={batchMeterReadingMobileStyles.mobileResultGrid}>
                           <div>
-                            <label className="text-xs text-gray-500">
+                            <label className={batchMeterReadingMobileStyles.mobileFieldLabel}>
                               用量
                             </label>
-                            <div className="font-mono text-sm font-medium text-blue-600">
+                            <div className={batchMeterReadingMobileStyles.resultValueUsage}>
                               {Math.round(reading.usage)} {meter.unit}
                             </div>
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500">
+                            <label className={batchMeterReadingMobileStyles.mobileFieldLabel}>
                               费用
                             </label>
-                            <div className="font-mono text-sm font-medium text-green-600">
+                            <div className={batchMeterReadingMobileStyles.resultValueAmount}>
                               ¥{reading.amount.toFixed(2)}
                             </div>
                           </div>
@@ -522,32 +583,28 @@ export function BatchMeterReadingPage() {
             </div>
 
             {/* 桌面端表格布局 */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className={batchMeterReadingMobileStyles.desktopTableWrap}>
               <table className="w-full">
-                <thead className="border-b bg-gray-50">
+                <thead className={batchMeterReadingMobileStyles.desktopTableHead}>
                   <tr>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      房源
-                    </th>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      仪表
-                    </th>
-                    <th className="p-3 text-center font-medium text-gray-700">
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCell}>房源</th>
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCell}>仪表</th>
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCell}>
                       合同状态
                     </th>
-                    <th className="p-3 text-right font-medium text-gray-700">
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCellRight}>
                       上次读数
                     </th>
-                    <th className="p-3 text-center font-medium text-gray-700">
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCellCenter}>
                       本次抄表
                     </th>
-                    <th className="p-3 text-right font-medium text-gray-700">
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCellRight}>
                       用量
                     </th>
-                    <th className="p-3 text-right font-medium text-gray-700">
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCellRight}>
                       费用
                     </th>
-                    <th className="p-3 text-center font-medium text-gray-700">
+                    <th className={batchMeterReadingMobileStyles.desktopTableHeadCellCenter}>
                       状态
                     </th>
                   </tr>
@@ -557,26 +614,38 @@ export function BatchMeterReadingPage() {
                     room.meters.map((meter, index) => {
                       const reading = readings[meter.id]
                       const error = validationErrors[meter.id]
+                      const warning = validationWarnings[meter.id]
                       const hasReading = Boolean(reading)
                       const isFirstMeterInRoom = index === 0
 
                       return (
                         <tr
                           key={meter.id}
-                          className="border-b hover:bg-gray-50"
+                          className={batchMeterReadingMobileStyles.desktopRow}
                         >
-                          {/* 房源信息 - 只在第一个仪表行显示 */}
-                          <td className="p-3">
+                          <td className={batchMeterReadingMobileStyles.desktopCell}>
                             {isFirstMeterInRoom && (
-                              <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-100 text-xs font-medium text-blue-600">
+                              <div className={batchMeterReadingMobileStyles.desktopRoomCell}>
+                                <div
+                                  className={
+                                    batchMeterReadingMobileStyles.desktopRoomBadge
+                                  }
+                                >
                                   未抄
                                 </div>
                                 <div>
-                                  <div className="font-medium">
+                                  <div
+                                    className={
+                                      batchMeterReadingMobileStyles.desktopRoomNumber
+                                    }
+                                  >
                                     {room.roomNumber}
                                   </div>
-                                  <div className="text-xs text-gray-500">
+                                  <div
+                                    className={
+                                      batchMeterReadingMobileStyles.desktopRoomMeta
+                                    }
+                                  >
                                     {room.building.name}
                                   </div>
                                 </div>
@@ -584,56 +653,95 @@ export function BatchMeterReadingPage() {
                             )}
                           </td>
 
-                          {/* 仪表信息 */}
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                className={getMeterTypeColor(meter.meterType)}
-                                variant="secondary"
-                              >
-                                {getMeterTypeLabel(meter.meterType)}
-                              </Badge>
-                              <span className="text-sm">
-                                {meter.displayName}
-                              </span>
+                          <td className={batchMeterReadingMobileStyles.desktopCell}>
+                            <div className={batchMeterReadingMobileStyles.desktopMeterWrap}>
+                              <MeterTypeIcon meterType={meter.meterType} />
+                              <div className="min-w-0">
+                                <div
+                                  className={
+                                    batchMeterReadingMobileStyles.desktopMeterName
+                                  }
+                                >
+                                  {meter.displayName}
+                                </div>
+                                {meter.meterNumber ? (
+                                  <div
+                                    className={
+                                      batchMeterReadingMobileStyles.desktopRoomMeta
+                                    }
+                                  >
+                                    {meter.meterNumber}
+                                  </div>
+                                ) : null}
+                              </div>
                             </div>
                           </td>
 
-                          {/* 合同关联状态 */}
-                          <td className="p-3 text-center">
+                          <td className={batchMeterReadingMobileStyles.desktopCell}>
                             {meter.contractId ? (
-                              <Badge
-                                variant="default"
-                                className="bg-green-100 text-xs text-green-800"
-                              >
-                                已关联合同
-                              </Badge>
+                              <div className="space-y-1">
+                                <Badge
+                                  variant="default"
+                                  className="bg-green-100 text-xs text-green-800"
+                                >
+                                  已关联合同
+                                </Badge>
+                                {(meter.contractNumber || meter.renterName) && (
+                                  <div className="space-y-0.5">
+                                    {meter.contractNumber ? (
+                                      <div
+                                        className={
+                                          batchMeterReadingMobileStyles.desktopRoomMeta
+                                        }
+                                      >
+                                        合同：{meter.contractNumber}
+                                      </div>
+                                    ) : null}
+                                    {meter.renterName ? (
+                                      <div
+                                        className={
+                                          batchMeterReadingMobileStyles.desktopRoomMeta
+                                        }
+                                      >
+                                        租客：{meter.renterName}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </div>
                             ) : (
-                              <Badge
-                                variant="destructive"
-                                className="bg-red-100 text-xs text-red-800"
-                              >
-                                未关联合同
-                              </Badge>
+                              <div className="space-y-1">
+                                <Badge
+                                  variant="destructive"
+                                  className="bg-red-100 text-xs text-red-800"
+                                >
+                                  未关联合同
+                                </Badge>
+                                <div
+                                  className={
+                                    batchMeterReadingMobileStyles.desktopRoomMeta
+                                  }
+                                >
+                                  本次抄表不会自动关联合同
+                                </div>
+                              </div>
                             )}
                           </td>
 
-                          {/* 上次读数 */}
-                          <td className="p-3 text-right">
-                            <div className="font-mono text-sm">
+                          <td className={batchMeterReadingMobileStyles.desktopCellRight}>
+                            <div className={batchMeterReadingMobileStyles.mobileFieldValue}>
                               {Math.round(meter.lastReading || 0)}
                             </div>
                           </td>
 
-                          {/* 本次抄表输入 */}
-                          <td className="p-3">
-                            <div className="flex items-center justify-center">
+                          <td className={batchMeterReadingMobileStyles.desktopCellCenter}>
+                            <div className={batchMeterReadingMobileStyles.desktopInputWrap}>
                               <input
                                 type="number"
                                 min={Math.round(meter.lastReading || 0)}
                                 step="1"
                                 placeholder="请输入"
-                                className={`w-24 rounded border px-2 py-1 text-center font-mono text-sm ${
+                                className={`${batchMeterReadingMobileStyles.desktopInput} ${
                                   error
                                     ? 'border-red-300 bg-red-50'
                                     : 'border-gray-300'
@@ -645,43 +753,43 @@ export function BatchMeterReadingPage() {
                               />
                             </div>
                             {error && (
-                              <div className="mt-1 text-center text-xs text-red-600">
-                                异常
+                              <div className={`${batchMeterReadingMobileStyles.fieldError} text-center`}>
+                                {error}
+                              </div>
+                            )}
+                            {!error && warning && (
+                              <div
+                                className={`${batchMeterReadingMobileStyles.fieldWarning} text-center`}
+                              >
+                                {warning}
                               </div>
                             )}
                           </td>
 
-                          {/* 用量 */}
-                          <td className="p-3 text-right">
+                          <td className={batchMeterReadingMobileStyles.desktopCellRight}>
                             {hasReading && !error ? (
-                              <div className="font-mono text-sm text-blue-600">
+                              <div className={batchMeterReadingMobileStyles.resultValueUsage}>
                                 {Math.round(reading.usage)}
                               </div>
                             ) : (
-                              <div className="text-sm text-gray-400">-</div>
+                              <div className={batchMeterReadingMobileStyles.desktopMuted}>-</div>
                             )}
                           </td>
 
-                          {/* 费用 */}
-                          <td className="p-3 text-right">
+                          <td className={batchMeterReadingMobileStyles.desktopCellRight}>
                             {hasReading && !error ? (
-                              <div className="font-mono text-sm text-green-600">
+                              <div className={batchMeterReadingMobileStyles.resultValueAmount}>
                                 {reading.amount.toFixed(2)}
                               </div>
                             ) : (
-                              <div className="text-sm text-gray-400">-</div>
+                              <div className={batchMeterReadingMobileStyles.desktopMuted}>-</div>
                             )}
                           </td>
 
-                          {/* 状态 */}
-                          <td className="p-3 text-center">
-                            {hasReading && !error ? (
-                              <CheckCircle className="mx-auto h-4 w-4 text-green-500" />
-                            ) : error ? (
-                              <AlertTriangle className="mx-auto h-4 w-4 text-red-500" />
-                            ) : (
-                              <div className="mx-auto h-4 w-4 rounded-full border border-gray-300"></div>
-                            )}
+                          <td className={batchMeterReadingMobileStyles.desktopCellCenter}>
+                            <div className="space-y-1 text-center">
+                              {renderDesktopStatus(hasReading, error, warning)}
+                            </div>
                           </td>
                         </tr>
                       )
@@ -693,45 +801,82 @@ export function BatchMeterReadingPage() {
           </CardContent>
         </Card>
 
-        {/* 汇总信息 */}
         {Object.keys(readings).length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">抄表汇总</CardTitle>
+          <Card className={batchMeterReadingMobileStyles.card}>
+            <CardHeader className={batchMeterReadingMobileStyles.cardHeader}>
+              <CardTitle className={batchMeterReadingMobileStyles.cardTitle}>
+                抄表汇总
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {readingsCount}
+            <CardContent className={batchMeterReadingMobileStyles.cardContent}>
+              <div className={batchMeterReadingMobileStyles.summaryCard}>
+                <div className={batchMeterReadingMobileStyles.summaryMetaRow}>
+                  <div className={batchMeterReadingMobileStyles.summaryMetaBlock}>
+                    <div className="text-lg font-semibold leading-5 text-blue-600 sm:text-xl">
+                      {readingsCount}
+                    </div>
+                    <div className={batchMeterReadingMobileStyles.summaryMetaLabel}>
+                      已录入仪表
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">已录入仪表</div>
+                  <div className={batchMeterReadingMobileStyles.summaryMetaBlock}>
+                    <div className="text-lg font-semibold leading-5 text-green-600 sm:text-xl">
+                      ¥
+                      {Object.values(readings)
+                        .reduce((sum, r) => sum + r.amount, 0)
+                        .toFixed(2)}
+                    </div>
+                    <div className={batchMeterReadingMobileStyles.summaryMetaLabel}>
+                      总费用
+                    </div>
+                  </div>
+                  <div className={batchMeterReadingMobileStyles.summaryMetaBlock}>
+                    <div className="text-lg font-semibold leading-5 text-orange-600 sm:text-xl">
+                      {Object.values(validationErrors).filter((e) => e).length}
+                    </div>
+                    <div className={batchMeterReadingMobileStyles.summaryMetaLabel}>
+                      错误数量
+                    </div>
+                  </div>
+                  <div className={batchMeterReadingMobileStyles.summaryMetaBlock}>
+                    <div className="text-lg font-semibold leading-5 text-amber-600 sm:text-xl">
+                      {warningCount}
+                    </div>
+                    <div className={batchMeterReadingMobileStyles.summaryMetaLabel}>
+                      警告数量
+                    </div>
+                  </div>
+                  <div className={batchMeterReadingMobileStyles.summaryMetaBlock}>
+                    <div className="text-lg font-semibold leading-5 text-purple-600 sm:text-xl">
+                      {totalMeterCount}
+                    </div>
+                    <div className={batchMeterReadingMobileStyles.summaryMetaLabel}>
+                      总仪表数
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    ¥
-                    {Object.values(readings)
-                      .reduce((sum, r) => sum + r.amount, 0)
-                      .toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-500">总费用</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {Object.values(validationErrors).filter((e) => e).length}
-                  </div>
-                  <div className="text-sm text-gray-500">错误数量</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {totalMeterCount}
-                  </div>
-                  <div className="text-sm text-gray-500">总仪表数</div>
+                <div className="mt-3 text-sm leading-5 text-gray-600">
+                  {settings.autoGenerateBills
+                    ? `提交后将按“${aggregationMode === 'AGGREGATED' ? '聚合账单' : '独立账单'}”策略自动生成账单。`
+                    : '提交后将保存本次抄表记录，账单需后续手动生成。'}
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        <div className={batchMeterReadingMobileStyles.actionRow}>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || readingsCount === 0 || hasValidationErrors}
+            className={batchMeterReadingMobileStyles.actionButton}
+            data-submit-button="true"
+          >
+            <Save className="h-4 w-4" />
+            {submitting ? '提交中...' : `提交抄表${readingsCount > 0 ? ` (${readingsCount})` : ''}`}
+          </Button>
+        </div>
       </div>
     </PageContainer>
   )

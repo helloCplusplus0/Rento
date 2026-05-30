@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
+import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
 import { getAuxiliaryPageGovernance } from '@/lib/page-governance'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -73,6 +74,19 @@ const coreFeatures: FunctionItem[] = [
     color: 'text-white',
     bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600',
     description: '管理收支和账单',
+  },
+  {
+    id: 'settings',
+    title: '设置',
+    href: '/settings',
+    icon: (
+      <svg fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19.14 12.94a7.49 7.49 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.4 7.4 0 00-1.63-.95l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.58.23-1.12.54-1.63.95l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58a7.49 7.49 0 000 1.88L2.83 14.52a.5.5 0 00-.12.64l1.92 3.32a.5.5 0 00.6.22l2.39-.96c.5.4 1.05.72 1.63.95l.36 2.54a.5.5 0 00.5.42h3.84a.5.5 0 00.5-.42l.36-2.54c.58-.23 1.12-.55 1.63-.95l2.39.96a.5.5 0 00.6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5z" />
+      </svg>
+    ),
+    color: 'text-white',
+    bgColor: 'bg-gradient-to-br from-slate-500 to-slate-600',
+    description: '系统设置和配置',
   },
   {
     id: 'batch-reading',
@@ -177,53 +191,35 @@ interface FunctionGridItemProps {
  * 支持导航、加载状态和交互反馈
  */
 function FunctionGridItem({ feature }: FunctionGridItemProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-
-  const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    try {
-      // 使用 window.location.href 替代 router.push 避免预取冲突
-      window.location.href = feature.href
-    } catch (error) {
-      console.error('Navigation error:', error)
-      // 回退到 router.push
-      await router.push(feature.href)
-    } finally {
-      // 延迟重置加载状态，避免闪烁
-      setTimeout(() => setIsLoading(false), 100)
-    }
-  }
-
   return (
-    <button
-      onClick={handleClick}
-      disabled={isLoading}
-      className={cn(
-        'flex w-full flex-col items-center justify-center rounded-lg p-3 transition-all hover:scale-105 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:p-4',
-        feature.bgColor
-      )}
+    <Link
+      href={feature.href}
+      className={cn(dashboardMobileStyles.shortcutButton)}
       aria-label={`导航到${feature.title}页面`}
     >
-      {isLoading ? (
-        <div className="mb-1 h-6 w-6 animate-spin sm:mb-2 sm:h-8 sm:w-8">
-          <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.364-7.364l-2.828 2.828M9.464 14.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 9.464L6.636 6.636" />
-          </svg>
-        </div>
-      ) : (
+      <div className="flex w-full flex-col items-center">
         <div
-          className={cn('mb-1 h-6 w-6 sm:mb-2 sm:h-8 sm:w-8', feature.color)}
+          className={cn(
+            dashboardMobileStyles.shortcutIconBox,
+            feature.bgColor,
+            feature.color
+          )}
         >
-          {feature.icon}
+          <div className="h-4 w-4 sm:h-5 sm:w-5">{feature.icon}</div>
         </div>
-      )}
-      <span className="text-xs font-medium text-white sm:text-sm">
-        {feature.title}
-      </span>
-    </button>
+        <div className="min-w-0">
+          <div className={dashboardMobileStyles.shortcutTitleText}>
+            {feature.title}
+          </div>
+          {feature.description && (
+            <div className={dashboardMobileStyles.shortcutDescription}>
+              {feature.description}
+            </div>
+          )}
+        </div>
+        <ArrowRight className={dashboardMobileStyles.shortcutArrow} />
+      </div>
+    </Link>
   )
 }
 
@@ -241,14 +237,16 @@ export function FunctionGrid({
   showTitle = true,
 }: FunctionGridProps) {
   return (
-    <Card className={cn('', className)}>
+    <Card className={cn(dashboardMobileStyles.shortcutCard, className)}>
       {showTitle && (
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg">快捷操作</CardTitle>
+        <CardHeader className={dashboardMobileStyles.shortcutHeader}>
+          <CardTitle className={dashboardMobileStyles.shortcutTitle}>
+            快捷操作
+          </CardTitle>
         </CardHeader>
       )}
-      <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-8">
+      <CardContent className={dashboardMobileStyles.shortcutContent}>
+        <div className={dashboardMobileStyles.shortcutGrid}>
           {dashboardFeatures.map((feature) => (
             <FunctionGridItem key={feature.id} feature={feature} />
           ))}
@@ -263,19 +261,22 @@ export function FunctionGrid({
  */
 export function FunctionGridSkeleton({ className }: { className?: string }) {
   return (
-    <Card className={cn('', className)}>
-      <CardHeader className="pb-3">
+    <Card className={cn(dashboardMobileStyles.shortcutCard, className)}>
+      <CardHeader className={dashboardMobileStyles.shortcutHeader}>
         <div className="h-5 w-20 animate-pulse rounded bg-gray-200" />
       </CardHeader>
-      <CardContent className="p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-8">
+      <CardContent className={dashboardMobileStyles.shortcutContent}>
+        <div className={dashboardMobileStyles.shortcutGrid}>
           {Array.from({ length: dashboardFeatures.length }).map((_, index) => (
             <div
               key={index}
-              className="flex animate-pulse flex-col items-center justify-center rounded-lg bg-gray-200 p-3 sm:p-4"
+              className="flex animate-pulse items-start gap-2.5 rounded-lg border border-gray-100 bg-white p-3"
             >
-              <div className="mb-1 h-6 w-6 rounded bg-gray-300 sm:mb-2 sm:h-8 sm:w-8" />
-              <div className="h-3 w-12 rounded bg-gray-300" />
+              <div className="h-9 w-9 shrink-0 rounded-lg bg-gray-200" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="h-4 w-16 rounded bg-gray-200" />
+                <div className="h-3 w-20 rounded bg-gray-200" />
+              </div>
             </div>
           ))}
         </div>

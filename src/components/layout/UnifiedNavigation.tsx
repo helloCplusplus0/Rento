@@ -2,15 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { Search } from 'lucide-react'
 
+import { NotificationEntryButton } from '@/components/business/NotificationEntryButton'
 import {
   getDesktopNavigationItems,
   getMobileNavigationItems,
   isActiveRoute,
 } from '@/lib/navigation-config'
+import { getWorkbenchSearchHref } from '@/lib/workbench-search'
 import { cn } from '@/lib/utils'
 import { UserProfileSheet } from '@/components/business/UserProfileSheet'
+import { Input } from '@/components/ui/input'
 
 interface UnifiedNavigationProps {
   variant: 'mobile' | 'desktop'
@@ -135,7 +139,25 @@ const iconMap = {
  */
 export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [showUserSheet, setShowUserSheet] = useState(false)
+  const [desktopSearchQuery, setDesktopSearchQuery] = useState('')
+
+  const handleDesktopSearch = () => {
+    const targetHref = getWorkbenchSearchHref(desktopSearchQuery)
+
+    if (targetHref) {
+      router.push(targetHref)
+    }
+  }
+
+  const handleDesktopSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key === 'Enter') {
+      handleDesktopSearch()
+    }
+  }
 
   if (variant === 'mobile') {
     // 移动端使用专门的移动端导航项（工作台、房源、添加、合同、设置）
@@ -247,47 +269,31 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
             </div>
 
             {/* 用户菜单区域 */}
-            <div className="flex items-center space-x-4">
-              {/* 搜索按钮 */}
-              <button className="rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900">
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            <div className="flex items-center space-x-3">
+              <div className="hidden w-72 items-center md:flex">
+                <div className="relative w-full">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    value={desktopSearchQuery}
+                    onChange={(event) => setDesktopSearchQuery(event.target.value)}
+                    onKeyDown={handleDesktopSearchKeyDown}
+                    placeholder="搜索房源、房间号、合同"
+                    className="h-10 border-gray-200 bg-gray-50 pl-10 pr-10 text-sm focus:border-blue-300 focus:bg-white"
+                    aria-label="搜索房源、房间号、合同"
                   />
-                </svg>
-              </button>
+                  <button
+                    type="button"
+                    onClick={handleDesktopSearch}
+                    className="absolute top-1/2 right-1.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none"
+                    disabled={!desktopSearchQuery.trim()}
+                    aria-label="执行搜索"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
 
-              {/* 通知按钮 */}
-              <button className="relative rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900">
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-5 5v-5z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 19H6.5A2.5 2.5 0 014 16.5v-9A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v4"
-                  />
-                </svg>
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 text-xs text-white"></span>
-              </button>
+              <NotificationEntryButton />
 
               {/* 设置按钮 */}
               <Link

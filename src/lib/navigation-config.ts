@@ -56,14 +56,14 @@ export const navigationItems: NavigationItem[] = [
     href: '/bills',
     description: '管理收支账单',
     prefetch: false,
-    showInMobile: false, // 不在移动端导航栏显示，因为工作台已有入口
+    showInMobile: true, // 在移动端底部导航显示，作为正式主导航入口
   },
   {
     id: 'settings',
     label: '设置',
     href: '/settings',
     description: '系统设置和配置',
-    showInMobile: true, // 在移动端导航栏显示
+    showInMobile: false, // 设置通过工作台快捷入口和桌面端右上角入口访问
   },
 ]
 
@@ -94,7 +94,7 @@ export function getNavigationItems(
   if (includeAll) {
     return navigationItems
   }
-  // 主导航排除设置项，设置项通过用户菜单访问
+  // 主导航排除设置项，设置项通过工作台快捷入口或用户菜单访问
   return navigationItems.filter((item) => item.id !== 'settings')
 }
 

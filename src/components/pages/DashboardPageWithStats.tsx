@@ -1,16 +1,16 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
+import { User } from 'lucide-react'
 
+import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
+import { UserProfileSheet } from '@/components/business/UserProfileSheet'
 import { useStatistics } from '@/hooks/useStatistics'
 import {
   FunctionGrid,
   FunctionGridSkeleton,
 } from '@/components/business/FunctionGrid'
-import {
-  MobileSearchBar,
-  MobileSearchBarSkeleton,
-} from '@/components/business/MobileSearchBar'
+import { NotificationEntryButton } from '@/components/business/NotificationEntryButton'
 import { SearchBar, SearchBarSkeleton } from '@/components/business/SearchBar'
 import { StatisticsCards } from '@/components/business/StatisticsCards'
 import { UnifiedAlertsPanel } from '@/components/business/UnifiedAlertsPanel'
@@ -18,33 +18,38 @@ import { PageContainer } from '@/components/layout'
 
 /**
  * 主页面组件 - 带统计数据
- * 展示仪表板统计数据、搜索功能和快捷操作
+ * 展示工作台核心概览、快速跳转搜索、快捷操作和提醒
  */
 export function DashboardPageWithStats() {
   // 设置自动刷新频率为1小时（3600000毫秒），避免高频请求后端
   const { stats, isLoading, error, refreshStats } = useStatistics(true, 3600000)
+  const [showUserSheet, setShowUserSheet] = useState(false)
 
   return (
     <PageContainer>
-      <div className="space-y-6">
-        {/* 搜索栏区域 - 响应式显示 */}
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          {/* 移动端：显示带用户头像的搜索栏 */}
-          <div className="block lg:hidden">
-            <Suspense fallback={<MobileSearchBarSkeleton />}>
-              <MobileSearchBar placeholder="搜索房源、合同" />
-            </Suspense>
-          </div>
-
-          {/* 桌面端：显示普通搜索栏 */}
-          <div className="hidden lg:block">
-            <Suspense fallback={<SearchBarSkeleton />}>
-              <SearchBar placeholder="搜索房源、合同" />
-            </Suspense>
+      <div className={dashboardMobileStyles.pageSection}>
+        <div className="lg:hidden">
+          <div className={dashboardMobileStyles.workbenchHero}>
+            <div className={dashboardMobileStyles.workbenchTopBar}>
+              <button
+                type="button"
+                onClick={() => setShowUserSheet(true)}
+                className={dashboardMobileStyles.workbenchAvatarButton}
+                aria-label="打开个人中心"
+              >
+                <User className="h-5 w-5" />
+              </button>
+              <Suspense fallback={<SearchBarSkeleton />}>
+                <SearchBar
+                  placeholder="搜房源、房间号、合同"
+                  showButton={false}
+                />
+              </Suspense>
+              <NotificationEntryButton variant="hero" />
+            </div>
           </div>
         </div>
 
-        {/* 统计卡片区域 */}
         <StatisticsCards
           stats={stats}
           isLoading={isLoading}
@@ -52,24 +57,27 @@ export function DashboardPageWithStats() {
           onRefresh={refreshStats}
         />
 
-        {/* 功能模块网格 */}
         <Suspense fallback={<FunctionGridSkeleton />}>
           <FunctionGrid />
         </Suspense>
 
-        {/* 统一提醒面板 */}
         <Suspense
           fallback={
-            <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-              <div className="animate-pulse">
-                <div className="mb-4 h-6 w-1/4 rounded bg-gray-200"></div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="text-center">
-                      <div className="mx-auto mb-2 h-10 w-10 rounded-lg bg-gray-200 sm:h-12 sm:w-12"></div>
-                      <div className="mx-auto h-3 w-16 rounded bg-gray-200"></div>
-                    </div>
-                  ))}
+            <div className={dashboardMobileStyles.alertsCard}>
+              <div className={dashboardMobileStyles.alertsContent}>
+                <div className="animate-pulse">
+                  <div className="mb-3 h-5 w-20 rounded bg-gray-200"></div>
+                  <div className={dashboardMobileStyles.alertsGrid}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="rounded-lg border border-gray-100 p-2.5 text-center"
+                      >
+                        <div className="mx-auto mb-1.5 h-9 w-9 rounded-lg bg-gray-200"></div>
+                        <div className="mx-auto h-3 w-14 rounded bg-gray-200"></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -78,6 +86,7 @@ export function DashboardPageWithStats() {
           <UnifiedAlertsPanel />
         </Suspense>
       </div>
+      <UserProfileSheet open={showUserSheet} onOpenChange={setShowUserSheet} />
     </PageContainer>
   )
 }

@@ -158,7 +158,7 @@ export const navigationRoutes = [
   '/rooms',
   '/add',
   '/contracts',
-  '/settings',
+  '/bills',
 ]
 
 /**

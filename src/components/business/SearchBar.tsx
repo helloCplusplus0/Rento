@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Filter, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 
+import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
+import { getWorkbenchSearchHref } from '@/lib/workbench-search'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,29 +13,27 @@ import { Input } from '@/components/ui/input'
 interface SearchBarProps {
   placeholder?: string
   className?: string
+  showButton?: boolean
 }
 
 /**
  * 搜索栏组件
- * 支持房源和合同搜索，提供统一的搜索入口
+ * 工作台快速跳转搜索入口
+ * 用于直接跳转房源或合同主链页面
  */
 export function SearchBar({
   placeholder = '搜索房源、合同',
   className,
+  showButton = true,
 }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const router = useRouter()
 
   const handleSearch = () => {
-    if (!query.trim()) return
+    const targetHref = getWorkbenchSearchHref(query)
 
-    // 根据查询内容判断搜索类型
-    // 如果包含合同相关关键词，优先搜索合同
-    if (query.includes('C') || query.includes('合同') || query.includes('CT')) {
-      router.push(`/contracts?search=${encodeURIComponent(query)}`)
-    } else {
-      // 默认搜索房源
-      router.push(`/rooms?search=${encodeURIComponent(query)}`)
+    if (targetHref) {
+      router.push(targetHref)
     }
   }
 
@@ -44,26 +44,37 @@ export function SearchBar({
   }
 
   return (
-    <div className={cn('flex items-center space-x-2', className)}>
-      <div className="relative flex-1">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+    <div className={cn(dashboardMobileStyles.quickSearchRow, className)}>
+      <div className={dashboardMobileStyles.searchWrap}>
+        <Search className={dashboardMobileStyles.searchIcon} />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="h-10 border-gray-200 bg-gray-50 pl-10 focus:border-blue-300 focus:bg-white"
+          className={dashboardMobileStyles.searchInput}
           onKeyDown={handleKeyDown}
         />
+        {!showButton && (
+          <button
+            type="button"
+            onClick={handleSearch}
+            className={dashboardMobileStyles.searchSubmitIcon}
+            disabled={!query.trim()}
+            aria-label="执行搜索"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        )}
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleSearch}
-        className="h-10 border-gray-200 px-3 hover:bg-gray-50"
-        disabled={!query.trim()}
-      >
-        <Filter className="h-4 w-4" />
-      </Button>
+      {showButton && (
+        <Button
+          onClick={handleSearch}
+          className={dashboardMobileStyles.searchButton}
+          disabled={!query.trim()}
+        >
+          搜索
+        </Button>
+      )}
     </div>
   )
 }
