@@ -4,8 +4,10 @@
 # 适用于云服务器（如阿里云、腾讯云等）的自动化部署脚本
 # 
 # 使用方法:
-#   ./scripts/cloud-deploy.sh [domain]
-#   例如: ./scripts/cloud-deploy.sh your-domain.com
+#   ./scripts/cloud-deploy.sh [domain] [source|image]
+#   例如:
+#     ./scripts/cloud-deploy.sh your-private-domain.example source
+#     ./scripts/cloud-deploy.sh your-private-domain.example image
 
 set -e  # 遇到错误立即退出
 
@@ -44,14 +46,22 @@ check_command() {
 # 主函数
 main() {
     local domain="${1:-localhost}"
-    local protocol="${2:-http}"
-    
-    if [[ "$domain" != "localhost" ]]; then
-        protocol="https"
+    local deployment_mode="${2:-${DEPLOYMENT_MODE:-image}}"
+    local protocol="${3:-http}"
+    DEPLOYMENT_MODE="$deployment_mode"
+
+    if [[ "$deployment_mode" != "source" && "$deployment_mode" != "image" ]]; then
+        print_error "部署模式必须是 source 或 image，当前值: $deployment_mode"
+        exit 1
+    fi
+
+    if [[ "$domain" != "localhost" && "${USE_NGINX:-false}" == "true" ]]; then
+        protocol="${PUBLIC_PROTOCOL:-https}"
     fi
     
     print_info "开始 Rento 云服务器部署"
     print_info "目标域名: $domain"
+    print_info "部署模式: $deployment_mode"
     print_info "访问协议: $protocol"
     echo
     
@@ -66,10 +76,11 @@ main() {
     # 步骤3：配置环境变量
     print_info "步骤 3/8: 配置环境变量"
     configure_environment "$domain" "$protocol"
+    load_env_file
     
-    # 步骤4：拉取镜像
-    print_info "步骤 4/8: 拉取Docker镜像"
-    pull_images
+    # 步骤4：准备应用镜像
+    print_info "步骤 4/8: 准备应用镜像"
+    prepare_images "$deployment_mode"
     
     # 步骤5：启动服务
     print_info "步骤 5/8: 启动容器服务"
@@ -94,18 +105,29 @@ main() {
 # 环境检查
 check_environment() {
     # 检查必要的命令
-    check_command "git"
     check_command "curl"
     
     # 检查容器运行时
-    if command -v podman &> /dev/null; then
+    if command -v podman >/dev/null 2>&1; then
         CONTAINER_CMD="podman"
-        COMPOSE_CMD="podman-compose"
-        check_command "podman-compose"
-    elif command -v docker &> /dev/null; then
+        if podman compose version >/dev/null 2>&1; then
+            COMPOSE_CMD="podman compose"
+        elif command -v podman-compose >/dev/null 2>&1; then
+            COMPOSE_CMD="podman-compose"
+        else
+            print_error "未找到 podman compose 或 podman-compose，请先安装"
+            exit 1
+        fi
+    elif command -v docker >/dev/null 2>&1; then
         CONTAINER_CMD="docker"
-        COMPOSE_CMD="docker-compose"
-        check_command "docker-compose"
+        if docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD="docker compose"
+        elif command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE_CMD="docker-compose"
+        else
+            print_error "未找到 docker compose 或 docker-compose，请先安装"
+            exit 1
+        fi
     else
         print_error "未找到 podman 或 docker，请先安装容器运行时"
         exit 1
@@ -117,7 +139,7 @@ check_environment() {
     local mem_gb=$(free -g | awk 'NR==2{printf "%.1f", $2}')
     local disk_gb=$(df -BG . | awk 'NR==2{print $4}' | sed 's/G//')
     
-    if (( $(echo "$mem_gb < 1.5" | bc -l) )); then
+    if awk "BEGIN {if ($mem_gb < 2) exit 0; exit 1}"; then
         print_warning "内存不足 2GB，可能影响性能"
     fi
     
@@ -139,7 +161,11 @@ prepare_system() {
     # 检查端口占用
     local ports=("3001" "5432" "6379")
     for port in "${ports[@]}"; do
-        if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+        if command -v ss >/dev/null 2>&1; then
+            if ss -ltn "( sport = :$port )" 2>/dev/null | tail -n +2 | grep -q .; then
+                print_warning "端口 $port 已被占用，请检查是否有冲突"
+            fi
+        elif command -v netstat >/dev/null 2>&1 && netstat -tuln 2>/dev/null | grep -q ":$port "; then
             print_warning "端口 $port 已被占用，请检查是否有冲突"
         fi
     done
@@ -171,30 +197,49 @@ configure_environment() {
     fi
     
     # 验证必要的环境变量
-    local required_vars=("NEXTAUTH_SECRET" "POSTGRES_PASSWORD")
+    local required_vars=("AUTH_SESSION_SECRET" "ADMIN_PASSWORD_HASH" "POSTGRES_PASSWORD")
     for var in "${required_vars[@]}"; do
         if ! grep -q "^${var}=" .env || grep -q "^${var}=$" .env; then
             print_error "环境变量 $var 未设置，请检查 .env 文件"
             exit 1
         fi
     done
+
+    if grep -q '^NEXTAUTH_SECRET=$' .env 2>/dev/null; then
+        print_warning "NEXTAUTH_SECRET 为空，当前会优先使用 AUTH_SESSION_SECRET；如需兼容旧入口，可同步写入相同值"
+    fi
     
     print_success "环境变量配置完成"
 }
 
-# 拉取镜像
-pull_images() {
-    print_info "正在拉取最新镜像..."
-    
-    # 拉取应用镜像
-    if ! $COMPOSE_CMD pull app; then
-        print_warning "应用镜像拉取失败，尝试使用本地构建"
-    fi
-    
-    # 拉取数据库和Redis镜像
+load_env_file() {
+    set -a
+    # shellcheck disable=SC1091
+    . ./.env
+    set +a
+
+    APP_CONTAINER_NAME="${CONTAINER_PREFIX:-rento}-app"
+}
+
+# 准备镜像
+prepare_images() {
+    local deployment_mode="$1"
+
+    print_info "正在准备服务镜像..."
     $COMPOSE_CMD pull postgres redis
-    
-    print_success "镜像拉取完成"
+
+    if [[ "$deployment_mode" == "source" ]]; then
+        print_info "使用当前源码构建 app 镜像"
+        $COMPOSE_CMD build app
+    else
+        print_info "尝试拉取预构建 app 镜像"
+        if ! $COMPOSE_CMD pull app; then
+            print_error "应用镜像拉取失败，请检查 APP_IMAGE 或改用 source 模式"
+            exit 1
+        fi
+    fi
+
+    print_success "镜像准备完成"
 }
 
 # 启动服务
@@ -209,6 +254,10 @@ start_services() {
     sleep 10  # 等待数据库启动
     
     $COMPOSE_CMD up -d app
+
+    if [[ "${USE_NGINX:-false}" == "true" ]]; then
+        $COMPOSE_CMD --profile nginx up -d nginx
+    fi
     
     print_success "服务启动完成"
 }
@@ -240,23 +289,49 @@ initialize_database() {
     print_info "正在初始化数据库..."
     
     # 运行数据库迁移和种子数据
-    if $CONTAINER_CMD exec rento-app /app/scripts/migrate-and-seed.sh; then
+    if $CONTAINER_CMD exec "$APP_CONTAINER_NAME" /app/scripts/migrate-and-seed.sh; then
         print_success "数据库初始化完成"
     else
         print_warning "数据库初始化失败，请手动执行"
-        print_info "手动执行命令: $CONTAINER_CMD exec -it rento-app /app/scripts/migrate-and-seed.sh"
+        print_info "手动执行命令: $CONTAINER_CMD exec -it $APP_CONTAINER_NAME /app/scripts/migrate-and-seed.sh"
     fi
+}
+
+build_base_url() {
+    local domain="$1"
+    local protocol="$2"
+
+    if [[ "$domain" == "localhost" ]]; then
+        echo "http://localhost:${APP_PORT:-3001}"
+        return
+    fi
+
+    if [[ "${USE_NGINX:-false}" == "true" ]]; then
+        if [[ "$protocol" == "https" ]]; then
+            if [[ "${HTTPS_PORT:-443}" == "443" ]]; then
+                echo "https://${domain}"
+            else
+                echo "https://${domain}:${HTTPS_PORT:-443}"
+            fi
+        else
+            if [[ "${HTTP_PORT:-80}" == "80" ]]; then
+                echo "http://${domain}"
+            else
+                echo "http://${domain}:${HTTP_PORT:-80}"
+            fi
+        fi
+        return
+    fi
+
+    echo "http://${domain}:${APP_PORT:-3001}"
 }
 
 # 验证部署
 verify_deployment() {
     local domain="$1"
     local protocol="$2"
-    local base_url="${protocol}://${domain}:3001"
-    
-    if [[ "$domain" == "localhost" ]]; then
-        base_url="http://localhost:3001"
-    fi
+    local base_url
+    base_url="$(build_base_url "$domain" "$protocol")"
     
     print_info "验证部署状态..."
     
@@ -292,11 +367,8 @@ verify_deployment() {
 print_deployment_summary() {
     local domain="$1"
     local protocol="$2"
-    local base_url="${protocol}://${domain}:3001"
-    
-    if [[ "$domain" == "localhost" ]]; then
-        base_url="http://localhost:3001"
-    fi
+    local base_url
+    base_url="$(build_base_url "$domain" "$protocol")"
     
     echo
     print_success "🎉 Rento 部署完成！"
@@ -306,8 +378,9 @@ print_deployment_summary() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "🌐 应用地址:     ${base_url}"
     echo "🏥 健康检查:     ${base_url}/api/health"
-    echo "📊 系统信息:     ${base_url}/api/system/info"
+    echo "📊 系统健康:     ${base_url}/api/health/system"
     echo "🐳 容器运行时:   $CONTAINER_CMD"
+    echo "📦 部署模式:     ${DEPLOYMENT_MODE:-image}"
     echo
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "🔧 管理命令"
@@ -327,7 +400,7 @@ print_deployment_summary() {
     echo
     
     if [[ "$domain" != "localhost" ]]; then
-        echo "💡 提示: 生产环境建议配置 HTTPS 证书和防火墙规则"
+        echo "💡 提示: 若需 HTTPS，请同时启用反向代理并确保传递 X-Forwarded-Proto=https"
     fi
 }
 

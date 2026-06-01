@@ -23,6 +23,7 @@ Rento/
 ├── DEPLOYMENT.md           # 部署说明
 ├── ENVIRONMENT_GUIDE.md    # 环境变量与配置说明
 ├── docker-compose.yml      # 容器编排
+├── docker-compose.local-https.yml # 本地私有 HTTPS 验收专用编排
 └── .env.example            # 环境模板
 ```
 
@@ -63,9 +64,10 @@ Rento/
 - `dev.db`：历史 SQLite 文件，已从主路径移除。
 
 ## 5. `scripts/` 结构说明
-- `cloud-deploy.sh`：云服务器端到端部署入口。
+- `cloud-deploy.sh`：云服务器容器部署辅助入口，支持 `source`（基于当前源码构建镜像）与 `image`（拉取预构建镜像）两种模式。
 - `migrate-and-seed.sh`：容器启动后的数据库同步与种子逻辑，当前含历史兼容分支。
 - `health-check.sh`、`init-db.sh`：健康验证与数据库初始化辅助脚本。
+- `pwa-local-https-helper.sh`：本地私有 HTTPS 验收时的模板渲染、前置校验与 checklist 入口。
 - `scripts/archive/`：历史性脚本归档位置，例如 SQLite -> PostgreSQL 一次性迁移脚本。
 
 ## 6. `docs/` 结构说明
@@ -85,6 +87,7 @@ Rento/
   - `docs/phase05_pwa_delivery_architecture_plan.md`
   - `docs/phase05_pwa_delivery_dev_plan.md`
   - `docs/phase05_pwa_delivery_shared_baseline.md`
+- `docs/pwa_private_https_android_acceptance_runbook.md`：本地私有 HTTPS、mkcert、真机安装与最小回退的执行层 runbook。
 - `phase05-pwa-delivery-*` 已完成当前阶段收口；当前默认工作流已重新回到真实场景验证与 fix 闭环。
 - `docs/archive/tasks/`：历史 `task_*.md` 实施记录。
 - `docs/archive/README.md`：归档说明与使用边界。
@@ -100,8 +103,10 @@ Rento/
 - 会话与守卫入口：`src/lib/auth/**`。
 - 数据库入口：`prisma/schema.prisma`。
 - 本地开发热加载入口：`package.json` 中的 `npm run dev`。
-- 容器部署验证入口：`docker-compose.yml`。
-- 云部署入口：`scripts/cloud-deploy.sh`。
+- 源码生产启动入口：`package.json` 中的 `npm run build` -> `npm run start`。
+- 容器部署入口：`docker-compose.yml`（支持源码构建与 GHCR 镜像两条路径）。
+- 本地私有 HTTPS 验收入口：`docker-compose.local-https.yml` 与 `scripts/pwa-local-https-helper.sh`。
+- 云服务器容器部署辅助入口：`scripts/cloud-deploy.sh`。
 
 ## 8. 当前目录治理判断
 - 当前主线目录结构整体可继续沿用，无需重做大规模源码搬迁。

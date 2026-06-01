@@ -1,14 +1,21 @@
 import type { NextConfig } from 'next'
 
 const devPort = process.env.APP_INTERNAL_PORT || '3001'
-const hostIp = process.env.HOST_IP || '192.168.31.84'
+const hostIp = process.env.HOST_IP?.trim()
+const localHttpsPort = process.env.LOCAL_HTTPS_PORT || '18443'
 const allowedDevOrigins = Array.from(
-  new Set([
-    `http://localhost:${devPort}`,
-    `http://127.0.0.1:${devPort}`,
-    `http://${hostIp}:${devPort}`,
-    `https://${hostIp}:18443`,
-  ])
+  new Set(
+    [
+      `http://localhost:${devPort}`,
+      `http://127.0.0.1:${devPort}`,
+      hostIp && !['localhost', '127.0.0.1'].includes(hostIp)
+        ? `http://${hostIp}:${devPort}`
+        : null,
+      hostIp && !['localhost', '127.0.0.1'].includes(hostIp)
+        ? `https://${hostIp}:${localHttpsPort}`
+        : null,
+    ].filter((value): value is string => Boolean(value))
+  )
 )
 
 const nextConfig: NextConfig = {
@@ -43,15 +50,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ]
-  },
-
-  eslint: {
-    // 在构建时忽略ESLint错误，允许部署
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    // 在构建时忽略TypeScript错误，允许部署
-    ignoreBuildErrors: true,
   },
 
   // 服务器外部包配置 (Next.js 15+ 新配置)

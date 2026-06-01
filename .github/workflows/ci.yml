@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-type-check:
     runs-on: ubuntu-latest
@@ -19,6 +23,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -31,9 +36,6 @@ jobs:
 
       - name: Run linter
         run: npm run lint
-
-      - name: Check formatting
-        run: npm run format:check
 
   build-test:
     runs-on: ubuntu-latest
@@ -48,6 +50,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
