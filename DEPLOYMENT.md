@@ -43,12 +43,20 @@ curl -kI https://rento.example.com/api/health
 - `app`、`postgres`、`redis` 只走容器内网络
 - 生产入口固定为 `https://<domain>`
 
+## 实践结论与资源边界
+- 本次实机验证表明，`2C2G` 云服务器可以承载 `Rento` 的容器化运行态、`HTTPS` 与 `PWA`
+- 同一规格不适合作为源码构建、镜像构建或高频完整重部署环境
+- 如果部署阶段出现 `SSH` 卡顿、健康检查超时、容器拉取时整机变慢，应优先排查云盘 `I/O` 是否受限
+- 若云平台已经给出磁盘读写受限告警，应优先升级云盘性能；若已触及实例上限，再同步升级实例规格
+- 因此，推荐把这套方案定位为“预构建镜像运行节点”，而不是“云端开发构建节点”
+
 ## 部署前检查
 - 服务器已安装 Docker Compose 或 Podman Compose
 - DNS 已解析到当前服务器公网 IP
 - 安全组已放行 `80/443`
 - 已准备好正式证书和私钥
 - `.env` 中已填入真实域名、密钥、管理员哈希和数据库密码
+- 云平台未出现明显的磁盘 `I/O` 受限告警；如果已出现，应先评估云盘性能再继续完整部署
 
 ## 说明
 ### 部署资产拉取
@@ -56,6 +64,7 @@ curl -kI https://rento.example.com/api/health
 - `bootstrap-deploy-assets.sh` 会自动使用 Git sparse-checkout
 - 会自动创建 `nginx/ssl`、`logs/nginx`、`backups`
 - 会保留后续更新所需的 Git 远端关系
+- 这样做的目标是把服务器职责收口到“拉取部署资产并运行镜像”，避免回到源码构建路径
 
 当前部署资产集合固定为：
 - `.env.example`
@@ -103,6 +112,11 @@ node -e "const { randomBytes, scryptSync } = require('node:crypto'); const passw
 - 等待健康检查通过后执行数据库初始化
 - 启动 `nginx`
 - 执行本机 HTTPS 健康检查
+
+## 已知运维边界
+- 如果服务器规格较低，`pull + 解压镜像 + 初始化` 可能比运行态更容易触发资源峰值
+- `Rento` 当前推荐的云服务器路径是“提前构建镜像，服务器只负责拉取并运行”
+- 若曾混用 rootful 与 rootless Podman，部署前应先清理历史自定义网络和 CNI 残留，避免持续告警干扰判断
 
 ## 手动运维
 启动后常用命令：
