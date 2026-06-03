@@ -13,8 +13,8 @@
 
 本文档不替代：
 
-- [phase05_pwa_delivery_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase05_pwa_delivery_architecture_plan.md) 的阶段定位职责
-- [phase05_pwa_delivery_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase05_pwa_delivery_shared_baseline.md) 的共享边界职责
+- [phase05_pwa_delivery_architecture_plan.md](file:///home/admin/apps/Rento/docs/phase05_pwa_delivery_architecture_plan.md) 的阶段定位职责
+- [phase05_pwa_delivery_shared_baseline.md](file:///home/admin/apps/Rento/docs/phase05_pwa_delivery_shared_baseline.md) 的共享边界职责
 - 具体 `.trae/specs/phase05-pwa-delivery-*` 的任务冻结与验收职责
 
 ## 二、总体推进结论
@@ -124,7 +124,7 @@
 - `public/sw.js` 或等效 service worker 文件
 - `next.config.*` 中与 PWA 头部或 SW 相关配置
 - 必要时 PWA 注册组件、更新提示组件、离线页
-- 必要时 `README.md` / `DEPLOYMENT.md` / `ENVIRONMENT_GUIDE.md`
+- `README.md` / `DEPLOYMENT.md` / `.env.example`
 
 ### 不在范围内
 
@@ -195,7 +195,7 @@
 
 - `README.md`
 - `DEPLOYMENT.md`
-- `ENVIRONMENT_GUIDE.md`
+- `DEPLOYMENT.md`
 - 必要时 `.env.example`
 - 必要时与安装/更新提示相关页面或文档
 

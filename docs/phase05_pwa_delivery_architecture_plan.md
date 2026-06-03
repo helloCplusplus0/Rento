@@ -14,13 +14,13 @@
 
 本文档不替代：
 
-* [AGENTS.md](file:///home/dell/Projects/Rento/AGENTS.md) 的入口摘要职责
+* [AGENTS.md](file:///home/admin/apps/Rento/AGENTS.md) 的入口摘要职责
 
-* [plan.md](file:///home/dell/Projects/Rento/plan.md) 的默认阶段顺序与当前主真相源职责
+* [plan.md](file:///home/admin/apps/Rento/plan.md) 的默认阶段顺序与当前主真相源职责
 
-* [docs/fix/fix_008_analysis_Rento-optimal-solution-for-mobile-adaptation.md](file:///home/dell/Projects/Rento/docs/fix/fix_008_analysis_Rento-optimal-solution-for-mobile-adaptation.md) 的问题分析职责
+* [docs/fix/fix_008_analysis_Rento-optimal-solution-for-mobile-adaptation.md](file:///home/admin/apps/Rento/docs/fix/fix_008_analysis_Rento-optimal-solution-for-mobile-adaptation.md) 的问题分析职责
 
-* [phase05_pwa_delivery_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase05_pwa_delivery_dev_plan.md) 的子任务拆分职责
+* [phase05_pwa_delivery_dev_plan.md](file:///home/admin/apps/Rento/docs/phase05_pwa_delivery_dev_plan.md) 的子任务拆分职责
 
 * 后续 `.trae/specs/phase05-pwa-delivery-*` 的单任务冻结与执行职责
 

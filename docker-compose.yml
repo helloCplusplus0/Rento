@@ -1,50 +1,36 @@
-# Rento 房屋租赁管理系统 - 统一容器编排配置
-# 兼容 Docker Compose 和 Podman Compose
-# 支持开发、测试、生产环境的统一部署
-# 推荐使用: podman-compose up -d
-# 备选使用: docker-compose up -d
-
-version: '3.8'
-
 services:
   app:
-    # 默认同时支持两种路径：
-    # 1. `docker compose up --build` / `podman-compose up --build`：基于当前源码构建
-    # 2. 预先设置 APP_IMAGE 后使用远端镜像：保留 GHCR 容器部署方案
-    image: ${APP_IMAGE:-ghcr.io/hellocplusplus0/rento:main}
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-ghcr.io/hellocplusplus0/rento@sha256:9ae214a2ebe776ddf68ed80b61193b4139ee2ff7eb41994a51a4b755440e3abd}
     container_name: ${CONTAINER_PREFIX:-rento}-app
-    ports:
-      - '${APP_BIND_ADDRESS:-0.0.0.0}:${APP_PORT:-3001}:3001'
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - PORT=${APP_INTERNAL_PORT:-3001}
-      - DATABASE_URL=${CONTAINER_DATABASE_URL}
-      - BACKUP_DIR=${CONTAINER_BACKUP_DIR:-/app/backups}
-      - LOG_DIR=${CONTAINER_LOG_DIR:-/app/logs}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3001}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - AUTH_SESSION_SECRET=${AUTH_SESSION_SECRET}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
-      - REDIS_URL=${CONTAINER_REDIS_URL:-redis://redis:6379}
-      - ENABLE_MONITORING=${ENABLE_MONITORING:-true}
-      - PERFORMANCE_MONITORING=${PERFORMANCE_MONITORING:-true}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001}
-      - CORS_ENABLED=${CORS_ENABLED:-true}
-      - MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-10485760}
-      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${APP_INTERNAL_PORT:-3001}
+      DATABASE_URL: ${CONTAINER_DATABASE_URL}
+      BACKUP_DIR: ${CONTAINER_BACKUP_DIR:-/app/backups}
+      LOG_DIR: ${CONTAINER_LOG_DIR:-/app/logs}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      AUTH_SESSION_SECRET: ${AUTH_SESSION_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      REDIS_URL: ${CONTAINER_REDIS_URL:-redis://redis:6379}
+      ENABLE_MONITORING: ${ENABLE_MONITORING:-true}
+      PERFORMANCE_MONITORING: ${PERFORMANCE_MONITORING:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      CORS_ENABLED: ${CORS_ENABLED:-true}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-10485760}
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT:-30000}
     volumes:
       - ${HOST_BACKUP_DIR:-./backups}:/app/backups
       - ${HOST_LOG_DIR:-./logs}:/app/logs
+    expose:
+      - '3001'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - rento-network
@@ -60,20 +46,17 @@ services:
       start_period: 40s
 
   postgres:
-    # PostgreSQL 16 数据库服务
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     container_name: ${CONTAINER_PREFIX:-rento}-postgres
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-rento_production}
-      - POSTGRES_USER=${POSTGRES_USER:-rento}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      POSTGRES_DB: ${POSTGRES_DB:-rento_production}
+      POSTGRES_USER: ${POSTGRES_USER:-rento}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ${HOST_BACKUP_DIR:-./backups}:/backups
-      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
-    ports:
-      - '${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432'
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
       test:
         [
@@ -87,24 +70,35 @@ services:
     restart: unless-stopped
     networks:
       - rento-network
-    # PostgreSQL 性能优化配置
     command: >
       postgres
       -c shared_preload_libraries=pg_stat_statements
       -c pg_stat_statements.track=all
-      -c max_connections=100
-      -c shared_buffers=256MB
-      -c effective_cache_size=1GB
-      -c maintenance_work_mem=64MB
+      -c max_connections=50
+      -c shared_buffers=128MB
+      -c effective_cache_size=512MB
+      -c maintenance_work_mem=32MB
       -c checkpoint_completion_target=0.9
-      -c wal_buffers=16MB
+      -c wal_buffers=8MB
       -c default_statistics_target=100
-      -c random_page_cost=1.1
-      -c effective_io_concurrency=200
 
-  # Nginx 反向代理 (生产环境可选)
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: ${CONTAINER_PREFIX:-rento}-redis
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - rento-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   nginx:
-    image: nginx:alpine
+    image: docker.io/library/nginx:1.27-alpine
     container_name: ${CONTAINER_PREFIX:-rento}-nginx
     ports:
       - '${HTTP_PORT:-80}:80'
@@ -114,47 +108,18 @@ services:
       - ${NGINX_SSL_DIR:-./nginx/ssl}:/etc/nginx/ssl:ro
       - ${HOST_NGINX_LOG_DIR:-./logs/nginx}:/var/log/nginx
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - rento-network
-    # 仅在需要时启用 (可通过环境变量控制)
-    profiles:
-      - nginx
-      - production
 
-  # Redis 缓存服务 (可选)
-  redis:
-    image: redis:7-alpine
-    container_name: ${CONTAINER_PREFIX:-rento}-redis
-    ports:
-      - '${REDIS_BIND_ADDRESS:-127.0.0.1}:${REDIS_PORT:-6379}:6379'
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    networks:
-      - rento-network
-    # Redis 配置优化
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 3s
-      retries: 3
-
-# 数据卷配置
 volumes:
   postgres_data:
     driver: local
-    # Podman 兼容性：使用本地驱动
   redis_data:
     driver: local
 
-# 网络配置
 networks:
   rento-network:
     driver: bridge
-    # 修改网段避免冲突
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16

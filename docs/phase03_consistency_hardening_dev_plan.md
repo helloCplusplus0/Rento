@@ -16,8 +16,8 @@
 
 本文档不替代：
 
-- [phase03_consistency_hardening_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase03_consistency_hardening_architecture_plan.md) 的阶段定位职责
-- [phase03_consistency_hardening_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase03_consistency_hardening_shared_baseline.md) 的共享边界职责
+- [phase03_consistency_hardening_architecture_plan.md](file:///home/admin/apps/Rento/docs/phase03_consistency_hardening_architecture_plan.md) 的阶段定位职责
+- [phase03_consistency_hardening_shared_baseline.md](file:///home/admin/apps/Rento/docs/phase03_consistency_hardening_shared_baseline.md) 的共享边界职责
 - 具体 `.trae/specs/phase03-consistency-hardening-*` 的任务冻结与验收职责
 
 ## 二、总体推进结论
@@ -124,7 +124,7 @@
 - `scripts/` 下新增或更新的开发启动脚本
 - `package.json`
 - `README.md`
-- `ENVIRONMENT_GUIDE.md`
+- `DEPLOYMENT.md`
 - 必要时 `.env.example`
 
 ### 不在范围内
@@ -194,7 +194,7 @@
 - `architecture_map.md`
 - 必要时 `README.md`
 - 必要时 `DEPLOYMENT.md`
-- 必要时 `ENVIRONMENT_GUIDE.md`
+- 必要时 `DEPLOYMENT.md`
 
 ### 不在范围内
 

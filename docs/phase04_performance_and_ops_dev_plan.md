@@ -13,8 +13,8 @@
 
 本文档不替代：
 
-- [phase04_performance_and_ops_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase04_performance_and_ops_architecture_plan.md) 的阶段定位职责
-- [phase04_performance_and_ops_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase04_performance_and_ops_shared_baseline.md) 的共享边界职责
+- [phase04_performance_and_ops_architecture_plan.md](file:///home/admin/apps/Rento/docs/phase04_performance_and_ops_architecture_plan.md) 的阶段定位职责
+- [phase04_performance_and_ops_shared_baseline.md](file:///home/admin/apps/Rento/docs/phase04_performance_and_ops_shared_baseline.md) 的共享边界职责
 - 具体 `.trae/specs/phase04-performance-and-ops-*` 的任务冻结与验收职责
 
 ## 二、总体推进结论

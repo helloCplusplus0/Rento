@@ -92,7 +92,7 @@
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
 - 当默认入口切换到新的 `phase*`，且即将进入首个边界冻结子任务前，必须先完成上述顶层同步，再进入该阶段的 `/plan` 或 `/spec`。
 - 当运行入口、目录结构、发布方式、数据库主线发生变化时，必须同步更新 `README.md` 与 `architecture_map.md`。
-- 当安全边界、门禁、环境配置发生变化时，必须同步更新 `project_rules.md`、`ENVIRONMENT_GUIDE.md` 与 `.env.example`。
+- 当安全边界、门禁、环境配置发生变化时，必须同步更新 `project_rules.md`、`DEPLOYMENT.md` 与 `.env.example`。
 - 所有设计文档需与本文件保持一致；若冲突，以能力边界、当前默认入口和单一真相源原则为最高约束。
 - 独立工作流命名模板固定为 `phaseX-<workflow>-*`。
 - 文档模板固定为 `docs/phaseX_<workflow>_architecture_plan.md`、`docs/phaseX_<workflow>_dev_plan.md`，必要时补充 `docs/phaseX_<workflow>_shared_baseline.md`。

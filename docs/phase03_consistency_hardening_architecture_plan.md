@@ -11,9 +11,9 @@
 
 本文档不替代：
 
-- [AGENTS.md](file:///home/dell/Projects/Rento/AGENTS.md) 的入口摘要职责
-- [plan.md](file:///home/dell/Projects/Rento/plan.md) 的阶段顺序与验收结论职责
-- [phase03_consistency_hardening_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase03_consistency_hardening_dev_plan.md) 的子任务拆分职责
+- [AGENTS.md](file:///home/admin/apps/Rento/AGENTS.md) 的入口摘要职责
+- [plan.md](file:///home/admin/apps/Rento/plan.md) 的阶段顺序与验收结论职责
+- [phase03_consistency_hardening_dev_plan.md](file:///home/admin/apps/Rento/docs/phase03_consistency_hardening_dev_plan.md) 的子任务拆分职责
 - 后续 `.trae/specs/phase03-consistency-hardening-*` 的单任务冻结与执行职责
 
 ## 二、当前阶段结论
