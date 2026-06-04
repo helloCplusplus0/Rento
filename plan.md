@@ -1,11 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`真实场景验证与 fix 闭环`
-- 当前阶段目标：优先通过真实场景数据验证主链机制，按 `issue -> analysis -> /spec -> 修复 -> 验收 -> 提交` 的闭环方式处理新发现问题，而不是直接扩写新功能。
-- 当前执行方式：新问题先进入 `docs/fix/fix_XXX_issue_<topic>.md`；完成根因与方案分析后，在 `docs/fix/` 下产出 `fix_XXX_analysis_<topic>.md`；未经 `analysis` 文档冻结与审核，不直接进入 `/spec`。
-- 当前下一步：继续围绕 `docs/fix/` 中的真实问题推进 fix 闭环；`phase05-pwa-delivery-*` 已完成对 PWA 相关议题的承接与落地，后续不再将其视为待切换候选阶段。
-- 当前阶段说明：`phase05-pwa-delivery-*` 已完成，当前默认重新回到 fix 工作流。
+- 当前默认工作流：`phase06-minix-replatform`
+- 当前阶段目标：完成当前仓库从旧 `Rento` 存量运行线到 `Rento-miniX` 原地重构主线的顶层真相源切换，并冻结后续实施边界。
+- 当前执行方式：先同步根级规范文档，再产出 `docs/phase06_minix_replatform_architecture_plan.md`、`docs/phase06_minix_replatform_dev_plan.md` 与 `docs/phase06_minix_replatform_shared_baseline.md`；文档产出后立即停下，等待审核。
+- 当前下一步：先审核已提升到本文件的完整 `Hono` 版 Phase 路线图，以及 `phase06` 文档中已完成的目录吸收、引用复核与删除收口结果；通过后再决定是否进入 `phase07-app-shell-and-runtime-foundation` 的 `/plan`。
+- 当前阶段说明：旧 `phase01~phase05` 已完成并保留为上游连续性输入；当前默认不再继续按旧 `fix` 闭环扩写新主线，而是先完成原地重构主线切换。
 
 ## 阶段顺序
 
@@ -51,11 +51,6 @@
   - 多仪表历史保留策略收口
   - 关键查询和金额语义复核
   - 迁移锁与数据库口径治理方案
-- 推荐子任务顺序：
-  - `phase03-consistency-hardening-01-boundary-and-shared-baseline-freeze`
-  - `phase03-consistency-hardening-02-delete-guard-and-history-preservation`
-  - `phase03-consistency-hardening-03-billing-query-and-dashboard-semantic-closure`
-  - `phase03-consistency-hardening-04-migration-compatibility-exit-plan`
 - 验收条件：
   - 关键状态流转有明确规则
   - 不再存在“文档正确、代码行为相反”的主链路问题
@@ -69,32 +64,21 @@
   - 列表接口数据库侧优化
   - 健康检查与日志补强
   - dev-only 页面分类和门禁
-- 推荐子任务顺序：
-  - `phase04-performance-and-ops-01-baseline-and-scope-freeze`
-  - `phase04-performance-and-ops-02-query-performance-closure`
-  - `phase04-performance-and-ops-03-observability-and-health-hardening`
-  - `phase04-performance-and-ops-04-dev-only-entry-classification-and-gating`
 - 验收条件：
   - 关键接口性能达标
   - 运行辅助页面不再污染正式业务入口
 - 当前结论：
-  - 已按顺序完成 `phase04-performance-and-ops-01-baseline-and-scope-freeze`、`phase04-performance-and-ops-02-query-performance-closure`、`phase04-performance-and-ops-03-observability-and-health-hardening`、`phase04-performance-and-ops-04-dev-only-entry-classification-and-gating`
-  - 当前阶段交付已收口；若需继续推进，必须先进入新一轮 `/plan`，再决定新的阶段目标与工作流
+  - 已完成
+  - 已完成当前阶段既定子任务
 
 ### phase05-pwa-delivery
-- 目标：在保持单一 Next.js Web 主线、单 UI 与低复杂度前提下，把 Rento 收口为受控安卓优先、可安装、可解释、可维护的私有管理 Web App。
+- 目标：在保持单一 Next.js Web 主线、单 UI 与低复杂度前提下，把旧 `Rento` 收口为受控安卓优先、可安装、可解释、可维护的私有管理 Web App。
 - 关键交付：
   - 正式支持矩阵、环境分层与退化策略
   - 安装壳、manifest、图标与启动体验收口
   - 最小 service worker、更新策略与最小离线兜底
   - 关键业务页移动端可用性收口
   - 私有部署、安装流程与发布前验收说明
-- 推荐子任务顺序：
-  - `phase05-pwa-delivery-01-baseline-and-support-matrix-freeze`
-  - `phase05-pwa-delivery-02-install-shell-and-manifest-hardening`
-  - `phase05-pwa-delivery-03-service-worker-and-update-strategy`
-  - `phase05-pwa-delivery-04-mobile-layout-and-key-page-usability-closure`
-  - `phase05-pwa-delivery-05-private-deployment-and-installation-readiness`
 - 验收条件：
   - 移动端主线已经明确冻结为单一 Web 主线，不回退到 Flutter / 原生双线
   - 正式支持浏览器中可完成安装、启动、更新与失败退化闭环
@@ -106,30 +90,112 @@
     - `docs/phase05_pwa_delivery_architecture_plan.md`
     - `docs/phase05_pwa_delivery_dev_plan.md`
     - `docs/phase05_pwa_delivery_shared_baseline.md`
-  - 当前默认工作流已重新回到“真实场景验证与 fix 闭环”
+
+### phase06-minix-replatform
+- 目标：在保持当前 UI 展示效果与业务主链语义不失真的前提下，完成 `Rento-miniX` 原地重构主线的顶层切换、边界冻结与实施顺序设计。
+- 关键交付：
+  - 根级真相源切换
+  - `phase06` 架构规划、开发规划与共享基线
+  - 旧 `Rento` 存量运行线与 `Rento-miniX` 新主线关系冻结
+  - 原内嵌 `Rento-miniX/` 目录的抽取、复核与清理收口
+  - `Hono` 版完整 Phase 路线图与模块迁移分类
+  - 原 `Rento-miniX/` 内嵌目录文件级吸收映射、删除门禁与删除结果
+  - 后续实现子任务顺序与门禁
+- 验收条件：
+  - 当前仓库的主叙事、主文档与阶段文档口径一致
+  - UI 默认承接、PostgreSQL 固定主线、低复杂度重构原则全部冻结
+  - 后续实现可以直接按 `phase06` 子任务顺序进入 `/spec`
+  - 原内嵌 `Rento-miniX/` 目录已完成吸收、引用复核与实际删除，不再继续争夺长期真相源
+- 当前结论：
+  - 文档规划与目录治理收口已完成
+  - 待用户最终审核后，决定是否进入 `phase07-app-shell-and-runtime-foundation` 的 `/plan`
+
+### phase07-app-shell-and-runtime-foundation
+- 目标：承接 `Rento-miniX` 的前端应用壳、服务端运行时入口、基础路由、中间件与最小健康检查骨架。
+- 关键交付：
+  - 前端应用壳与路由承接位
+  - 服务端运行时入口与基础中间件
+  - 最小健康检查与环境变量口径
+  - 旧运行线到新应用壳/运行时的映射与退出条件
+- 验收条件：
+  - 新主线已有单一应用壳与运行时承接位
+  - 不再需要继续把后续迁移挂靠在旧 `Next.js` 宿主之上
+  - UI 默认承接边界、业务主链语义与环境变量口径未被破坏
+- 当前结论：
+  - 待启动
+  - 必须建立在 `phase06` 审核通过以及原内嵌 `Rento-miniX/` 目录清理收口已确认之后
+
+### phase08-api-and-auth-foundation
+- 目标：承接 `Hono` API 骨架、认证会话、错误处理、最小安全边界与基础 API 契约。
+- 关键交付：
+  - 统一 API 宿主
+  - 认证会话与门禁中间件
+  - 错误处理与基础请求约束
+  - API 契约与环境变量约束
+- 验收条件：
+  - 新 API 宿主已可稳定承接后续主链业务接口
+  - 页面门禁与 API 门禁继续保持一致
+  - 不因切换宿主而破坏既有最小安全边界
+- 当前结论：
+  - 待启动
+
+### phase09-domain-service-migration
+- 目标：迁移合同、账单、支付周期、仪表、抄表、删除门禁等主链领域服务，使新主线承接业务真相。
+- 关键交付：
+  - 合同主锚点相关领域服务
+  - 账单、支付周期与删除门禁语义迁移
+  - 多仪表与历史保留规则迁移
+  - 主链查询与写路径的一致性收口
+- 验收条件：
+  - 主链业务语义在新主线中可解释、可追溯
+  - 历史数据保留原则未被破坏
+  - 页面预期、服务端生成结果与数据库事实口径一致
+- 当前结论：
+  - 待启动
+
+### phase10-data-access-and-migration-closure
+- 目标：冻结长期数据访问层方案，收口 ORM、查询模式、事务边界、迁移链兼容项与退出条件。
+- 关键交付：
+  - 长期数据访问层方案判断
+  - 查询模式与事务边界收口
+  - 迁移链兼容项说明与退出条件
+  - 与领域服务一致的数据访问约束
+- 验收条件：
+  - 数据访问层服务于已冻结的领域语义，而非反向驱动业务设计
+  - 历史迁移兼容项的存在原因、当前作用与退出条件明确
+  - 不再存在“运行时已切换但数据访问层真相不清”的状态
+- 当前结论：
+  - 待启动
+
+### phase11-deployment-cutover-and-cutline-closure
+- 目标：完成部署主线切换、回滚基线冻结、旧运行线退出条件与最终发布门禁收口。
+- 关键交付：
+  - 新部署主线与回滚基线
+  - 旧容器化运行线退出条件
+  - 发布前验收门禁与切线说明
+  - `Rento-legacy`、当前仓库与新部署主线的最终关系收口
+- 验收条件：
+  - 部署主线切换不会反向干扰前序应用壳、API、领域与数据访问层
+  - 回滚路径、健康检查与发布门禁完整可解释
+  - 旧容器化运行线已明确退为历史运行线/回滚参考
+- 当前结论：
+  - 待启动
 
 ## 当前阶段结论
-- 当前项目具备继续演进的业务骨架，不建议重写。
-- 当前最优策略是“真实场景验证与 fix 闭环”，而不是立刻叠加新功能。
-- 当前默认推进方向：先用真实问题验证主链稳定性与数据语义；数据统计分析等扩展功能默认后置，待真实数据与使用反馈进一步明确后再评估。
-- `phase05-pwa-delivery-*` 已完成对移动端/PWA 交付议题的统一承接与落地；`fix_008` 不再继续进入 `/spec` 或实现，当前默认重新回到 fix 闭环。
+- 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
+- 当前最优策略已从“旧主线 fix 闭环”切换为“先完成 `phase06-minix-replatform` 的主线切换与阶段冻结”。
+- 当前默认推进方向：先把完整 `Hono` 路线图固定在本文件这一全局承接位，并完成原 `Rento-miniX/` 目录的吸收、引用复核与删除收口；上述结果审核通过后，再决定是否进入 `phase07-app-shell-and-runtime-foundation` 的 `/plan`。
 
 ## 阶段执行工作流
-- 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断的临时承接位。
+- 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。
 - `/plan` 完成前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`，确保顶层真相源一致。
 - 每个 `phase*` 默认先产出 `docs/phaseX_<workflow>_architecture_plan.md` 与 `docs/phaseX_<workflow>_dev_plan.md`；存在共享边界时，再补 `docs/phaseX_<workflow>_shared_baseline.md`。
 - 阶段级文档产出后即停止工作流，等待用户审核；未经用户明确批准，禁止直接进入 `/spec` 或实现。
 - 用户审核后，按 `dev_plan` 的子任务顺序逐个进入 `/spec`、开发、验收、提交并推送；每个子任务通过验收后再进入下一个子任务。
-- 整个 `phase*` 的 `dev_plan` 执行完毕后，若方向仍不明确，再回到下一轮 `/plan`。
-- `phase04` 完成后，当前默认进入真实场景验证与 fix 闭环：
-  - 先写 `docs/fix/fix_XXX_issue_<topic>.md`
-  - 再写 `docs/fix/fix_XXX_analysis_<topic>.md`
-  - 经审核后再进入 `/spec`
-  - 最后按修复、验收、提交并推送的顺序闭环
-- fix 闭环期间，若问题已经超出局部修补边界，必须重新回到 `/plan`，而不是在单个 fix 中顺手扩写成新阶段。
-- `fix_008` 已作为一次已完成的升级判断示例：当议题从“局部移动端适配”升级为“PWA 交付形态与阶段级支持矩阵”时，应终止 fix 实施路径，转由 `phase05-pwa-delivery-*` 承接。
+- `phase06` 审核通过前，不直接改写核心业务代码；原内嵌 `Rento-miniX/` 目录的清理动作已在本阶段内按“抽取 -> 复核 -> 清理”完成。
+- 完整 `Rento -> Rento-miniX` 阶段路线图由本文件长期承接；`docs/phase06_*` 仅负责解释本阶段为何冻结该路线图以及如何把它提升为全局真相源。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。
-- 后续阶段转向 PostgreSQL 与容器化部署，但顶层文档和部分历史资产未同步收口。
-- 当前重启阶段以“去历史漂移、补安全门禁、保持 UI 稳定”为核心原则。
+- 后续阶段转向 PostgreSQL 与容器化部署，并完成了认证、一致性、性能治理与 PWA 交付等阶段收口。
+- 当前 GitHub 已新增 `Rento-legacy` 作为保留备份，原主仓已重命名为 `Rento-miniX`；当前仓库进入原地重构主线切换阶段。

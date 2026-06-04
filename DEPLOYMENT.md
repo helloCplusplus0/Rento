@@ -1,9 +1,16 @@
 # DEPLOYMENT.md
 
+> 状态说明：
+> - 本文件当前描述的是旧 `Rento` 存量运行线的容器化部署方式。
+> - 当前仓库已切换到 `Rento-miniX` 主线规划阶段，但未来轻量部署主线尚未冻结到实现与交付层。
+> - 当前仓库的主动开发 remote 已收口到 `Rento-miniX`；本文件中的容器化资产只承担当前存量运行线参考与回滚职责，不构成把 remote 或主线切回旧仓的依据。
+> - 在 `phase06-minix-replatform` 审核完成前，不把本文件误读为 `Rento-miniX` 的未来正式部署真相源；它当前主要承担“存量可运行基线与回滚参考”的职责。
+
 ## 最小必做清单
 1. 拉取部署资产：
 ```bash
-curl -fsSL https://raw.githubusercontent.com/helloCplusplus0/Rento/main/scripts/bootstrap-deploy-assets.sh | bash -s -- /opt/rento
+curl -fsSL https://raw.githubusercontent.com/helloCplusplus0/Rento-miniX/main/scripts/bootstrap-deploy-assets.sh | \
+  RENTO_REPO_URL=https://github.com/helloCplusplus0/Rento-miniX.git bash -s -- /opt/rento
 ```
 2. 进入目录并生成私有配置：
 ```bash
@@ -65,6 +72,7 @@ curl -kI https://rento.example.com/api/health
 - 会自动创建 `nginx/ssl`、`logs/nginx`、`backups`
 - 会保留后续更新所需的 Git 远端关系
 - 这样做的目标是把服务器职责收口到“拉取部署资产并运行镜像”，避免回到源码构建路径
+- 当前存量运行线若仍需继续使用这套部署资产，默认应显式拉取 `Rento-miniX` 当前仓库；`Rento-legacy` 只用于历史对照，不作为默认部署 remote
 
 当前部署资产集合固定为：
 - `.env.example`
@@ -156,6 +164,10 @@ docker compose exec app /app/scripts/migrate-and-seed.sh
 这会在保持稀疏拉取范围不变的前提下更新部署文件。
 
 ## 回滚流程
+回滚职责边界：
+- 这里只回滚当前存量容器化运行线的镜像 digest、部署资产版本与环境配置
+- 不通过把当前开发 remote 切回 `Rento-legacy` 来处理运行问题
+
 如果新镜像异常：
 1. 把 `.env` 中的 `APP_IMAGE` 改回上一个可用 digest
 2. 执行 `docker compose pull app`

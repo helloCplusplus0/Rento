@@ -1,0 +1,9 @@
+- [x] 根级 `README.md` 已明确当前仓库为 `Rento-miniX` 主线仓，并说明 `Rento-legacy` 的备份角色
+- [x] 根级 `AGENTS.md` 已将默认工作流切换为 `phase06-minix-replatform`
+- [x] 根级 `project_rules.md`、`global_skills.md`、`project_skills.md` 已冻结原地重构、UI 默认承接、PostgreSQL 固定主线与单一真相源底线
+- [x] 根级 `architecture_map.md` 已准确描述当前仓库的旧实现层与新主线规划层关系
+- [x] 根级 `plan.md` 已切换到 `phase06-minix-replatform`，且只承接阶段总览
+- [x] `plan.md` 与 `docs/phase06_*` 的职责关系已在文档中可直接理解
+- [x] `DEPLOYMENT.md` 已在需要时补充“旧存量运行线部署参考”状态说明
+- [x] 根级文档不再继续把当前仓库描述为旧 `Rento` fix 主线
+- [x] UI 默认承接、PostgreSQL 固定主线、云端不构建等底线已在根级文档统一冻结

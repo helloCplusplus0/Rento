@@ -1,56 +1,52 @@
 # AGENTS.md
 
 ## 1. 项目定位
-- 项目名称：Rento
-- 目标：构建面向房东/运营者的私有化租赁管理后台，覆盖房源、租客、合同、账单、仪表与抄表全链路。
-- 当前定位：单仓库全栈 Web 应用，优先服务“自用 + 私有部署 + 云端统一数据”的真实经营场景。
-- 差异化能力：支持“一个房间绑定多个仪表”，且仪表历史数据必须长期保留，不能因为房间解绑或更换仪表而丢失。
-- 非目标：不做公开匿名可用产品、不做开放注册 SaaS、不恢复本地 SQLite 离线缓存同步路线、不为“未来可能”提前引入复杂基础设施。
+- 项目名称：`Rento-miniX`
+- 目标：在保留当前 `Rento` 业务主链、UI 展示效果与治理结论的前提下，重构为面向房东/运营者的私有化、轻量化租赁管理后台。
+- 当前定位：基于现有 `Rento` 仓库原地切换出的新主线规划与后续实现仓，优先服务“自用 + 私有部署 + 低配服务器可落地”的真实经营场景。
+- 差异化能力：继续支持“一个房间绑定多个仪表，且仪表历史数据必须长期保留”的业务模型。
+- 非目标：不做公开匿名可用产品、不做开放注册 SaaS、不恢复 SQLite 双轨路线、不为未来假设提前引入复杂基础设施。
 
 ## 2. 核心业务模型
-- 核心实体主链：`Building -> Room -> Meter` 与 `Renter -> Contract -> Bill/BillDetail -> MeterReading`。
-- 正确设计优先追求最接近真实经营流程、且长期可维护的事实表达，而不是为了简化 CRUD 或关系连线而把业务压缩成最简数据关系。
-- `Room` 是经营空间单元，`Meter` 是可独立管理的计量资产，二者的当前绑定关系服务于计费，但不应吞掉历史。
-- `Contract` 是租务事实锚点，账单、退租、续租、抄表等状态变化都应尽量围绕合同展开，而不是散落在页面逻辑里。
-- `BillDetail` 与 `MeterReading` 是多仪表计费能力的关键，不得简化回“一房一电一冷一热”的通用产品假设。
-- 数据主真相源固定为云端 PostgreSQL；本地环境、测试环境、生产环境都遵循同一数据模型，不再恢复 SQLite 双轨。
+- 核心实体主链继续保持为：`Building -> Room -> Meter` 与 `Renter -> Contract -> Bill/BillDetail -> MeterReading`。
+- `Contract` 仍是租务事实主锚点，账单、续租、退租、抄表、房态变化应优先围绕合同表达。
+- `Meter` 仍是独立资产，解绑或停用不等于删除历史。
+- `BillDetail` 与 `MeterReading` 仍是多仪表计费能力的关键，不得简化回通用产品的一房一表模型。
+- 数据主真相源继续固定为 PostgreSQL；轻量化不构成回退到 SQLite 的理由。
 
 ## 3. 开发总原则
-- 先对齐业务边界，再做设计与实现；以真实租务场景为主，不被通用 SaaS 习惯绑架。
-- 后续各阶段在评审边界、状态流转与数据语义时，默认优先考虑“业务真实、状态可解释、历史可追溯、实现低复杂度”；若发生冲突，应先修正建模和业务边界，而不是用临时字段、页面技巧或级联删除掩盖事实。
-- 优先保持低复杂度：单仓库、单主链、单一真相源，避免为“也许会用到”引入额外系统。
-- 在确保实现符合最佳实践的前提下，始终优先保持轻量、高效、灵活、可扩展、低复杂度、低耦合的设计风格。
-- 禁止在持续迭代中把系统演化为庞大、臃肿、高复杂度、不可持续推进和不可持续维护的结构。
-- 公开部署前，认证与门禁是阻断项；在鉴权落地前，不允许把系统暴露为公网可匿名写入应用。
-- UI 当前视为已确认资产：禁止无依据重构视觉风格、布局体系和组件审美；允许做不改变视觉结果的稳定性与可用性优化。
-- 所有文档、脚本、环境模板必须与真实代码结构一致；发现双重真相时，优先消除过时文档与历史残留，而不是继续并存。
+- 先冻结业务边界、参考基线与阶段共享语义，再进入代码重构。
+- 优先保持低复杂度：单仓库、单主线、单一真相源，不让旧 `Rento` 运行线与新 `Rento-miniX` 主线长期争夺同层职责。
+- 在满足业务真实、状态可解释、历史可追溯的前提下，优先保持轻量、高效、灵活、低耦合。
+- 当前 `Rento` 前端 UI 展示效果已符合预期，默认视为承接资产；非必要不得擅自改变展示效果。
+- 所有重构都必须明确标注“参考来源、复用内容、调整内容、舍弃内容与原因”。
 
 ## 4. 当前默认入口
-- 当前默认工作流：`真实场景验证与 fix 闭环`
-- 当前主问题：`phase04` 与 `phase05-pwa-delivery-*` 已完成当前阶段收口，当前默认不再直接扩写新功能，而是优先通过真实场景数据验证发现主链问题、修复高优先级偏差，并继续收口完整安全边界、角色控制与最小审计。
-- 当前默认顺序、阶段目标与验收结论，以 [plan.md](plan.md) 为唯一主真相源。
-- 当前下一步：新发现的问题先写入 `docs/fix/fix_XXX_issue_<topic>.md`，完成系统分析后在 `docs/fix/` 下产出 `fix_XXX_analysis_<topic>.md`；未经分析文档冻结与审核，不直接进入 `/spec` 或修复实现。
-- 当前阶段说明：`phase05-pwa-delivery-*` 已完成对 PWA 安装闭环、更新策略、移动端可用性与私有部署验收议题的承接与落地；当前默认已重新回到 fix 工作流。
+- 当前默认工作流：`phase06-minix-replatform`
+- 当前主问题：完成从旧 `Rento` 存量运行线到 `Rento-miniX` 原地重构主线的顶层真相源切换，并冻结阶段边界，避免后续重构继续建立在旧主叙事上。
+- 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
+- 当前下一步：先审核已提升到 [plan.md](file:///home/dell/Projects/Rento/plan.md) 的完整 `Hono` 版 Phase 路线图，以及 `phase06` 文档中已完成的目录吸收、引用复核与删除收口结果；未经审核，不直接进入 `phase07` 的 `/plan`、`/spec` 或实现。
 - 当前阶段重点：
-  - 基于真实场景验证优先发现 `fix-now` 级别的主链问题
-  - 对每个问题先收集事实与证据链，再产出根因与方案分析文档
-  - 涉及合同、账单、支付周期、仪表、抄表的修复必须先明确影响范围、历史数据影响、验收标准与回滚条件
-  - 数据统计分析等扩展功能默认后置，待真实数据和主链稳定性进一步验证后再评估
+  - 冻结 `Rento-legacy`、当前仓库与未来 `Rento-miniX` 主线的关系
+  - 冻结 remote 收口边界：主动开发默认只保留 `origin -> Rento-miniX`
+  - 冻结 UI 继续默认承接、PostgreSQL 继续固定主线、云端不构建等底线
+  - 冻结 `plan.md` 与 `docs/phase06_*` 的职责分层
+  - 冻结原内嵌 `Rento-miniX/` 目录的抽取、复核与清理结论
+  - 冻结 `Hono` 版完整重构路线图，以及“复用 / 适配 / 重写 / 延后”的模块分类口径
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
 - 不在当前阶段大改 UI 风格，不替换现有页面视觉表达。
-- 不把测试页、演示页、性能页当作正式业务入口继续扩写；是否保留，必须以“开发辅助价值”单独评估。
+- 不允许为了轻量化而破坏合同、账单、仪表、抄表主链的业务真实性。
 - 不允许通过“删除仪表”直接清空该仪表产生的历史抄表与账单事实。
-- 不允许在未结清账单、未结束合同的前提下，把处于在租/逾期状态的房间按普通空房逻辑直接删除。
-- 不允许在没有鉴权与最小审计能力的前提下，将系统部署为公网可访问后台。
+- 不允许在 `phase06` 审核前直接启动大规模重构实现。
+- 不允许重新引入新的内嵌 `Rento-miniX/` 目录或任何同类第二套规划目录，与根级文档再次形成双重真相源。
 
 ## 6. 运行与质量基线
-- SLO（当前阶段）：核心 API 可用性 >= 99.5%，关键列表/详情接口 p95 <= 800ms。
-- 发布前最低门禁：`npm run lint`、`npm run type-check`、容器健康检查、核心业务手工 smoke test 通过。
-- 数据质量底线：合同、账单、抄表、仪表关联必须可追溯；历史账务记录优先保留，不因“当前绑定关系”变化而丢失。
-- 安全底线：`.env` 视为私有配置，不得再作为共享真相源传播；对外部署前必须具备最小认证、会话保护与来源控制。
-- 观测底线：健康检查、错误日志、基础性能指标至少三者具备其二，且能支撑问题定位。
+- 发布前最低门禁至少包括：`npm run lint`、`npm run type-check`、构建、健康检查与核心业务 smoke test。
+- 数据质量底线：合同、账单、抄表、仪表关联必须可追溯；历史账务记录优先保留。
+- 安全底线：对外部署前必须具备登录、会话保护、来源控制与最小审计线索。
+- 部署底线：未来主线默认云端不做源码构建，优先运行预构建产物。
 
 ## 6.1 当前阶段结论
 - `phase01-restart-foundation-*` 已完成，结论为：已具备恢复开发条件。
@@ -58,25 +54,21 @@
 - `phase03-consistency-hardening-*` 已完成，结论为：主链一致性、删除门禁、账务语义与迁移兼容项已完成当前阶段收口。
 - `phase04-performance-and-ops-*` 已完成，结论为：关键查询性能、运行可观测性与 dev-only 入口治理已完成当前阶段收口。
 - `phase05-pwa-delivery-*` 已完成，结论为：PWA 安装闭环、更新策略、关键页面移动端可用性与私有部署验收已完成当前阶段收口。
-- 当前默认已进入“真实场景验证与 fix 闭环”阶段：真实问题优先进入 `issue -> analysis -> /spec -> 修复 -> 验收 -> 提交` 流程，而不是直接扩写新功能。
-- `fix_008` 已在 `analysis` 层完成收口，结论为：移动端与 PWA 议题已超出单个 fix 局部修补边界；后续已由 `phase05-pwa-delivery-*` 完成承接与落地。
-- 当前仍未满足“公网发布”条件，原因是完整安全边界、角色控制与最小审计仍未全部完成；后续需经真实场景验证与新一轮 `/plan` 再决定下一阶段工作流。
+- `Rento-legacy` 已在 GitHub 侧完成保留备份；当前仓库已切换为 `Rento-miniX` 主线仓。
+- 当前正式进入 `phase06-minix-replatform` 规划阶段：先完成顶层真相源切换，再进入后续实现阶段判断。
 
 ## 7. 全局文档导航
-- [README.md](README.md)：项目总览、快速启动、技术栈与当前约束。
-- [AGENTS.md](AGENTS.md)：项目入口摘要、执行总约束与阅读顺序。
-- [project_rules.md](project_rules.md)：刚性规则、目录治理、发布门禁与数据约束。
-- [architecture_map.md](architecture_map.md)：仓库真实模块分层、运行入口、文档/脚本布局与已知治理债务。
-- [plan.md](plan.md)：当前默认阶段、阶段顺序、验收条件与近期行动计划的唯一主真相源。
-- [docs/archive/README.md](docs/archive/README.md)：历史任务文档与遗留材料的归档说明。
-- [docs/fix/](docs/fix)：真实场景验证阶段的问题报告目录，存放 `fix_XXX_issue_<topic>.md` 与问题模板。
-- [docs/fix/fix_issue_template.md](docs/fix/fix_issue_template.md)：问题报告模板，只记录事实、复现路径、预期与实际差异。
-- [docs/fix/fix_analysis_template.md](docs/fix/fix_analysis_template.md)：根因与方案分析模板，用于固定 `analysis` 文档结构。
-- [docs/phase05_pwa_delivery_architecture_plan.md](docs/phase05_pwa_delivery_architecture_plan.md)：`phase05-pwa-delivery-*` 的已完成阶段架构规划冻结记录。
-- [docs/phase05_pwa_delivery_dev_plan.md](docs/phase05_pwa_delivery_dev_plan.md)：`phase05-pwa-delivery-*` 的已完成阶段开发规划冻结记录。
-- [docs/phase05_pwa_delivery_shared_baseline.md](docs/phase05_pwa_delivery_shared_baseline.md)：`phase05-pwa-delivery-*` 的已完成阶段共享基线冻结记录。
-- [global_skills.md](global_skills.md)：跨阶段通用方法论、问题分级与文档治理技能。
-- [project_skills.md](project_skills.md)：Rento 专属的合同、账单、仪表、删除门禁与重启验收技能。
+- [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
+- [AGENTS.md](file:///home/dell/Projects/Rento/AGENTS.md)：项目入口摘要与执行总约束
+- [project_rules.md](file:///home/dell/Projects/Rento/project_rules.md)：刚性规则、门禁与禁止事项
+- [architecture_map.md](file:///home/dell/Projects/Rento/architecture_map.md)：仓库结构、现状与重构承接位
+- [plan.md](file:///home/dell/Projects/Rento/plan.md)：当前默认阶段、阶段顺序与验收结论
+- [global_skills.md](file:///home/dell/Projects/Rento/global_skills.md)：跨阶段通用方法论与重构 workflow 规则
+- [project_skills.md](file:///home/dell/Projects/Rento/project_skills.md)：合同、账单、仪表、删除门禁与 UI 承接等专属技能
+- [phase06_minix_replatform_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_architecture_plan.md)：`phase06` 架构规划
+- [phase06_minix_replatform_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_dev_plan.md)：`phase06` 开发规划
+- [phase06_minix_replatform_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_shared_baseline.md)：`phase06` 共享基线
+- [docs/archive/README.md](file:///home/dell/Projects/Rento/docs/archive/README.md)：历史任务文档与遗留材料归档说明
 
 ## 8. 推荐阅读顺序
 1. `AGENTS.md`
@@ -86,37 +78,26 @@
 5. `global_skills.md`
 6. `project_skills.md`
 7. `README.md`
-8. 如需追溯历史实现细节，再读 `docs/archive/README.md` 与归档材料
+8. `docs/phase06_*`
 
 ## 9. 文档同步规则
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
-- 当默认入口切换到新的 `phase*`，且即将进入首个边界冻结子任务前，必须先完成上述顶层同步，再进入该阶段的 `/plan` 或 `/spec`。
-- 当运行入口、目录结构、发布方式、数据库主线发生变化时，必须同步更新 `README.md` 与 `architecture_map.md`。
-- 当安全边界、门禁、环境配置发生变化时，必须同步更新 `project_rules.md`、`DEPLOYMENT.md` 与 `.env.example`。
-- 所有设计文档需与本文件保持一致；若冲突，以能力边界、当前默认入口和单一真相源原则为最高约束。
-- 独立工作流命名模板固定为 `phaseX-<workflow>-*`。
-- 文档模板固定为 `docs/phaseX_<workflow>_architecture_plan.md`、`docs/phaseX_<workflow>_dev_plan.md`，必要时补充 `docs/phaseX_<workflow>_shared_baseline.md`。
-- `spec` 目录模板固定为 `.trae/specs/phaseX-<workflow>-<nn>-<task-name>/`。
-- fix 闭环模板固定为：
-  - `docs/fix/fix_XXX_issue_<topic>.md`
-  - `docs/fix/fix_XXX_analysis_<topic>.md`
-- `issue` 文档负责问题事实、复现、预期与实际差异；`analysis` 文档负责根因、方案、影响面、数据修复策略、验收标准与回滚条件。
-- 历史任务文档只做归档，不再作为当前执行真相源；当前执行顺序和决策口径只能落在 `plan.md` 与上述顶层规范中。
+- `plan.md` 只负责阶段总览；每个 `phase` 的子任务、范围、DoD 与顺序由对应 `docs/phaseX_*_dev_plan.md` 承接。
+- 每个 `phase*` 默认先产出 `architecture_plan` 与 `dev_plan`；存在共享边界时再补 `shared_baseline`。
+- 阶段级文档产出后必须停止并等待用户审核；未经批准，不得直接进入 `/spec` 或实现。
+- 当运行入口、部署方式、数据库主线、安全边界或目录结构发生变化时，必须同步更新 `README.md`、`architecture_map.md`、`project_rules.md` 与 `DEPLOYMENT.md`。
+- 在进入首个正式实现阶段 `/plan` 前，必须先冻结完整 `Hono` 版 Phase 路线图、原 `Rento-miniX/` 目录的文件级吸收映射与模块迁移分类，避免再次退回“走一步看一步”的推进方式；其中完整路线图的长期全局承接位固定为 `plan.md`。
 
 ## 10. 其他关键治理约束
 - 根目录只保留当前有效入口文档、配置文件和运行资产；历史任务记录应迁入 `docs/archive/`。
-- 新增内部工具页、验证页、基准页时，必须在文档中标注用途，并评估是否应限制为开发环境入口。
 - 所有“临时兼容逻辑”都要写明存在原因和退出条件，避免长期遗留。
 - 对外可见行为优先稳定，对内治理优先清理双重真相；宁可少做，也不带着错误入口继续迭代。
-- `phase04` 已完成当前阶段既定子任务；当前默认优先执行真实场景验证与 fix 闭环，而不是继续直接扩写新功能。
-- 新发现的问题必须先进入 `docs/fix/` 的 `issue` 文档；未完成 `analysis` 文档前，禁止直接进入 `/spec` 或实现。
-- `fix_008` 已确认只负责移动端路线分析与升级判断，不再继续以 fix 形式进入实现；相关 PWA 议题已由 `phase05-pwa-delivery-*` 完成承接与落地。
-- 任何涉及合同、账单、支付周期、仪表、抄表主链的问题，必须在 `analysis` 文档中明确：
+- `phase06` 的职责是冻结原地重构边界与实施顺序，不是在当前回合直接改写业务实现。
+- `phase06` 审核通过前，不把“已冻结首个实现阶段名称”误读为“可以跳过完整路线图规划并直接进入 `phase07` `/plan`”；若完整 `Hono` 版路线图与目录吸收映射未冻结，应优先补齐这些规划文档。
+- `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。
+- 旧容器化运行线只保留“当前存量运行线参考 + 回滚基线”职责；在新部署主线冻结前，不继续扩写为 `Rento-miniX` 的未来正式交付真相源。
+- 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，都必须在后续 `analysis`/阶段文档中明确：
   - 是否影响历史数据
   - 是否影响其他入口或生成路径
   - 是否需要数据修复
   - 验收标准与回滚条件
-- 当用户通过 `/plan` 请求推进方向时，必须先基于当前源代码与顶层真相源，在 `.trae/documents/` 下生成阶段推进计划文档，待用户审核后再继续。
-- `/plan` 至少要先同步全局规范文档，再产出该阶段的 `architecture_plan` 与 `dev_plan`；必要时补充 `shared_baseline`。
-- 阶段级 `architecture_plan` 与 `dev_plan` 产出后，必须停止工作流并把主导权交还用户，禁止未经批准直接进入实现或 `/spec`。
-- 用户审核并明确指示后，才允许按照 `dev_plan` 逐个子任务进入 `/spec`、实现、验收、提交与推送。
