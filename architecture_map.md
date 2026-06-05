@@ -12,11 +12,24 @@
 ### 现有实现层
 - 现有代码仍位于根级 `src/`、`prisma/`、`public/`、`scripts/` 等目录。
 - 这部分是旧 `Rento` 的现状实现，也是后续原地重构的直接参考基线。
-- 在 `phase06` 审核前，不把这部分实现直接改写成新架构。
+- 在 `phase07` 审核前，不把这部分实现直接改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*` 组成当前 `Rento-miniX` 的主真相源。
-- 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*` 组成当前 `Rento-miniX` 的主真相源。
+- 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
+
+## `phase07` 目标结构说明
+### 规划中的新应用壳层
+- `phase07` 规划中的前端新壳将收口到 `src/minix/`，用于承接 `Vite + React + React Router` 的正式前端入口。
+- 该层的职责是承接现有 `AppLayout`、导航壳、路由骨架、全局样式和最小页面壳，不在本阶段直接迁移全部业务页面逻辑。
+
+### 规划中的新运行时层
+- `phase07` 规划中的服务端运行时将收口到根级 `server/`，用于承接 `Hono + @hono/node-server` 的 Node 入口、中间件和 `/api/health`。
+- 该层只负责新的基础运行时承接位，不在本阶段直接承接账单、合同、抄表等正式业务 API。
+
+### 规划中的脚本层
+- `phase07` 规划中的运行脚本将补充到 `scripts/`，例如 `scripts/dev-minix.mjs`、`scripts/start-minix.mjs`。
+- 开发态采用 `Vite + Hono` 双服务代理；生产态最终切线不在 `phase07` 冻结。
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
@@ -105,9 +118,11 @@
 ```text
 Rento/
 ├── src/                  # 现有 Rento 应用源码，后续原地重构起点
+├── src/minix/            # phase07 规划中的新前端应用壳承接位（待实现）
 ├── prisma/               # Prisma schema 与迁移
 ├── public/               # 静态资源
 ├── scripts/              # 启动、初始化、部署脚本
+├── server/               # phase07 规划中的 Hono 运行时承接位（待实现）
 ├── docs/                 # 阶段设计、问题分析、归档与 phase06 文档
 ├── nginx/                # 当前容器化 HTTPS 配置
 ├── backups/              # 运行时备份挂载目录
@@ -160,3 +175,4 @@ Rento/
 - 当前最需要收口的是“主线切换后的真相源一致性”，而不是立刻改写运行时代码。
 - 后续 `Rento-miniX` 的正式实现仍在当前根级源码目录中推进；原内嵌 `Rento-miniX/` 目录已删除，不再存在第二套目录主线。
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
+- `phase07` 当前要做的不是直接替换旧 `src/app` 与 `src/app/api/*`，而是先为后续迁移建立 `src/minix/` 与 `server/` 这两块新的正式承接位。

@@ -1,0 +1,8 @@
+- [x] 已建立 `src/minix/` 作为新前端壳正式承接位
+- [x] 已建立 `server/` 作为 `Hono + @hono/node-server` 新运行时正式承接位
+- [x] 已新增 `vite.config.ts` 与 `index.html` 作为新前端壳开发/构建入口
+- [x] `package.json` 已补充 `dev:minix`、`build:minix`、`start:minix`，且未破坏旧 `dev`、`build`、`start`
+- [x] 开发态已明确为 `Vite` 前端服务代理到 `Hono` 运行时服务
+- [x] `@/*` 路径别名与 TypeScript 基线已可同时承接旧资产与新壳
+- [x] 本次子任务未越界到正式业务页面迁移、正式业务 API 迁移、完整认证链迁移或最终部署主线切换
+- [x] 后续新主线文件已不再需要默认写回 `src/app` 或 `src/app/api/*`

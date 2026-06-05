@@ -22,17 +22,16 @@
 - 所有重构都必须明确标注“参考来源、复用内容、调整内容、舍弃内容与原因”。
 
 ## 4. 当前默认入口
-- 当前默认工作流：`phase06-minix-replatform`
-- 当前主问题：完成从旧 `Rento` 存量运行线到 `Rento-miniX` 原地重构主线的顶层真相源切换，并冻结阶段边界，避免后续重构继续建立在旧主叙事上。
+- 当前默认工作流：`phase07-app-shell-and-runtime-foundation`
+- 当前主问题：在不破坏当前 UI 展示效果、业务主链语义与 PostgreSQL 主线的前提下，为 `Rento-miniX` 建立新的前端应用壳、服务端运行时入口与最小健康检查承接位。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：先审核已提升到 [plan.md](file:///home/dell/Projects/Rento/plan.md) 的完整 `Hono` 版 Phase 路线图，以及 `phase06` 文档中已完成的目录吸收、引用复核与删除收口结果；未经审核，不直接进入 `phase07` 的 `/plan`、`/spec` 或实现。
+- 当前下一步：先审核 `phase07` 阶段文档，确认 `React Router`、双服务代理、先并行壳后切换三项关键决策，以及 `phase07` 子任务拆分与共享基线；未经审核，不直接进入 `phase07` 的 `/spec` 或实现。
 - 当前阶段重点：
-  - 冻结 `Rento-legacy`、当前仓库与未来 `Rento-miniX` 主线的关系
-  - 冻结 remote 收口边界：主动开发默认只保留 `origin -> Rento-miniX`
-  - 冻结 UI 继续默认承接、PostgreSQL 继续固定主线、云端不构建等底线
-  - 冻结 `plan.md` 与 `docs/phase06_*` 的职责分层
-  - 冻结原内嵌 `Rento-miniX/` 目录的抽取、复核与清理结论
-  - 冻结 `Hono` 版完整重构路线图，以及“复用 / 适配 / 重写 / 延后”的模块分类口径
+  - 冻结 `phase07` 的应用壳与运行时边界，不提前扩张到领域服务、ORM 切换或部署切线
+  - 冻结 `React Router` 前端路由、`Hono + @hono/node-server` 服务端入口与 `Vite + Hono` 双服务代理方案
+  - 冻结“先并行壳、后切换”的阶段策略，不直接替换全部旧 `Next.js` 业务入口
+  - 冻结 `phase07` 的实现目录、脚本策略与最小环境变量口径
+  - 保持 `phase06` 已完成的路线图、目录治理、remote 收口和模块迁移分类继续作为上游输入
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
@@ -55,7 +54,8 @@
 - `phase04-performance-and-ops-*` 已完成，结论为：关键查询性能、运行可观测性与 dev-only 入口治理已完成当前阶段收口。
 - `phase05-pwa-delivery-*` 已完成，结论为：PWA 安装闭环、更新策略、关键页面移动端可用性与私有部署验收已完成当前阶段收口。
 - `Rento-legacy` 已在 GitHub 侧完成保留备份；当前仓库已切换为 `Rento-miniX` 主线仓。
-- 当前正式进入 `phase06-minix-replatform` 规划阶段：先完成顶层真相源切换，再进入后续实现阶段判断。
+- `phase06-minix-replatform` 已完成当前轮文档治理收口：完整 `Hono` 路线图、模块迁移分类与原内嵌目录清理结果已冻结到主真相源。
+- 当前正式进入 `phase07-app-shell-and-runtime-foundation` 的 `/plan` 阶段：先冻结应用壳与运行时基础承接方案，再进入后续 `/spec` 判断。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -68,6 +68,9 @@
 - [phase06_minix_replatform_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_architecture_plan.md)：`phase06` 架构规划
 - [phase06_minix_replatform_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_dev_plan.md)：`phase06` 开发规划
 - [phase06_minix_replatform_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_shared_baseline.md)：`phase06` 共享基线
+- [phase07_app_shell_and_runtime_foundation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase07_app_shell_and_runtime_foundation_architecture_plan.md)：`phase07` 架构规划
+- [phase07_app_shell_and_runtime_foundation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase07_app_shell_and_runtime_foundation_dev_plan.md)：`phase07` 开发规划
+- [phase07_app_shell_and_runtime_foundation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase07_app_shell_and_runtime_foundation_shared_baseline.md)：`phase07` 共享基线
 - [docs/archive/README.md](file:///home/dell/Projects/Rento/docs/archive/README.md)：历史任务文档与遗留材料归档说明
 
 ## 8. 推荐阅读顺序
@@ -79,6 +82,7 @@
 6. `project_skills.md`
 7. `README.md`
 8. `docs/phase06_*`
+9. `docs/phase07_*`
 
 ## 9. 文档同步规则
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
@@ -87,13 +91,14 @@
 - 阶段级文档产出后必须停止并等待用户审核；未经批准，不得直接进入 `/spec` 或实现。
 - 当运行入口、部署方式、数据库主线、安全边界或目录结构发生变化时，必须同步更新 `README.md`、`architecture_map.md`、`project_rules.md` 与 `DEPLOYMENT.md`。
 - 在进入首个正式实现阶段 `/plan` 前，必须先冻结完整 `Hono` 版 Phase 路线图、原 `Rento-miniX/` 目录的文件级吸收映射与模块迁移分类，避免再次退回“走一步看一步”的推进方式；其中完整路线图的长期全局承接位固定为 `plan.md`。
+- 进入 `phase07` 后，仍必须先完成该阶段的 `architecture_plan`、`dev_plan` 与 `shared_baseline` 审核，未经批准不得直接进入 `/spec` 或实现。
 
 ## 10. 其他关键治理约束
 - 根目录只保留当前有效入口文档、配置文件和运行资产；历史任务记录应迁入 `docs/archive/`。
 - 所有“临时兼容逻辑”都要写明存在原因和退出条件，避免长期遗留。
 - 对外可见行为优先稳定，对内治理优先清理双重真相；宁可少做，也不带着错误入口继续迭代。
-- `phase06` 的职责是冻结原地重构边界与实施顺序，不是在当前回合直接改写业务实现。
-- `phase06` 审核通过前，不把“已冻结首个实现阶段名称”误读为“可以跳过完整路线图规划并直接进入 `phase07` `/plan`”；若完整 `Hono` 版路线图与目录吸收映射未冻结，应优先补齐这些规划文档。
+- `phase06` 的职责是冻结原地重构边界与实施顺序，该阶段结论继续作为 `phase07` 的上游输入，不再重新争夺当前默认入口。
+- `phase07` 的职责是建立应用壳与运行时基础承接位，而不是在当前回合直接迁移领域服务、切换 ORM 或改写最终部署主线。
 - `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。
 - 旧容器化运行线只保留“当前存量运行线参考 + 回滚基线”职责；在新部署主线冻结前，不继续扩写为 `Rento-miniX` 的未来正式交付真相源。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，都必须在后续 `analysis`/阶段文档中明确：
