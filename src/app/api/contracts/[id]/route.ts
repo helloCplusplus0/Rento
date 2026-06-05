@@ -7,10 +7,14 @@ import {
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
 import { ErrorLogger, ErrorType } from '@/lib/error-logger'
+import {
+  deletePendingContractWithoutHistory,
+  isContractDeleteGuardBlockedError,
+  performContractDeleteSafetyCheck,
+} from '@/lib/domain/delete-guards'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { contractQueries } from '@/lib/queries'
-import { performContractDeleteSafetyCheck } from '@/lib/validation'
 
 /**
  * 单个合同管理API
@@ -166,6 +170,10 @@ async function handleUpdateContract(
 /**
  * 删除合同API
  * DELETE /api/contracts/[id]
+ *
+ * compat wrapper:
+ * phase09-02 起合同删除门禁与物理删除窄场景由 src/lib/domain/delete-guards 承接，
+ * 当前 Next 入口仅保留存量请求兼容，不再维护独立删除规则。
  */
 async function handleDeleteContract(
   _request: NextRequest,
@@ -212,52 +220,71 @@ async function handleDeleteContract(
     return NextResponse.json(errorResponse, { status: 400 })
   }
 
-  // 仅允许删除待生效且未产生任何账单/抄表事实的窄场景合同
-  return await prisma.$transaction(async (tx) => {
-    const logger = ErrorLogger.getInstance()
+  const logger = ErrorLogger.getInstance()
 
-    logger.logInfo('合同删除操作开始', {
-      module: 'contract-delete-api',
-      function: 'handleDeleteContract',
-      contractId: id,
-      contractStatus: safetyCheck.contractStatus,
-      billCount: safetyCheck.billCount,
-      meterReadingCount: safetyCheck.meterReadingCount,
-    })
-
-    await tx.contract.delete({
-      where: { id },
-    })
-
-    logger.logInfo('合同删除操作完成', {
-      module: 'contract-delete-api',
-      function: 'handleDeleteContract',
-      contractId: id,
-      deletedEntities: {
-        contract: id,
-      },
-    })
-
-    await revalidateMutationPaths({
-      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
-      detailPaths: [
-        `/contracts/${id}`,
-        `/rooms/${existingContract.roomId}`,
-        `/renters/${existingContract.renterId}`,
-      ],
-    })
-
-    return createSuccessResponse(
-      {
-        success: true,
-        message: '合同删除成功，仅删除了未产生历史事实的待生效合同',
-        deletedEntities: {
-          contract: id,
-        },
-      },
-      '合同删除成功'
-    )
+  logger.logInfo('合同删除操作开始', {
+    module: 'contract-delete-api',
+    function: 'handleDeleteContract',
+    contractId: id,
+    contractStatus: safetyCheck.contractStatus,
+    billCount: safetyCheck.billCount,
+    meterReadingCount: safetyCheck.meterReadingCount,
+    compatBoundary: 'src/lib/domain/delete-guards',
   })
+
+  let deleteResult
+
+  try {
+    deleteResult = await deletePendingContractWithoutHistory(id)
+  } catch (error) {
+    if (isContractDeleteGuardBlockedError(error)) {
+      return NextResponse.json(
+        {
+          error: '无法删除合同',
+          code: error.details.errorCode,
+          details: {
+            currentStatus: error.details.contractStatus,
+            billCount: error.details.billCount,
+            paidBillCount: error.details.paidBillCount,
+            unpaidBillCount: error.details.unpaidBillCount,
+            meterReadingCount: error.details.meterReadingCount,
+            billedMeterReadingCount: error.details.billedMeterReadingCount,
+            billDetailCount: error.details.billDetailCount,
+            blockingReasons: error.details.blockingReasons,
+            suggestion: error.details.suggestion,
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    throw error
+  }
+
+  logger.logInfo('合同删除操作完成', {
+    module: 'contract-delete-api',
+    function: 'handleDeleteContract',
+    contractId: id,
+    deletedEntities: deleteResult.deletedEntities,
+  })
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+    detailPaths: [
+      `/contracts/${id}`,
+      `/rooms/${existingContract.roomId}`,
+      `/renters/${existingContract.renterId}`,
+    ],
+  })
+
+  return createSuccessResponse(
+    {
+      success: true,
+      message: deleteResult.message,
+      deletedEntities: deleteResult.deletedEntities,
+    },
+    '合同删除成功'
+  )
 }
 
 export const GET = withApiErrorHandler(handleGetContract, {

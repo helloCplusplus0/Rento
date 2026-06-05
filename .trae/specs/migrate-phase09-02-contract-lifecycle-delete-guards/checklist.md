@@ -1,0 +1,12 @@
+- [x] 已建立合同生命周期共享服务承接位，能够表达 `PENDING -> ACTIVE` 激活与房态联动规则
+- [x] 已建立合同删除门禁共享服务承接位，并保留 `errorCode`、`blockingReasons`、`suggestion` 等可解释语义
+- [x] 已建立房间删除门禁共享服务承接位，并保留房态、合同、账单、仪表、抄表历史优先保留规则
+- [x] `server/routes/contracts.ts` 已为合同激活与合同删除提供正式消费入口
+- [x] `server/routes/rooms.ts` 已为房间删除提供正式消费入口
+- [x] 旧 `src/app/api/contracts/[id]/route.ts` 与 `src/app/api/rooms/[id]/route.ts` 已退化为 compat wrapper 或共享服务消费者
+- [x] 合同/房间删除与终止、归档、释放房态、仪表停用/解绑之间的关系已在代码中可解释
+- [x] 历史保留原则未被破坏，未因 schema 级联关系回退到直接物理删除
+- [x] 本子任务未迁移退租结算完整编排
+- [x] 本子任务未迁移账单生成或抄表自动出账
+- [x] 本子任务未迁移完整页面逻辑
+- [x] `npm run lint` 与 `npm run type-check` 通过

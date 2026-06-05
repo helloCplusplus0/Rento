@@ -5,7 +5,7 @@ import {
   parseRequestBody,
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
-import { contractActivationService } from '@/lib/contract-activation'
+import { contractLifecycleService } from '@/lib/domain/contracts'
 import { ErrorType } from '@/lib/error-logger'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
@@ -13,6 +13,10 @@ import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
  * 合同激活API
  * POST /api/contracts/activate - 激活到期的PENDING合同
  * POST /api/contracts/activate - 手动激活指定合同 (带contractId参数)
+ *
+ * compat wrapper:
+ * phase09-02 起正式业务真相下沉到 src/lib/domain/contracts，
+ * 当前 Next 入口仅保留请求/响应兼容层，避免继续维护第二套激活逻辑。
  */
 
 async function handleActivateContracts(
@@ -22,7 +26,7 @@ async function handleActivateContracts(
 
   // 如果提供了contractId，执行手动激活
   if (body.contractId) {
-    const result = await contractActivationService.manualActivateContract(
+    const result = await contractLifecycleService.manualActivateContract(
       body.contractId
     )
 
@@ -42,7 +46,7 @@ async function handleActivateContracts(
   }
 
   // 否则执行批量激活
-  const result = await contractActivationService.activatePendingContracts()
+  const result = await contractLifecycleService.activatePendingContracts()
 
   await revalidateMutationPaths({
     scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],

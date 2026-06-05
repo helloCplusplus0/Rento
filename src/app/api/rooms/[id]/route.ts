@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
+import {
+  deleteRoomWithoutRelatedHistory,
+  isRoomDeleteGuardBlockedError,
+  performRoomDeleteSafetyCheck,
+} from '@/lib/domain/delete-guards'
 import { ErrorType } from '@/lib/error-logger'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { roomQueries } from '@/lib/queries'
 import { transformRoomDecimalFields } from '@/lib/room-utils'
-import { performDeleteSafetyCheck } from '@/lib/validation'
 
 /**
  * 删除房间API
  * DELETE /api/rooms/[id]
+ *
+ * compat wrapper:
+ * phase09-02 起房间删除门禁与受控物理删除统一收口到 src/lib/domain/delete-guards，
+ * 当前 Next 入口只保留旧调用兼容层，不再维护第二套删除规则。
  */
 async function handleDeleteRoom(
   request: NextRequest,
@@ -36,7 +44,7 @@ async function handleDeleteRoom(
     )
   }
 
-  const safetyCheck = await performDeleteSafetyCheck(id)
+  const safetyCheck = await performRoomDeleteSafetyCheck(id)
 
   if (!safetyCheck.canDelete) {
     return NextResponse.json(
@@ -67,7 +75,48 @@ async function handleDeleteRoom(
     )
   }
 
-  const result = await deleteRoomWithoutRelatedHistory(id)
+  let result
+
+  try {
+    result = await deleteRoomWithoutRelatedHistory(id)
+  } catch (error) {
+    if (isRoomDeleteGuardBlockedError(error)) {
+      return NextResponse.json(
+        {
+          error: 'Cannot delete room with related business history',
+          code: error.details.errorCode,
+          details: {
+            roomStatus: error.details.roomStatus,
+            contractCount: error.details.contractCount,
+            hasActiveContracts: error.details.hasActiveContracts,
+            activeContractCount: error.details.activeContractCount,
+            pendingContractCount: error.details.pendingContractCount,
+            billCount: error.details.billCount,
+            hasUnpaidBills: error.details.hasUnpaidBills,
+            unpaidBillCount: error.details.unpaidBillCount,
+            settledBillCount: error.details.settledBillCount,
+            meterCount: error.details.meterCount,
+            activeMeterCount: error.details.activeMeterCount,
+            inactiveMeterCount: error.details.inactiveMeterCount,
+            meterReadingCount: error.details.meterReadingCount,
+            billDetailCount: error.details.billDetailCount,
+            relatedDataTypes: error.details.relatedDataTypes,
+            blockingReasons: error.details.blockingReasons,
+          },
+          suggestion: error.details.suggestion,
+        },
+        { status: 400 }
+      )
+    }
+
+    throw error
+  }
+
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'rooms', 'contracts'],
+    detailPaths: [`/rooms/${id}`],
+  })
+
   return NextResponse.json(result)
 }
 
@@ -198,41 +247,3 @@ export const PUT = withApiErrorHandler(handlePutRoom, {
   module: 'room-detail-api',
   errorType: ErrorType.VALIDATION_ERROR,
 })
-
-/**
- * 仅在房间不存在主链历史时执行物理删除
- */
-async function deleteRoomWithoutRelatedHistory(roomId: string) {
-  return prisma.$transaction(async (tx) => {
-    const room = await tx.room.findUnique({
-      where: { id: roomId },
-      select: {
-        id: true,
-        buildingId: true,
-      },
-    })
-
-    if (!room) {
-      throw new Error('Room not found')
-    }
-
-    await tx.room.delete({ where: { id: roomId } })
-
-    await tx.building.update({
-      where: { id: room.buildingId },
-      data: { totalRooms: { decrement: 1 } },
-    })
-
-    await revalidateMutationPaths({
-      scopes: ['dashboard', 'rooms', 'contracts'],
-      detailPaths: [`/rooms/${roomId}`],
-    })
-
-    return {
-      success: true,
-      action: 'hard_delete',
-      message: '房间无合同、账单、仪表或抄表历史，已执行物理删除',
-      deletedRoomId: roomId,
-    }
-  })
-}
