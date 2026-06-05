@@ -1,0 +1,9 @@
+- [x] 新宿主中的 `POST /api/auth/login` 已从占位响应升级为真实登录实现
+- [x] 新宿主中的 `POST /api/auth/logout` 已从占位响应升级为真实登出实现
+- [x] 新宿主中的 `GET /api/auth/session` 已从占位响应升级为真实会话探测实现
+- [x] `server/middleware/auth-session.ts` 已提供 Hono 可复用的会话提取能力
+- [x] `server/middleware/require-auth.ts` 已提供后续受保护 API 可复用的统一 401/403 守卫基础
+- [x] 新宿主复用了 `src/lib/auth/session.ts` 与 `src/lib/auth/password.ts` 的最小认证语义
+- [x] Cookie 行为与旧宿主最小语义一致，且继续使用 `rento_session`
+- [x] 旧 `src/app/api/auth/*` 已进入兼容保留状态，`server/` 已成为最小认证闭环的正式宿主
+- [x] 本次实现未越界到用户表、刷新令牌、角色框架或正式业务接口迁移

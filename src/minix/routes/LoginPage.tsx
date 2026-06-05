@@ -29,8 +29,22 @@ export function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      // phase07-02 只提供登录页承接位，不在此阶段接入完整认证 API。
-      await new Promise((resolve) => window.setTimeout(resolve, 300))
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      })
+      const result = (await response.json()) as {
+        success?: boolean
+        error?: string
+      }
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || '登录失败，请稍后重试')
+      }
+
       navigate(nextPath, { replace: true })
     } catch (submitError) {
       setError(
@@ -45,7 +59,7 @@ export function LoginPage() {
     <StatusPageShell
       badge="Login Shell"
       title="登录 Rento-miniX"
-      description="当前页复用现有登录视觉语言，先承接新宿主中的登录入口和跳转边界；完整认证 API 与会话闭环仍留给后续阶段。"
+      description="当前页复用现有登录视觉语言，并已接入 Hono 新宿主中的最小认证闭环；领域级页面守卫与业务接口迁移仍留给后续阶段。"
       icon={<ShieldCheck className="h-6 w-6" />}
       accentClassName="bg-slate-900 text-white"
       detail={
