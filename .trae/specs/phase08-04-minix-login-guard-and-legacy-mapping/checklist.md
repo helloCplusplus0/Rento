@@ -1,0 +1,9 @@
+- [x] 未登录访问 Minix 主壳路径会跳到 `/login?next=...`
+- [x] 已登录访问 `/login` 会自动回跳到 `next` 或首页
+- [x] `src/minix/lib/session-client.ts` 已统一封装 `GET /api/auth/session`
+- [x] `src/minix/router/guards.ts` 已提供 Minix 可复用的最小页面守卫
+- [x] `src/minix/router/index.tsx` 已把最小页面守卫接入主壳路由树
+- [x] `src/minix/routes/LoginPage.tsx` 已稳定调用新宿主 `POST /api/auth/login`
+- [x] 页面门禁与 API 门禁继续保持一致
+- [x] 旧 `src/middleware.ts` 与新 `src/minix` 页面守卫的并行边界已写成可验证清单
+- [x] 本次实现未越界到正式业务页面逻辑、角色扩展框架或领域页面数据加载/写操作

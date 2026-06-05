@@ -1,22 +1,19 @@
 import { FormEvent, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLoaderData, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-import { StatusPageShell } from './StatusPageShell'
+import { loginWithPassword } from '../lib/session-client'
+import type { LoginRouteLoaderData } from '../router/guards'
 
-function getNextPath(search: string) {
-  const params = new URLSearchParams(search)
-  return params.get('next') || '/'
-}
+import { StatusPageShell } from './StatusPageShell'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const nextPath = getNextPath(location.search)
+  const { nextPath, sessionProbeError } = useLoaderData() as LoginRouteLoaderData
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -29,22 +26,7 @@ export function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      })
-      const result = (await response.json()) as {
-        success?: boolean
-        error?: string
-      }
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || '登录失败，请稍后重试')
-      }
-
+      await loginWithPassword({ username, password })
       navigate(nextPath, { replace: true })
     } catch (submitError) {
       setError(
@@ -72,6 +54,7 @@ export function LoginPage() {
               placeholder="请输入管理员账号"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -84,8 +67,15 @@ export function LoginPage() {
               placeholder="请输入登录密码"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              disabled={isSubmitting}
             />
           </div>
+
+          {sessionProbeError ? (
+            <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              {sessionProbeError}
+            </div>
+          ) : null}
 
           {error ? (
             <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">

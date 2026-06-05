@@ -69,7 +69,7 @@ export const minixStateRoutes: MinixRouteDefinition[] = [
     label: '登录',
     title: '登录页承接位',
     description:
-      '当前仅承接最小登录壳与后续会话入口提示，完整认证链仍由后续阶段继续迁移。',
+      '当前已接入最小登录闭环、会话探测与登录回跳，继续保持只承接认证入口，不扩展角色框架和业务页面逻辑。',
     iconKey: 'login',
     kind: 'state',
     shell: 'standalone',

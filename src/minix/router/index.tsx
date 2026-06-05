@@ -1,6 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom'
 
 import { MinixShellLayout } from '../layout/MinixShellLayout'
+import {
+  redirectAuthenticatedLoginGuard,
+  requireAuthenticatedGuard,
+} from './guards'
 import { ErrorPage, RouteErrorBoundary } from '../routes/ErrorPage'
 import { HomePage } from '../routes/HomePage'
 import { LoadingPage } from '../routes/LoadingPage'
@@ -14,6 +18,7 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+    loader: redirectAuthenticatedLoginGuard,
   },
   {
     path: '/offline',
@@ -35,6 +40,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <MinixShellLayout />,
     errorElement: <RouteErrorBoundary />,
+    loader: requireAuthenticatedGuard,
     children: [
       { index: true, element: <HomePage /> },
       ...minixPrimaryRoutes.map((route) => ({
