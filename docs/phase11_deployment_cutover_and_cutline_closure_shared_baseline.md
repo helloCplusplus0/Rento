@@ -5,7 +5,7 @@
 - 本文档直接建立在 `phase10` 已完成的长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界之上。
 - 本文档不替代 `architecture_plan` 的结构判断，也不替代 `dev_plan` 的任务拆分；它只负责冻结所有 `phase11-*` 子任务必须共同遵守的边界与词汇。
 - 当前互链文档为 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)。
-- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；后续子任务继续复用这两处承接位而不再另起第二套部署入口。
+- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口为统一环境与健康检查口径。后续子任务继续复用这些承接位而不再另起第二套部署入口。
 
 ## 一、文档目的
 本文档用于冻结 `phase11-deployment-cutover-and-cutline-closure` 的共享判断标准，避免后续子任务分别从部署拓扑、环境变量、健康检查、发布门禁或 legacy 回滚基线视角出发，重新产出互相冲突的解释。
@@ -143,6 +143,7 @@
 ## 八、健康检查与发布门禁共享口径
 ### 8.1 主健康入口
 - `/api/health` 是唯一主健康入口
+- `scripts/health-check.sh` 默认优先命中 `NEXTAUTH_URL`，未配置时回退到 `MINIX_SERVER_HOST:MINIX_SERVER_PORT` 上的 `/api/health`
 - 其他更细粒度健康路径只作为辅助排障入口
 
 ### 8.2 正式验证要求

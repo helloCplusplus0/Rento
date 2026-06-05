@@ -5,7 +5,7 @@
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
   - [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)
   - [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)
-- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已完成正式部署资产基线落位，后续继续推进 `phase11-03 ~ phase11-05`。
+- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已完成正式部署资产基线落位，`phase11-03` 已完成环境模板、健康检查与发布门禁的当前轮收口，后续继续推进 `phase11-04 ~ phase11-05`。
 
 ## 一、文档定位
 本文档用于把 `phase11-deployment-cutover-and-cutline-closure` 拆分为顺序执行的子任务，确保仓库先把正式部署主线、服务端产物链、环境模板、健康检查、发布门禁与 legacy 回滚基线解释清楚，再进入具体实现。
@@ -133,6 +133,7 @@
 ### 验证要求
 - 复核变量名、脚本和文档路径真实存在
 - 确认 `phase10` 的 `migrate deploy` / `db push` 边界被原样继承
+- 确认 `.env.example`、`scripts/health-check.sh`、`DEPLOYMENT.md`、`README.md`、`architecture_map.md` 与 `docs/phase11_*` 之间不存在口径漂移
 
 ## phase11-04-legacy-runtime-demotion-and-rollback-baseline
 ### 目标

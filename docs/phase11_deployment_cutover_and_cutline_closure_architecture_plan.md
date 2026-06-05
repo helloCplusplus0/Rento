@@ -18,7 +18,7 @@
 
 ## 当前文档状态
 - 本文档已与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 和 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 完成互链收口。
-- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线。
+- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线，`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到统一部署口径。
 
 ## 二、当前阶段前提
 ### 2.1 已完成上游
@@ -47,7 +47,7 @@
   - `scripts/dev-minix.mjs`
   - `scripts/start-minix.mjs`
 - 当前最大缺口不是运行时骨架，而是正式交付链：
-  - `build:minix` 已产出前端 `dist/` 与服务端 `build/minix-server/`，但环境模板、健康检查与发布门禁仍待继续收口
+  - `build:minix` 已产出前端 `dist/` 与服务端 `build/minix-server/`；`phase11-03` 已完成环境模板、健康检查与发布门禁的当前轮收口
   - `start:minix` 已切换为读取预构建产物的生产入口，后续需要与正式部署手册和 cutover 门禁保持一致
 - `phase11-02` 已补齐正式部署资产基线：
   - `deploy/caddy/Caddyfile`
@@ -135,7 +135,7 @@ phase11-deployment-cutover-and-cutline-closure
 ### 3.5 环境变量、健康检查与发布门禁：必须统一成单一口径
 选择原因：
 
-- 当前 `.env.example` 仍偏向旧容器化部署模板，与新主线正式部署方向不一致。
+- 在进入 `phase11-03` 前，`.env.example` 仍偏向旧容器化部署模板，与新主线正式部署方向不一致。
 - `/api/health` 已经是统一主健康入口，必须被正式部署手册、脚本与发布门禁共同引用。
 - 如果阶段切线不同时收口环境变量、健康检查与发布门禁，后续实施会再次出现文档、脚本、运行口径漂移。
 
@@ -144,6 +144,7 @@ phase11-deployment-cutover-and-cutline-closure
 - `.env.example` 必须升级为正式新主线模板
 - `/api/health` 继续作为主健康入口
 - 正式发布门禁至少包括：`lint`、`type-check`、`build:minix`、`audit:phase09:legacy-routes` 与主链 smoke
+- 当前实现已把 `.env.example`、`scripts/health-check.sh` 与正式部署手册对齐到上述口径
 
 ### 3.6 legacy 运行线：显式降级为回滚基线
 选择原因：

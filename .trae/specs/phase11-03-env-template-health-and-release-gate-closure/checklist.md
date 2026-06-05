@@ -1,0 +1,6 @@
+- [x] `.env.example` 已切换为 `Rento-miniX` 正式部署主线模板，正式变量矩阵与 `server/lib/env.ts` 当前契约一致
+- [x] `AUTH_SESSION_SECRET`、`NEXTAUTH_SECRET`、`NEXTAUTH_URL`、`ALLOWED_ORIGINS`、`DATABASE_URL`、`MINIX_SERVER_PORT` 的角色在模板、脚本与文档中保持一致
+- [x] `scripts/health-check.sh` 默认命中 `/api/health`，且默认 URL 推导与正式部署变量口径一致
+- [x] `DEPLOYMENT.md`、`README.md`、`architecture_map.md` 与 `docs/phase11_*` 对主健康入口、最低发布门禁与环境模板的描述一致
+- [x] `scripts/migrate-and-seed.sh` 对 `migrate deploy` / `db push` 的解释与 `phase10` 共享基线一致，没有重新定义迁移兼容边界
+- [x] `npm run lint` 与 `npm run type-check` 通过

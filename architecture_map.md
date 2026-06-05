@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前已进入 `phase11` 的部署切线规划阶段。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前已进入 `phase11` 的部署切线实现阶段，并已收口正式环境模板与主健康入口口径。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -186,10 +186,12 @@
 ### 规划中的服务端产物链
 - 当前 `server/index.ts`、`server/app.ts` 与 `server/lib/static.ts` 已具备正式运行时承接位。
 - 当前仍缺的不是运行时骨架，而是：
-  - 与 `Caddy + systemd` 对齐的环境模板、健康检查与发布门禁进一步收口
+  - `phase11-04 ~ phase11-05` 中继续需要冻结的 legacy cutline、退出条件与部署演练记录
 - 因此 `phase11` 的直接实现承接位将围绕：
   - `package.json`
   - `scripts/start-minix.mjs`
+  - `scripts/health-check.sh`
+  - `scripts/migrate-and-seed.sh`
   - `tsconfig` 的服务端产物配置
   - `DEPLOYMENT.md`
   - `deploy/caddy/Caddyfile`
@@ -282,15 +284,15 @@
 ## 正式部署真相源
 - 根级 `DEPLOYMENT.md`、`README.md`、`AGENTS.md`、`project_rules.md`、`plan.md` 与 `docs/phase11_*` 将共同承接 `Rento-miniX` 的正式部署说明、发布门禁与 cutline 退出条件。
 - 在 `phase11` 当前轮实现中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，并已落地 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 作为正式部署资产基线。
+- 当前 `.env.example` 已升级为正式共享环境模板，`scripts/health-check.sh` 已固定默认命中 `/api/health`，并与 `NEXTAUTH_URL` / `MINIX_SERVER_PORT` 口径保持一致。
 
 ## legacy 回滚基线
 以下文件仍对应旧 `Rento` 的当前存量运行形态与回滚基线，而不是未来 `Rento-miniX` 的最终部署主线：
 - `docker-compose.yml`：当前容器编排入口
-- `.env.example`：当前共享环境模板
 - `nginx/nginx.conf`：当前 HTTPS 反向代理配置
 - `scripts/cloud-deploy.sh`：当前部署执行脚本
 - `scripts/bootstrap-deploy-assets.sh`：当前部署资产拉取脚本
-- `DEPLOYMENT.md`：当前存量运行线部署手册与回滚说明
+- 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径：继续仅作为 legacy 回滚参考
 
 ## 根目录结构
 ```text
@@ -315,7 +317,7 @@ Rento/
 ├── plan.md               # 当前主真相源阶段总览
 ├── architecture_map.md   # 当前文件
 ├── docker-compose.yml    # 当前存量运行线容器编排
-└── .env.example          # 当前存量运行线环境模板
+└── .env.example          # 当前正式共享环境模板
 ```
 
 ## 业务源码结构
@@ -363,4 +365,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是继续按已批准的 `phase11-*` `/spec` 顺序推进：`phase11-02` 已完成正式部署资产基线，后续继续收口环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件。
+- 当前默认下一步是继续按已批准的 `phase11-*` `/spec` 顺序推进：`phase11-03` 已完成环境模板、健康检查与发布门禁口径收口，后续继续冻结 legacy 回滚基线与 cutline 退出条件。

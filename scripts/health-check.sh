@@ -1,12 +1,19 @@
 #!/bin/bash
 set -e
 
-# Rento 应用健康检查脚本
+# Rento-miniX 应用健康检查脚本
 # 默认命中 `/api/health` 这个当前阶段唯一主健康入口；
 # `/api/health/system` 与 `/api/health/bills` 仅用于更细粒度的问题定位。
-# 用于 Docker 健康检查和外部监控。
+# 默认 URL 优先继承 `NEXTAUTH_URL`，否则回退到 `MINIX_SERVER_HOST:MINIX_SERVER_PORT`。
 
-APP_BASE_URL="${NEXTAUTH_URL:-http://localhost:${APP_PORT:-${APP_INTERNAL_PORT:-3001}}}"
+DEFAULT_HEALTH_HOST="${MINIX_SERVER_HOST:-127.0.0.1}"
+if [ "$DEFAULT_HEALTH_HOST" = "0.0.0.0" ]; then
+    DEFAULT_HEALTH_HOST="127.0.0.1"
+fi
+
+DEFAULT_HEALTH_PORT="${MINIX_SERVER_PORT:-${APP_INTERNAL_PORT:-3002}}"
+DEFAULT_APP_BASE_URL="http://${DEFAULT_HEALTH_HOST}:${DEFAULT_HEALTH_PORT}"
+APP_BASE_URL="${NEXTAUTH_URL:-$DEFAULT_APP_BASE_URL}"
 HEALTH_URL="${HEALTH_URL:-${APP_BASE_URL%/}/api/health}"
 TIMEOUT="${TIMEOUT:-10}"
 MAX_RETRIES="${MAX_RETRIES:-3}"
@@ -65,7 +72,7 @@ check_health() {
 show_usage() {
     echo "用法: $0 [选项]"
     echo "选项:"
-    echo "  -u, --url URL      健康检查 URL (默认从 NEXTAUTH_URL / APP_PORT 推导到 /api/health)"
+    echo "  -u, --url URL      健康检查 URL (默认从 NEXTAUTH_URL 或 MINIX_SERVER_HOST:MINIX_SERVER_PORT 推导到 /api/health)"
     echo "  -t, --timeout SEC  请求超时时间 (默认: 10)"
     echo "  -r, --retries NUM  最大重试次数 (默认: 3)"
     echo "  -h, --help         显示此帮助信息"

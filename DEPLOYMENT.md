@@ -2,7 +2,7 @@
 
 > 状态说明：
 > - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 回滚基线边界。
-> - 当前仓库已进入已批准的 `phase11-*` `/spec` 顺序实现；`phase11-02` 已落地正式 `Caddy` / `systemd` 资产基线。
+> - 当前仓库已进入已批准的 `phase11-*` `/spec` 顺序实现；`phase11-03` 已收口正式环境模板、主健康入口与最低发布门禁口径。
 > - 因此，本文档既承接正式部署目标与边界，也记录已经落位的正式部署资产与仍待后续 `/spec` 收口的内容。
 
 ## 正式部署主线
@@ -22,6 +22,7 @@
 - `phase10` 已冻结长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界
 - `phase11-01` 已把 `build:minix` / `start:minix` 收口到“前端 `dist/` + 服务端 `build/minix-server/`”的预构建产物链
 - `phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线
+- `phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到正式部署主线口径，并继续原样继承 `phase10` 的迁移兼容边界
 - 当前脚本边界固定为：
   - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
   - `npm run build:minix`：当前产出前端 `dist/` 与服务端 `build/minix-server/` 预构建产物
@@ -44,6 +45,8 @@ Internet
 - `.env.example`：正式共享环境模板
 - `package.json`：正式构建与启动脚本入口
 - `scripts/start-minix.mjs`：当前生产模式校验入口，也是后续正式生产启动入口的直接承接位
+- `scripts/health-check.sh`：主健康入口检查脚本，默认命中 `/api/health`
+- `scripts/migrate-and-seed.sh`：数据库迁移与兼容兜底脚本，继续继承 `phase10` 迁移边界
 - `server/index.ts` / `server/app.ts` / `server/lib/static.ts`：正式运行时承接位
 - `deploy/caddy/Caddyfile`：正式公网入口配置基线，只负责域名、HTTPS 与 `reverse_proxy`
 - `deploy/systemd/rento-minix.service`：正式 Hono 守护进程基线，只负责单一进程托管
@@ -52,8 +55,7 @@ Internet
 - `docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md`
 
 后续 `phase11` 实施应补齐但当前尚未落地的正式资产包括：
-- 与正式主线对齐的部署手册、健康检查与发布验证脚本
-- `phase11-03 ~ phase11-05` 继续需要收口的环境模板、发布门禁、legacy cutline 与部署演练记录
+- `phase11-04 ~ phase11-05` 继续需要收口的 legacy cutline、回滚退出条件与部署演练记录
 
 ## 正式部署资产基线
 - `deploy/caddy/Caddyfile`
@@ -93,6 +95,7 @@ REQUEST_TIMEOUT=30000
 - `.env.example` 是唯一共享模板，`.env` 仍是私有运行配置
 - `AUTH_SESSION_SECRET` 是正式主变量，`NEXTAUTH_SECRET` 仅保留历史兼容回退
 - `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 默认保持一致
+- 迁移脚本兼容变量继续保留 `RUN_SEED` 与 `DB_WAIT_SECS`，但它们不改变正式主线的 PostgreSQL / `migrate deploy` 定位
 - 任何涉及认证、CORS、健康检查或部署端口的调整，都必须同步更新实现、模板与文档
 
 ## 迁移与数据库口径
@@ -113,6 +116,7 @@ REQUEST_TIMEOUT=30000
 
 ## 健康检查口径
 - 主健康入口固定为 `/api/health`
+- `scripts/health-check.sh` 默认优先使用 `NEXTAUTH_URL`，未配置时回退到 `http://127.0.0.1:${MINIX_SERVER_PORT}`；也允许通过 `--url` 显式覆盖做临时诊断
 - 正式部署验证至少覆盖：
   - `https://<domain>/api/health`
   - `https://<domain>/login`
@@ -125,9 +129,8 @@ REQUEST_TIMEOUT=30000
 - `nginx/nginx.conf`
 - `scripts/cloud-deploy.sh`
 - `scripts/bootstrap-deploy-assets.sh`
-- `scripts/health-check.sh`
 - `scripts/start-entry.mjs`
-- 旧 `.env.example` 中与镜像、容器和 `nginx` 绑定的变量历史口径
+- 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径
 
 legacy 回滚职责边界：
 - 只回滚存量容器化运行线的镜像、部署资产、环境配置与验证路径
@@ -142,5 +145,6 @@ legacy 回滚职责边界：
 ## 当前结论
 - 根级部署说明已经切换到 `Rento-miniX` 的正式部署主线口径
 - `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 已成为正式部署资产承接位
+- `.env.example`、`scripts/health-check.sh` 与 `/api/health` 已收口为正式部署主线的统一环境与健康检查口径
 - legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口职责
-- 后续仍按 `phase11-03 ~ phase11-05` 顺序继续收口环境模板、发布门禁、legacy cutline 与部署演练要求
+- 后续仍按 `phase11-04 ~ phase11-05` 顺序继续收口 legacy cutline 与部署演练要求
