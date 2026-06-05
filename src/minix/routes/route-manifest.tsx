@@ -1,59 +1,160 @@
+import { auxiliaryPageGovernanceByPath } from '@/lib/page-governance'
+import { navigationItems } from '@/lib/navigation-config'
+import { getRouteConfig } from '@/lib/route-config'
+
+type MinixRouteKind = 'primary' | 'state'
+type MinixRouteShell = 'app' | 'standalone'
+type GovernanceSource =
+  | 'src/lib/route-config.ts'
+  | 'src/lib/navigation-config.ts'
+  | 'src/lib/page-governance.ts'
+  | 'phase07-02-local'
+
 export interface MinixRouteDefinition {
   path: string
+  segment: string
   label: string
   title: string
   description: string
-  nextPhase: 'phase07-02' | 'phase07-03'
+  iconKey: string
+  kind: MinixRouteKind
+  shell: MinixRouteShell
+  showInMobileNav: boolean
+  showInDesktopNav: boolean
+  governanceSource: GovernanceSource[]
 }
 
-export const minixPrimaryRoutes: MinixRouteDefinition[] = [
+export const minixHomeRoute: MinixRouteDefinition = {
+  path: '/',
+  segment: '',
+  label: '工作台',
+  title: '工作台承接位',
+  description:
+    '当前页面复用既有工作台信息架构，作为 phase07-02 的统一前端宿主首页；后续迁移继续挂接在此壳层中，而不是回退到旧 Next.js 页面宿主。',
+  iconKey: 'dashboard',
+  kind: 'primary',
+  shell: 'app',
+  showInMobileNav: true,
+  showInDesktopNav: true,
+  governanceSource: ['src/lib/route-config.ts', 'src/lib/navigation-config.ts'],
+}
+
+export const minixPrimaryRoutes: MinixRouteDefinition[] = navigationItems
+  .filter((item) => item.href !== '/')
+  .map((item) => {
+    const routeConfig = getRouteConfig(item.href)
+
+    return {
+      path: item.href,
+      segment: item.href.replace(/^\//, ''),
+      label: item.label,
+      title: routeConfig?.title ?? `${item.label}承接位`,
+      description:
+        routeConfig?.description
+          ? `${routeConfig.description}。当前页面仅承接统一布局、导航与后续迁移挂载位，不在 phase07-02 迁移完整查询、写操作或认证闭环。`
+          : `当前页面仅承接 ${item.label} 模块壳层，后续继续复用既有信息架构迁移正式页面能力。`,
+      iconKey: item.id,
+      kind: 'primary',
+      shell: 'app',
+      showInMobileNav: Boolean(item.showInMobile),
+      showInDesktopNav: item.id !== 'settings',
+      governanceSource: ['src/lib/route-config.ts', 'src/lib/navigation-config.ts'],
+    }
+  })
+
+export const minixStateRoutes: MinixRouteDefinition[] = [
   {
-    path: 'rooms',
-    label: '房源',
-    title: '房源模块承接位',
-    description: '后续在此承接房源列表、房间详情、房态与仪表挂接壳，不在 phase07-01 迁移正式查询逻辑。',
-    nextPhase: 'phase07-02',
-  },
-  {
-    path: 'add',
-    label: '新增',
-    title: '新增入口承接位',
-    description: '后续在此承接新增房间、合同与租客入口，保持既有信息架构但改由 React Router 承载。',
-    nextPhase: 'phase07-02',
-  },
-  {
-    path: 'contracts',
-    label: '合同',
-    title: '合同模块承接位',
-    description: '后续在此承接合同列表、详情、续租与退租壳；本阶段不迁移合同业务主链逻辑。',
-    nextPhase: 'phase07-02',
-  },
-  {
-    path: 'bills',
-    label: '账单',
-    title: '账单模块承接位',
-    description: '后续在此承接账单列表、详情与聚合视图壳；当前仅固定新主线页面宿主。',
-    nextPhase: 'phase07-02',
-  },
-  {
-    path: 'settings',
-    label: '设置',
-    title: '设置页承接位',
-    description: '后续在此承接全局设置、部署提示与辅助入口治理，不在本阶段重做视觉体系。',
-    nextPhase: 'phase07-02',
-  },
-  {
-    path: 'login',
+    path: '/login',
+    segment: 'login',
     label: '登录',
-    title: '登录壳承接位',
-    description: '后续在此承接最小认证壳与会话入口，但 phase07-01 不迁移完整鉴权链。',
-    nextPhase: 'phase07-02',
+    title: '登录页承接位',
+    description:
+      '当前仅承接最小登录壳与后续会话入口提示，完整认证链仍由后续阶段继续迁移。',
+    iconKey: 'login',
+    kind: 'state',
+    shell: 'standalone',
+    showInMobileNav: false,
+    showInDesktopNav: false,
+    governanceSource: ['phase07-02-local'],
   },
   {
-    path: 'offline',
+    path: '/offline',
+    segment: 'offline',
     label: '离线',
     title: '离线页承接位',
-    description: '后续在此承接离线页与 PWA 兜底视图，继续复用现有信息架构。',
-    nextPhase: 'phase07-02',
+    description:
+      '延续现有 PWA 离线兜底语义，只承接静态壳、图标与最小指引，不缓存动态业务接口。',
+    iconKey: 'offline',
+    kind: 'state',
+    shell: 'standalone',
+    showInMobileNav: false,
+    showInDesktopNav: false,
+    governanceSource: ['phase07-02-local'],
+  },
+  {
+    path: '/loading',
+    segment: 'loading',
+    label: '加载中',
+    title: '加载态承接位',
+    description:
+      '用于承接 React Router 宿主的最小加载反馈，与旧宿主的全局 loading 骨架保持同类语义。',
+    iconKey: 'loading',
+    kind: 'state',
+    shell: 'standalone',
+    showInMobileNav: false,
+    showInDesktopNav: false,
+    governanceSource: ['phase07-02-local'],
+  },
+  {
+    path: '/error',
+    segment: 'error',
+    label: '错误',
+    title: '错误页承接位',
+    description:
+      '承接新宿主中的基础错误展示和恢复动作，后续可继续挂接运行时与 API 错误边界。',
+    iconKey: 'error',
+    kind: 'state',
+    shell: 'standalone',
+    showInMobileNav: false,
+    showInDesktopNav: false,
+    governanceSource: ['phase07-02-local'],
+  },
+  {
+    path: '/404',
+    segment: '404',
+    label: '未找到',
+    title: '404 页承接位',
+    description:
+      '用于承接未知路径和错误跳转场景，继续沿用当前产品的最小回退导航信息结构。',
+    iconKey: 'not-found',
+    kind: 'state',
+    shell: 'standalone',
+    showInMobileNav: false,
+    showInDesktopNav: false,
+    governanceSource: ['phase07-02-local'],
   },
 ]
+
+export const minixOpsGovernanceRoutes = ['/system-health', '/data-consistency'].map((path) => {
+  const governanceEntry = auxiliaryPageGovernanceByPath[path]
+
+  return {
+    path,
+    label: governanceEntry.title,
+    category: governanceEntry.category,
+    rationale: governanceEntry.rationale,
+    governanceSource: 'src/lib/page-governance.ts' as const,
+  }
+})
+
+export function getMinixPrimaryRoute(path: string) {
+  if (path === '/') {
+    return minixHomeRoute
+  }
+
+  return minixPrimaryRoutes.find((route) => route.path === path)
+}
+
+export function getMinixStateRoute(path: string) {
+  return minixStateRoutes.find((route) => route.path === path)
+}
