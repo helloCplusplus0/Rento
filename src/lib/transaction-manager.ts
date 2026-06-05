@@ -18,6 +18,40 @@ export interface TransactionOptions {
   retryDelay?: number
 }
 
+/**
+ * `phase10-02` 冻结后的正式主链写事务默认值。
+ * 这些值来自四个领域模块现状与 Prisma 官方事务文档的交集。
+ */
+export const MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS = Object.freeze({
+  isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+  maxWait: 5_000,
+  timeout: 10_000,
+  retryAttempts: 3,
+  retryDelay: 100,
+  retryCode: 'P2034',
+} as const)
+
+export interface MainChainWriteTransactionOptions {
+  isolationLevel?: Prisma.TransactionIsolationLevel
+  maxWait?: number
+  timeout?: number
+  retryAttempts?: number
+  retryDelay?: number
+}
+
+/**
+ * 正式主链写事务的统一选型说明：
+ * - interactive transaction: 适用于跨聚合编排、需要条件判断或分支控制的写路径
+ * - array transaction: 适用于顺序明确、仅串行提交 Prisma 查询的批量写路径
+ */
+export const MAIN_CHAIN_WRITE_TRANSACTION_BOUNDARY = Object.freeze({
+  strategySource: 'src/lib/transaction-manager.ts',
+  interactiveTransaction:
+    '跨聚合编排、读改写循环、需要条件判断或业务分支控制的正式主链写路径',
+  arrayTransaction:
+    '顺序明确、无需在事务中插入业务控制流的独立 Prisma 查询批量提交',
+} as const)
+
 // 事务结果
 export interface TransactionResult<T> {
   success: boolean
@@ -74,19 +108,95 @@ export class TransactionError extends Error {
   }
 }
 
+export function isPrismaWriteConflictError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.retryCode
+  )
+}
+
+export function getMainChainWriteInteractiveTransactionOptions(
+  options: MainChainWriteTransactionOptions = {}
+) {
+  return {
+    isolationLevel:
+      options.isolationLevel ??
+      MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.isolationLevel,
+    maxWait: options.maxWait ?? MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.maxWait,
+    timeout: options.timeout ?? MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.timeout,
+  }
+}
+
+export function getMainChainWriteArrayTransactionOptions(
+  options: Pick<MainChainWriteTransactionOptions, 'isolationLevel'> = {}
+) {
+  return {
+    isolationLevel:
+      options.isolationLevel ??
+      MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.isolationLevel,
+  }
+}
+
+async function delayTransactionRetry(ms: number) {
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
 /**
- * 统一事务管理器
+ * 正式主链写路径统一使用 interactive transaction helper。
+ * Prisma 官方仅为 interactive transaction 提供 `maxWait` 与 `timeout` 选项，
+ * 因此跨聚合编排默认经由此 helper 承接。
+ */
+export async function runInMainChainWriteTransaction<T>(
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  options: MainChainWriteTransactionOptions = {}
+): Promise<T> {
+  const finalOptions = {
+    ...MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS,
+    ...options,
+  }
+
+  for (
+    let attempt = 1;
+    attempt <= finalOptions.retryAttempts;
+    attempt += 1
+  ) {
+    try {
+      return await prisma.$transaction(
+        operation,
+        getMainChainWriteInteractiveTransactionOptions(finalOptions)
+      )
+    } catch (error) {
+      if (
+        !isPrismaWriteConflictError(error) ||
+        attempt >= finalOptions.retryAttempts
+      ) {
+        throw error
+      }
+
+      await delayTransactionRetry(finalOptions.retryDelay * attempt)
+    }
+  }
+
+  throw new Error('正式主链写事务执行失败')
+}
+
+/**
+ * 统一事务管理器。
+ * 正式主链写路径应优先使用上方的 `runInMainChainWriteTransaction()`，
+ * 此类继续为治理脚本、批处理和兼容工具提供结果对象与日志封装。
  */
 export class TransactionManager {
   private static instance: TransactionManager
 
   // 默认事务配置
   private defaultOptions: Required<TransactionOptions> = {
-    maxWait: 5000, // 最大等待时间 5秒
-    timeout: 10000, // 事务超时时间 10秒
-    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-    retryAttempts: 3, // 重试次数
-    retryDelay: 1000, // 重试延迟 1秒
+    maxWait: MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.maxWait,
+    timeout: MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.timeout,
+    isolationLevel: MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.isolationLevel,
+    retryAttempts: MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.retryAttempts,
+    retryDelay: MAIN_CHAIN_WRITE_TRANSACTION_DEFAULTS.retryDelay,
   }
 
   // 获取单例实例
@@ -198,10 +308,7 @@ export class TransactionManager {
    * 错误分类
    */
   private classifyError(error: Error): TransactionErrorType {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2034'
-    ) {
+    if (isPrismaWriteConflictError(error)) {
       return TransactionErrorType.DEADLOCK_ERROR
     }
 
@@ -263,7 +370,7 @@ export class TransactionManager {
    * 延迟函数
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return delayTransactionRetry(ms)
   }
 }
 

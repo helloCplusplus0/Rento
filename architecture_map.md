@@ -129,7 +129,7 @@
 - 当前正式数据访问主线继续固定为 `Prisma + PostgreSQL`，其中：
   - `src/lib/prisma.ts` 是 Prisma Client 单例入口
   - `src/lib/domain/*` 继续承接正式主链写路径与少量主链读回查
-  - `src/lib/transaction-manager.ts` 与领域服务中的事务包装需要在本阶段完成统一口径判断
+  - `src/lib/transaction-manager.ts` 已作为正式主链四领域模块的统一事务来源冻结；治理脚本与兼容工具仍按各自边界继续评估
 
 ### 规划中的查询层分层
 - `phase10` 规划中的查询层不追求“一次删光旧查询 helper”，而是冻结三类身份：

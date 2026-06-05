@@ -27,7 +27,7 @@
 - 默认优先冻结长期数据访问真相，而不是继续新增主链领域迁移。
 - 默认优先让数据访问层服务 `phase09` 已冻结的业务语义，而不是反向定义领域边界。
 - 默认优先把“正式主链查询 / legacy compat 查询 / 治理与脚本查询”分层写清，而不是追求一次性删光旧 helper。
-- 默认优先把事务策略收口为单一来源，而不是允许每个领域模块继续复制自己的事务包装。
+- 默认优先把正式主链四领域模块的事务策略收口为单一来源，而不是允许这四个领域模块继续复制自己的事务包装。
 - 默认优先把 SQLite 残留、`db push` 兜底与 PostgreSQL 正式迁移目标解释清楚，而不是在未冻结回滚条件前贸然切线。
 - 默认继续保持低复杂度、单仓库、单主线、单一真相源。
 
@@ -104,23 +104,36 @@
 
 ### 6.2 默认参数口径
 - 当前共享默认值以仓库现状和 Context7 核验结果为准：
+  - `isolationLevel: Prisma.TransactionIsolationLevel.Serializable`
   - `maxWait: 5000`
   - `timeout: 10000`
-  - `isolationLevel: Prisma.TransactionIsolationLevel.Serializable`
+  - `P2034` 作为统一写冲突重试码
+- 以上值来自“领域模块现状 + Prisma 官方 interactive transaction 示例”的交集：
+  - Prisma 示例默认 `maxWait = 2000`、`timeout = 5000`
+  - 仓库正式主链现状统一放宽为 `5000 / 10000`
 - 后续 `/spec` 若要调整这些值，必须给出明确的仓库内证据和验证路径
 
 ### 6.3 单一承接位要求
 - `phase10` 必须冻结单一事务策略来源
-- 允许的结果是：
-  - 统一复用 `src/lib/transaction-manager.ts`
-  - 或在该文件基础上提炼更轻量的共享事务 helper
+- 当前冻结结果是：
+  - `src/lib/transaction-manager.ts` 作为正式主链四领域模块的唯一事务策略来源
+  - `runInMainChainWriteTransaction()` 作为正式主链写路径的 interactive transaction helper
+  - `getMainChainWriteArrayTransactionOptions()` 作为 array transaction 的共享参数入口
 - 不允许的结果是：
-  - `contracts`、`billing`、`meters`、`delete-guards` 各自继续长期维护一份独立事务包装
+  - `contracts`、`billing`、`meters`、`delete-guards` 四个正式主链领域模块各自继续长期维护一份独立事务包装
+- 当前冻结结论不外推到治理脚本、批处理和兼容工具等全仓其他写路径；这些路径是否复用同一封装，留待后续子任务按边界判断
 
 ### 6.4 array transaction / interactive transaction 口径
-- array transaction 适用于简单、顺序明确的批量写操作
 - interactive transaction 适用于跨聚合业务编排、条件判断与分支控制较多的主链写路径
-- 无论采用哪种方式，最终参数和重试规则都只能来自同一共享规范来源
+- array transaction 适用于简单、顺序明确的批量写操作
+- interactive transaction 统一承接：
+  - 合同生命周期写入
+  - 账单状态/删除门禁写入
+  - 抄表出账与退租终抄编排
+  - 删除门禁下的终止/删除操作
+- array transaction 不得被路由层当作“可随意替换 interactive transaction 的临时写法”
+- `maxWait` / `timeout` 只属于 interactive transaction 的第二参数；array transaction 只共享同一 `Serializable` 隔离级别口径
+- 无论采用哪种方式，正式主链四领域模块的最终参数和重试规则都只能来自同一共享规范来源
 
 ## 七、迁移链共享口径
 ### 7.1 正式与兼容路径
@@ -189,6 +202,6 @@
 
 这能确保：
 - 不让 legacy 查询层继续反向决定领域设计
-- 不让每个领域模块继续复制一套事务策略
+- 不让正式主链四领域模块继续复制一套事务策略
 - 不把 `db push` 误读为正式 PostgreSQL 迁移链
 - 不在数据访问真相不清时提前进入部署切线

@@ -1,0 +1,8 @@
+- [x] `phase10-02` 的 spec 明确限定为事务边界冻结任务，没有越界到业务语义改写、schema 变更或全量领域模块重构
+- [x] `src/lib/transaction-manager.ts` 与 `src/lib/domain/contracts|billing|meters|delete-guards` 的现有事务实现均被纳入核对范围
+- [x] 正式主链写事务的默认参数已被冻结：`Serializable`、`maxWait`、`timeout`、`P2034` 重试
+- [x] 允许重试与禁止重试的错误边界已被明确说明
+- [x] 单一事务策略来源已对正式主链四领域模块被冻结，后续阶段不再讨论是否为这四个领域模块长期保留多套事务 helper
+- [x] array transaction 与 interactive transaction 的选型边界已被冻结
+- [x] Context7 Prisma 文档已被用于核对默认策略与官方推荐口径的一致性
+- [x] `phase10-02` 的输出已明确限定为正式主链四领域模块，可直接作为后续实现与 `phase10-03` 的上游输入，而不误读为已覆盖全仓所有写路径

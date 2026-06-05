@@ -1,9 +1,7 @@
 import type {
   Bill,
   BillDetail,
-  Contract,
   Meter,
-  MeterReading,
   MeterReadingRecordType,
   ReadingStatus,
 } from '@prisma/client'
@@ -16,6 +14,7 @@ import {
 import { globalSettings } from '@/lib/global-settings'
 import { generatePeriodDescription } from '@/lib/meter-utils'
 import { prisma } from '@/lib/prisma'
+import { runInMainChainWriteTransaction } from '@/lib/transaction-manager'
 
 /**
  * 仪表与抄表主链必须保留多仪表历史语义。
@@ -37,11 +36,6 @@ export const metersDomainBoundary = defineDomainModuleBoundary({
       '抄表写入、出账联动与退租终抄的事务编排统一放到 src/lib/domain/meters。',
   },
 })
-
-const PRISMA_TRANSACTION_MAX_RETRIES = 3
-const PRISMA_TRANSACTION_MAX_WAIT_MS = 5_000
-const PRISMA_TRANSACTION_TIMEOUT_MS = 10_000
-const PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS = 100
 
 type PrismaDbClient = typeof prisma | Prisma.TransactionClient
 
@@ -346,45 +340,6 @@ export function isMeterReadingDomainValidationError(
   error: unknown
 ): error is MeterReadingDomainValidationError {
   return error instanceof MeterReadingDomainValidationError
-}
-
-function isPrismaWriteConflict(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === PRISMA_CONCURRENT_WRITE_TRANSACTION_CANDIDATE.retryCode
-  )
-}
-
-async function waitForRetry(attempt: number) {
-  const delayMs = PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS * attempt
-  await new Promise((resolve) => {
-    setTimeout(resolve, delayMs)
-  })
-}
-
-async function runWithSerializableTransaction<T>(
-  operation: (tx: Prisma.TransactionClient) => Promise<T>
-) {
-  for (let attempt = 1; attempt <= PRISMA_TRANSACTION_MAX_RETRIES; attempt += 1) {
-    try {
-      return await prisma.$transaction(operation, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: PRISMA_TRANSACTION_MAX_WAIT_MS,
-        timeout: PRISMA_TRANSACTION_TIMEOUT_MS,
-      })
-    } catch (error) {
-      if (
-        !isPrismaWriteConflict(error) ||
-        attempt >= PRISMA_TRANSACTION_MAX_RETRIES
-      ) {
-        throw error
-      }
-
-      await waitForRetry(attempt)
-    }
-  }
-
-  throw new Error('抄表事务执行失败')
 }
 
 function toNumber(value: unknown) {
@@ -815,7 +770,7 @@ async function generateUtilityBillsForRegularReadings(params: {
     )
 
     try {
-      const generatedBills = await runWithSerializableTransaction(async (tx) => {
+      const generatedBills = await runInMainChainWriteTransaction(async (tx) => {
         const contract = await tx.contract.findUnique({
           where: { id: contractId },
           select: {
@@ -1065,7 +1020,7 @@ async function createSingleRegularMeterReading(
       : toNumber(meter.unitPrice)
   const amount = usage * unitPrice
 
-  const createdReading = await runWithSerializableTransaction(async (tx) => {
+  const createdReading = await runInMainChainWriteTransaction(async (tx) => {
     const duplicateInTransaction = await findRegularReadingByMeterAndPeriod(
       tx,
       input.meterId,
@@ -1406,7 +1361,7 @@ export async function generateLegacyUtilityBillCompat(
     gasUsage: input.gasUsage || 0,
   })
 
-  const bill = await runWithSerializableTransaction(async (tx) => {
+  const bill = await runInMainChainWriteTransaction(async (tx) => {
     return tx.bill.create({
       data: {
         billNumber: generateBillNumber('UTILITIES', contract.contractNumber),

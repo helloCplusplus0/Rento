@@ -8,6 +8,7 @@ import {
   type CheckoutSettlementSubmissionItem,
 } from '@/lib/checkout-settlement'
 import { prisma } from '@/lib/prisma'
+import { runInMainChainWriteTransaction } from '@/lib/transaction-manager'
 import {
   BILL_AMOUNT_EPSILON,
   OPEN_BILL_STATUSES,
@@ -45,11 +46,6 @@ export const contractsDomainBoundary = defineDomainModuleBoundary({
       '合同创建、续租、退租等跨聚合写操作的事务编排统一下沉到 src/lib/domain/contracts，而不是散落在路由层。',
   },
 })
-
-const PRISMA_TRANSACTION_MAX_RETRIES = 3
-const PRISMA_TRANSACTION_MAX_WAIT_MS = 5_000
-const PRISMA_TRANSACTION_TIMEOUT_MS = 10_000
-const PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS = 100
 
 type PrismaDbClient = typeof prisma | Prisma.TransactionClient
 
@@ -613,47 +609,8 @@ function buildFlowConsistencyEvidence(
   }
 }
 
-function isPrismaWriteConflict(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === PRISMA_CONCURRENT_WRITE_TRANSACTION_CANDIDATE.retryCode
-  )
-}
-
-async function waitForRetry(attempt: number) {
-  const delayMs = PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS * attempt
-  await new Promise((resolve) => {
-    setTimeout(resolve, delayMs)
-  })
-}
-
-async function runWithSerializableTransaction<T>(
-  operation: (tx: Prisma.TransactionClient) => Promise<T>
-) {
-  for (let attempt = 1; attempt <= PRISMA_TRANSACTION_MAX_RETRIES; attempt += 1) {
-    try {
-      return await prisma.$transaction(operation, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: PRISMA_TRANSACTION_MAX_WAIT_MS,
-        timeout: PRISMA_TRANSACTION_TIMEOUT_MS,
-      })
-    } catch (error) {
-      if (
-        !isPrismaWriteConflict(error) ||
-        attempt >= PRISMA_TRANSACTION_MAX_RETRIES
-      ) {
-        throw error
-      }
-
-      await waitForRetry(attempt)
-    }
-  }
-
-  throw new Error('合同事务执行失败')
-}
-
 async function activateContract(contractId: string) {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const contract = await tx.contract.findUnique({
       where: { id: contractId },
       include: { room: true, renter: true },
@@ -775,7 +732,7 @@ export async function renewContract(
     )
   }
 
-  const transactionResult = await runWithSerializableTransaction(async (tx) => {
+  const transactionResult = await runInMainChainWriteTransaction(async (tx) => {
     const originalContract = await tx.contract.findUnique({
       where: { id: input.originalContractId },
       include: {
@@ -991,7 +948,7 @@ export async function checkoutContract(
     )
   }
 
-  const transactionResult = await runWithSerializableTransaction(async (tx) => {
+  const transactionResult = await runInMainChainWriteTransaction(async (tx) => {
     const contract = (await tx.contract.findUnique({
       where: { id: input.contractId },
       include: {

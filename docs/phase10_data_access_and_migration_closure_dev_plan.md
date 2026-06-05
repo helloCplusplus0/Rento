@@ -27,7 +27,7 @@
 
 原因如下：
 - 若不先盘点现有数据访问入口，后续事务和查询规划都会建立在不完整清单上。
-- 若不先统一事务口径，正式主链写路径仍会继续在各领域模块中复制实现。
+- 若不先统一事务口径，正式主链四领域模块已经完成的统一事务来源会继续被误读为“仍在各自复制实现”或“已覆盖全仓所有写路径”。
 - 若不先冻结 canonical read path，legacy 查询层会继续反向牵制正式宿主与领域服务。
 - 若不把迁移兼容项放在后半段单独收口，就会把“查询层收口”和“正式迁移链切线”重新绑成一轮高风险改写。
 
@@ -76,10 +76,10 @@
 
 ## phase10-02-transaction-boundary-unification-baseline
 ### 目标
-冻结主链写事务的统一策略来源、默认参数、重试口径与适用范围，结束领域模块各自复制事务包装的状态。
+冻结正式主链四领域模块的统一事务策略来源、默认参数、重试口径与适用范围，明确该结论只覆盖 `contracts`、`billing`、`meters`、`delete-guards`，不外推为全仓所有写路径都已统一。
 
 ### 范围
-- 明确 `src/lib/transaction-manager.ts` 与领域服务事务包装之间的关系
+- 明确 `src/lib/transaction-manager.ts` 与正式主链四领域模块事务接入方式之间的关系
 - 冻结默认事务参数：
   - `Serializable`
   - `maxWait`
@@ -87,6 +87,8 @@
   - `P2034` 重试
 - 冻结 array transaction 与 interactive transaction 的选用边界
 - 冻结统一事务策略来源
+- 统一以 `runInMainChainWriteTransaction()` 承接正式主链 interactive transaction
+- 统一以 `getMainChainWriteArrayTransactionOptions()` 承接 array transaction 共享参数口径
 
 ### 参考来源
 - `src/lib/transaction-manager.ts`
@@ -103,12 +105,14 @@
 
 ### DoD
 - 正式主链写事务的默认参数与重试规则被冻结
-- 单一事务策略来源被冻结
-- 不再允许后续 `/spec` 继续讨论“每个领域模块是否保留单独事务 helper”这种基础决策
+- 单一事务策略来源已对正式主链四领域模块被冻结
+- `contracts`、`billing`、`meters`、`delete-guards` 已统一接入共享事务来源，且该结论不误读为覆盖全仓所有写路径
+- 不再允许后续 `/spec` 继续讨论“这四个领域模块是否保留单独事务 helper”这种基础决策
 
 ### 验证要求
 - 对照领域模块现状，确认共享文档中的事务参数与真实代码一致
 - 对照 Context7 文档，确认默认策略与 Prisma 推荐口径一致
+- 确认 array transaction 与 interactive transaction 的边界说明未被下沉为路由层临时实现细节
 
 ## phase10-03-canonical-read-path-and-compat-query-closure
 ### 目标

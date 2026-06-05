@@ -11,6 +11,7 @@ import {
   normalizeContractPaymentCycle,
 } from '@/lib/contract-payment-cycle'
 import { prisma } from '@/lib/prisma'
+import { runInMainChainWriteTransaction } from '@/lib/transaction-manager'
 
 /**
  * 账务语义需要围绕合同锚点保持稳定。
@@ -32,11 +33,6 @@ export const billingDomainBoundary = defineDomainModuleBoundary({
       '账单生成、收款状态回写与明细聚合的事务边界统一收口到 src/lib/domain/billing。',
   },
 })
-
-const PRISMA_TRANSACTION_MAX_RETRIES = 3
-const PRISMA_TRANSACTION_MAX_WAIT_MS = 5_000
-const PRISMA_TRANSACTION_TIMEOUT_MS = 10_000
-const PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS = 100
 
 /**
  * 账单金额比较允许的最小误差，避免 Decimal -> number 转换后的浮点抖动。
@@ -269,45 +265,6 @@ type ContractForBaseBills = Prisma.ContractGetPayload<{
     }
   }
 }>
-
-function isPrismaWriteConflict(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === PRISMA_CONCURRENT_WRITE_TRANSACTION_CANDIDATE.retryCode
-  )
-}
-
-async function waitForRetry(attempt: number) {
-  const delayMs = PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS * attempt
-  await new Promise((resolve) => {
-    setTimeout(resolve, delayMs)
-  })
-}
-
-async function runWithSerializableTransaction<T>(
-  operation: Parameters<typeof prisma.$transaction>[0]
-) {
-  for (let attempt = 1; attempt <= PRISMA_TRANSACTION_MAX_RETRIES; attempt += 1) {
-    try {
-      return (await prisma.$transaction(operation, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: PRISMA_TRANSACTION_MAX_WAIT_MS,
-        timeout: PRISMA_TRANSACTION_TIMEOUT_MS,
-      })) as T
-    } catch (error) {
-      if (
-        !isPrismaWriteConflict(error) ||
-        attempt >= PRISMA_TRANSACTION_MAX_RETRIES
-      ) {
-        throw error
-      }
-
-      await waitForRetry(attempt)
-    }
-  }
-
-  throw new Error('账单事务执行失败')
-}
 
 export function toBillAmount(value: unknown): number {
   return Math.round(Number(value ?? 0) * 100) / 100
@@ -882,7 +839,7 @@ export async function deletePendingBillWithoutHistory(
   billId: string
   contractId: string
 }> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const bill = await getBillDeleteGuardSnapshot(tx, billId)
 
     if (!bill) {
@@ -954,7 +911,7 @@ export async function updatePendingBillDraft(
   billId: string,
   input: UpdateBillDraftInput
 ): Promise<SerializedBill> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const existingBill = await tx.bill.findUnique({
       where: { id: billId },
       include: getBillInclude(),
@@ -1016,7 +973,7 @@ export async function updateBillCollectionStatus(
   billId: string,
   input: UpdateBillStatusInput
 ): Promise<SerializedBill> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const existingBill = await tx.bill.findUnique({
       where: { id: billId },
       include: getBillInclude(),
@@ -1102,7 +1059,7 @@ export async function updateBillCollectionStatus(
 export async function generateBaseBillsForContract(
   contractId: string
 ): Promise<GeneratedBaseBillSummary[]> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const contract = await getContractForBaseBills(tx, contractId)
 
     if (!contract) {
@@ -1146,7 +1103,7 @@ export async function generateBaseBillsForContract(
 export async function repairMissingRentBillsForContract(
   contractId: string
 ): Promise<GeneratedBaseBillSummary[]> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const contract = await getContractForBaseBills(tx, contractId, true)
 
     if (!contract) {

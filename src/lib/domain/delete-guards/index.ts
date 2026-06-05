@@ -5,7 +5,10 @@ import {
 import { Prisma } from '@prisma/client'
 
 import { prisma } from '@/lib/prisma'
-import type { PrismaTransactionClient } from '@/lib/transaction-manager'
+import {
+  type PrismaTransactionClient,
+  runInMainChainWriteTransaction,
+} from '@/lib/transaction-manager'
 
 /**
  * 删除门禁服务只表达“能否删、为什么不能删”的业务规则。
@@ -27,11 +30,6 @@ export const deleteGuardsDomainBoundary = defineDomainModuleBoundary({
       '删除前校验与终止/解绑编排统一下沉到共享领域服务，避免页面、路由和数据库各自维护一套规则。',
   },
 })
-
-const PRISMA_TRANSACTION_MAX_RETRIES = 3
-const PRISMA_TRANSACTION_MAX_WAIT_MS = 5_000
-const PRISMA_TRANSACTION_TIMEOUT_MS = 10_000
-const PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS = 100
 
 export interface RoomDeleteSafetyCheck {
   canDelete: boolean
@@ -136,45 +134,6 @@ export function isContractDeleteGuardBlockedError(
   error: unknown
 ): error is ContractDeleteGuardBlockedError {
   return error instanceof ContractDeleteGuardBlockedError
-}
-
-function isPrismaWriteConflict(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === PRISMA_CONCURRENT_WRITE_TRANSACTION_CANDIDATE.retryCode
-  )
-}
-
-async function waitForRetry(attempt: number) {
-  const delayMs = PRISMA_TRANSACTION_RETRY_BASE_DELAY_MS * attempt
-  await new Promise((resolve) => {
-    setTimeout(resolve, delayMs)
-  })
-}
-
-async function runWithSerializableTransaction<T>(
-  operation: Parameters<typeof prisma.$transaction>[0]
-) {
-  for (let attempt = 1; attempt <= PRISMA_TRANSACTION_MAX_RETRIES; attempt += 1) {
-    try {
-      return await prisma.$transaction(operation, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: PRISMA_TRANSACTION_MAX_WAIT_MS,
-        timeout: PRISMA_TRANSACTION_TIMEOUT_MS,
-      }) as T
-    } catch (error) {
-      if (
-        !isPrismaWriteConflict(error) ||
-        attempt >= PRISMA_TRANSACTION_MAX_RETRIES
-      ) {
-        throw error
-      }
-
-      await waitForRetry(attempt)
-    }
-  }
-
-  throw new Error('删除门禁事务执行失败')
 }
 
 async function getRoomDeleteGuardSnapshot(
@@ -485,7 +444,7 @@ export async function performContractDeleteSafetyCheck(
 export async function deletePendingContractWithoutHistory(
   contractId: string
 ): Promise<DeletedContractResult> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const existingContract = await getContractDeleteGuardSnapshot(tx, contractId)
 
     if (!existingContract) {
@@ -518,7 +477,7 @@ export async function deletePendingContractWithoutHistory(
 export async function deleteRoomWithoutRelatedHistory(
   roomId: string
 ): Promise<DeletedRoomResult> {
-  return runWithSerializableTransaction(async (tx) => {
+  return runInMainChainWriteTransaction(async (tx) => {
     const room = await getRoomDeleteGuardSnapshot(tx, roomId)
 
     if (!room) {

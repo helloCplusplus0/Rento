@@ -34,7 +34,8 @@
   - `src/lib/domain/billing/index.ts`
   - `src/lib/domain/meters/index.ts`
   - `src/lib/domain/delete-guards/index.ts`
-- 这些服务已承接正式主链写逻辑，但仍直接依赖 `src/lib/prisma.ts`，并分别复制了事务重试逻辑。
+- 这些服务已承接正式主链写逻辑，并已统一通过 `src/lib/transaction-manager.ts` 导出的 `runInMainChainWriteTransaction()` 收口 interactive transaction。
+- 当前统一事务来源的收口范围仅限这四个正式主链领域模块；治理脚本、批处理与兼容工具仍可继续使用 `TransactionManager` 类或其他既有承接位。
 - 查询层仍分散在：
   - `src/lib/queries.ts`
   - `src/lib/optimized-queries.ts`
@@ -68,7 +69,9 @@ phase10-data-access-and-migration-closure
 
 - Prisma 官方支持 interactive transaction：
   - `prisma.$transaction(async (tx) => {}, { isolationLevel, maxWait, timeout })`
-- Prisma 官方建议在 `Serializable` 下遇到 `P2034` 写冲突时采用有限重试
+- Prisma 官方将 `$transaction([])` 视为顺序 array transaction，适合独立且顺序明确的 Prisma 查询批量提交
+- Prisma 官方建议在 `Serializable` 下遇到 `P2034` 写冲突或死锁时采用有限重试
+- Prisma 官方示例中的 interactive transaction 默认值是 `maxWait = 2000ms`、`timeout = 5000ms`，因此仓库现状中的 `5000 / 10000` 属于明确放宽后的冻结值
 - 正式部署链路应优先以 `prisma migrate deploy` 应用已冻结迁移
 - `db push` 更适合作为开发或兼容路径，而不是长期正式迁移链
 
@@ -118,12 +121,13 @@ phase10-data-access-and-migration-closure
 ### 3.4 事务边界：统一为 `Serializable + 有界重试`，但实现口径必须单一
 选择原因：
 
-- 当前 `src/lib/domain/contracts/index.ts`、`src/lib/domain/billing/index.ts`、`src/lib/domain/meters/index.ts`、`src/lib/domain/delete-guards/index.ts` 已各自实现：
+- 当前 `src/lib/domain/contracts/index.ts`、`src/lib/domain/billing/index.ts`、`src/lib/domain/meters/index.ts`、`src/lib/domain/delete-guards/index.ts` 已统一接入 `src/lib/transaction-manager.ts` 提供的正式主链写事务 helper。
+- `src/lib/transaction-manager.ts` 已冻结：
   - `Serializable`
   - `maxWait: 5000`
   - `timeout: 10000`
-  - 基于 Prisma 写冲突码的有限重试
-- `src/lib/transaction-manager.ts` 也提供了类似能力，但并未成为正式主链统一入口。
+  - 基于 Prisma 写冲突码 `P2034` 的有限重试
+- 仓库内仍保留 `TransactionManager` 类，继续服务治理脚本、批处理和兼容工具；这不改变正式主链四领域模块的统一事务来源结论。
 - 长期并存多套事务包装会导致：
   - 参数漂移
   - 重试规则不一致
@@ -133,7 +137,11 @@ phase10-data-access-and-migration-closure
 
 - 主链写事务默认继续采用 `Serializable + 有界重试`
 - `P2034` 继续被视为统一写冲突重试码
-- `phase10` 必须冻结“事务策略来源的单一承接位”，不再允许每个领域模块继续复制一份独立事务 helper
+- `src/lib/transaction-manager.ts` 冻结为正式主链四领域模块的唯一事务策略来源，并提供：
+  - `runInMainChainWriteTransaction()` 作为正式主链写路径的 interactive transaction helper
+  - `getMainChainWriteArrayTransactionOptions()` 作为 array transaction 共享参数入口
+- `contracts`、`billing`、`meters`、`delete-guards` 四个领域模块已收口到上述统一来源
+- `phase10` 后续子任务不再讨论“这四个领域模块是否保留独立事务 helper”这一基础决策，也不把该结论误读为已覆盖全仓所有写路径
 
 ### 3.5 `phase09-06` legacy route inventory：直接成为 `phase10` 的排序输入
 选择原因：
@@ -272,7 +280,14 @@ scripts/
   - `Serializable`
   - 有界 `P2034` 重试
   - 显式 `maxWait` / `timeout`
-- array transaction 与 interactive transaction 的选用应以业务编排复杂度为准，但最终只能来自单一规范来源
+- 默认参数冻结为：
+  - `isolationLevel = Serializable`
+  - `maxWait = 5000`
+  - `timeout = 10000`
+  - `retry code = P2034`
+- interactive transaction 默认承接合同、账单、抄表、退租、删除门禁等跨聚合编排写路径
+- array transaction 仅适用于顺序明确、无需在事务中插入条件控制流的 Prisma 查询批量提交
+- `maxWait` / `timeout` 只在 interactive transaction helper 上统一配置；array transaction 共享同一 `Serializable` 隔离级别入口
 
 ### 6.3 迁移链口径
 - PostgreSQL 是正式数据库主线
@@ -291,6 +306,6 @@ scripts/
 这能确保：
 
 - 不会让 legacy 查询层继续反向决定领域设计
-- 不会让每个领域模块继续复制一套事务策略
+- 不会把正式主链四领域模块的统一事务来源再次写回多套并行策略
 - 不会把 `db push` 继续误读为正式 PostgreSQL 迁移链
 - 不会在数据访问真相不清时提前进入部署切线
