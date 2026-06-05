@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，下一步应基于这些结论进入 `phase10` 的数据访问层与迁移链规划。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 阶段文档现已产出并等待审核，后续实施将围绕数据访问层与迁移链收口推进。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -122,6 +122,37 @@
   - 不提前切 ORM 最终主线或迁移链方案
   - 不提前切部署主线
   - 不以删除旧宿主替代迁移验收
+
+## `phase10` 目标结构说明
+### 规划中的长期数据访问层
+- `phase10` 的职责不是重新定义领域语义，而是在 `phase09` 已冻结的共享领域服务之下，继续冻结长期数据访问承接位。
+- 当前正式数据访问主线继续固定为 `Prisma + PostgreSQL`，其中：
+  - `src/lib/prisma.ts` 是 Prisma Client 单例入口
+  - `src/lib/domain/*` 继续承接正式主链写路径与少量主链读回查
+  - `src/lib/transaction-manager.ts` 与领域服务中的事务包装需要在本阶段完成统一口径判断
+
+### 规划中的查询层分层
+- `phase10` 规划中的查询层不追求“一次删光旧查询 helper”，而是冻结三类身份：
+  - 正式主链查询：服务正式宿主与主链页面/流程回查
+  - legacy compat 查询：服务 `src/app/api/*` 中仍保留的兼容读取入口
+  - 治理/脚本查询：服务 dashboard、repair、validation、consistency 等辅助入口
+- 当前直接输入主要包括：
+  - `src/lib/queries.ts`
+  - `src/lib/optimized-queries.ts`
+  - `src/lib/dashboard-queries.ts`
+  - `src/lib/search-queries.ts`
+  - `server/lib/legacy-route-inventory.ts`
+
+### 规划中的迁移兼容层
+- `phase10` 规划中的迁移兼容层继续收口到：
+  - `prisma/schema.prisma`
+  - `prisma/migrations/migration_lock.toml`
+  - `scripts/migrate-and-seed.sh`
+- 该层的职责不是立即切换最终迁移主线，而是写清：
+  - SQLite 残留为何仍存在
+  - 当前兼容路径服务于哪些场景
+  - `db push` 与 `migrate deploy` 的正式/兼容职责边界
+  - 后续退出条件与回滚条件
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
@@ -276,4 +307,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是基于已完成的 `docs/phase09_*`、主链 smoke 与旧路由 compat 清单进入 `phase10` 的 `/plan`，而不是提前执行部署切线。
+- 当前默认下一步是审核 `docs/phase10_*`，确认长期数据访问层方案、查询分层、事务边界与迁移兼容项已冻结，再按 `dev_plan` 子任务顺序进入 `phase10` 的 `/spec`，而不是提前执行部署切线。

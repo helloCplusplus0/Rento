@@ -3,8 +3,8 @@
 ## 当前默认入口
 - 当前默认工作流：`phase10-data-access-and-migration-closure`
 - 当前阶段目标：在 `phase09` 已完成共享领域服务、正式宿主、compat wrapper 清单与主链验证矩阵冻结的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
-- 当前执行方式：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、smoke 路径与 legacy route 清单收口；当前应以上游冻结结论进入 `phase10` 的 `/plan`。
-- 当前下一步：启动 `phase10-data-access-and-migration-closure` 的阶段级文档产出，明确长期数据访问层方案判断、查询/写路径收口、事务边界与迁移链兼容项退出条件。
+- 当前执行方式：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、smoke 路径与 legacy route 清单收口；当前已基于这些上游输入完成 `phase10` 的阶段级文档产出。
+- 当前下一步：审核 `docs/phase10_data_access_and_migration_closure_architecture_plan.md`、`docs/phase10_data_access_and_migration_closure_dev_plan.md` 与 `docs/phase10_data_access_and_migration_closure_shared_baseline.md`，审核通过后再进入 `phase10` 的 `/spec`。
 - 当前阶段说明：`phase09` 已完成并作为 `phase10` 的直接上游输入保留；旧 `phase01~phase08` 继续作为历史连续性输入保留。
 
 ## 阶段顺序
@@ -169,7 +169,8 @@
   - 历史迁移兼容项的存在原因、当前作用与退出条件明确
   - 不再存在“运行时已切换但数据访问层真相不清”的状态
 - 当前结论：
-  - 待启动
+  - 已完成阶段级文档产出，待审核
+  - `phase09-06` 的 legacy route inventory、Prisma 事务口径与 SQLite 兼容残留已被纳入本阶段直接输入
 
 ### phase11-deployment-cutover-and-cutline-closure
 - 目标：完成部署主线切换、回滚基线冻结、旧运行线退出条件与最终发布门禁收口。
@@ -201,6 +202,7 @@
 - `docs/phase07_*` 将承接应用壳、运行时入口、开发拓扑、实现目录与共享基线等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase08_*` 将承接统一 API 宿主、认证门禁、中间件链、错误处理、最小公开 API 白名单与页面守卫边界等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase09_*` 将承接共享领域服务落点、合同/账单/支付周期/仪表/抄表/删除门禁迁移顺序、兼容宿主边界与主链验证矩阵等阶段细节；本文件继续只保留阶段总览与验收结论。
+- `docs/phase10_*` 将承接长期数据访问层方案、查询分层、事务边界、迁移兼容项与 legacy route inventory 对齐等阶段细节；本文件继续只保留阶段总览与验收结论。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

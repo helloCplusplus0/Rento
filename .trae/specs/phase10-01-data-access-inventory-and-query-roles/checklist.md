@@ -1,0 +1,7 @@
+- [x] `phase10-01` 的 spec 明确限定为盘点、分类和映射任务，没有越界到实现改写
+- [x] `src/lib/prisma.ts`、`src/lib/transaction-manager.ts`、`src/lib/queries.ts`、`src/lib/optimized-queries.ts`、`src/lib/dashboard-queries.ts`、`src/lib/search-queries.ts`、`src/lib/global-settings.ts`、`src/lib/health-checker.ts` 全部被纳入盘点范围
+- [x] 每个入口都有明确角色分类：正式主链写路径 / 正式主链查询 / legacy compat 查询 / 治理与脚本查询
+- [x] 每个 legacy route bucket 都能回溯到对应的数据访问入口或查询依赖
+- [x] 不再存在“某条旧路由依赖哪类查询入口”无法解释的状态
+- [x] 验证要求包含对 `server/lib/legacy-route-inventory.ts`、`scripts/phase09-06-legacy-route-inventory.ts` 与真实文件路径存在性的复核
+- [x] `phase10-01` 的输出可以直接作为 `phase10-02` 和 `phase10-03` 的上游输入

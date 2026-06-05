@@ -25,7 +25,7 @@
 - 当前默认工作流：`phase10-data-access-and-migration-closure`
 - 当前主问题：在不破坏 `phase09` 已冻结的共享领域服务边界、正式宿主边界、历史数据保留与主链一致性口径的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证与兼容宿主清单收口；下一步应基于 [docs/phase09_domain_service_migration_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_architecture_plan.md)、[docs/phase09_domain_service_migration_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_dev_plan.md) 与 [docs/phase09_domain_service_migration_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_shared_baseline.md) 进入 `phase10` 的 `/plan`。
+- 当前下一步：`phase10-data-access-and-migration-closure` 的阶段级文档已产出，下一步应审核 [docs/phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)、[docs/phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md) 与 [docs/phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md)；审核通过后再进入 `phase10` 的 `/spec`。
 - 当前阶段重点：
   - 把 `phase09` 已完成的共享领域服务、正式宿主、compat wrapper 清单与主链 smoke 路径作为 `phase10` 的稳定上游输入
   - 冻结长期数据访问层方案判断，不让 ORM、查询模式和事务边界重新反向驱动领域设计
@@ -57,7 +57,7 @@
 - `phase07-app-shell-and-runtime-foundation` 已完成：新前端应用壳、新运行时入口、旧运行线映射与退出条件已冻结为后续阶段上游输入。
 - `phase08-api-and-auth-foundation` 已完成：统一 API 宿主、最小认证闭环、请求治理、统一错误出口、环境变量兼容口径与 `src/minix` 最小页面守卫已完成当前阶段收口。
 - `phase09-domain-service-migration` 已完成当前轮阶段收口：共享领域服务落点、正式宿主边界、合同/账单/仪表/抄表/退租/删除门禁主链迁移、主链 smoke 路径、旧 `src/app/api/*` compat wrapper 清单与 `phase10` 上游输入已完成当前轮验证。
-- `phase10-data-access-and-migration-closure` 待启动：将以 `phase09` 已冻结的领域边界、主链一致性矩阵、compat wrapper 清单与验证脚本作为直接上游输入。
+- `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档产出：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项与退出条件已冻结为待审核输入；后续 `/spec` 应直接消费 `phase09-06` 的 route inventory 上游产物。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -79,6 +79,9 @@
 - [phase09_domain_service_migration_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_architecture_plan.md)：`phase09` 架构规划
 - [phase09_domain_service_migration_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_dev_plan.md)：`phase09` 开发规划
 - [phase09_domain_service_migration_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_shared_baseline.md)：`phase09` 共享基线
+- [phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)：`phase10` 架构规划
+- [phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md)：`phase10` 开发规划
+- [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md)：`phase10` 共享基线
 - [docs/archive/README.md](file:///home/dell/Projects/Rento/docs/archive/README.md)：历史任务文档与遗留材料归档说明
 
 ## 8. 推荐阅读顺序
@@ -93,6 +96,7 @@
 9. `docs/phase07_*`
 10. `docs/phase08_*`
 11. `docs/phase09_*`
+12. `docs/phase10_*`
 
 ## 9. 文档同步规则
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
@@ -104,6 +108,7 @@
 - 进入 `phase07` 后，仍必须先完成该阶段的 `architecture_plan`、`dev_plan` 与 `shared_baseline` 审核，未经批准不得直接进入 `/spec` 或实现。
 - 进入 `phase08` 后，仍必须先完成统一 API 宿主、最小公开 API 白名单、认证会话、错误处理、环境变量兼容口径与最小页面守卫方案冻结，再进入该阶段任一 `/spec`。
 - 进入 `phase09` 后，仍必须先完成共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界冻结，再进入该阶段任一 `/spec`。
+- 进入 `phase10` 后，仍必须先完成长期数据访问层方案、正式/兼容/治理查询分层、事务边界、迁移兼容项说明与退出条件冻结，再进入该阶段任一 `/spec`。
 
 ## 10. 其他关键治理约束
 - 根目录只保留当前有效入口文档、配置文件和运行资产；历史任务记录应迁入 `docs/archive/`。

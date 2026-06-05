@@ -14,6 +14,15 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '..')
 const legacyApiRoot = path.join(projectRoot, 'src', 'app', 'api')
+const DASHBOARD_ROUTE_DEPENDENCY_IMPORT_MAP = new Map([
+  ['@/lib/dashboard-queries', 'src/lib/dashboard-queries.ts'],
+  ['@/lib/global-settings', 'src/lib/global-settings.ts'],
+  ['@/lib/prisma', 'src/lib/prisma.ts'],
+])
+
+const DASHBOARD_ROUTE_TRACKED_DEPENDENCIES = new Set(
+  DASHBOARD_ROUTE_DEPENDENCY_IMPORT_MAP.values()
+)
 
 async function main() {
   const scannedRouteFiles = await collectRouteFiles(legacyApiRoot)
@@ -37,6 +46,8 @@ async function main() {
   const unresolvedDomainServices = await resolveMissingProjectPaths(
     flattenedOperations.flatMap((item) => item.domainServicePaths)
   )
+  const dashboardRouteDependencyMismatches =
+    await validateDashboardRouteDependencyMappings()
 
   printHeader('phase09-06 旧路由兼容与退出清单校验')
   console.log(`项目根目录: ${projectRoot}`)
@@ -79,6 +90,7 @@ async function main() {
     ...formatProblemLines('清单存在重复文件定义', duplicateInventoryFiles),
     ...formatProblemLines('formalHosts 引用不存在', unresolvedFormalHosts),
     ...formatProblemLines('domainServicePaths 引用不存在', unresolvedDomainServices),
+    ...dashboardRouteDependencyMismatches,
   ]
 
   if (problems.length > 0) {
@@ -94,6 +106,7 @@ async function main() {
   printHeader('校验通过')
   console.log('- 清单已覆盖全部 src/app/api 旧路由文件')
   console.log('- formalHosts 与 domainServicePaths 引用均可解析')
+  console.log('- /api/dashboard/* 的直接查询依赖映射与真实导入保持一致')
   console.log('- phase10 输入分桶已可直接复核与复用')
 }
 
@@ -155,6 +168,71 @@ async function fileExists(targetPath: string) {
   } catch {
     return false
   }
+}
+
+async function validateDashboardRouteDependencyMappings() {
+  const problems: string[] = []
+  const dashboardEntries = PHASE09_06_LEGACY_ROUTE_INVENTORY.filter((entry) =>
+    entry.routePath.startsWith('/api/dashboard/')
+  )
+
+  for (const entry of dashboardEntries) {
+    const actualDependencies = await collectTrackedDashboardRouteDependencies(
+      entry.filePath
+    )
+
+    for (const operation of entry.operations) {
+      const declaredDependencies = Array.from(
+        new Set(operation.domainServicePaths)
+      ).sort()
+      const unsupportedDeclaredDependencies = declaredDependencies.filter(
+        (dependency) => !DASHBOARD_ROUTE_TRACKED_DEPENDENCIES.has(dependency)
+      )
+
+      if (unsupportedDeclaredDependencies.length > 0) {
+        problems.push(
+          `dashboard 直接依赖声明超出受控范围: ${entry.routePath} -> ${unsupportedDeclaredDependencies.join(', ')}`
+        )
+        continue
+      }
+
+      if (
+        !areStringArraysEqual(declaredDependencies, actualDependencies)
+      ) {
+        problems.push(
+          `dashboard 直接依赖映射不一致: ${entry.routePath} -> 清单[${declaredDependencies.join(', ') || '(空)'}] / 实际[${actualDependencies.join(', ') || '(空)'}]`
+        )
+      }
+    }
+  }
+
+  return problems
+}
+
+async function collectTrackedDashboardRouteDependencies(filePath: string) {
+  const absolutePath = path.join(projectRoot, ...filePath.split('/'))
+  const fileContent = await fs.readFile(absolutePath, 'utf8')
+  const trackedDependencies = new Set<string>()
+  const importPattern =
+    /from\s+['"](@\/lib\/dashboard-queries|@\/lib\/global-settings|@\/lib\/prisma)['"]/g
+
+  for (const match of fileContent.matchAll(importPattern)) {
+    const projectPath = DASHBOARD_ROUTE_DEPENDENCY_IMPORT_MAP.get(match[1])
+
+    if (projectPath) {
+      trackedDependencies.add(projectPath)
+    }
+  }
+
+  return Array.from(trackedDependencies).sort()
+}
+
+function areStringArraysEqual(left: string[], right: string[]) {
+  if (left.length !== right.length) {
+    return false
+  }
+
+  return left.every((value, index) => value === right[index])
 }
 
 function printBucket(

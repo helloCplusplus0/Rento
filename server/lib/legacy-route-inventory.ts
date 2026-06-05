@@ -895,7 +895,7 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts', 'src/lib/global-settings.ts'],
+        domainServicePaths: ['src/lib/prisma.ts'],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 告警查询宿主时，再评估迁移或归档。',
@@ -913,7 +913,7 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts'],
+        domainServicePaths: ['src/lib/global-settings.ts', 'src/lib/prisma.ts'],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
@@ -931,7 +931,7 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts'],
+        domainServicePaths: ['src/lib/global-settings.ts', 'src/lib/prisma.ts'],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
@@ -949,7 +949,7 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts'],
+        domainServicePaths: ['src/lib/prisma.ts'],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
@@ -967,7 +967,7 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts'],
+        domainServicePaths: ['src/lib/prisma.ts'],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
@@ -985,7 +985,7 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts'],
+        domainServicePaths: ['src/lib/prisma.ts'],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
