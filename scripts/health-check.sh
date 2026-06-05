@@ -17,28 +17,31 @@ check_health() {
     while [ $attempt -le $MAX_RETRIES ]; do
         echo "健康检查尝试 $attempt/$MAX_RETRIES..."
         
-        # 使用 curl 检查健康状态
-        if response=$(curl -s -f --max-time $TIMEOUT "$HEALTH_URL" 2>/dev/null); then
-            # 解析 JSON 响应
-            status=$(echo "$response" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
-            
+        # 使用 curl 检查健康状态。
+        # 不能使用 `-f`，否则 503 时拿不到 `/api/health` 返回的 JSON body，
+        # 无法继续按顶层 `status` 做兼容判断。
+        if response_bundle=$(curl -s --max-time $TIMEOUT -w '\n%{http_code}' "$HEALTH_URL" 2>/dev/null); then
+            http_status=$(echo "$response_bundle" | tail -n1)
+            response=$(echo "$response_bundle" | sed '$d')
+            status=$(echo "$response" | grep -o '"status":"[^"]*"' | head -n1 | cut -d'"' -f4)
+
             case "$status" in
                 "healthy")
-                    echo "✅ 应用状态健康"
+                    echo "✅ 应用状态健康 (HTTP $http_status)"
                     echo "响应: $response"
                     exit 0
                     ;;
                 "degraded")
-                    echo "⚠️  应用状态降级但可用"
+                    echo "⚠️  应用状态降级但可用 (HTTP $http_status)"
                     echo "响应: $response"
                     exit 0
                     ;;
                 "unhealthy")
-                    echo "❌ 应用状态不健康"
+                    echo "❌ 应用状态不健康 (HTTP $http_status)"
                     echo "响应: $response"
                     ;;
                 *)
-                    echo "❓ 未知健康状态: $status"
+                    echo "❓ 未知健康状态: $status (HTTP $http_status)"
                     echo "响应: $response"
                     ;;
             esac

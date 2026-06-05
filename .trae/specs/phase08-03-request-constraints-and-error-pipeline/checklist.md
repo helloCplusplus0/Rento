@@ -1,0 +1,9 @@
+- [x] Hono 新宿主已具备统一 JSON 错误出口
+- [x] `server/lib/api-errors.ts` 已提供最小错误分类与状态码映射
+- [x] `server/lib/api-responses.ts` 已提供统一成功/错误响应辅助函数
+- [x] `server/middleware/request-constraints.ts` 已集中承接 CORS、来源白名单、请求体大小限制与请求超时
+- [x] `server/middleware/security-headers.ts` 已为 API 响应补齐最小安全响应头
+- [x] `server/app.ts` 已把请求约束、安全头与统一错误出口串联到 `/api` 宿主
+- [x] `GET /api/health` 继续返回可被 `scripts/health-check.sh` 识别的健康状态
+- [x] 新宿主的最小安全边界不弱于旧宿主当前最小口径
+- [x] 本次实现未越界到复杂限流、外部网关、APM/Tracing 或治理/辅助接口迁移

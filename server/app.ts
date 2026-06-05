@@ -1,13 +1,30 @@
 import { Hono } from 'hono'
 
 import type { AuthAppEnv } from './lib/auth-context'
+import {
+  jsonApiError,
+} from './lib/api-responses'
+import {
+  notImplementedError,
+  normalizeApiError,
+} from './lib/api-errors'
 import type { MinixServerEnv } from './lib/env'
 import { getMinixServerEnv } from './lib/env'
 import { serveMinixAsset } from './lib/static'
 import { authSession } from './middleware/auth-session'
+import {
+  applyCorsHeaders,
+  createCorsConstraint,
+  createRequestBodyLimit,
+  createRequestTimeout,
+} from './middleware/request-constraints'
 import { createRequestLogger } from './middleware/request-logger'
 import { requireAuth } from './middleware/require-auth'
 import { runtimeBanner } from './middleware/runtime-banner'
+import {
+  applySecurityHeaders,
+  createSecurityHeaders,
+} from './middleware/security-headers'
 import { createAuthRoutes } from './routes/auth'
 import { createHealthRoutes } from './routes/health'
 
@@ -18,12 +35,26 @@ export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
   // Phase08-01 freezes the unified /api host and its public/protected boundary.
   app.use('*', runtimeBanner(env))
   app.use('*', createRequestLogger(env))
+  apiApp.use('*', createSecurityHeaders(env))
+  apiApp.use('*', createCorsConstraint(env))
+  apiApp.use('*', createRequestBodyLimit(env))
+  apiApp.use('*', createRequestTimeout(env))
   apiApp.use('*', authSession())
 
   apiApp.route('/', createHealthRoutes(env))
   apiApp.route('/auth', createAuthRoutes(env))
   apiApp.all('*', requireAuth(), (c) =>
-    createProtectedApiBoundaryResponse(c.req.path, env)
+    jsonApiError(
+      c,
+      notImplementedError(
+        '当前接口已通过最小认证门禁，但正式业务路由尚未迁入 Hono。phase08-03 只冻结请求治理、错误出口与安全边界，不扩展业务 API。',
+        {
+          protected: true,
+          publicPaths: env.api.publicPaths,
+        }
+      ),
+      { env }
+    )
   )
 
   app.route(env.api.basePath, apiApp)
@@ -38,16 +69,15 @@ export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
     console.error(`[${env.runtimeName}] unhandled error`, error)
 
     if (c.req.path.startsWith('/api/')) {
-      return c.json(
-        {
-          message: 'Minix runtime error.',
-          runtime: env.runtimeName,
-        },
-        500
-      )
+      const response = jsonApiError(c, normalizeApiError(error), { env })
+      applySecurityHeaders(response.headers, c.req.raw, env)
+      applyCorsHeaders(response.headers, c.req.raw, env)
+      return response
     }
 
-    return c.text('Minix runtime error.', 500)
+    const response = c.text('Minix runtime error.', 500)
+    applySecurityHeaders(response.headers, c.req.raw, env)
+    return response
   })
 
   return app
@@ -56,27 +86,3 @@ export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
 const app = createApp()
 
 export default app
-
-function createProtectedApiBoundaryResponse(
-  path: string,
-  env: MinixServerEnv
-) {
-  return new Response(
-    JSON.stringify({
-      success: false,
-      error:
-        '当前接口已通过最小认证门禁，但正式业务路由尚未迁入 Hono。phase08-02 仅接入认证闭环，不扩展业务 API。',
-      errorType: 'NOT_IMPLEMENTED',
-      path,
-      runtime: env.runtimeName,
-      protected: true,
-      publicPaths: env.api.publicPaths,
-    }),
-    {
-      status: 501,
-      headers: {
-        'content-type': 'application/json; charset=utf-8',
-      },
-    }
-  )
-}

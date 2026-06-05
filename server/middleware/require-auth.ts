@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono'
 
+import { forbiddenError, unauthorizedError } from '../lib/api-errors'
 import type { AuthAppEnv } from '../lib/auth-context'
 
 /**
@@ -11,27 +12,11 @@ export function requireAuth(): MiddlewareHandler<AuthAppEnv> {
     const session = c.get('session')
 
     if (!session) {
-      return c.json(
-        {
-          success: false,
-          error: '请先登录',
-          errorType: 'UNAUTHORIZED',
-          timestamp: new Date().toISOString(),
-        },
-        401
-      )
+      throw unauthorizedError('请先登录')
     }
 
     if (session.role !== 'ADMIN') {
-      return c.json(
-        {
-          success: false,
-          error: '权限不足',
-          errorType: 'FORBIDDEN',
-          timestamp: new Date().toISOString(),
-        },
-        403
-      )
+      throw forbiddenError('权限不足')
     }
 
     await next()
