@@ -97,6 +97,20 @@ phase07-app-shell-and-runtime-foundation
 - 旧 `Next.js` 宿主继续保留为参考基线与存量运行线
 - 后续是否正式切入主入口，由 `phase07-04` 明确旧运行线映射与退出条件后再决定
 
+### 3.4 旧运行线映射：先冻结边界，再决定退出
+选择原因：
+
+- `src/app`、`src/app/api/*`、`scripts/dev-entry.mjs` 与 `scripts/start-entry.mjs` 仍承担当前存量运行线与回滚基线职责
+- 若不先冻结“哪些继续保留、哪些不再扩写、哪些只能作为参考”，后续 `phase08` 与 `phase09` 会重新把新能力写回旧宿主
+- 旧宿主当前仍有实际运行价值，但这种并行关系只服务于迁移过渡，而不是接受长期双主线并存
+
+本阶段结论：
+
+- 旧 `src/app` 在 `phase07` 结束后继续承担参考基线、存量运行线和未迁移页面壳的兼容职责
+- 旧 `src/app/api/*` 在 `phase08` 前继续承担存量业务 API、存量认证 API 和兼容宿主职责
+- 旧 `scripts/dev-entry.mjs` 与 `scripts/start-entry.mjs` 继续服务于旧 `Next.js` 宿主、回滚验证和存量运行线，不作为新主线脚本
+- `src/minix/` 与 `server/` 是后续新增前端宿主逻辑与新增 API/认证宿主逻辑的默认正式落点
+
 ## 四、承接资产与实现边界
 ### 4.1 允许直接承接的资产
 - `src/components/layout/AppLayout.tsx`
@@ -178,6 +192,48 @@ server/
   - `dev:minix`
   - `build:minix`
   - `start:minix`
+
+### 6.3 旧宿主保留边界与并行关系
+- 旧 `src/app`
+  - 保留为当前正式页面壳、未迁移页面和 UI 参考基线
+  - 允许继续作为存量运行线与回滚对照输入存在
+  - 不再作为新增前端宿主逻辑、路由骨架或新页面壳的默认落点
+- 旧 `src/app/api/*`
+  - 在 `phase08` 前继续承载当前存量业务 API、认证 API 与兼容路径
+  - 允许作为 API 契约、鉴权策略和错误处理的参考输入
+  - 不再作为新增 API 宿主、中间件骨架或新认证承接位的默认落点
+- 旧启动脚本
+  - `scripts/dev-entry.mjs` 继续服务于旧 `Next.js` 开发态与参考验证
+  - `scripts/start-entry.mjs` 继续服务于旧 `Next.js` 存量启动与回滚基线
+  - 在新主线脚本、验证路径和回滚口径未冻结前，不允许停用或删除
+- 并行关系
+  - 开发态：新主线使用 `Vite + Hono` 双服务代理验证 `src/minix/` 与 `server/`；旧 `npm run dev` 保留为存量运行线和参考对照
+  - 验证态：新宿主负责验证应用壳、路由骨架、基础中间件与 `/api/health`；旧宿主负责提供现状行为对照与回滚基线
+  - 存量运行线：在部署主线正式切换前，旧 `Next.js` 仍是当前可运行宿主；新宿主只冻结承接方向，不在 `phase07` 直接接管正式生产职责
+
+### 6.4 旧宿主退出条件
+- 旧前端壳允许退出的前提至少包括：
+  - `src/minix/` 已承接正式路由骨架、根布局、主导航和约定中的基础页面壳
+  - 需要切走的正式业务页面已有明确迁移承接位和验证路径
+  - 新壳通过对应构建、路由与 smoke test，且保留可执行回滚路径
+- 旧 API 宿主允许退出的前提至少包括：
+  - `server/` 已冻结统一 API 宿主、中间件、错误处理和认证承接骨架
+  - 计划退出的旧接口已完成迁移并通过门禁、契约与主链验证
+  - 旧 `src/app/api/*` 不再承担新主线仍依赖的关键入口
+- 旧启动脚本允许退出的前提至少包括：
+  - `dev:minix`、`build:minix`、`start:minix` 或等价新主线脚本已冻结
+  - 新主线的开发、构建、启动、健康检查与回滚说明已收口到文档和脚本
+  - 部署主线与回滚基线已进入后续阶段冻结，不再依赖旧 `Next.js` 启动链
+
+### 6.5 `phase08` 与 `phase09` 直接输入清单
+- `phase08-api-and-auth-foundation`
+  - 正式宿主输入：`server/`、`/api/health` 承接位、最小环境变量读取层、后续新增 `dev:minix` / `start:minix` 脚本口径
+  - 存量参考输入：旧 `src/app/api/*`、`src/middleware.ts`、`src/lib/auth/*`、`src/lib/api-error-handler.ts`、`src/lib/observability.ts`
+  - 禁止越界项：不把合同、账单、仪表、抄表等正式领域服务迁移混入本阶段，不切部署主线，不删除旧宿主代码
+- `phase09-domain-service-migration`
+  - 正式宿主输入：`server/` 中已冻结的统一 API 宿主与中间件承接位、`src/minix/` 中已冻结的前端壳与路由承接位
+  - 存量参考输入：旧 `src/app/*` 页面行为、旧 `src/app/api/*` 领域接口、`src/lib/prisma.ts`、`src/lib/queries.ts` 及相关主链语义实现
+  - 禁止越界项：不在领域迁移阶段反向重写 UI 设计语言、不提前切数据访问主线或部署主线、不以删除旧宿主替代迁移验收
 
 ## 七、阶段结论
 `phase07-app-shell-and-runtime-foundation` 的阶段价值不在于“已经完成 Hono 版业务迁移”，而在于：

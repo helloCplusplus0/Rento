@@ -1,0 +1,8 @@
+- [x] 旧 `src/app` 在 `phase07` 结束后仍保留的职责边界已明确
+- [x] 旧 `src/app/api/*` 在 `phase08` 前仍保留的职责边界已明确
+- [x] 新前端壳、新运行时与旧 `Next.js` 运行线的并行关系已明确
+- [x] 旧前端壳、旧 API 宿主与旧启动脚本的退出条件已明确
+- [x] `phase08-api-and-auth-foundation` 已有明确直接输入清单
+- [x] `phase09-domain-service-migration` 已有明确直接输入清单
+- [x] 旧运行线的参考、兼容与回滚口径已明确
+- [x] 本次子任务未越界到正式切换、删除旧宿主代码或部署切线

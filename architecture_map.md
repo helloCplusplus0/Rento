@@ -31,6 +31,25 @@
 - `phase07` 规划中的运行脚本将补充到 `scripts/`，例如 `scripts/dev-minix.mjs`、`scripts/start-minix.mjs`。
 - 开发态采用 `Vite + Hono` 双服务代理；生产态最终切线不在 `phase07` 冻结。
 
+### `phase07-04` 旧运行线映射口径
+- 旧 `src/app`
+  - 继续保留为现状页面壳、未迁移页面与 UI 参考基线
+  - 不再作为新增前端宿主逻辑和新路由骨架的默认落点
+- 旧 `src/app/api/*`
+  - 在 `phase08` 前继续保留为存量业务 API、存量认证 API 与兼容宿主
+  - 不再作为新增 API 宿主、认证骨架或中间件默认落点
+- 旧启动脚本
+  - `scripts/dev-entry.mjs` 继续服务于旧 `Next.js` 开发态与现状对照验证
+  - `scripts/start-entry.mjs` 继续服务于旧 `Next.js` 存量启动与回滚基线
+  - 在新主线脚本、验证路径与回滚口径未冻结前，不进入删除或停用
+- 并行关系
+  - 开发态：`src/minix/` + `server/` 承接新主线验证，旧 `Next.js` 运行线保留为现状对照
+  - 验证态：新宿主验证应用壳、路由、中间件与 `/api/health`，旧宿主验证未迁移入口与回滚基线
+  - 存量运行线：在部署主线切换前，旧 `Next.js` 仍是当前可运行宿主；新宿主只冻结承接方向
+- 后续输入
+  - `phase08` 直接输入：`server/`、旧 `src/app/api/*`、`src/middleware.ts`、`src/lib/auth/*`、`src/lib/api-error-handler.ts`
+  - `phase09` 直接输入：`server/`、`src/minix/`、旧 `src/app/*`、旧 `src/app/api/*`、`src/lib/prisma.ts`、`src/lib/queries.ts`
+
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
 - 原 `Rento-miniX/` 目录已完成“抽取 -> 复核 -> 清理”，当前仓库中已不存在该目录。
@@ -144,8 +163,9 @@ Rento/
 - `src/app/page.tsx`：工作台首页入口
 - `src/app/rooms`、`renters`、`contracts`、`bills`：核心业务页面
 - `src/app/add/*`：新增流程入口
-- `src/app/api/*`：当前 Next.js 后端 API
+- `src/app/api/*`：当前 Next.js 后端 API；在 `phase08` 前继续作为存量 API 与认证兼容宿主
 - `src/app/login/page.tsx`：管理员登录页
+- 当前定位：`phase07-04` 后继续保留为参考基线、存量运行线和未迁移页面壳，不再作为新增前端宿主逻辑默认落点
 
 ### `src/lib`
 - `prisma.ts`：Prisma Client 单例
@@ -153,6 +173,11 @@ Rento/
 - `api-error-handler.ts`：API 错误处理与请求约束
 - `auth/*`：认证、密码校验、会话守卫
 - `health-checker.ts` 等：运行治理能力
+
+### `scripts`
+- `scripts/dev-entry.mjs`：旧 `Next.js` 开发态入口，继续承担现状对照与回滚参考职责
+- `scripts/start-entry.mjs`：旧 `Next.js` 启动入口，继续承担存量运行线与回滚基线职责
+- 当前定位：在 `dev:minix`、`build:minix`、`start:minix` 或等价新主线脚本冻结前，不作为可删除资产
 
 ### `prisma`
 - `schema.prisma`：当前数据主真相源
@@ -176,3 +201,4 @@ Rento/
 - 后续 `Rento-miniX` 的正式实现仍在当前根级源码目录中推进；原内嵌 `Rento-miniX/` 目录已删除，不再存在第二套目录主线。
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 当前要做的不是直接替换旧 `src/app` 与 `src/app/api/*`，而是先为后续迁移建立 `src/minix/` 与 `server/` 这两块新的正式承接位。
+- `phase07-04` 当前要补齐的是旧 `src/app`、旧 `src/app/api/*`、旧启动脚本的保留边界、并行关系、退出条件和 `phase08/09` 直接输入，而不是执行正式切换或删除代码。
