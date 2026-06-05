@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 
-import { contractQueries } from '@/lib/queries'
+import { contractQueries, meterQueries } from '@/lib/queries'
 import { CheckoutContractPage } from '@/components/pages/CheckoutContractPage'
 
 interface CheckoutContractRouteProps {
@@ -31,6 +31,10 @@ export default async function CheckoutContractRoute({
       }
     }
 
+    const activeRoomMeters = (await meterQueries.findByRoom(contract.roomId)).filter(
+      (meter) => meter.isActive
+    )
+
     // 转换数据类型以适配客户端组件
     const contractForClient = {
       ...contract,
@@ -43,6 +47,19 @@ export default async function CheckoutContractRoute({
         ...contract.room,
         rent: Number(contract.room.rent),
         area: contract.room.area ? Number(contract.room.area) : null,
+        meters: activeRoomMeters.map((meter) => ({
+          id: meter.id,
+          meterNumber: meter.meterNumber,
+          displayName: meter.displayName,
+          meterType: meter.meterType,
+          unitPrice: Number(meter.unitPrice),
+          unit: meter.unit,
+          location: meter.location,
+          latestReading:
+            meter.readings[0]?.currentReading !== undefined
+              ? Number(meter.readings[0].currentReading)
+              : null,
+        })),
         building: {
           ...contract.room.building,
           totalRooms: Number(contract.room.building.totalRooms),

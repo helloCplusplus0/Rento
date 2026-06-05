@@ -19,6 +19,7 @@ import {
   renterQueries,
   roomQueries,
 } from '@/lib/queries'
+import { createInitialBaselineReadingsForContractTx } from '@/lib/domain/meters'
 
 /**
  * 合同管理API
@@ -305,46 +306,13 @@ async function handlePostContracts(request: NextRequest) {
         })
       }
 
-      // 处理仪表初始读数（如果提供）- 简化处理
-      if (
-        meterInitialReadings &&
-        Object.keys(meterInitialReadings).length > 0
-      ) {
-        // 获取房间的活跃仪表
-        const roomMeters = await tx.meter.findMany({
-          where: {
-            roomId: roomId,
-            isActive: true,
-          },
-          select: { id: true, unitPrice: true }, // 只选择必要字段
-        })
-
-        // 批量创建仪表读数记录
-        const meterReadingData = roomMeters
-          .filter((meter) => meterInitialReadings[meter.id] !== undefined)
-          .map((meter) => ({
-            meterId: meter.id,
-            contractId: contract.id,
-            currentReading: meterInitialReadings[meter.id],
-            previousReading: null,
-            usage: 0,
-            recordType: 'INITIAL_BASELINE' as const,
-            unitPrice: meter.unitPrice,
-            amount: 0,
-            readingDate: contract.startDate,
-            period: `${contract.startDate.toISOString().slice(0, 7)} 初始读数`,
-            status: 'CONFIRMED' as const,
-            isBilled: false,
-            operator: signedBy || 'SYSTEM',
-            remarks: '合同创建时的仪表底数',
-          }))
-
-        if (meterReadingData.length > 0) {
-          await tx.meterReading.createMany({
-            data: meterReadingData,
-          })
-        }
-      }
+      await createInitialBaselineReadingsForContractTx(tx, {
+        contractId: contract.id,
+        roomId,
+        contractStartDate: contract.startDate,
+        meterInitialReadings: meterInitialReadings || {},
+        operator: signedBy || 'SYSTEM',
+      })
 
       return updatedContract
     },

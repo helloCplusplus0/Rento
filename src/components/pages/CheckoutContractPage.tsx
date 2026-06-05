@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
   Calculator,
-  Calendar,
-  DollarSign,
   FileText,
 } from 'lucide-react'
 
@@ -49,6 +47,16 @@ interface ContractWithDetailsForClient {
     id: string
     roomNumber: string
     floorNumber: number
+    meters: Array<{
+      id: string
+      meterNumber: string
+      displayName: string
+      meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
+      unitPrice: number
+      unit: string
+      location: string | null
+      latestReading: number | null
+    }>
     building: {
       id: string
       name: string
@@ -79,6 +87,13 @@ interface SettlementAdjustmentDraft {
   adjustedAmount: number
   adjustmentReason: string
 }
+
+const METER_TYPE_LABELS = {
+  ELECTRICITY: '电表',
+  COLD_WATER: '冷水表',
+  HOT_WATER: '热水表',
+  GAS: '燃气表',
+} as const
 
 export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
   const router = useRouter()
@@ -159,6 +174,8 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     })
   }, [settlement, settlementAdjustments])
 
+  const roomMeters = contract.room.meters || []
+
   const handleInputChange = (
     field: keyof typeof formData,
     value: string | number
@@ -203,6 +220,34 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     setError(null)
   }
 
+  const handleFinalMeterReadingChange = (meterId: string, value: string) => {
+    const trimmedValue = value.trim()
+
+    setFormData((prev) => {
+      if (!trimmedValue) {
+        const { [meterId]: _removed, ...restReadings } = prev.finalMeterReadings
+        return {
+          ...prev,
+          finalMeterReadings: restReadings,
+        }
+      }
+
+      const parsed = Number.parseFloat(trimmedValue)
+      if (!Number.isFinite(parsed)) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        finalMeterReadings: {
+          ...prev.finalMeterReadings,
+          [meterId]: parsed,
+        },
+      }
+    })
+    setError(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -229,6 +274,42 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     if (!settlement || !finalSettlement) {
       setError('当前结算预览尚未生成，请稍后重试')
       return
+    }
+
+    if (roomMeters.length > 0) {
+      const missingMeters = roomMeters.filter(
+        (meter) => formData.finalMeterReadings[meter.id] === undefined
+      )
+      if (missingMeters.length > 0) {
+        setError(
+          `请填写以下仪表的最终读数：${missingMeters
+            .map((meter) => meter.displayName)
+            .join('、')}`
+        )
+        return
+      }
+
+      const invalidMeter = roomMeters.find((meter) => {
+        const finalReading = formData.finalMeterReadings[meter.id]
+
+        if (!Number.isFinite(finalReading) || finalReading < 0) {
+          return true
+        }
+
+        return (
+          meter.latestReading !== null &&
+          finalReading < meter.latestReading
+        )
+      })
+
+      if (invalidMeter) {
+        const latestReadingLabel =
+          invalidMeter.latestReading !== null
+            ? `，且不能小于最近读数 ${invalidMeter.latestReading}`
+            : ''
+        setError(`仪表“${invalidMeter.displayName}”的最终读数无效${latestReadingLabel}`)
+        return
+      }
     }
 
     let validatedSettlement
@@ -264,6 +345,12 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
     setError(null)
 
     try {
+      const finalMeterReadingsPayload = Object.fromEntries(
+        roomMeters
+          .filter((meter) => formData.finalMeterReadings[meter.id] !== undefined)
+          .map((meter) => [meter.id, formData.finalMeterReadings[meter.id]])
+      )
+
       const response = await fetch(`/api/contracts/${contract.id}/checkout`, {
         method: 'POST',
         headers: {
@@ -271,6 +358,7 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
         },
         body: JSON.stringify({
           ...formData,
+          finalMeterReadings: finalMeterReadingsPayload,
           settlementItems: validatedSettlement.submissionItems,
         }),
       })
@@ -453,6 +541,75 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                   rows={2}
                 />
               </div>
+
+              {roomMeters.length > 0 && (
+                <div className={checkoutContractMobileStyles.formField}>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className={checkoutContractMobileStyles.formLabel}>
+                        最终抄表读数 *
+                      </Label>
+                      <p className={checkoutContractMobileStyles.helperText}>
+                        退租提交会为每个在用仪表写入 `CHECKOUT_FINAL` 终抄记录，并按实际用量进入结算。
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {roomMeters.map((meter) => (
+                        <div
+                          key={meter.id}
+                          className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                        >
+                          <div className="mb-3 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">
+                                {meter.displayName}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {METER_TYPE_LABELS[meter.meterType]} · {meter.meterNumber}
+                                {meter.location ? ` · ${meter.location}` : ''}
+                              </p>
+                            </div>
+                            <div className="text-right text-xs text-slate-500">
+                              <p>单价 ¥{meter.unitPrice}/{meter.unit}</p>
+                              <p>
+                                最近读数：
+                                {meter.latestReading !== null
+                                  ? `${meter.latestReading} ${meter.unit}`
+                                  : '暂无历史'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              id={`final-meter-reading-${meter.id}`}
+                              type="number"
+                              min={
+                                meter.latestReading !== null
+                                  ? String(meter.latestReading)
+                                  : '0'
+                              }
+                              step="0.01"
+                              value={formData.finalMeterReadings[meter.id] ?? ''}
+                              onChange={(event) =>
+                                handleFinalMeterReadingChange(
+                                  meter.id,
+                                  event.target.value
+                                )
+                              }
+                              disabled={loading}
+                              className={checkoutContractMobileStyles.input}
+                              placeholder="请输入最终读数"
+                            />
+                            <span className="min-w-10 text-sm text-slate-500">
+                              {meter.unit}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className={checkoutContractMobileStyles.errorAlert}>

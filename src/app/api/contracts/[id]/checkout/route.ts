@@ -15,6 +15,7 @@ import {
   type CheckoutSettlementSubmissionItem,
 } from '@/lib/checkout-settlement'
 import { ErrorLogger, ErrorType } from '@/lib/error-logger'
+import { createCheckoutFinalReadingsTx } from '@/lib/domain/meters'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 
@@ -348,77 +349,12 @@ async function handleCheckoutContract(
     })
 
     // 7. 处理水电表状态和最终读数
-    const roomMeters = await tx.meter.findMany({
-      where: { roomId: contract.roomId, isActive: true },
+    const meterProcessingResults = await createCheckoutFinalReadingsTx(tx, {
+      contractId,
+      roomId: contract.roomId,
+      checkoutDate: checkoutDateObj,
+      finalMeterReadings,
     })
-
-    const meterProcessingResults = []
-    for (const meter of roomMeters) {
-      const meterTypeKey = meter.meterType.toLowerCase()
-      const finalReading = finalMeterReadings[meterTypeKey]
-
-      if (finalReading && finalReading > 0) {
-        // 获取最新抄表记录
-        const latestReading = await tx.meterReading.findFirst({
-          where: { meterId: meter.id },
-          orderBy: { readingDate: 'desc' },
-        })
-
-        const previousReading = latestReading?.currentReading || 0
-        const usage = Math.max(0, finalReading - Number(previousReading))
-        const amount = usage * Number(meter.unitPrice)
-
-        // 创建最终抄表记录
-        const finalMeterReading = await tx.meterReading.create({
-          data: {
-            meterId: meter.id,
-            contractId: contractId,
-            previousReading: Number(previousReading),
-            currentReading: finalReading,
-            usage: usage,
-            recordType: 'CHECKOUT_FINAL',
-            readingDate: checkoutDateObj,
-            period: `退租结算-${checkoutDateObj.toISOString().split('T')[0]}`,
-            unitPrice: Number(meter.unitPrice),
-            amount: amount,
-            status: 'CONFIRMED',
-            operator: '退租结算',
-            remarks: '退租时最终读数',
-          },
-        })
-
-        // 如果有用量，生成水电费账单
-        if (usage > 0 && amount > 0) {
-          await tx.bill.create({
-            data: {
-              billNumber: `UT${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-              type: 'UTILITIES',
-              amount: amount,
-              receivedAmount: 0,
-              pendingAmount: amount,
-              dueDate: checkoutDateObj,
-              period: `退租结算-${meter.displayName}-${checkoutDateObj.toISOString().split('T')[0]}`,
-              status: 'PAID', // 退租时直接标记为已支付
-              contractId: contractId,
-              paymentMethod: '退租结算',
-              operator: '系统自动',
-              remarks: `退租时${meter.displayName}用量结算：${usage}${meter.unit}`,
-            },
-          })
-        }
-
-        meterProcessingResults.push({
-          meterId: meter.id,
-          meterType: meter.meterType,
-          displayName: meter.displayName,
-          previousReading: Number(previousReading),
-          finalReading: finalReading,
-          usage: usage,
-          amount: amount,
-          readingId: finalMeterReading.id,
-        })
-      }
-    }
 
     // 8. 更新租客状态和退租记录
     await tx.renter.update({

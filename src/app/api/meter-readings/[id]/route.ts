@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { meterReadingDeletePolicy, meterReadingQueries } from '@/lib/queries'
+import {
+  meterReadingDomainService,
+} from '@/lib/domain/meters'
 
 /**
  * 获取单个抄表记录
  * GET /api/meter-readings/[id]
+ *
+ * compat wrapper:
+ * phase09-04 起抄表详情、recordType 结构化语义与禁删门禁统一收口到 src/lib/domain/meters。
  */
 export async function GET(
   request: NextRequest,
@@ -12,56 +17,24 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const detail = await meterReadingDomainService.getMeterReadingDetail(id)
 
-    const reading = await meterReadingQueries.findById(id)
-
-    if (!reading) {
+    return NextResponse.json({
+      success: true,
+      data: detail.reading,
+      recordTypeSemantics: detail.recordTypeSemantics,
+      deleteGuard: detail.deleteGuard,
+      compatMode: true,
+      migrationHost: 'src/lib/domain/meters',
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'MeterReading not found') {
       return NextResponse.json(
         { success: false, error: '抄表记录不存在' },
         { status: 404 }
       )
     }
 
-    // 转换数据类型
-    const readingData = {
-      ...reading,
-      previousReading: reading.previousReading
-        ? Number(reading.previousReading)
-        : null,
-      currentReading: Number(reading.currentReading),
-      usage: Number(reading.usage),
-      unitPrice: Number(reading.unitPrice),
-      amount: Number(reading.amount),
-      meter: reading.meter
-        ? {
-            ...reading.meter,
-            unitPrice: Number(reading.meter.unitPrice),
-            room: reading.meter.room
-              ? {
-                  ...reading.meter.room,
-                  rent: Number(reading.meter.room.rent),
-                  area: reading.meter.room.area
-                    ? Number(reading.meter.room.area)
-                    : null,
-                  building: reading.meter.room.building
-                    ? {
-                        ...reading.meter.room.building,
-                        totalRooms: Number(
-                          reading.meter.room.building.totalRooms
-                        ),
-                      }
-                    : undefined,
-                }
-              : undefined,
-          }
-        : undefined,
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: readingData,
-    })
-  } catch (error) {
     console.error('获取抄表记录失败:', error)
     return NextResponse.json(
       { success: false, error: '获取抄表记录失败' },
@@ -73,59 +46,48 @@ export async function GET(
 /**
  * 更新抄表记录
  * PUT /api/meter-readings/[id]
+ *
+ * compat wrapper:
+ * phase09-04 起旧宿主不再保留第二套抄表修改语义；更新能力统一退化为显式禁用，
+ * 后续如需修正历史，应通过正式宿主或专用修正流程收口。
  */
 export async function PUT(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const body = await request.json()
+    const detail = await meterReadingDomainService.getMeterReadingDetail(id)
 
-    // 检查记录是否存在
-    const existingReading = await meterReadingQueries.findById(id)
-    if (!existingReading) {
+    return NextResponse.json({
+      success: false,
+      code: 'METER_READING_UPDATE_DISABLED',
+      error: 'phase09-04 起旧抄表更新入口已禁用，请改走正式宿主或专用修正流程',
+      details: {
+        readingId: id,
+        recordTypeSemantics: detail.recordTypeSemantics,
+        deleteGuard: detail.deleteGuard,
+        compatBoundary: {
+          currentState: 'compat-wrapper',
+          targetStrategy: 'disabled',
+          migrationHost: 'src/lib/domain/meters',
+          reason:
+            '避免旧 Next 宿主继续保留第二套抄表修改语义，导致正式宿主与 compat 入口出现双重真相。',
+          exitCondition:
+            '当正式修正/冲正流程冻结后，旧 src/app/api/meter-readings/[id] PUT 可直接移除。',
+        },
+      },
+      compatMode: true,
+      migrationHost: 'src/lib/domain/meters',
+    }, { status: 409 })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'MeterReading not found') {
       return NextResponse.json(
         { success: false, error: '抄表记录不存在' },
         { status: 404 }
       )
     }
 
-    // 检查是否已生成账单，已生成账单的记录不允许修改
-    if (existingReading.isBilled) {
-      return NextResponse.json(
-        { success: false, error: '已生成账单的抄表记录不允许修改' },
-        { status: 400 }
-      )
-    }
-
-    // 更新记录
-    const updatedReading = await meterReadingQueries.update(id, {
-      currentReading: body.currentReading,
-      usage: body.usage,
-      amount: body.amount,
-      operator: body.operator,
-      remarks: body.remarks,
-    })
-
-    // 转换数据类型
-    const readingData = {
-      ...updatedReading,
-      previousReading: updatedReading.previousReading
-        ? Number(updatedReading.previousReading)
-        : null,
-      currentReading: Number(updatedReading.currentReading),
-      usage: Number(updatedReading.usage),
-      unitPrice: Number(updatedReading.unitPrice),
-      amount: Number(updatedReading.amount),
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: readingData,
-      message: '抄表记录更新成功',
-    })
-  } catch (error) {
     console.error('更新抄表记录失败:', error)
     return NextResponse.json(
       { success: false, error: '更新抄表记录失败' },
@@ -137,6 +99,9 @@ export async function PUT(
 /**
  * 删除抄表记录
  * DELETE /api/meter-readings/[id]
+ *
+ * compat wrapper:
+ * phase09-04 起抄表删除能力统一降级为共享领域禁删门禁，不再保留第二套删除规则。
  */
 export async function DELETE(
   request: NextRequest,
@@ -144,22 +109,25 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const deleteGuard =
+      await meterReadingDomainService.performMeterReadingDeleteSafetyCheck(id)
 
-    // 检查记录是否存在
-    const existingReading = await meterReadingQueries.findById(id)
-    if (!existingReading) {
+    return NextResponse.json({
+      success: false,
+      code: deleteGuard.errorCode,
+      error: '当前阶段不支持删除抄表记录',
+      details: deleteGuard,
+      compatMode: true,
+      migrationHost: 'src/lib/domain/meters',
+    }, { status: 409 })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'MeterReading not found') {
       return NextResponse.json(
         { success: false, error: '抄表记录不存在' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({
-      success: false,
-      code: 'METER_READING_DELETE_DISABLED',
-      error: meterReadingDeletePolicy.reason,
-    }, { status: 409 })
-  } catch (error) {
     console.error('删除抄表记录失败:', error)
     return NextResponse.json(
       { success: false, error: '删除抄表记录失败' },

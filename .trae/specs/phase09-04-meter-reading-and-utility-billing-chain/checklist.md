@@ -1,0 +1,12 @@
+- [x] 已建立抄表写入与记录类型共享服务承接位，能够统一 `INITIAL_BASELINE / REGULAR_READING / CHECKOUT_FINAL` 语义
+- [x] 已建立抄表自动出账与相关账单追溯共享服务承接位，能够解释多仪表账单来源
+- [x] 已建立最终抄表语义与抄表禁删共享服务承接位，并保持历史保留原则
+- [x] `server/routes/meter-readings.ts` 已为抄表写入、详情查询、相关账单追溯与禁删语义提供正式入口
+- [x] 旧 `src/app/api/meter-readings/*` 与 `src/app/api/utility-readings/route.ts` 已退化为 compat wrapper 或共享服务消费者
+- [x] 抄表重复门禁已基于提交的 `readingDate + meterId + recordType`，不再依赖服务器当前日期
+- [x] 自动出账、相关账单追溯与 `CHECKOUT_FINAL` 最终抄表语义已在代码中可解释
+- [x] 仪表历史保留与抄表禁删原则未被破坏，未回退到物理删除历史
+- [x] 本子任务未迁移治理/辅助统计接口
+- [x] 本子任务未新增完整观测能力
+- [x] 本子任务未迁移完整页面展示层
+- [x] `npm run lint` 与 `npm run type-check` 通过
