@@ -2,7 +2,11 @@ import {
   contractsDomainBoundary,
   deleteGuardsDomainBoundary,
 } from '@/lib/domain'
-import { contractLifecycleService } from '@/lib/domain/contracts'
+import {
+  contractDomainService,
+  contractLifecycleService,
+  isContractDomainValidationError,
+} from '@/lib/domain/contracts'
 import {
   deletePendingContractWithoutHistory,
   isContractDeleteGuardBlockedError,
@@ -35,7 +39,7 @@ const LEGACY_COMPAT = {
     'src/app/api/contracts/[id]/generate-bills/route.ts',
   ] as const,
   reason:
-    'phase09-02 起由 server/routes/contracts.ts 与 src/lib/domain/contracts|delete-guards 承接合同激活与删除门禁；旧 Next 入口仅保留 compat wrapper。',
+    'phase09-05 起由 server/routes/contracts.ts 与 src/lib/domain/contracts|delete-guards 承接合同激活、续租、补账单与删除门禁；旧 Next 入口仅保留 compat wrapper。',
   exitCondition:
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/* compat wrapper 可移除。',
 } as const
@@ -48,9 +52,9 @@ function appendContractsFallback(
     return jsonApiError(
       c,
       notImplementedError(
-        'phase09-02 仅迁入合同激活与合同删除门禁；其余合同入口仍由 compat wrapper 或后续子任务承接。',
+        'phase09-05 仅迁入合同激活、续租、补账单与合同删除门禁；其余合同入口仍由 compat wrapper 或后续子任务承接。',
         {
-          phase: 'phase09-02',
+          phase: 'phase09-05',
           routeKey: 'contracts',
           domainServiceHost: 'src/lib/domain',
           migrationState: 'partial-migrated',
@@ -119,6 +123,124 @@ export function createContractRoutes(env: MinixServerEnv) {
       message: `激活任务完成，成功激活 ${result.activated} 个合同`,
       env,
     })
+  })
+
+  routeApp.post('/:id/renew', async (c) => {
+    const originalContractId = c.req.param('id')
+    const body = (await readJsonBody<{
+      newStartDate: string
+      newEndDate: string
+      newMonthlyRent: number
+      newDeposit?: number
+      newKeyDeposit?: number
+      newCleaningFee?: number
+      paymentMethod?: string | null
+      paymentTiming?: string | null
+      signedBy?: string | null
+      signedDate?: string | null
+      remarks?: string | null
+    }>(c, {
+      maxBytes: env.requestGovernance.maxRequestSize,
+    })) as {
+      newStartDate: string
+      newEndDate: string
+      newMonthlyRent: number
+      newDeposit?: number
+      newKeyDeposit?: number
+      newCleaningFee?: number
+      paymentMethod?: string | null
+      paymentTiming?: string | null
+      signedBy?: string | null
+      signedDate?: string | null
+      remarks?: string | null
+    }
+
+    try {
+      const result = await contractDomainService.renewContract({
+        originalContractId,
+        newStartDate: body.newStartDate,
+        newEndDate: body.newEndDate,
+        newMonthlyRent: body.newMonthlyRent,
+        newDeposit: body.newDeposit,
+        newKeyDeposit: body.newKeyDeposit,
+        newCleaningFee: body.newCleaningFee,
+        paymentMethod: body.paymentMethod,
+        paymentTiming: body.paymentTiming,
+        signedBy: body.signedBy,
+        signedDate: body.signedDate,
+        remarks: body.remarks,
+      })
+
+      return jsonSuccess(c, {
+        data: {
+          ...result,
+          compatBoundary: LEGACY_COMPAT,
+        },
+        message:
+          result.billGeneration.success
+            ? '续租成功'
+            : '续租成功，补账单生成需人工复核',
+        env,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Contract not found') {
+        return jsonApiError(c, notFoundError('原合同不存在'), { env })
+      }
+
+      if (isContractDomainValidationError(error)) {
+        return jsonApiError(
+          c,
+          validationError(error.message, {
+            code: error.code,
+            ...error.details,
+            compatBoundary: LEGACY_COMPAT,
+          }),
+          { env }
+        )
+      }
+
+      throw error
+    }
+  })
+
+  routeApp.post('/:id/generate-bills', async (c) => {
+    const contractId = c.req.param('id')
+
+    try {
+      const result = await contractDomainService.generateContractBills(contractId, {
+        mode: 'auto',
+      })
+
+      return jsonSuccess(c, {
+        data: {
+          ...result,
+          compatBoundary: LEGACY_COMPAT,
+        },
+        message:
+          result.generationMode === 'GENERATE_BASE'
+            ? `成功为合同生成 ${result.generatedBills.length} 个基础账单`
+            : `成功补齐 ${result.generatedBills.length} 个缺失租金账单`,
+        env,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Contract not found') {
+        return jsonApiError(c, notFoundError('合同不存在'), { env })
+      }
+
+      if (isContractDomainValidationError(error)) {
+        return jsonApiError(
+          c,
+          validationError(error.message, {
+            code: error.code,
+            ...error.details,
+            compatBoundary: LEGACY_COMPAT,
+          }),
+          { env }
+        )
+      }
+
+      throw error
+    }
   })
 
   routeApp.delete('/:id', async (c) => {
