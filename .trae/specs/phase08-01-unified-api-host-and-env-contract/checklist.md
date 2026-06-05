@@ -1,0 +1,8 @@
+- [x] `server/app.ts` 作为统一 `/api` 宿主入口的职责已在 spec 中明确
+- [x] 最小公开 API 白名单已在 spec 中明确且仅包含 `/api/health`、`/api/auth/login`、`/api/auth/logout`、`/api/auth/session`
+- [x] 默认受保护 API 的边界已在 spec 中明确
+- [x] `AUTH_SESSION_SECRET` 为正式主变量、`NEXTAUTH_SECRET` 为历史兼容回退项的口径已在 spec 中明确
+- [x] `ALLOWED_ORIGINS`、`CORS_ENABLED`、`MAX_REQUEST_SIZE`、`REQUEST_TIMEOUT`、`APP_INTERNAL_PORT` 的用途已在 spec 中明确
+- [x] `/api/health` 作为新宿主唯一主健康入口的长期角色已在 spec 中明确
+- [x] 旧 `src/app/api/*` 与新 `server/` 的职责边界已在 spec 中明确
+- [x] 本 spec 未越界到登录/登出实现迁移、正式业务 API 迁移或部署主线调整

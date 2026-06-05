@@ -4,7 +4,13 @@ import { getSessionFromRequest } from '@/lib/auth/session'
 import { getAuxiliaryPageAccessDecision } from '@/lib/page-governance'
 
 const PUBLIC_PAGE_PATHS = new Set(['/login', '/offline'])
-const PUBLIC_API_PREFIXES = ['/api/health', '/api/auth/login', '/api/auth/logout']
+// 登录态探测接口必须在未登录时保持可访问，避免中间件拦截导致前端认证初始化失败。
+const PUBLIC_API_PREFIXES = [
+  '/api/health',
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/session',
+]
 
 function isPublicApiPath(pathname: string) {
   return PUBLIC_API_PREFIXES.some(

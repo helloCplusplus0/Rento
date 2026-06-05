@@ -1,11 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase07-app-shell-and-runtime-foundation`
-- 当前阶段目标：在不破坏当前 UI 展示效果、业务主链语义与 PostgreSQL 主线的前提下，为 `Rento-miniX` 建立前端应用壳、服务端运行时入口、基础路由、中间件与最小健康检查承接位。
-- 当前执行方式：先同步根级规范文档，再产出 `docs/phase07_app_shell_and_runtime_foundation_architecture_plan.md`、`docs/phase07_app_shell_and_runtime_foundation_dev_plan.md` 与 `docs/phase07_app_shell_and_runtime_foundation_shared_baseline.md`；文档产出后立即停下，等待审核。
-- 当前下一步：先审核 `phase07` 阶段文档，确认 `React Router`、双服务代理、先并行壳后切换、实现目录方案与最小环境变量口径；通过后再决定是否进入 `phase07-app-shell-and-runtime-foundation` 的 `/spec`。
-- 当前阶段说明：旧 `phase01~phase05` 已完成并保留为上游连续性输入；当前默认不再继续按旧 `fix` 闭环扩写新主线，而是先完成原地重构主线切换。
+- 当前默认工作流：`phase08-api-and-auth-foundation`
+- 当前阶段目标：在 `phase07` 已完成应用壳与运行时基础承接位冻结的前提下，为 `Rento-miniX` 冻结统一 API 宿主、认证会话、中间件、错误处理与最小安全边界。
+- 当前执行方式：已完成根级规范文档同步，并产出 `docs/phase08_api_and_auth_foundation_architecture_plan.md`、`docs/phase08_api_and_auth_foundation_dev_plan.md` 与 `docs/phase08_api_and_auth_foundation_shared_baseline.md`；当前停在审核门禁，等待用户确认。
+- 当前下一步：先审核 `phase08-api-and-auth-foundation` 的阶段文档，确认统一 API 宿主、认证门禁、错误处理、最小公开 API 白名单、环境变量兼容口径与最小页面守卫方案；未经审核，不直接进入 `phase08` 的 `/spec` 或实现。
+- 当前阶段说明：`phase07` 已完成并作为 `phase08` 的直接上游输入保留；旧 `phase01~phase05` 继续作为历史连续性输入保留。
 
 ## 阶段顺序
 
@@ -124,8 +124,8 @@
   - UI 默认承接边界、业务主链语义与环境变量口径未被破坏
   - `phase07` 的阶段文档已完整冻结实现目录、脚本方案与最小环境变量口径
 - 当前结论：
-  - `/plan` 已完成，待审核
-  - 审核通过后，再按 `phase07` 子任务顺序逐个进入 `/spec`
+  - 已完成
+  - 已完成应用壳、运行时入口、旧运行线映射与退出条件冻结，作为 `phase08` 与 `phase09` 的直接上游输入保留
 
 ### phase08-api-and-auth-foundation
 - 目标：承接 `Hono` API 骨架、认证会话、错误处理、最小安全边界与基础 API 契约。
@@ -139,7 +139,8 @@
   - 页面门禁与 API 门禁继续保持一致
   - 不因切换宿主而破坏既有最小安全边界
 - 当前结论：
-  - 待启动
+  - 规划已完成，待审核
+  - 已产出 `docs/phase08_api_and_auth_foundation_architecture_plan.md`、`docs/phase08_api_and_auth_foundation_dev_plan.md` 与 `docs/phase08_api_and_auth_foundation_shared_baseline.md`，并冻结最小 API/Auth 骨架边界、公开 API 白名单、环境变量“新主旧兼”口径与 `src/minix` 最小页面守卫方向
 
 ### phase09-domain-service-migration
 - 目标：迁移合同、账单、支付周期、仪表、抄表、删除门禁等主链领域服务，使新主线承接业务真相。
@@ -185,8 +186,8 @@
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“先完成 `phase06-minix-replatform` 的主线切换与阶段冻结”推进到“先完成 `phase07-app-shell-and-runtime-foundation` 的阶段规划与审核”。
-- 当前默认推进方向：先冻结 `phase07` 的应用壳与运行时方案，再审核是否进入该阶段的 `/spec`；在此之前，不直接改写核心业务代码或扩张到后续阶段。
+- 当前最优策略已从“先完成 `phase07-app-shell-and-runtime-foundation` 的应用壳与运行时基础冻结”推进到“先进入 `phase08-api-and-auth-foundation` 的 `/plan`”。
+- 当前默认推进方向：先审核已完成的 `phase08` 阶段文档，确认统一 API 宿主、最小认证骨架、错误处理、环境变量兼容口径与最小页面守卫方案，再进入该阶段的 `/spec`；在此之前，不直接扩张到领域服务或部署切线。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。
@@ -194,9 +195,10 @@
 - 每个 `phase*` 默认先产出 `docs/phaseX_<workflow>_architecture_plan.md` 与 `docs/phaseX_<workflow>_dev_plan.md`；存在共享边界时，再补 `docs/phaseX_<workflow>_shared_baseline.md`。
 - 阶段级文档产出后即停止工作流，等待用户审核；未经用户明确批准，禁止直接进入 `/spec` 或实现。
 - 用户审核后，按 `dev_plan` 的子任务顺序逐个进入 `/spec`、开发、验收、提交并推送；每个子任务通过验收后再进入下一个子任务。
-- `phase07` 审核通过前，不直接改写核心业务代码，也不直接进入该阶段 `/spec`。
+- `phase08` 审核通过前，不直接扩张到正式业务 API、领域服务或部署切线实现。
 - 完整 `Rento -> Rento-miniX` 阶段路线图由本文件长期承接；`docs/phase06_*` 仅负责解释本阶段为何冻结该路线图以及如何把它提升为全局真相源。
 - `docs/phase07_*` 将承接应用壳、运行时入口、开发拓扑、实现目录与共享基线等阶段细节；本文件继续只保留阶段总览与验收结论。
+- `docs/phase08_*` 将承接统一 API 宿主、认证门禁、中间件链、错误处理、最小公开 API 白名单与页面守卫边界等阶段细节；本文件继续只保留阶段总览与验收结论。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

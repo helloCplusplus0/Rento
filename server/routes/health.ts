@@ -20,12 +20,29 @@ export function createHealthRoutes(env: MinixServerEnv) {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         service: env.runtimeName,
+        api: {
+          basePath: env.api.basePath,
+          protectedByDefault: env.api.protectedByDefault,
+          publicPaths: env.api.publicPaths,
+        },
         runtime: {
           distDir: env.distDir,
           host: env.host,
           mode: env.nodeEnv,
           port: env.port,
           staticHosting: env.isProduction ? 'dist' : 'vite-dev-server',
+        },
+        envContract: {
+          sessionSecret: {
+            configured: env.sessionSecret.configured,
+            source: env.sessionSecret.source,
+          },
+          requestGovernance: {
+            allowedOrigins: env.requestGovernance.allowedOrigins,
+            corsEnabled: env.requestGovernance.corsEnabled,
+            maxRequestSize: env.requestGovernance.maxRequestSize,
+            timeoutMs: env.requestGovernance.timeoutMs,
+          },
         },
         checks: {
           database,

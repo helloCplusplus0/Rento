@@ -6,16 +6,16 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不是立即改代码，而是先通过 `phase06-minix-replatform` 冻结重构边界、阶段顺序与真相源关系。
+- 当前阶段的核心任务不是回退重做应用壳或运行时基础，而是以已完成的 `phase07` 结论为前提，冻结 `phase08` 的统一 API 宿主、认证门禁、中间件链、错误处理与环境变量约束。
 
 ## 当前双层结构说明
 ### 现有实现层
 - 现有代码仍位于根级 `src/`、`prisma/`、`public/`、`scripts/` 等目录。
 - 这部分是旧 `Rento` 的现状实现，也是后续原地重构的直接参考基线。
-- 在 `phase07` 审核前，不把这部分实现直接改写成新架构。
+- 在 `phase08` 审核前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -27,6 +27,22 @@
 - `phase07` 规划中的服务端运行时将收口到根级 `server/`，用于承接 `Hono + @hono/node-server` 的 Node 入口、中间件和 `/api/health`。
 - 该层只负责新的基础运行时承接位，不在本阶段直接承接账单、合同、抄表等正式业务 API。
 
+## `phase08` 目标结构说明
+### 规划中的统一 API 宿主层
+- `phase08` 规划中的统一 API 宿主继续收口到根级 `server/`，在 `phase07` 已完成的运行时壳基础上继续冻结：
+  - 统一 `/api` 宿主
+  - 认证会话提取与门禁中间件
+  - 请求约束与统一错误处理
+  - 最小公开 API 白名单
+- 该层在 `phase08` 只承接最小 API/Auth 骨架，不在本阶段直接迁移账单、合同、房源、租客、仪表、抄表等正式领域服务。
+
+### 规划中的最小页面门禁层
+- `phase08` 规划中的前端页面门禁继续收口到 `src/minix/`，只冻结：
+  - 最小登录态探测
+  - 未登录跳转 `/login?next=...`
+  - 已登录访问 `/login` 自动回跳
+- 该层只负责让新前端壳与新 API/Auth 骨架保持最小一致性，不在本阶段迁移完整页面数据加载和领域页面逻辑。
+
 ### 规划中的脚本层
 - `phase07` 规划中的运行脚本将补充到 `scripts/`，例如 `scripts/dev-minix.mjs`、`scripts/start-minix.mjs`。
 - 开发态采用 `Vite + Hono` 双服务代理；生产态最终切线不在 `phase07` 冻结。
@@ -36,7 +52,7 @@
   - 继续保留为现状页面壳、未迁移页面与 UI 参考基线
   - 不再作为新增前端宿主逻辑和新路由骨架的默认落点
 - 旧 `src/app/api/*`
-  - 在 `phase08` 前继续保留为存量业务 API、存量认证 API 与兼容宿主
+  - 在 `phase08` 期间继续保留为存量业务 API、治理/辅助 API、未迁移认证逻辑与兼容宿主
   - 不再作为新增 API 宿主、认证骨架或中间件默认落点
 - 旧启动脚本
   - `scripts/dev-entry.mjs` 继续服务于旧 `Next.js` 开发态与现状对照验证
@@ -49,6 +65,17 @@
 - 后续输入
   - `phase08` 直接输入：`server/`、旧 `src/app/api/*`、`src/middleware.ts`、`src/lib/auth/*`、`src/lib/api-error-handler.ts`
   - `phase09` 直接输入：`server/`、`src/minix/`、旧 `src/app/*`、旧 `src/app/api/*`、`src/lib/prisma.ts`、`src/lib/queries.ts`
+
+### `phase08-01` 最小公开路由口径
+- 公开页面
+  - `/login`
+  - `/offline`
+- 公开 API
+  - `/api/health`
+  - `/api/auth/login`
+  - `/api/auth/logout`
+  - `/api/auth/session`
+- 其他后续迁入 `server/` 的新 API 默认受认证守卫保护；正式业务 API 与治理/辅助接口继续暂留旧宿主，作为后续阶段迁移参考输入。
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
@@ -137,11 +164,11 @@
 ```text
 Rento/
 ├── src/                  # 现有 Rento 应用源码，后续原地重构起点
-├── src/minix/            # phase07 规划中的新前端应用壳承接位（待实现）
+├── src/minix/            # 已落地的 phase07 新前端应用壳承接位
 ├── prisma/               # Prisma schema 与迁移
 ├── public/               # 静态资源
 ├── scripts/              # 启动、初始化、部署脚本
-├── server/               # phase07 规划中的 Hono 运行时承接位（待实现）
+├── server/               # 已落地的 phase07 Hono 运行时承接位
 ├── docs/                 # 阶段设计、问题分析、归档与 phase06 文档
 ├── nginx/                # 当前容器化 HTTPS 配置
 ├── backups/              # 运行时备份挂载目录
@@ -163,7 +190,7 @@ Rento/
 - `src/app/page.tsx`：工作台首页入口
 - `src/app/rooms`、`renters`、`contracts`、`bills`：核心业务页面
 - `src/app/add/*`：新增流程入口
-- `src/app/api/*`：当前 Next.js 后端 API；在 `phase08` 前继续作为存量 API 与认证兼容宿主
+- `src/app/api/*`：当前 Next.js 后端 API；在 `phase08` 期间继续作为存量业务 API、治理/辅助 API 与兼容宿主
 - `src/app/login/page.tsx`：管理员登录页
 - 当前定位：`phase07-04` 后继续保留为参考基线、存量运行线和未迁移页面壳，不再作为新增前端宿主逻辑默认落点
 
@@ -173,6 +200,7 @@ Rento/
 - `api-error-handler.ts`：API 错误处理与请求约束
 - `auth/*`：认证、密码校验、会话守卫
 - `health-checker.ts` 等：运行治理能力
+- 当前定位：`phase08` 期间继续作为统一 API 宿主的直接复用/适配参考基线，其中 `auth/*`、`api-error-handler.ts` 与 `observability.ts` 是最小 API/Auth 骨架的核心输入
 
 ### `scripts`
 - `scripts/dev-entry.mjs`：旧 `Next.js` 开发态入口，继续承担现状对照与回滚参考职责
@@ -197,8 +225,9 @@ Rento/
 
 ## 当前结构判断
 - 当前仓库已具备原地重构所需的参考代码、治理文档与历史阶段结论，不再需要另开并行本地项目目录。
-- 当前最需要收口的是“主线切换后的真相源一致性”，而不是立刻改写运行时代码。
+- 当前最需要收口的是“以 `phase07` 已完成结论为基础，继续保持根级真相源与阶段实现状态一致”，而不是回退重做应用壳或运行时代码。
 - 后续 `Rento-miniX` 的正式实现仍在当前根级源码目录中推进；原内嵌 `Rento-miniX/` 目录已删除，不再存在第二套目录主线。
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
-- `phase07` 当前要做的不是直接替换旧 `src/app` 与 `src/app/api/*`，而是先为后续迁移建立 `src/minix/` 与 `server/` 这两块新的正式承接位。
-- `phase07-04` 当前要补齐的是旧 `src/app`、旧 `src/app/api/*`、旧启动脚本的保留边界、并行关系、退出条件和 `phase08/09` 直接输入，而不是执行正式切换或删除代码。
+- `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
+- `phase08` 已完成当前轮 `/plan` 文档：已冻结统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫方向。
+- 当前默认下一步是审核 `docs/phase08_*` 并据此进入 `phase08` 的 `/spec`，而不是执行领域迁移或部署切线。

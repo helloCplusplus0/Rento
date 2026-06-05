@@ -22,16 +22,19 @@
 - 所有重构都必须明确标注“参考来源、复用内容、调整内容、舍弃内容与原因”。
 
 ## 4. 当前默认入口
-- 当前默认工作流：`phase07-app-shell-and-runtime-foundation`
-- 当前主问题：在不破坏当前 UI 展示效果、业务主链语义与 PostgreSQL 主线的前提下，为 `Rento-miniX` 建立新的前端应用壳、服务端运行时入口与最小健康检查承接位。
+- 当前默认工作流：`phase08-api-and-auth-foundation`
+- 当前主问题：在不破坏当前 UI 展示效果、业务主链语义与 PostgreSQL 主线的前提下，为 `Rento-miniX` 冻结统一 API 宿主、认证会话、中间件、错误处理与最小安全边界。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：先审核 `phase07` 阶段文档，确认 `React Router`、双服务代理、先并行壳后切换三项关键决策，以及 `phase07` 子任务拆分与共享基线；未经审核，不直接进入 `phase07` 的 `/spec` 或实现。
+- 当前下一步：已完成 `phase08-api-and-auth-foundation` 的 `/plan` 产物，等待用户审核 `docs/phase08_*` 阶段文档；未经审核，不直接进入 `phase08` 的 `/spec` 或实现。
 - 当前阶段重点：
-  - 冻结 `phase07` 的应用壳与运行时边界，不提前扩张到领域服务、ORM 切换或部署切线
-  - 冻结 `React Router` 前端路由、`Hono + @hono/node-server` 服务端入口与 `Vite + Hono` 双服务代理方案
-  - 冻结“先并行壳、后切换”的阶段策略，不直接替换全部旧 `Next.js` 业务入口
-  - 冻结 `phase07` 的实现目录、脚本策略与最小环境变量口径
-  - 保持 `phase06` 已完成的路线图、目录治理、remote 收口和模块迁移分类继续作为上游输入
+  - 把 `phase07` 已完成的应用壳、运行时入口、旧运行线映射与退出条件作为 `phase08` 的稳定上游输入
+  - 冻结 `Hono + @hono/node-server` 统一 API 宿主、认证门禁中间件与错误处理策略
+  - 冻结最小公开 API 白名单：`/api/health`、`/api/auth/login`、`/api/auth/logout`、`/api/auth/session`
+  - 冻结 `AUTH_SESSION_SECRET` 为正式主变量、`NEXTAUTH_SECRET` 为历史兼容回退项
+  - 冻结 `src/minix` 的最小登录守卫与 `/login?next=...` 回跳边界
+  - 冻结页面门禁与 API 门禁的一致性口径，不回退到旧宿主默认承接新 API
+  - 冻结 `phase08` 的最小安全边界、环境变量约束与后续领域迁移前提
+  - 保持 `phase06`、`phase07` 已完成的路线图、目录治理和宿主映射继续作为上游输入
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
@@ -55,7 +58,8 @@
 - `phase05-pwa-delivery-*` 已完成，结论为：PWA 安装闭环、更新策略、关键页面移动端可用性与私有部署验收已完成当前阶段收口。
 - `Rento-legacy` 已在 GitHub 侧完成保留备份；当前仓库已切换为 `Rento-miniX` 主线仓。
 - `phase06-minix-replatform` 已完成当前轮文档治理收口：完整 `Hono` 路线图、模块迁移分类与原内嵌目录清理结果已冻结到主真相源。
-- 当前正式进入 `phase07-app-shell-and-runtime-foundation` 的 `/plan` 阶段：先冻结应用壳与运行时基础承接方案，再进入后续 `/spec` 判断。
+- `phase07-app-shell-and-runtime-foundation` 已完成：新前端应用壳、新运行时入口、旧运行线映射与退出条件已冻结为后续阶段上游输入。
+- `phase08-api-and-auth-foundation` 已完成当前轮 `/plan` 产物：已冻结统一 API 宿主、认证骨架、错误处理、环境变量兼容口径与最小页面守卫方向，等待审核后进入 `/spec`。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -71,6 +75,9 @@
 - [phase07_app_shell_and_runtime_foundation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase07_app_shell_and_runtime_foundation_architecture_plan.md)：`phase07` 架构规划
 - [phase07_app_shell_and_runtime_foundation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase07_app_shell_and_runtime_foundation_dev_plan.md)：`phase07` 开发规划
 - [phase07_app_shell_and_runtime_foundation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase07_app_shell_and_runtime_foundation_shared_baseline.md)：`phase07` 共享基线
+- [phase08_api_and_auth_foundation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase08_api_and_auth_foundation_architecture_plan.md)：`phase08` 架构规划
+- [phase08_api_and_auth_foundation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase08_api_and_auth_foundation_dev_plan.md)：`phase08` 开发规划
+- [phase08_api_and_auth_foundation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase08_api_and_auth_foundation_shared_baseline.md)：`phase08` 共享基线
 - [docs/archive/README.md](file:///home/dell/Projects/Rento/docs/archive/README.md)：历史任务文档与遗留材料归档说明
 
 ## 8. 推荐阅读顺序
@@ -83,6 +90,7 @@
 7. `README.md`
 8. `docs/phase06_*`
 9. `docs/phase07_*`
+10. `docs/phase08_*`
 
 ## 9. 文档同步规则
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
@@ -92,13 +100,16 @@
 - 当运行入口、部署方式、数据库主线、安全边界或目录结构发生变化时，必须同步更新 `README.md`、`architecture_map.md`、`project_rules.md` 与 `DEPLOYMENT.md`。
 - 在进入首个正式实现阶段 `/plan` 前，必须先冻结完整 `Hono` 版 Phase 路线图、原 `Rento-miniX/` 目录的文件级吸收映射与模块迁移分类，避免再次退回“走一步看一步”的推进方式；其中完整路线图的长期全局承接位固定为 `plan.md`。
 - 进入 `phase07` 后，仍必须先完成该阶段的 `architecture_plan`、`dev_plan` 与 `shared_baseline` 审核，未经批准不得直接进入 `/spec` 或实现。
+- 进入 `phase08` 后，仍必须先完成统一 API 宿主、最小公开 API 白名单、认证会话、错误处理、环境变量兼容口径与最小页面守卫方案冻结，再进入该阶段任一 `/spec`。
 
 ## 10. 其他关键治理约束
 - 根目录只保留当前有效入口文档、配置文件和运行资产；历史任务记录应迁入 `docs/archive/`。
 - 所有“临时兼容逻辑”都要写明存在原因和退出条件，避免长期遗留。
 - 对外可见行为优先稳定，对内治理优先清理双重真相；宁可少做，也不带着错误入口继续迭代。
 - `phase06` 的职责是冻结原地重构边界与实施顺序，该阶段结论继续作为 `phase07` 的上游输入，不再重新争夺当前默认入口。
-- `phase07` 的职责是建立应用壳与运行时基础承接位，而不是在当前回合直接迁移领域服务、切换 ORM 或改写最终部署主线。
+- `phase07` 的职责是建立应用壳与运行时基础承接位；该阶段现已完成，其结论继续作为 `phase08` 的上游输入。
+- `phase08` 的职责是冻结统一 API 宿主、认证门禁、错误处理与最小安全边界，而不是在当前回合直接迁移领域服务、切换 ORM 或改写最终部署主线。
+- `phase08` 当前轮规划已明确：只冻结最小 API/Auth 骨架，不提前迁移治理接口、正式领域服务或部署切线。
 - `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。
 - 旧容器化运行线只保留“当前存量运行线参考 + 回滚基线”职责；在新部署主线冻结前，不继续扩写为 `Rento-miniX` 的未来正式交付真相源。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，都必须在后续 `analysis`/阶段文档中明确：
