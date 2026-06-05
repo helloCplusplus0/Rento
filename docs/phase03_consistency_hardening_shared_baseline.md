@@ -68,9 +68,11 @@
 ## 七、schema 与迁移基线
 
 - `schema.prisma` 是当前数据主真相源
+- PostgreSQL 是唯一正式数据库主线；SQLite 仅作为历史迁移兼容残留被记录
 - `onDelete: Cascade` 是当前关系实现事实，不等于业务允许直接删
 - `migration_lock.toml` 当前仍属于历史兼容项
-- `migrate-and-seed.sh` 中的 `sqlite -> db push` 分支当前也属于兼容项
+- `migrate-and-seed.sh` 中的 `sqlite -> db push` 分支当前也属于兼容项，且当前默认执行会先命中该 compat path
+- `migrate deploy` 是正式迁移目标，`db push` 不是与之并列的正式路径；但这不等于当前仓库默认执行已经切到 `migrate deploy`
 - `phase03` 只负责显式化兼容项与退出条件，不默认承担完整迁移基线重建
 
 ## 八、统一验证要求

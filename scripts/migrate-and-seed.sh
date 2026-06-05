@@ -10,19 +10,20 @@ sleep "$DB_WAIT_SECS"
 
 echo "数据库连接成功，开始迁移..."
 
-# 迁移兼容说明：
-# - 当前数据库主线已经固定为 PostgreSQL；
-# - 但 migrations/ 目录和 migration_lock.toml 仍残留 SQLite 时代产物；
-# - 因此这里保留一个显式兼容分支，优先保证现有 PostgreSQL 环境可按 schema 同步成功；
-# - 该兼容分支不是正式迁移基线，后续需在专项任务中以 PostgreSQL 基线重建 / baseline resolve 验证后再退出。
+# Phase10-04 迁移兼容说明：
+# - PostgreSQL 是唯一正式数据库主线，SQLite 不再属于正式支持范围；
+# - 正式迁移目标仍然是 PostgreSQL 基线上的 `prisma migrate deploy`，但当前仓库默认执行尚未切到该路径；
+# - 当前仅因 migrations/ 与 migration_lock.toml 仍残留 SQLite 时代状态，脚本才会先命中 `sqlite -> db push` compat path；
+# - 该兼容路径的职责是让现有 PostgreSQL 环境先按 schema 同步成功，不代表仓库继续支持 SQLite；
+# - 退出该兼容路径前，必须先完成 PostgreSQL baseline / resolve 验证，并确认回滚基线与现网兼容路径。
 LOCK_FILE="/app/prisma/migrations/migration_lock.toml"
 if [ -f "$LOCK_FILE" ] && grep -q 'provider = "sqlite"' "$LOCK_FILE"; then
-  echo "检测到历史 migration_lock.toml 仍指向 sqlite，改用 Prisma db push 同步当前 PostgreSQL schema（兼容路径，非正式迁移链）"
+  echo "检测到历史 migration_lock.toml 仍指向 sqlite；当前仓库默认执行继续停留在 compat path，先执行 Prisma db push 兼容同步（仅为 PostgreSQL 现网兜底，非正式迁移链）"
   node /app/node_modules/prisma/build/index.js db push
 else
-  # 当前推荐路径仍是 migrate deploy；只有在旧迁移链无法用于 PostgreSQL 时才回退到兼容同步。
+  # 只有在不再先命中 sqlite compat 条件后，默认执行才会切到正式路径；失败时仍保留兼容回退。
   node /app/node_modules/prisma/build/index.js migrate deploy || {
-    echo "migrate deploy 失败，尝试使用 Prisma db push 同步架构（兼容兜底，需在 phase03-04 后续专项治理中退出）";
+    echo "migrate deploy 失败，尝试使用 Prisma db push 同步架构（兼容兜底，需在 phase10 迁移专项治理验证通过后退出）";
     node /app/node_modules/prisma/build/index.js db push;
   }
 fi

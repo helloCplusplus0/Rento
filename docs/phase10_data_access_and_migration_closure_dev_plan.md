@@ -156,19 +156,21 @@
 
 ## phase10-04-migration-compatibility-and-exit-conditions
 ### 目标
-明确 SQLite 兼容残留、`migration_lock.toml`、`db push` 分支与 PostgreSQL 正式迁移目标之间的关系、风险、退出条件和回滚条件。
+明确 SQLite 兼容残留、`migration_lock.toml`、`db push` 分支与 PostgreSQL 正式迁移目标之间的关系、风险、退出条件和回滚条件，并冻结 PostgreSQL 为唯一正式数据库主线；同时明确“正式目标已冻结”不等于“当前默认执行已切到该路径”。
 
 ### 范围
 - 解释 `prisma/schema.prisma` 已切 PostgreSQL 而 `migration_lock.toml` 仍是 sqlite 的现实原因
 - 解释 `scripts/migrate-and-seed.sh` 中 `db push` 兼容兜底的现实用途
 - 冻结正式迁移目标为 PostgreSQL 基线上的 `migrate deploy`
+- 冻结当前仓库默认执行仍会先命中 `sqlite -> db push` compat path 的现实前提、未切线原因与退出前置条件
+- 冻结 SQLite 仅作为历史兼容残留存在，不再属于正式支持范围
 - 冻结退出兼容路径前必须满足的前提
 
 ### 参考来源
 - `prisma/schema.prisma`
 - `prisma/migrations/migration_lock.toml`
 - `scripts/migrate-and-seed.sh`
-- Context7 Prisma 文档关于 `migrate deploy`
+- Context7 / Prisma 官方文档关于 `migrate deploy` 与 `db push`
 - 历史 `phase03` / `phase04` 关于迁移兼容项的治理结论
 
 ### 不在范围内
@@ -179,11 +181,13 @@
 ### DoD
 - 兼容项的存在原因、当前作用、风险、退出条件、回滚条件写清
 - `db push` 与 `migrate deploy` 的正式/兼容职责边界写清
+- 文档明确区分“正式迁移目标”与“当前默认执行路径”
+- PostgreSQL 单主线与 SQLite 历史兼容残留的边界写清
 - 后续阶段不再出现“运行时已切 PostgreSQL 但迁移主线真相不清”的状态
 
 ### 验证要求
 - 对照 `scripts/migrate-and-seed.sh` 现状，确认文档没有虚构执行路径
-- 对照 Context7 结论，确认正式迁移目标表述准确
+- 对照 Context7 / Prisma 官方文档，确认正式迁移目标与 `db push` 兼容语义表述准确
 
 ## phase10-05-documentation-consistency-and-verification-closure
 ### 目标

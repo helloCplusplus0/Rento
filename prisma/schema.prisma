@@ -6,6 +6,10 @@ generator client {
 }
 
 datasource db {
+  // Phase10-04 冻结结论：
+  // - PostgreSQL 是 Rento-miniX 唯一正式数据库主线；
+  // - SQLite 只作为 migration compatibility 的历史残留被记录，不再属于正式支持范围；
+  // - 正式迁移目标是 PostgreSQL 基线上的 `prisma migrate deploy`，而不是 `db push`。
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }

@@ -1,0 +1,8 @@
+- [x] `phase10-04` 的 spec 明确限定为迁移兼容项、正式迁移目标、退出条件与回滚条件冻结任务，没有越界到 lock 文件修改、迁移链重建或生产切线
+- [x] `schema.prisma` 已切 PostgreSQL 而 `migration_lock.toml` 仍为 sqlite 的现实原因已被写清
+- [x] `db push` 与 `migrate deploy` 的正式 / 兼容职责边界已被写清
+- [x] PostgreSQL 已被明确冻结为唯一正式数据库主线，SQLite 不再被表述为正式支持选项
+- [x] 兼容项的存在原因、当前作用、风险、退出条件与回滚条件已被完整记录
+- [x] 文档表述与 `scripts/migrate-and-seed.sh` 当前执行路径不冲突
+- [x] 文档表述与 Context7 / Prisma 官方迁移口径一致
+- [x] `phase10-04` 的输出可以直接作为后续迁移专项治理与 `phase10-05` 的上游输入

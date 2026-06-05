@@ -66,6 +66,7 @@
 ## 五、统一方案语义
 ### 5.1 正式数据访问主线
 - 正式数据访问主线固定为：`Prisma + PostgreSQL`
+- PostgreSQL 是唯一正式数据库主线；SQLite 只以历史迁移兼容残留形式被记录
 - `src/lib/prisma.ts` 固定为 Prisma Client 单例入口
 - `phase10` 不引入第二套 ORM、Repository 框架或平行数据访问技术栈
 
@@ -137,20 +138,29 @@
 
 ## 七、迁移链共享口径
 ### 7.1 正式与兼容路径
-- PostgreSQL 是正式数据库主线
-- `migrate deploy` 是正式迁移目标路径
-- `db push` 仅是兼容兜底
-- SQLite 残留在退出前必须被明确标记为“兼容项”
+- PostgreSQL 是唯一正式数据库主线
+- `migrate deploy` 是 PostgreSQL 基线上的正式迁移目标路径，而不是当前仓库默认已切到的执行路径
+- `db push` 仅是兼容兜底，不与正式迁移路径并列
+- SQLite 残留在退出前必须被明确标记为“兼容项”，不再属于正式支持选项
 
 ### 7.2 当前兼容项
 - `prisma/migrations/migration_lock.toml` 仍指向 sqlite
-- `scripts/migrate-and-seed.sh` 在特定条件下仍走 `db push`
+- `scripts/migrate-and-seed.sh` 在特定条件下仍走 `db push`，且当前默认执行会先因 sqlite lock 命中该 compat path
 - 这些都代表“当前仍需解释并治理的兼容残留”，不是当前最佳实践
+- `migration_lock.toml` 的现实作用是保留历史迁移链状态，而不是定义当前正式数据库 provider
+- `db push` 的现实作用是为尚未完成 PostgreSQL baseline / resolve 的环境提供 schema 同步兜底
 
 ### 7.3 禁止误读
 - 不得把 `db push` 重新包装成正式 PostgreSQL 迁移链
 - 不得把 `migration_lock.toml` 的 SQLite 残留误读成“仓库仍允许 SQLite 主路径”
 - 不得在未冻结 baseline、退出条件和回滚条件前直接修改历史锁文件
+
+### 7.4 退出与回滚基线
+- 退出兼容路径前至少需要完成 PostgreSQL baseline / resolve 验证
+- 退出兼容路径前至少需要消除脚本对 sqlite lock 的前置命中，让默认执行不再先落入 compat path
+- 退出兼容路径前至少需要证明 `migrate deploy` 可在目标环境重复执行
+- 退出兼容路径前至少需要复核部署脚本、备份路径与现网回滚方式
+- 若迁移专项整改失败，当前回滚基线仍是“保留 lock 残留 + 保留脚本兼容分支 + 在 PostgreSQL 环境使用 schema 同步兜底”
 
 ## 八、业务保留与删除门禁共享口径
 ### 8.1 合同锚点

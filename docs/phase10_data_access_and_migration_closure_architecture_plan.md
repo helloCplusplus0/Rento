@@ -48,7 +48,8 @@
 - 当前数据库主线已切到 PostgreSQL，但迁移链仍保留 SQLite 时代残留：
   - `prisma/schema.prisma` 使用 `postgresql`
   - `prisma/migrations/migration_lock.toml` 仍是 `provider = "sqlite"`
-  - `scripts/migrate-and-seed.sh` 仍保留 `db push` 兼容分支
+  - `scripts/migrate-and-seed.sh` 仍保留 `db push` 兼容分支，且当前默认执行会先因 sqlite lock 命中该 compat path
+- 该 SQLite 残留只代表历史迁移兼容语义，不代表 `Rento-miniX` 仍保留 SQLite 正式支持选项。
 
 ### 2.3 为什么现在进入 `phase10`
 当前最合理的下一阶段是：
@@ -72,8 +73,8 @@ phase10-data-access-and-migration-closure
 - Prisma 官方将 `$transaction([])` 视为顺序 array transaction，适合独立且顺序明确的 Prisma 查询批量提交
 - Prisma 官方建议在 `Serializable` 下遇到 `P2034` 写冲突或死锁时采用有限重试
 - Prisma 官方示例中的 interactive transaction 默认值是 `maxWait = 2000ms`、`timeout = 5000ms`，因此仓库现状中的 `5000 / 10000` 属于明确放宽后的冻结值
-- 正式部署链路应优先以 `prisma migrate deploy` 应用已冻结迁移
-- `db push` 更适合作为开发或兼容路径，而不是长期正式迁移链
+- Prisma 官方将 `prisma migrate deploy` 定位为 staging / production 等非开发环境的待迁移应用路径
+- Prisma 官方将 `db push` 定位为原型阶段或兼容同步路径，而不是长期正式迁移链
 
 ## 三、关键决策
 ### 3.1 正式数据访问主线：继续固定为 `Prisma + PostgreSQL`
@@ -169,11 +170,20 @@ phase10-data-access-and-migration-closure
 - 当前 `migration_lock.toml` 仍指向 sqlite，而 `schema.prisma` 已切 PostgreSQL，这本身就是兼容残留。
 - `scripts/migrate-and-seed.sh` 中的 `db push` 分支当前确实有现实作用，但它不能继续被表述成正式长期方案。
 - 在未设计清楚 baseline、回滚与现网兼容前，贸然直接改 lock 文件也会放大部署风险。
+- 用户已明确冻结：`Rento-miniX` 只支持 PostgreSQL 正式主线，不再保留“未来可能继续支持 SQLite”的模糊空间。
 
 本阶段结论：
 
 - `migration_lock.toml`、旧迁移目录、`db push` 分支在 `phase10` 中统一被标记为“兼容项”
-- 正式迁移主路径继续以 PostgreSQL 基线上的 `migrate deploy` 为目标
+- PostgreSQL 被明确冻结为唯一正式数据库主线；SQLite 仅作为历史兼容残留被记录
+- 正式迁移主路径继续以 PostgreSQL 基线上的 `migrate deploy` 为冻结目标
+- 当前仓库默认执行尚未切线；由于脚本会先检查 sqlite lock，现状下仍默认先进入 `sqlite -> db push` compat path
+- `db push` 仅保留为 migration compatibility 兜底，不与正式迁移路径并列
+- 退出兼容路径前至少要完成：
+  - PostgreSQL 基线迁移历史补齐或 baseline / resolve 验证
+  - `migrate deploy` 在目标环境可重复执行的验证
+  - 与现有部署脚本、备份和回滚路径的兼容性复核
+- 若专项整改失败，当前回滚基线仍是“保留现有 lock 残留 + 保留脚本兼容分支 + 在 PostgreSQL 环境使用 schema 同步兜底”
 - `phase10` 先冻结存在原因、当前作用、风险、退出条件与回滚条件，不在本阶段直接完成最终切线
 
 ### 3.7 数据库约束与业务保留规则：继续分层表达
@@ -263,6 +273,11 @@ scripts/
 └── migrate-and-seed.sh
 ```
 
+说明：
+- `schema.prisma` 中的 PostgreSQL provider 是当前唯一正式数据库真相
+- `migration_lock.toml` 继续按历史事实保留，不在 `phase10-04` 直接改写
+- `migrate-and-seed.sh` 允许保留兼容分支，但必须显式标注其非正式身份与退出条件
+
 ### 5.4 旧宿主与 route inventory 承接位
 - 旧 `src/app/api/*` 的阶段性去向继续由 `phase09-06` inventory 清单统一说明
 - `server/lib/legacy-route-inventory.ts` 作为 route inventory 真相源保留
@@ -290,10 +305,12 @@ scripts/
 - `maxWait` / `timeout` 只在 interactive transaction helper 上统一配置；array transaction 共享同一 `Serializable` 隔离级别入口
 
 ### 6.3 迁移链口径
-- PostgreSQL 是正式数据库主线
-- `migrate deploy` 是正式迁移目标路径
-- `db push` 仅是兼容兜底
-- SQLite 残留在退出前必须被文档化为“兼容项”，而不是“当前最佳实践”
+- PostgreSQL 是唯一正式数据库主线
+- `migrate deploy` 是 PostgreSQL 基线上的正式迁移目标路径，而非当前仓库默认已执行到位的路径
+- `db push` 仅是兼容兜底，不是与 `migrate deploy` 并列的第二正式路径
+- 当前默认执行仍停留在 compat path：`migration_lock.toml` 保持 sqlite 时，脚本会先命中 `db push`
+- SQLite 残留在退出前必须被文档化为“兼容项”，而不是“当前最佳实践”或“潜在正式支持方案”
+- 在未完成 PostgreSQL baseline / resolve 验证前，`migration_lock.toml` 与兼容脚本共同构成当前迁移回滚基线
 
 ## 七、阶段结论
 `phase10-data-access-and-migration-closure` 的阶段价值不在于“立即完成迁移链最终切线”或“重写全部查询层”，而在于：
