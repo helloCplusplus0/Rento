@@ -1,0 +1,8 @@
+- [x] `spec.md` 已明确当前问题是“生产入口仍跑源码、构建只覆盖前端”，而不是虚构已存在的服务端产物链
+- [x] `spec.md` 已明确正式生产入口不再依赖 `tsx` 直接执行 `server/index.ts`
+- [x] `spec.md` 已明确 `dev:minix` 继续承担开发态 `tsx watch + Vite` 拓扑职责
+- [x] `spec.md` 已明确 `server/index.ts`、`server/app.ts`、`server/lib/static.ts` 继续作为正式运行时承接位
+- [x] `spec.md` 已明确本任务不新增 `Caddy` / `systemd` 配置、不切换最终部署主线、不调整业务 API 或领域服务语义
+- [x] `tasks.md` 已按可验证顺序拆分为脚本盘点、产物链定义、边界约束、验证要求四类任务
+- [x] `tasks.md` 已包含 `build:minix`、`start:minix`、`dev:minix`、`tsconfig` 与 Hono 运行时之间的关系
+- [x] `tasks.md` 已包含最低验证要求与风险/回归检查项

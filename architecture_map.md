@@ -1,12 +1,12 @@
 # architecture_map.md
 
 ## 仓库总览
-当前仓库的逻辑主线已切换为 `Rento-miniX`，但代码实现现状仍然是 `Next.js + Prisma + PostgreSQL + Redis + Nginx` 的旧 `Rento` 承载形态。换句话说：
+当前仓库的逻辑主线已切换为 `Rento-miniX`，但代码实现现状仍同时包含：
 
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前只等待最终审核是否通过。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前已进入 `phase11` 的部署切线规划阶段。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -15,7 +15,7 @@
 - 在 `phase10` 数据访问层方案冻结前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -173,6 +173,39 @@
   - 迁移兼容项、`db push` compat path 与 `migrate deploy` 正式目标的边界
   - 与 `phase09-06` route inventory 对齐后的退出/保留判断
 
+## `phase11` 目标结构说明
+### 规划中的正式部署主线
+- `phase11` 的职责是把已存在的新主线承接位提升为正式部署主线，而不是重写应用壳、API 或领域语义。
+- 正式部署拓扑规划固定为：
+  - `Caddy`：公网 HTTPS 入口与反向代理
+  - `systemd`：单一 Hono 运行时守护进程
+  - `Hono`：正式 `/api/*` 与 `dist/` 静态壳托管
+  - `PostgreSQL`：唯一正式数据库主线
+- 正式部署主线默认不再引入 `redis`；`redis` 只继续保留在 legacy 回滚基线中。
+
+### 规划中的服务端产物链
+- 当前 `server/index.ts`、`server/app.ts` 与 `server/lib/static.ts` 已具备正式运行时承接位。
+- 当前仍缺的不是运行时骨架，而是：
+  - 服务端 JS 预构建产物链
+  - 正式 `start:minix` 生产入口不再依赖 `tsx` 直接跑源码
+  - 与 `Caddy + systemd` 对齐的正式部署资产与环境模板
+- 因此 `phase11` 的直接实现承接位将围绕：
+  - `package.json`
+  - `scripts/start-minix.mjs`
+  - `tsconfig` 的服务端产物配置
+  - `DEPLOYMENT.md`
+  - 后续新增的正式部署资产目录
+
+### 规划中的发布门禁与回滚基线
+- `phase11` 的发布门禁需要统一收口到：
+  - `npm run lint`
+  - `npm run type-check`
+  - `npm run build:minix`
+  - `npm run audit:phase09:legacy-routes`
+  - 条件允许时的 `npm run smoke:phase09:all`
+  - `/api/health` 与登录页的正式部署验证
+- `phase11` 的回滚基线继续固定为旧容器化运行线，而不是切回 `Rento-legacy` 仓库或恢复第二真相源。
+
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
 - 原 `Rento-miniX/` 目录已完成“抽取 -> 复核 -> 清理”，当前仓库中已不存在该目录。
@@ -247,7 +280,11 @@
 - `延后决策`
   - ORM 最终选型、迁移链兼容项退出方式、最终部署切线细节
 
-## 现有运行线部署真相源
+## 正式部署真相源
+- 根级 `DEPLOYMENT.md`、`README.md`、`AGENTS.md`、`project_rules.md`、`plan.md` 与 `docs/phase11_*` 将共同承接 `Rento-miniX` 的正式部署说明、发布门禁与 cutline 退出条件。
+- 在 `phase11` 当前轮文档中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，但实现仍需后续 `/spec` 顺序落地。
+
+## legacy 回滚基线
 以下文件仍对应旧 `Rento` 的当前存量运行形态与回滚基线，而不是未来 `Rento-miniX` 的最终部署主线：
 - `docker-compose.yml`：当前容器编排入口
 - `.env.example`：当前共享环境模板
@@ -270,7 +307,7 @@ Rento/
 ├── backups/              # 运行时备份挂载目录
 ├── logs/                 # 运行时日志挂载目录
 ├── README.md             # 当前项目总览
-├── DEPLOYMENT.md         # 当前存量运行线部署手册
+├── DEPLOYMENT.md         # 当前正式部署真相源与 legacy 回滚说明入口
 ├── AGENTS.md             # 当前主真相源入口摘要
 ├── project_rules.md      # 当前主真相源规则
 ├── global_skills.md      # 当前主真相源通用方法论
@@ -326,4 +363,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是审核 `phase10` 的最终收口材料，确认长期数据访问层方案、查询分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成闭环；未经批准，不切换到 `phase11`，也不提前执行部署切线。
+- 当前默认下一步是审核 `phase11` 的阶段文档，确认正式部署主线、环境模板、健康检查、legacy 回滚基线与 cutline 退出条件已形成单一闭环；未经批准，不进入任何 `phase11-*` `/spec`，也不提前执行部署切线实现。

@@ -22,17 +22,16 @@
 - 所有重构都必须明确标注“参考来源、复用内容、调整内容、舍弃内容与原因”。
 
 ## 4. 当前默认入口
-- 当前默认工作流：`phase10-data-access-and-migration-closure`
-- 当前主问题：在不破坏 `phase09` 已冻结的共享领域服务边界、正式宿主边界、历史数据保留与主链一致性口径的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
+- 当前默认工作流：`phase11-deployment-cutover-and-cutline-closure`
+- 当前主问题：在不反向干扰 `phase07~10` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层与迁移兼容边界的前提下，为 `Rento-miniX` 冻结正式部署主线、回滚基线、旧运行线退出条件与发布门禁。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：复核 [docs/phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)、[docs/phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md)、[docs/phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md) 与 `phase10-05` 收口结果，确认 `phase10` 是否通过当前轮最终审核；未经批准，不切换默认工作流到 `phase11`，也不提前进入部署切线。
+- 当前下一步：审核 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)、[phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)；审核通过前不进入任何 `phase11-*` `/spec`，也不提前落地正式部署资产。
 - 当前阶段重点：
-  - 把 `phase09` 已完成的共享领域服务、正式宿主、compat wrapper 清单与主链 smoke 路径作为 `phase10` 的稳定上游输入
-  - 冻结长期数据访问层方案判断，不让 ORM、查询模式和事务边界重新反向驱动领域设计
-  - 冻结迁移链兼容项、旧 `Next.js` API 存量接口与 `phase10` 数据访问收口之间的关系
-  - 冻结 `phase10` 最低验证命令：`npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若仅文档变更，至少完成 `docs/phase10_*` 互链与被引用路径存在性复核
-  - 冻结供 `phase11` 直接继承的最小上游输入：长期数据访问层方案、查询分层与 canonical read path、统一事务边界、迁移兼容项边界、与 `phase09-06` route inventory 对齐后的退出/保留判断
-  - 保持 `phase06`、`phase07`、`phase08`、`phase09` 已完成的路线图、目录治理和宿主映射继续作为上游输入
+  - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入
+  - 冻结正式部署拓扑：`Caddy + systemd + Hono + PostgreSQL`
+  - 冻结“云端不构建、仅运行预构建产物”的服务端产物链与正式启动口径
+  - 冻结 `.env.example`、`/api/health`、发布前 smoke test、legacy 回滚基线与 cutline 退出条件之间的关系
+  - 保持旧 `docker-compose + nginx + Next.js standalone` 运行线只承担历史运行线与回滚参考职责
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
@@ -59,7 +58,8 @@
 - `phase07-app-shell-and-runtime-foundation` 已完成：新前端应用壳、新运行时入口、旧运行线映射与退出条件已冻结为后续阶段上游输入。
 - `phase08-api-and-auth-foundation` 已完成：统一 API 宿主、最小认证闭环、请求治理、统一错误出口、环境变量兼容口径与 `src/minix` 最小页面守卫已完成当前阶段收口。
 - `phase09-domain-service-migration` 已完成当前轮阶段收口：共享领域服务落点、正式宿主边界、合同/账单/仪表/抄表/退租/删除门禁主链迁移、主链 smoke 路径、旧 `src/app/api/*` compat wrapper 清单与 `phase10` 上游输入已完成当前轮验证。
-- `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成单一闭环；当前仍停留在 `phase10` 的最终审核阶段。
+- `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成单一闭环。
+- `phase11-deployment-cutover-and-cutline-closure` 已完成当前轮阶段文档产出：正式部署主线、回滚基线、旧运行线退出条件、环境变量与发布门禁的阶段规划已冻结到 `docs/phase11_*`；当前等待用户审核。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -84,6 +84,9 @@
 - [phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)：`phase10` 架构规划
 - [phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md)：`phase10` 开发规划
 - [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md)：`phase10` 共享基线
+- [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)：`phase11` 架构规划
+- [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)：`phase11` 开发规划
+- [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)：`phase11` 共享基线
 - [docs/archive/README.md](file:///home/dell/Projects/Rento/docs/archive/README.md)：历史任务文档与遗留材料归档说明
 
 ## 8. 推荐阅读顺序
@@ -99,6 +102,7 @@
 10. `docs/phase08_*`
 11. `docs/phase09_*`
 12. `docs/phase10_*`
+13. `docs/phase11_*`
 
 ## 9. 文档同步规则
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
@@ -111,6 +115,7 @@
 - 进入 `phase08` 后，仍必须先完成统一 API 宿主、最小公开 API 白名单、认证会话、错误处理、环境变量兼容口径与最小页面守卫方案冻结，再进入该阶段任一 `/spec`。
 - 进入 `phase09` 后，仍必须先完成共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界冻结，再进入该阶段任一 `/spec`。
 - 进入 `phase10` 后，仍必须先完成长期数据访问层方案、正式/兼容/治理查询分层、事务边界、迁移兼容项说明与退出条件冻结，再进入该阶段任一 `/spec`。
+- 进入 `phase11` 后，仍必须先完成正式部署主线、回滚基线、旧运行线退出条件、环境变量模板、健康检查、发布门禁与 legacy cutline 说明冻结，再进入该阶段任一 `/spec`。
 
 ## 10. 其他关键治理约束
 - 根目录只保留当前有效入口文档、配置文件和运行资产；历史任务记录应迁入 `docs/archive/`。
@@ -120,6 +125,8 @@
 - `phase07` 的职责是建立应用壳与运行时基础承接位；该阶段现已完成，其结论继续作为 `phase08` 的上游输入。
 - `phase08` 的职责是冻结统一 API 宿主、认证门禁、错误处理与最小安全边界；该阶段现已完成，其结论继续作为 `phase09` 的上游输入。
 - `phase09` 的职责是冻结共享领域服务落点、迁移合同/账单/支付周期/仪表/抄表/删除门禁等主链领域服务，并收口主链查询与写路径一致性，而不是在当前回合直接切 ORM 最终主线或改写最终部署主线。
+- `phase10` 的职责是冻结长期数据访问层方案、查询分层、统一事务边界、迁移兼容项与 `phase11` 最小上游输入；该阶段现已完成当前轮收口。
+- `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板与发布门禁；在该阶段文档审核通过前，不得直接进入部署切线实现或删除 legacy 回滚资产。
 - `phase08` 当前轮规划已明确：只冻结最小 API/Auth 骨架，不提前迁移治理接口、正式领域服务或部署切线。
 - `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。
 - 旧容器化运行线只保留“当前存量运行线参考 + 回滚基线”职责；在新部署主线冻结前，不继续扩写为 `Rento-miniX` 的未来正式交付真相源。

@@ -2,9 +2,9 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation` 与 `phase09-domain-service-migration` 已完成当前轮阶段收口；`phase10-data-access-and-migration-closure` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前保持在 `phase10` 最终审核阶段；在审核通过前不直接扩张到部署切线或新的主链实现。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；当前默认工作流已切换到 `phase11-deployment-cutover-and-cutline-closure` 的规划阶段，在阶段文档审核通过前不直接进入部署切线实现。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
-- `phase10` 的当前轮重点应建立在 `phase09` 已冻结的共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界之上，不反向改写这些结论。
+- `phase11` 的当前轮重点必须建立在 `phase10` 已冻结的长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断之上，不反向改写这些结论。
 
 ## 2. 安全与发布规则
 - 在完整安全边界未收口前，禁止把应用作为公网匿名可访问后台部署。
@@ -48,17 +48,19 @@
 - 进入 `phase08-api-and-auth-foundation` 后，必须先冻结统一 API 宿主、最小公开 API 白名单、认证会话、错误处理、环境变量“新主旧兼”口径与 `src/minix` 最小页面守卫方案，再进入该阶段任一 `/spec`。
 - 进入 `phase09-domain-service-migration` 后，必须先冻结共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界，再进入该阶段任一 `/spec`。
 - 进入 `phase10-data-access-and-migration-closure` 后，必须先冻结长期数据访问层方案、正式/兼容/治理查询分层、事务边界、迁移兼容项说明与退出条件，再进入该阶段任一 `/spec`。
+- 进入 `phase11-deployment-cutover-and-cutline-closure` 后，必须先冻结正式部署主线、服务端预构建产物链、环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件，再进入该阶段任一 `/spec`。
 - `docs/fix/` 与已完成的 `docs/phase01~phase05_*` 默认保留为上游参考与历史结论，不再自动等同于当前默认工作流。
 - 归档文档默认只读，不再作为当前实现依据。
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已推进到 `phase10-data-access-and-migration-closure` 的最终收口阶段；后续实现或阶段切换必须建立在 `phase10` 阶段文档、`/spec`、最低验证要求与 handoff 审核通过之后。
+- 当前默认工作流已推进到 `phase11-deployment-cutover-and-cutline-closure` 的规划阶段；后续部署实现必须建立在 `phase11` 阶段文档审核通过之后。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。
 - `phase08` 审核通过的最低前提，至少包括：统一 API 宿主、认证门禁、中间件链、错误处理、环境变量约束与最小安全边界均已冻结并通过审核。
 - `phase09` 审核通过的最低前提，至少包括：共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界均已冻结并通过审核。
 - `phase10` 审核通过的最低前提，至少包括：长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、SQLite 兼容残留的存在原因与退出条件均已冻结并通过审核。
+- `phase11` 审核通过的最低前提，至少包括：正式部署主线、服务端预构建产物链、正式环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件均已冻结并通过审核。
 - 原地重构默认优先最小边界、分阶段推进，不允许一次性把 UI、框架、ORM 与部署主线一起大爆炸式改写。
 - 当前主动开发 remote 默认只保留 `origin -> Rento-miniX`；`Rento-legacy` 仅作为 GitHub 侧只读备份参考，不作为并行推送目标、默认上游或第二真相源。
 - 旧容器化运行线相关文档、脚本与部署资产只承担“当前存量运行线参考 + 回滚基线”职责；在新部署主线冻结前，不得继续扩写成 `Rento-miniX` 的未来正式主路径。
@@ -78,6 +80,11 @@
 - `phase10` 期间 `db push` 只能被标记为兼容兜底，不得被重新包装为正式 PostgreSQL 迁移链；在未完成专项治理前，不得贸然直接修改历史 `migration_lock.toml`。
 - `phase10` 当前轮最低验证要求固定为：`npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若本轮仅涉及文档，也至少完成 `docs/phase10_*` 互链与被引用路径存在性复核。
 - `phase10` 进入后续阶段前，必须明确供 `phase11` 直接继承的最小上游输入：长期数据访问层方案、查询分层与 canonical read path、统一事务边界、迁移兼容项边界，以及与 `phase09-06` route inventory 对齐后的退出/保留判断。
+- `phase11` 期间允许冻结 `Caddy + systemd + Hono + PostgreSQL` 的正式部署主线、服务端预构建产物链与发布门禁，但不得在该阶段反向新增新的主链领域迁移范围，也不得借部署切线放宽历史数据保留、认证门禁或迁移兼容边界。
+- `phase11` 期间正式部署主线默认不再引入 `redis`；`redis` 仅允许继续留在旧容器化运行线的历史回滚基线中。
+- `phase11` 期间根级 `DEPLOYMENT.md` 必须升级为当前正式部署真相源；旧容器化部署说明应明确降级为 legacy 回滚基线，并迁入归档入口或保留为附录。
+- `phase11` 期间若调整部署方式、环境变量或健康检查，必须同步更新实现、`.env.example`、`README.md`、`architecture_map.md`、`project_rules.md` 与 `DEPLOYMENT.md`。
+- `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
   - 是否影响历史数据
@@ -95,3 +102,4 @@
 - 迁移锁与早期迁移文件仍带有 SQLite 历史痕迹，当前通过部署脚本兼容；在后续专项任务中再完成正式收口。
 - 最小鉴权门禁已落地，但角色控制、最小审计与公网发布所需的完整安全边界仍未全部完成。
 - 旧容器化部署链仍能支撑存量运行线，但不应被误读为 `Rento-miniX` 的未来正式部署主线。
+- 新主线运行时虽已具备 `Vite + Hono` 承接位，但当前 `build:minix` 仍只覆盖前端静态产物、`start:minix` 仍直接运行 `tsx server/index.ts`；服务端预构建产物链仍需在 `phase11` 后续任务中正式收口。

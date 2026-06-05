@@ -1,181 +1,127 @@
 # DEPLOYMENT.md
 
 > 状态说明：
-> - 本文件当前描述的是旧 `Rento` 存量运行线的容器化部署方式。
-> - 当前仓库已切换到 `Rento-miniX` 主线规划阶段，但未来轻量部署主线尚未冻结到实现与交付层。
-> - 当前仓库的主动开发 remote 已收口到 `Rento-miniX`；本文件中的容器化资产只承担当前存量运行线参考与回滚职责，不构成把 remote 或主线切回旧仓的依据。
-> - 在 `phase06-minix-replatform` 审核完成前，不把本文件误读为 `Rento-miniX` 的未来正式部署真相源；它当前主要承担“存量可运行基线与回滚参考”的职责。
+> - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 回滚基线边界。
+> - 当前仓库已完成 `phase11-deployment-cutover-and-cutline-closure` 的阶段文档产出，但尚未进入 `phase11-*` `/spec` 或正式部署实现。
+> - 因此，本文档当前冻结的是“正式部署目标、资产边界、发布门禁与回滚职责”，而不是宣称所有正式部署资产已经落地。
 
-## 最小必做清单
-1. 拉取部署资产：
-```bash
-curl -fsSL https://raw.githubusercontent.com/helloCplusplus0/Rento-miniX/main/scripts/bootstrap-deploy-assets.sh | \
-  RENTO_REPO_URL=https://github.com/helloCplusplus0/Rento-miniX.git bash -s -- /opt/rento
+## 正式部署主线
+- 正式部署目标固定为：`Caddy + systemd + Hono + PostgreSQL`
+- 正式公网入口由 `Caddy` 承担：负责 `80/443`、HTTPS 与反向代理
+- 正式业务进程由 `systemd` 托管：负责单一 Hono Node 运行时
+- 正式 API 与前端静态壳由 Hono 统一承接：
+  - `/api/*`
+  - `dist/` 下的静态资源与 SPA fallback
+- PostgreSQL 是唯一正式数据库主线
+- 正式部署主线默认不再引入 `redis`
+
+## 当前阶段说明
+- `phase07` 已冻结 `src/minix/`、`server/`、`dev:minix`、`start:minix` 的运行时承接位
+- `phase08` 已冻结统一 `/api` 宿主、认证门禁、错误处理与环境变量口径
+- `phase09` 已冻结共享领域服务、正式宿主边界与 compat wrapper 清单
+- `phase10` 已冻结长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界
+- `phase11` 当前只完成阶段级文档产出，正式部署资产仍待后续 `/spec` 顺序落地
+- 当前脚本边界固定为：
+  - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
+  - `npm run build:minix`：当前仅产出前端 `dist/` 静态壳，不产出服务端 JS
+  - `npm run start:minix`：当前生产模式校验入口，仍通过 `tsx server/index.ts` 运行源码，不能误读为“云端只运行预构建产物”的正式部署入口
+
+## 正式部署拓扑
+```text
+Internet
+  -> Caddy (:80 / :443)
+      -> reverse_proxy 127.0.0.1:<MINIX_SERVER_PORT>
+          -> Hono runtime
+              -> /api/*
+              -> dist/*
+              -> SPA fallback
+                  -> PostgreSQL
 ```
-2. 进入目录并生成私有配置：
-```bash
-cd /opt/rento
-cp .env.example .env
-mkdir -p nginx/ssl logs/nginx backups
-```
-3. 编辑 `.env`，至少填这些值：
+
+## 正式资产边界
+正式部署主线后续应以以下资产为核心：
+- `.env.example`：正式共享环境模板
+- `package.json`：正式构建与启动脚本入口
+- `scripts/start-minix.mjs`：当前生产模式校验入口，也是后续正式生产启动入口的直接承接位
+- `server/index.ts` / `server/app.ts` / `server/lib/static.ts`：正式运行时承接位
+- `docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md`
+- `docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md`
+- `docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md`
+
+后续 `phase11` 实施应补齐但当前尚未落地的正式资产包括：
+- 服务端 JS 预构建产物链
+- `Caddy` 正式配置
+- `systemd` 服务单元
+- 与正式主线对齐的部署手册、健康检查与发布验证脚本
+
+## 环境变量主口径
+正式部署主线应以以下变量为主：
 ```env
+NODE_ENV=production
 NEXTAUTH_URL=https://rento.example.com
 ALLOWED_ORIGINS=https://rento.example.com
 AUTH_SESSION_SECRET=replace-with-a-secure-random-secret
 NEXTAUTH_SECRET=replace-with-a-secure-random-secret
-ADMIN_PASSWORD_HASH=scrypt:replace-with-salt:replace-with-password-hash
-POSTGRES_PASSWORD=YOUR_PASSWORD
-CONTAINER_DATABASE_URL=postgresql://rento:YOUR_PASSWORD_URLENCODED@postgres:5432/rento_production
-```
-4. 把证书放到固定路径：
-```bash
-cp /path/to/fullchain.pem ./nginx/ssl/fullchain.pem
-cp /path/to/privkey.pem ./nginx/ssl/privkey.pem
-```
-5. 执行部署：
-```bash
-chmod +x scripts/cloud-deploy.sh
-./scripts/cloud-deploy.sh rento.example.com
-```
-6. 验证：
-```bash
-curl -kI https://rento.example.com/api/health
+DATABASE_URL=postgresql://...
+MINIX_SERVER_HOST=127.0.0.1
+MINIX_SERVER_PORT=3002
+MINIX_DIST_DIR=dist
+CORS_ENABLED=true
+MAX_REQUEST_SIZE=10485760
+REQUEST_TIMEOUT=30000
 ```
 
-## 最终基线
-- 应用固定使用预构建镜像，不再在云服务器上执行源码构建
-- `postgres`、`redis`、`app`、`nginx` 全部使用容器运行
-- `nginx` 固定负责 `80 -> 443` 跳转和 HTTPS 终止
-- `app`、`postgres`、`redis` 只走容器内网络
-- 生产入口固定为 `https://<domain>`
+补充规则：
+- `.env.example` 是唯一共享模板，`.env` 仍是私有运行配置
+- `AUTH_SESSION_SECRET` 是正式主变量，`NEXTAUTH_SECRET` 仅保留历史兼容回退
+- `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 默认保持一致
+- 任何涉及认证、CORS、健康检查或部署端口的调整，都必须同步更新实现、模板与文档
 
-## 实践结论与资源边界
-- 本次实机验证表明，`2C2G` 云服务器可以承载 `Rento` 的容器化运行态、`HTTPS` 与 `PWA`
-- 同一规格不适合作为源码构建、镜像构建或高频完整重部署环境
-- 如果部署阶段出现 `SSH` 卡顿、健康检查超时、容器拉取时整机变慢，应优先排查云盘 `I/O` 是否受限
-- 若云平台已经给出磁盘读写受限告警，应优先升级云盘性能；若已触及实例上限，再同步升级实例规格
-- 因此，推荐把这套方案定位为“预构建镜像运行节点”，而不是“云端开发构建节点”
+## 迁移与数据库口径
+- PostgreSQL 是唯一正式数据库主线
+- 正式迁移目标继续固定为 `prisma migrate deploy`
+- `db push` 只保留为 `phase10` 已冻结的兼容兜底，不得在 `phase11` 被重新包装为正式主路径
+- `migration_lock.toml` 与历史 SQLite 残留仍按兼容项处理，直到后续专项治理完成退出
 
-## 部署前检查
-- 服务器已安装 Docker Compose 或 Podman Compose
-- DNS 已解析到当前服务器公网 IP
-- 安全组已放行 `80/443`
-- 已准备好正式证书和私钥
-- `.env` 中已填入真实域名、密钥、管理员哈希和数据库密码
-- 云平台未出现明显的磁盘 `I/O` 受限告警；如果已出现，应先评估云盘性能再继续完整部署
+## 发布前门禁
+正式部署切线前至少完成：
+- `npm run lint`
+- `npm run type-check`
+- `npm run build:minix`
+- `npm run audit:phase09:legacy-routes`
+- 条件允许时执行 `npm run smoke:phase09:all`
+- `/api/health` 可用
+- 登录页与房源 / 合同 / 账单主链 smoke 通过
 
-## 说明
-### 部署资产拉取
-- 推荐不要整仓库完整拉取到云服务器，而是只拉取部署所需资产
-- `bootstrap-deploy-assets.sh` 会自动使用 Git sparse-checkout
-- 会自动创建 `nginx/ssl`、`logs/nginx`、`backups`
-- 会保留后续更新所需的 Git 远端关系
-- 这样做的目标是把服务器职责收口到“拉取部署资产并运行镜像”，避免回到源码构建路径
-- 当前存量运行线若仍需继续使用这套部署资产，默认应显式拉取 `Rento-miniX` 当前仓库；`Rento-legacy` 只用于历史对照，不作为默认部署 remote
+## 健康检查口径
+- 主健康入口固定为 `/api/health`
+- 正式部署验证至少覆盖：
+  - `https://<domain>/api/health`
+  - `https://<domain>/login`
+  - 首页、房源、合同、账单主链可访问
+- 任何更细粒度的健康路径都只能作为辅助定位入口，不替代主健康入口
 
-当前部署资产集合固定为：
-- `.env.example`
-- `README.md`
-- `DEPLOYMENT.md`
+## legacy 回滚基线
+以下资产仍服务于旧容器化运行线的历史运行与回滚参考职责：
 - `docker-compose.yml`
 - `nginx/nginx.conf`
-- `scripts/bootstrap-deploy-assets.sh`
 - `scripts/cloud-deploy.sh`
+- `scripts/bootstrap-deploy-assets.sh`
 - `scripts/health-check.sh`
-- `scripts/init-db.sh`
+- `scripts/start-entry.mjs`
+- 旧 `.env.example` 中与镜像、容器和 `nginx` 绑定的变量历史口径
 
-### 常用配置项
-```env
-APP_IMAGE=ghcr.io/hellocplusplus0/rento@sha256:9ae214a2ebe776ddf68ed80b61193b4139ee2ff7eb41994a51a4b755440e3abd
-HTTP_PORT=80
-HTTPS_PORT=443
-CONTAINER_REDIS_URL=redis://redis:6379
-NGINX_SSL_DIR=./nginx/ssl
-HOST_LOG_DIR=./logs
-HOST_BACKUP_DIR=./backups
-HOST_NGINX_LOG_DIR=./logs/nginx
-```
-
-### 环境变量规则
-- `.env.example` 是唯一共享模板
-- `.env` 是服务器私有配置，不应提交到版本控制
-- `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 默认应保持一致
-- `ADMIN_PASSWORD_HASH` 必须使用 `scrypt:<salt>:<hash>` 格式
-- 不要再引入 `ADMIN_PASSWORD_PLAINTEXT`
-
-### 管理员密码哈希生成
-```bash
-node -e "const { randomBytes, scryptSync } = require('node:crypto'); const password = process.argv[1]; const salt = randomBytes(16).toString('hex'); const hash = scryptSync(password, salt, 64).toString('hex'); console.log(`scrypt:${salt}:${hash}`)" "your-password"
-```
-
-## 脚本行为
-`scripts/cloud-deploy.sh` 会执行以下动作：
-- 自动识别 Docker 或 Podman
-- 若 `.env` 不存在则从模板生成
-- 可根据入参写入 `NEXTAUTH_URL` 和 `ALLOWED_ORIGINS`
-- 校验 `.env` 必填项和证书文件
-- 拉取固定镜像
-- 启动 `postgres`、`redis`、`app`
-- 等待健康检查通过后执行数据库初始化
-- 启动 `nginx`
-- 执行本机 HTTPS 健康检查
-
-## 已知运维边界
-- 如果服务器规格较低，`pull + 解压镜像 + 初始化` 可能比运行态更容易触发资源峰值
-- `Rento` 当前推荐的云服务器路径是“提前构建镜像，服务器只负责拉取并运行”
-- 若曾混用 rootful 与 rootless Podman，部署前应先清理历史自定义网络和 CNI 残留，避免持续告警干扰判断
-
-## 手动运维
-启动后常用命令：
-```bash
-docker compose ps
-docker compose logs -f
-docker compose exec app /app/scripts/migrate-and-seed.sh
-docker compose restart nginx
-docker compose down
-```
-
-如果使用 Podman，请替换为 `podman compose` 或 `podman-compose`。
-
-## 验收清单
-- `https://rento.example.com/api/health` 返回 `200`
-- `https://rento.example.com/login` 可打开并完成管理员登录
-- 首页、房源、合同、账单主链可访问
-- 浏览器能正常读取 `manifest.json`
-- Android Chrome 可识别安装入口
-- 安装后的 PWA 可启动、登录、刷新和更新
-
-## 更新流程
-常规更新：
-```bash
-docker compose pull app
-docker compose up -d app nginx
-docker compose exec app /app/scripts/migrate-and-seed.sh
-```
-
-如果要冻结到新的镜像版本，请直接修改 `.env` 中的 `APP_IMAGE`。
-
-如果云服务器只保留了部署资产，也可以执行：
-```bash
-./scripts/bootstrap-deploy-assets.sh /opt/rento
-```
-
-这会在保持稀疏拉取范围不变的前提下更新部署文件。
-
-## 回滚流程
-回滚职责边界：
-- 这里只回滚当前存量容器化运行线的镜像 digest、部署资产版本与环境配置
+legacy 回滚职责边界：
+- 只回滚存量容器化运行线的镜像、部署资产、环境配置与验证路径
 - 不通过把当前开发 remote 切回 `Rento-legacy` 来处理运行问题
+- 不继续把 `docker-compose + nginx + Next.js standalone` 扩写成未来正式部署主线
 
-如果新镜像异常：
-1. 把 `.env` 中的 `APP_IMAGE` 改回上一个可用 digest
-2. 执行 `docker compose pull app`
-3. 执行 `docker compose up -d app nginx`
-4. 重新验证 `/api/health` 和登录页
+## 与 `Rento-legacy` 的关系
+- `Rento-legacy` 只承担 GitHub 侧只读历史备份与对照职责
+- 它不是部署入口、回滚入口、默认 remote 或第二真相源
+- 当前正式部署、正式文档与正式阶段工作流都只围绕当前仓库展开
 
-## 安全要求
-- 不要把 `.env`、证书、私钥提交到仓库
-- 不要保留明文管理员密码
-- 不要额外暴露 `postgres` 或 `redis` 到公网
-- 不要再引入第二套部署入口、第二套 Nginx 配置或第二套 compose 文件
+## 当前结论
+- 根级部署说明已经切换到 `Rento-miniX` 的正式部署主线口径
+- legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口职责
+- 在 `phase11` 阶段文档审核通过前，不直接进入正式部署实现或切线执行

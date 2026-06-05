@@ -13,6 +13,9 @@ const projectDir = path.resolve(scriptDir, '..')
 
 loadEnvConfig(projectDir, true)
 
+// `dev:minix` is intentionally a local development-only topology:
+// `tsx watch` serves the Hono runtime, and Vite serves the frontend shell.
+// It is not a production or deployment entry.
 const serverPort = readPort(
   process.env.MINIX_SERVER_PORT || process.env.APP_INTERNAL_PORT || '3002'
 )

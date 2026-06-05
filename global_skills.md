@@ -55,6 +55,7 @@ reference-driven in-place replatform workflow
 - 任何影响公网暴露面的变更，都必须先定义门禁与回滚条件。
 - 对历史兼容逻辑、迁移桥接逻辑与新旧并存逻辑，必须写明存在原因、当前作用与退出条件。
 - 发布前优先确认环境变量、健康检查、部署脚本与核心业务 smoke test 已冻结。
+- 当推进到 `phase11-deployment-cutover-and-cutline-closure` 时，优先冻结正式部署主线、legacy 回滚基线、环境模板、健康检查与发布门禁，再进入任何部署实现。
 
 ## 9. 文档-实现一致性扫描技能
 - 在阶段切换前，检查顶层文档是否准确描述当前代码、目录与仓库状态。
@@ -66,3 +67,6 @@ reference-driven in-place replatform workflow
 - `fix-now`：会阻断当前仓库主线切换或直接破坏真相源的问题。
 - `defer-post-phase`：不影响当前阶段闭环，但后续必须进入计划的问题。
 - `escalate-architecture`：已经超出局部修补，需要单独 phase 收口的问题。
+- 对 `phase11` 相关问题，可额外优先识别两类高风险项：
+- `cutover-blocker`：会导致正式部署主线无法替代 legacy 运行线的问题，例如服务端产物链缺失、环境模板失真、健康检查失效。
+- `rollback-gap`：会导致切线后无法回退到已知可用基线的问题，例如 legacy 资产职责不清、回滚路径与发布门禁混写。

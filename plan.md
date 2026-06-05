@@ -1,11 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase10-data-access-and-migration-closure`
-- 当前阶段目标：在 `phase09` 已完成共享领域服务、正式宿主、compat wrapper 清单与主链验证矩阵冻结的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
-- 当前执行方式：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、smoke 路径与 legacy route 清单收口；`phase10` 已在这些上游输入基础上完成阶段级文档与 `phase10-01 ~ phase10-05` 的 `/spec` 收口。
-- 当前下一步：审核 `docs/phase10_data_access_and_migration_closure_architecture_plan.md`、`docs/phase10_data_access_and_migration_closure_dev_plan.md`、`docs/phase10_data_access_and_migration_closure_shared_baseline.md` 与 `phase10-05` 收口结果，确认 `phase10` 是否通过当前轮最终审核；未经批准，不切换默认工作流到 `phase11`。
-- 当前阶段说明：`phase09` 已完成并作为 `phase10` 的直接上游输入保留；旧 `phase01~phase08` 继续作为历史连续性输入保留。
+- 当前默认工作流：`phase11-deployment-cutover-and-cutline-closure`
+- 当前阶段目标：在 `phase10` 已冻结长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界的前提下，为 `Rento-miniX` 收口正式部署主线、回滚基线、旧运行线退出条件与发布门禁。
+- 当前执行方式：`phase10` 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；当前已基于这些上游输入完成 `phase11` 的阶段级文档产出。
+- 当前下一步：审核 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)、[phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)；审核通过前，不进入任何 `phase11-*` `/spec`，也不提前落地部署切线实现。
+- 当前阶段说明：`phase10` 已完成并作为 `phase11` 的直接上游输入保留；旧 `phase01~phase09` 继续作为历史连续性输入保留。
 
 ## 阶段顺序
 
@@ -186,12 +186,13 @@
   - 回滚路径、健康检查与发布门禁完整可解释
   - 旧容器化运行线已明确退为历史运行线/回滚参考
 - 当前结论：
-  - 待启动
+  - 已完成阶段级文档产出，待审核
+  - 正式部署主线、legacy 回滚基线、环境模板、健康检查与发布门禁已冻结到 `docs/phase11_*`
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“进入 `phase10-data-access-and-migration-closure` 的 `/plan`”推进到“完成 `phase10` 文档与 `/spec` 收口，并等待最终审核是否通过”。
-- 当前默认推进方向：继续把 `phase10` 保持为默认工作流，先完成最终审核，再决定是否进入后续阶段；在此之前，不直接扩张到部署切线实现。
+- 当前最优策略已从“完成 `phase10` 文档与 `/spec` 收口”推进到“完成 `phase11` 阶段文档并等待审核是否通过”。
+- 当前默认推进方向：继续把 `phase11` 保持为默认工作流，先完成阶段文档审核，再决定是否进入后续 `/spec`；在此之前，不直接扩张到部署切线实现。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。
@@ -205,6 +206,7 @@
 - `docs/phase08_*` 将承接统一 API 宿主、认证门禁、中间件链、错误处理、最小公开 API 白名单与页面守卫边界等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase09_*` 将承接共享领域服务落点、合同/账单/支付周期/仪表/抄表/删除门禁迁移顺序、兼容宿主边界与主链验证矩阵等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase10_*` 将承接长期数据访问层方案、查询分层、事务边界、迁移兼容项与 legacy route inventory 对齐等阶段细节；本文件继续只保留阶段总览与验收结论。
+- `docs/phase11_*` 将承接正式部署主线、服务端产物链、环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `phase10` 收口后的最低验证命令固定为 `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若仅文档变更，至少补做 `docs/phase10_*` 互链与被引用路径存在性复核。
 
 ## 历史说明

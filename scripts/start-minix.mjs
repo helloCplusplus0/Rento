@@ -12,12 +12,21 @@ const { loadEnvConfig } = nextEnv
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
 const distDir = path.join(projectDir, process.env.MINIX_DIST_DIR || 'dist')
+const serverBuildDir = path.join(projectDir, 'build', 'minix-server')
 const indexHtmlPath = path.join(distDir, 'index.html')
+const serverEntryPath = path.join(serverBuildDir, 'index.mjs')
 
 loadEnvConfig(projectDir, false)
 
+// `start:minix` is the production entry for the compiled Hono runtime plus
+// the prebuilt frontend `dist/` assets. Development keeps using `dev:minix`.
 if (!fs.existsSync(indexHtmlPath)) {
   console.error('缺少 `dist/index.html`，请先执行 `npm run build:minix`。')
+  process.exit(1)
+}
+
+if (!fs.existsSync(serverEntryPath)) {
+  console.error('缺少 `build/minix-server/index.mjs`，请先执行 `npm run build:minix`。')
   process.exit(1)
 }
 
@@ -25,7 +34,9 @@ const serverPort = readPort(
   process.env.MINIX_SERVER_PORT || process.env.APP_INTERNAL_PORT || '3002'
 )
 
-const child = spawn(readNpxCommand(), ['tsx', 'server/index.ts'], {
+console.log(`Rento-miniX production runtime: ${serverEntryPath}`)
+
+const child = spawn(process.execPath, [serverEntryPath], {
   cwd: projectDir,
   env: {
     ...process.env,
@@ -52,10 +63,6 @@ child.on('exit', (code, signal) => {
 
   process.exit(code ?? 0)
 })
-
-function readNpxCommand() {
-  return process.platform === 'win32' ? 'npx.cmd' : 'npx'
-}
 
 function readPort(rawValue) {
   const port = Number.parseInt(rawValue, 10)

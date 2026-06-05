@@ -53,6 +53,7 @@
 - `Rento-miniX` 的核心目标之一是降低低配服务器部署门槛。
 - 默认要求云端不构建，只运行预构建产物。
 - 默认要求部署链低复杂度、低 I/O 峰值、低维护负担。
+- 当推进到 `phase11` 时，默认冻结 `Caddy + systemd + Hono + PostgreSQL` 作为正式部署主线，避免重新回到 `Docker-heavy` 或多入口并存。
 
 ## 9. 迁移链治理技能
 - 当前主线已是 PostgreSQL，但迁移链仍有 SQLite 时代遗留。
@@ -79,3 +80,4 @@
 - 当前 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh` 等仍服务于旧容器化运行线。
 - 它们在 `phase06` 阶段应被视为参考输入和回滚基线，而不是未来 `Rento-miniX` 正式部署主线。
 - 对外说明必须区分“当前存量可运行”与“未来轻量主线目标”，避免混写。
+- 当进入 `phase11` 时，默认要求把这些资产显式降级为 legacy 回滚基线，并写清保留条件、退出条件与不得继续扩写的边界。
