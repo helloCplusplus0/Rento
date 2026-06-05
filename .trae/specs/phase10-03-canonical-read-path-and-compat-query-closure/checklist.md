@@ -1,0 +1,8 @@
+- [x] `phase10-03` 的 spec 明确限定为 canonical read path 与查询分层冻结任务，没有越界到 legacy 查询删除、dashboard 宿主迁移或部署切线
+- [x] 合同、账单、房间、抄表与 dashboard 统计等核心读取场景均已形成 canonical read path 结论
+- [x] `queries.ts` 中可保留的 compat 查询与应继续退出的写职责已被明确区分
+- [x] `optimized-queries.ts` 中正式读取模型候选位与兼容优化实现已被明确区分
+- [x] `dashboard-queries.ts`、`search-queries.ts`、`global-settings.ts`、`health-checker.ts` 的治理 / 辅助身份已被明确
+- [x] `keep-compat` 与 `defer-unmigrated` bucket 的查询依赖均已映射到查询层收口顺序
+- [x] 文档表述与现有查询文件职责不冲突
+- [x] `phase10-03` 的输出可以直接作为后续实现与 `phase10-04` 的上游输入

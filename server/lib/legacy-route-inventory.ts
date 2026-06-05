@@ -1042,3 +1042,110 @@ export const PHASE09_06_LEGACY_ROUTE_PHASE10_INPUT = {
     (item) => item.phase10Input === 'defer-unmigrated'
   ),
 } as const
+
+export interface Phase10QueryClosureStep {
+  order: number
+  goal: string
+  queryPaths: readonly string[]
+  routePaths: readonly string[]
+  rationale: string
+}
+
+function uniqueRoutePaths(items: readonly FlattenedLegacyRouteOperation[]) {
+  return Array.from(new Set(items.map((item) => item.routePath))).sort()
+}
+
+const KEEP_COMPAT_DOMAIN_SERVICE_ROUTES = uniqueRoutePaths(
+  PHASE09_06_LEGACY_ROUTE_PHASE10_INPUT.keepCompat.filter((item) =>
+    item.domainServicePaths.some((path) => path.startsWith('src/lib/domain/'))
+  )
+)
+
+const DEFER_CANONICAL_LIST_ROUTES = uniqueRoutePaths(
+  PHASE09_06_LEGACY_ROUTE_PHASE10_INPUT.deferUnmigrated.filter((item) =>
+    ['src/lib/optimized-queries.ts'].some((path) =>
+      item.domainServicePaths.includes(path)
+    )
+  )
+)
+
+const DEFER_COMPAT_DETAIL_ROUTES = uniqueRoutePaths(
+  PHASE09_06_LEGACY_ROUTE_PHASE10_INPUT.deferUnmigrated.filter((item) =>
+    item.domainServicePaths.includes('src/lib/queries.ts')
+  )
+)
+
+const DEFER_AD_HOC_PRISMA_ROUTES = uniqueRoutePaths(
+  PHASE09_06_LEGACY_ROUTE_PHASE10_INPUT.deferUnmigrated.filter((item) =>
+    item.domainServicePaths.includes('src/lib/prisma.ts')
+  )
+)
+
+const DEFER_GOVERNANCE_QUERY_ROUTES = uniqueRoutePaths(
+  PHASE09_06_LEGACY_ROUTE_PHASE10_INPUT.deferUnmigrated.filter((item) =>
+    item.domainServicePaths.some((path) =>
+      [
+        'src/lib/dashboard-queries.ts',
+        'src/lib/global-settings.ts',
+        'src/lib/health-checker.ts',
+      ].includes(path)
+    )
+  )
+)
+
+export const PHASE10_03_QUERY_LAYER_CLOSURE_ORDER = {
+  keepCompat: [
+    {
+      order: 1,
+      goal: '守住已迁入共享领域服务的 compat wrapper，不再回流到 queries.ts',
+      queryPaths: [
+        'src/lib/domain/contracts/index.ts',
+        'src/lib/domain/billing/index.ts',
+        'src/lib/domain/meters/index.ts',
+        'src/lib/domain/delete-guards/index.ts',
+      ],
+      routePaths: KEEP_COMPAT_DOMAIN_SERVICE_ROUTES,
+      rationale:
+        'keep-compat bucket 的首要目标是保住正式宿主和共享领域服务边界，而不是重新打开 legacy 查询层。',
+    },
+  ] satisfies readonly Phase10QueryClosureStep[],
+  deferUnmigrated: [
+    {
+      order: 1,
+      goal: '先冻结已成型的列表 API 优化读模型，并单独标注 includeMeters 变体',
+      queryPaths: ['src/lib/optimized-queries.ts'],
+      routePaths: DEFER_CANONICAL_LIST_ROUTES,
+      rationale:
+        '合同/账单列表 API 已具备数据库侧分页、过滤和排序能力；`/api/rooms?includeMeters=true` 仅是批量抄表依赖的优化分支，不等于默认房间列表读取主入口。',
+    },
+    {
+      order: 2,
+      goal: '再冻结仍必须保留的 compat 详情与 SSR 读取',
+      queryPaths: ['src/lib/queries.ts'],
+      routePaths: DEFER_COMPAT_DETAIL_ROUTES,
+      rationale:
+        'queries.ts 仍承接合同/账单/房间详情、房间 SSR 列表与抄表列表读取，phase10-03 先冻结其过渡角色而不继续扩张。',
+    },
+    {
+      order: 3,
+      goal: '把 route-local ad-hoc Prisma 读取显式记录为待抽离路径',
+      queryPaths: ['src/lib/prisma.ts'],
+      routePaths: DEFER_AD_HOC_PRISMA_ROUTES,
+      rationale:
+        '账单明细、utility details、多数组合型 dashboard/治理接口仍直接依赖 Prisma；当前阶段只冻结其债务身份。',
+    },
+    {
+      order: 4,
+      goal: '最后隔离治理与辅助查询，不让其反向定义主链真相',
+      queryPaths: [
+        'src/lib/dashboard-queries.ts',
+        'src/lib/global-settings.ts',
+        'src/lib/health-checker.ts',
+        'src/lib/search-queries.ts',
+      ],
+      routePaths: DEFER_GOVERNANCE_QUERY_ROUTES,
+      rationale:
+        'dashboard、settings、health 与辅助搜索继续保留为治理/辅助读取层，而不是合同/账单/房间/抄表的正式读模型。',
+    },
+  ] satisfies readonly Phase10QueryClosureStep[],
+} as const

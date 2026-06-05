@@ -86,7 +86,45 @@
   - `src/lib/dashboard-queries.ts`、`src/lib/global-settings.ts`、`src/lib/health-checker.ts` 应继续作为治理/辅助读取层，不反向定义主链 canonical read path。
   - `src/lib/search-queries.ts` 当前无 route inventory 依赖，不进入首批 canonical read path 冻结列表。
 
-## 6. 验证记录
+## 6. `phase10-03` 冻结结论回填
+
+### 6.1 核心读取场景
+
+| 场景 | `phase10-03` 结论 | 当前承接位 |
+| --- | --- | --- |
+| 合同列表 | 正式主链分页列表优先冻结到优化查询层 | `src/lib/optimized-queries.ts` -> `optimizedContractQueries.findWithPagination()` |
+| 合同详情 | 详情读取仍留在 compat 查询层，但冻结为单一 detail read | `src/lib/queries.ts` -> `contractQueries.findById()` |
+| 账单列表 | 正式主链分页列表优先冻结到优化查询层 | `src/lib/optimized-queries.ts` -> `optimizedBillQueries.findWithPagination()` |
+| 账单详情 | 主记录详情继续留在 compat 查询层 | `src/lib/queries.ts` -> `billQueries.findById()` |
+| 账单明细 / utility details | 仍属 route-local ad-hoc Prisma 读取 | `src/app/api/bills/[id]/details/route.ts`、`src/app/api/bills/[id]/utility-details/route.ts` |
+| 房间列表 | 当前 SSR 房源页继续以 `queries.ts` 为 canonical list read | `src/lib/queries.ts` -> `roomQueries.findAll()` |
+| 房间详情 | 详情读取继续留在 compat 查询层 | `src/lib/queries.ts` -> `roomQueries.findById()` |
+| 抄表列表 | 列表与筛选继续留在 compat 查询层 | `src/lib/queries.ts` -> `meterReadingQueries.findAll()` |
+| 抄表详情 / related bills | 已冻结到共享领域服务 | `src/lib/domain/meters/index.ts` |
+| Dashboard 总览统计 | 保留为治理/辅助统计读取 | `src/lib/dashboard-queries.ts` -> `getEnhancedDashboardStats()` |
+
+### 6.2 查询文件长期定位
+
+| 文件 | `phase10-03` 长期定位 |
+| --- | --- |
+| `src/lib/queries.ts` | legacy compat 查询承接位，保留过渡期 detail/SSR 读取，继续退出写职责 |
+| `src/lib/optimized-queries.ts` | 正式主链分页列表读模型候选位，同时继续服务 legacy 列表优化 |
+| `src/lib/dashboard-queries.ts` | 治理/辅助查询，只服务 dashboard 总览统计 |
+| `src/lib/search-queries.ts` | 未接入主链的辅助搜索 helper |
+| `src/lib/global-settings.ts` | 治理配置查询/写入承接位，不是主链数据读取真相源 |
+| `src/lib/health-checker.ts` | 治理/脚本查询承接位，只服务细粒度健康检查 |
+
+### 6.3 Route Inventory 到查询层收口顺序
+
+- `keep-compat`
+  - 优先守住 `src/lib/domain/*` 支撑的 compat wrapper，不把已迁出的写/读语义重新拉回 `queries.ts`
+- `defer-unmigrated`
+  - 先收口 `src/lib/optimized-queries.ts` 的合同/账单列表
+  - 再收口 `src/lib/queries.ts` 的合同/账单/房间详情与抄表列表
+  - 然后显式记录 route-local Prisma 读取债务
+  - 最后隔离 `dashboard-queries.ts`、`global-settings.ts`、`health-checker.ts`、`search-queries.ts` 这类治理/辅助 helper；`global-settings.ts` 属于这里的治理配置依赖，而不是 `keep-compat` bucket 主体
+
+## 7. 验证记录
 
 - 已对照 `docs/phase10_data_access_and_migration_closure_architecture_plan.md`、`docs/phase10_data_access_and_migration_closure_dev_plan.md`、`docs/phase10_data_access_and_migration_closure_shared_baseline.md` 复核 `phase10-01` 边界。
 - 已复核以下路径真实存在：

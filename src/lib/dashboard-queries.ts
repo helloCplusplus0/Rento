@@ -2,6 +2,17 @@ import { prisma } from '@/lib/prisma'
 import { OPEN_BILL_STATUSES, toBillAmount } from '@/lib/bill-semantics'
 
 /**
+ * phase10-03 查询层定位：
+ * - 主角色：治理/辅助查询
+ * - 仅承接 dashboard 总览统计，不反向定义合同/账单/房间/抄表主链读模型
+ */
+export const dashboardQueriesLayerPosition = {
+  primaryRole: 'governance-query',
+  canonicalReadScopes: ['dashboard-summary-stats'],
+  notCanonicalFor: ['contracts', 'bills', 'rooms', 'meter-readings'],
+} as const
+
+/**
  * 增强的仪表板统计数据接口
  */
 export interface EnhancedDashboardStats {

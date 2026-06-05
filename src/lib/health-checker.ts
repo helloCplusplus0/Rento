@@ -11,6 +11,12 @@ import {
 } from './observability'
 import { prisma } from './prisma'
 
+export const healthCheckerLayerPosition = {
+  primaryRole: 'governance-health-query',
+  supports: ['health-system-detail', 'health-bill-detail', 'ops-troubleshooting'],
+  notCanonicalFor: ['api-health-main-entry', 'contracts', 'bills', 'rooms', 'meter-readings'],
+} as const
+
 /**
  * 健康检查状态枚举
  */

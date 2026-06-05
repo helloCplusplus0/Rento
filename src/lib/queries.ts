@@ -10,6 +10,35 @@ import { createBillStatusCountMap, sortBillsForDisplay } from './bill-semantics'
 import { globalSettings } from './global-settings'
 import { prisma } from './prisma'
 
+/**
+ * phase10-03 查询层定位：
+ * - 主角色：legacy compat 查询承接位
+ * - 当前仍承接的 canonical read path：合同/账单/房间详情，房间 SSR 列表，抄表列表
+ * - 必须继续退出的职责：create/update/delete/batch 等写语义
+ * - 不再被视为长期正式统一读入口；分页列表优先收口到 optimized-queries.ts，
+ *   抄表详情与 related bills 已迁到 src/lib/domain/meters
+ */
+export const queriesLayerPosition = {
+  primaryRole: 'legacy-compat-query',
+  canonicalReadScopes: [
+    'contract-detail',
+    'bill-detail',
+    'room-list-ssr',
+    'room-detail',
+    'meter-reading-list',
+  ],
+  retainedReasons: [
+    '承接旧 src/app/api/* 与 SSR 页面仍在使用的详情读取',
+    '为 phase10-03 冻结后的过渡期 canonical detail read 提供单一入口',
+  ],
+  mustExitResponsibilities: [
+    'query-layer-create',
+    'query-layer-update',
+    'query-layer-delete',
+    'query-layer-batch-write',
+  ],
+} as const
+
 function createRestrictedDeleteError(entityName: string, suggestion: string) {
   return new Error(
     `${entityName}默认删除入口已禁用，请改用受门禁保护的详情 API 或专用业务流程。${suggestion}`

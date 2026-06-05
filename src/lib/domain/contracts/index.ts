@@ -131,9 +131,9 @@ export const CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX: readonly ContractMainFlowDes
     canonicalWriteHost:
       'src/app/api/contracts/route.ts -> src/lib/domain/billing|src/lib/domain/meters',
     canonicalQueryHosts: [
-      'src/app/api/contracts/route.ts',
-      'src/lib/optimized-queries.ts',
-      'src/lib/queries.ts',
+      '合同列表分页 -> src/lib/optimized-queries.ts',
+      '合同详情/SSR 回查 -> src/lib/queries.ts',
+      '提醒窗口配置 -> src/lib/global-settings.ts',
     ],
     compatWrappers: ['src/app/api/contracts/[id]/generate-bills/route.ts'],
   },
@@ -141,7 +141,10 @@ export const CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX: readonly ContractMainFlowDes
     key: 'RENEW_CONTRACT',
     label: '续租与补账单',
     canonicalWriteHost: 'src/lib/domain/contracts',
-    canonicalQueryHosts: ['src/lib/queries.ts', 'src/app/api/contracts/[id]/route.ts'],
+    canonicalQueryHosts: [
+      '合同详情 -> src/lib/queries.ts',
+      '旧详情宿主 -> src/app/api/contracts/[id]/route.ts',
+    ],
     compatWrappers: ['src/app/api/contracts/[id]/renew/route.ts'],
   },
   {
@@ -149,9 +152,9 @@ export const CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX: readonly ContractMainFlowDes
     label: '退租结算',
     canonicalWriteHost: 'src/lib/domain/contracts',
     canonicalQueryHosts: [
-      'src/lib/queries.ts',
-      'src/app/api/contracts/[id]/route.ts',
-      'src/lib/domain/meters',
+      '合同详情 -> src/lib/queries.ts',
+      '旧详情宿主 -> src/app/api/contracts/[id]/route.ts',
+      '终抄详情/related bills -> src/lib/domain/meters',
     ],
     compatWrappers: ['src/app/api/contracts/[id]/checkout/route.ts'],
   },
@@ -160,8 +163,8 @@ export const CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX: readonly ContractMainFlowDes
     label: '多仪表抄表出账',
     canonicalWriteHost: 'src/lib/domain/meters',
     canonicalQueryHosts: [
-      'src/lib/domain/meters',
-      'src/app/api/meter-readings/[id]/related-bills/route.ts',
+      '抄表详情 -> src/lib/domain/meters',
+      'related bills compat 宿主 -> src/app/api/meter-readings/[id]/related-bills/route.ts',
     ],
     compatWrappers: ['src/app/api/meter-readings/route.ts'],
   },

@@ -1,6 +1,17 @@
 import { prisma } from '@/lib/prisma'
 
 /**
+ * phase10-03 查询层定位：
+ * - 主角色：未接入主链的辅助搜索 helper
+ * - 当前没有 route inventory 主路径依赖，不属于 canonical read path
+ */
+export const searchQueriesLayerPosition = {
+  primaryRole: 'auxiliary-search-query',
+  activeRouteInventoryDependency: false,
+  canonicalReadScopes: [] as const,
+} as const
+
+/**
  * 搜索房间
  */
 export async function searchRooms(query: string) {

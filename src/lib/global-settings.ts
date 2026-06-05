@@ -7,6 +7,18 @@ import {
 import { prisma } from '@/lib/prisma'
 
 /**
+ * phase10-03 查询层定位：
+ * - 主角色：治理配置查询/写入承接位
+ * - 可继续承接 settings 管理、提醒窗口、抄表/计费默认值回退
+ * - 不反向定义合同/账单/房间/抄表主数据的 canonical read path
+ */
+export const globalSettingsLayerPosition = {
+  primaryRole: 'governance-config-query',
+  supports: ['settings-management', 'alert-window-config', 'reading-billing-defaults'],
+  notCanonicalFor: ['contracts', 'bills', 'rooms', 'meter-readings'],
+} as const
+
+/**
  * 全局设置管理库
  * 提供数据库级别的设置存储和管理功能
  */

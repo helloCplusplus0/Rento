@@ -9,6 +9,20 @@ import {
 import { prisma } from './prisma'
 
 /**
+ * phase10-03 查询层定位：
+ * - 主角色：正式主链分页列表的 canonical read path 候选位
+ * - 当前正式候选：合同列表、账单列表
+ * - 当前仍属兼容优化实现：房间列表变体、租客分页
+ * - 不默认承接详情读取或治理查询
+ */
+export const optimizedQueriesLayerPosition = {
+  primaryRole: 'formal-mainline-read-candidate',
+  canonicalReadScopes: ['contract-list', 'bill-list'],
+  compatOptimizedScopes: ['room-list-with-meters', 'room-list-pagination', 'renter-list'],
+  notIntendedFor: ['detail-read-default-host', 'governance-query'],
+} as const
+
+/**
  * 通用分页查询参数接口
  */
 export interface PaginationParams {
