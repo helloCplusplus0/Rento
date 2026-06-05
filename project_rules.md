@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation` 与 `phase09-domain-service-migration` 已完成当前轮阶段收口；`phase10-data-access-and-migration-closure` 已完成阶段级文档产出并待审核，在审核通过前不直接扩张到部署切线或新的主链实现。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation` 与 `phase09-domain-service-migration` 已完成当前轮阶段收口；`phase10-data-access-and-migration-closure` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前保持在 `phase10` 最终审核阶段；在审核通过前不直接扩张到部署切线或新的主链实现。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase10` 的当前轮重点应建立在 `phase09` 已冻结的共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界之上，不反向改写这些结论。
 
@@ -53,7 +53,7 @@
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已从 `phase09-domain-service-migration` 推进到 `phase10-data-access-and-migration-closure` 的规划阶段；后续实现必须建立在 `phase10` 阶段文档审核通过之后。
+- 当前默认工作流已推进到 `phase10-data-access-and-migration-closure` 的最终收口阶段；后续实现或阶段切换必须建立在 `phase10` 阶段文档、`/spec`、最低验证要求与 handoff 审核通过之后。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。
 - `phase08` 审核通过的最低前提，至少包括：统一 API 宿主、认证门禁、中间件链、错误处理、环境变量约束与最小安全边界均已冻结并通过审核。
@@ -76,6 +76,8 @@
 - `phase09` 期间删除语义继续优先拦截、终止、归档、停用与解绑，不允许因宿主迁移放宽历史事实保留规则。
 - `phase10` 期间允许收口长期数据访问层方案、查询层分类、事务边界、迁移兼容项说明与 legacy route inventory 对齐，但不得在该阶段直接新增新的主链领域迁移范围，也不得直接切换最终部署主线。
 - `phase10` 期间 `db push` 只能被标记为兼容兜底，不得被重新包装为正式 PostgreSQL 迁移链；在未完成专项治理前，不得贸然直接修改历史 `migration_lock.toml`。
+- `phase10` 当前轮最低验证要求固定为：`npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若本轮仅涉及文档，也至少完成 `docs/phase10_*` 互链与被引用路径存在性复核。
+- `phase10` 进入后续阶段前，必须明确供 `phase11` 直接继承的最小上游输入：长期数据访问层方案、查询分层与 canonical read path、统一事务边界、迁移兼容项边界，以及与 `phase09-06` route inventory 对齐后的退出/保留判断。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
   - 是否影响历史数据

@@ -1,11 +1,11 @@
 # Phase10 Data Access And Migration Closure 开发规划
 
 ## 当前状态
-- `phase10` 的开发规划已完成当前轮产出，作为后续 `/spec` 的顺序执行蓝图。
+- `phase10` 的开发规划已完成当前轮产出，并已被 `phase10-01 ~ phase10-05` `/spec` 顺序消费，继续作为 `phase10` 的顺序执行蓝图与收口参考。
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
-  - `docs/phase10_data_access_and_migration_closure_architecture_plan.md`
-  - `docs/phase10_data_access_and_migration_closure_shared_baseline.md`
-- `phase10` 当前仍停留在阶段级文档完成、待审核状态；未经审核，不进入任一 `/spec`。
+  - [phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)
+  - [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md)
+- `phase10` 当前已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；未经用户批准，不切换默认工作流到 `phase11`。
 
 ## 一、文档定位
 本文档用于把 `phase10-data-access-and-migration-closure` 拆分为顺序执行的子任务，确保仓库先把数据访问层边界、查询分类、事务策略与迁移兼容项解释清楚，再进入 `phase11` 的部署切线。
@@ -191,7 +191,7 @@
 
 ## phase10-05-documentation-consistency-and-verification-closure
 ### 目标
-收口顶层真相源、阶段文档、验证命令与后续 `phase11` 输入，形成“`phase10` 阶段级文档齐备、待审核”的稳定状态。
+收口顶层真相源、阶段文档、验证命令与后续 `phase11` 输入，形成“`phase10` 阶段级文档、`/spec`、验证口径与 handoff 已闭环、等待最终审核”的稳定状态。
 
 ### 范围
 - 复核：
@@ -247,9 +247,24 @@ phase10-05-documentation-consistency-and-verification-closure
 - 默认把 `phase09-06` inventory 视为 `phase10` 的直接排序输入
 - 默认把 `db push` 视为兼容兜底，而不是正式迁移链
 - 默认不迁移新的主链领域服务，不切换最终部署主线，不重做 UI
-- 默认由用户审核 `phase10` 阶段文档后，再逐个进入 `/spec`
+- 默认由用户审核 `phase10` 最终收口材料；审核通过前不切换到 `phase11` 或部署切线
 
-## 六、结语
+## 六点五、`phase10-05` 收口输出
+- `phase10` 最低验证命令固定为：
+  - `npm run audit:phase09:legacy-routes`
+  - `npm run lint`
+  - `npm run type-check`
+- 若本轮仅涉及文档，最小验证要求仍至少包括：
+  - 三份 `docs/phase10_*` 互链复核
+  - 被引用文档、脚本与代码路径存在性复核
+- 供 `phase11` 直接继承的最小上游输入固定为：
+  - 长期数据访问层方案判断
+  - 正式/兼容/治理查询分层与 canonical read path 判断
+  - 统一事务边界与单一策略来源
+  - 迁移兼容项、`db push` compat path 与 `migrate deploy` 正式目标的职责边界
+  - 与 `phase09-06` legacy route inventory 对齐后的退出/保留判断
+
+## 七、结语
 `phase10` 的价值不在于“已经完成最终部署切线”或“已经删光所有 legacy 查询”，而在于：
 
 ```text

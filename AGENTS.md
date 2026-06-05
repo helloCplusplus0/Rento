@@ -25,11 +25,13 @@
 - 当前默认工作流：`phase10-data-access-and-migration-closure`
 - 当前主问题：在不破坏 `phase09` 已冻结的共享领域服务边界、正式宿主边界、历史数据保留与主链一致性口径的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase10-data-access-and-migration-closure` 的阶段级文档已产出，下一步应审核 [docs/phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)、[docs/phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md) 与 [docs/phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md)；审核通过后再进入 `phase10` 的 `/spec`。
+- 当前下一步：复核 [docs/phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)、[docs/phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md)、[docs/phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md) 与 `phase10-05` 收口结果，确认 `phase10` 是否通过当前轮最终审核；未经批准，不切换默认工作流到 `phase11`，也不提前进入部署切线。
 - 当前阶段重点：
   - 把 `phase09` 已完成的共享领域服务、正式宿主、compat wrapper 清单与主链 smoke 路径作为 `phase10` 的稳定上游输入
   - 冻结长期数据访问层方案判断，不让 ORM、查询模式和事务边界重新反向驱动领域设计
   - 冻结迁移链兼容项、旧 `Next.js` API 存量接口与 `phase10` 数据访问收口之间的关系
+  - 冻结 `phase10` 最低验证命令：`npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若仅文档变更，至少完成 `docs/phase10_*` 互链与被引用路径存在性复核
+  - 冻结供 `phase11` 直接继承的最小上游输入：长期数据访问层方案、查询分层与 canonical read path、统一事务边界、迁移兼容项边界、与 `phase09-06` route inventory 对齐后的退出/保留判断
   - 保持 `phase06`、`phase07`、`phase08`、`phase09` 已完成的路线图、目录治理和宿主映射继续作为上游输入
 
 ## 5. 当前明确冻结与禁止事项
@@ -57,7 +59,7 @@
 - `phase07-app-shell-and-runtime-foundation` 已完成：新前端应用壳、新运行时入口、旧运行线映射与退出条件已冻结为后续阶段上游输入。
 - `phase08-api-and-auth-foundation` 已完成：统一 API 宿主、最小认证闭环、请求治理、统一错误出口、环境变量兼容口径与 `src/minix` 最小页面守卫已完成当前阶段收口。
 - `phase09-domain-service-migration` 已完成当前轮阶段收口：共享领域服务落点、正式宿主边界、合同/账单/仪表/抄表/退租/删除门禁主链迁移、主链 smoke 路径、旧 `src/app/api/*` compat wrapper 清单与 `phase10` 上游输入已完成当前轮验证。
-- `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档产出：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项与退出条件已冻结为待审核输入；后续 `/spec` 应直接消费 `phase09-06` 的 route inventory 上游产物。
+- `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成单一闭环；当前仍停留在 `phase10` 的最终审核阶段。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明

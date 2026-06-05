@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 阶段文档现已产出并等待审核，后续实施将围绕数据访问层与迁移链收口推进。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前只等待最终审核是否通过。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -15,7 +15,7 @@
 - 在 `phase10` 数据访问层方案冻结前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -153,6 +153,25 @@
   - 当前兼容路径服务于哪些场景
   - `db push` 与 `migrate deploy` 的正式/兼容职责边界
   - 后续退出条件与回滚条件
+
+### `phase10-05` 收口结果
+- `phase10` 当前已形成单一闭环：
+  - 顶层真相源：`AGENTS.md`、`plan.md`、`architecture_map.md`、`project_rules.md`
+  - 阶段文档：`docs/phase10_data_access_and_migration_closure_architecture_plan.md`、`docs/phase10_data_access_and_migration_closure_dev_plan.md`、`docs/phase10_data_access_and_migration_closure_shared_baseline.md`
+  - `/spec` 收口：`phase10-01 ~ phase10-05`
+- `phase10` 最低验证命令已冻结为：
+  - `npm run audit:phase09:legacy-routes`
+  - `npm run lint`
+  - `npm run type-check`
+- 若本轮仅涉及文档，则最小验证要求仍包括：
+  - `docs/phase10_*` 三份文档互链复核
+  - 被引用文档、脚本与代码路径存在性复核
+- 供 `phase11` 直接继承的最小上游输入已冻结为：
+  - 长期数据访问层方案判断
+  - 正式/兼容/治理查询分层与 canonical read path 判断
+  - 统一事务边界与单一策略来源
+  - 迁移兼容项、`db push` compat path 与 `migrate deploy` 正式目标的边界
+  - 与 `phase09-06` route inventory 对齐后的退出/保留判断
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
@@ -307,4 +326,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是审核 `docs/phase10_*`，确认长期数据访问层方案、查询分层、事务边界与迁移兼容项已冻结，再按 `dev_plan` 子任务顺序进入 `phase10` 的 `/spec`，而不是提前执行部署切线。
+- 当前默认下一步是审核 `phase10` 的最终收口材料，确认长期数据访问层方案、查询分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成闭环；未经批准，不切换到 `phase11`，也不提前执行部署切线。

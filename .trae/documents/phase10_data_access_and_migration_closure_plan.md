@@ -1,5 +1,10 @@
 # Phase10 Data Access And Migration Closure 计划
 
+## 状态注记
+- 本文件保留为 `phase10` 的历史 `/plan` 产物，用于说明当时如何冻结阶段文档与 `/spec` 顺序。
+- 截至 `phase10-05-documentation-consistency-and-verification-closure` 完成后，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口；当前默认工作流仍停留在 `phase10` 最终审核阶段，不直接切换到 `phase11`。
+- 当前阶段状态、最低验证命令与 `phase11` 最小上游输入，以根级真相源和 `docs/phase10_*` 为准。
+
 ## 1. Summary
 - 目标：完成 `phase10-data-access-and-migration-closure` 的阶段级 `/plan` 产出，冻结长期数据访问层方案、查询分层、事务边界、迁移兼容项与退出条件，并为后续 `/spec` 提供可直接执行的拆分顺序。
 - 直接上游输入必须显式消费：

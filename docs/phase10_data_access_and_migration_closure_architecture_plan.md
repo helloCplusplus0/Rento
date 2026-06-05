@@ -16,6 +16,10 @@
 - [phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md) 的子任务拆分职责
 - [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md) 的共享边界职责
 
+## 当前文档状态
+- 本文档已与 [phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md) 和 [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md) 完成互链收口。
+- `phase10` 当前已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口；默认工作流仍保持在 `phase10`，等待最终审核，不直接切换到 `phase11`。
+
 ## 二、当前阶段前提
 ### 2.1 已完成上游
 - `phase01-restart-foundation-*` 已完成
@@ -326,3 +330,20 @@ scripts/
 - 不会把正式主链四领域模块的统一事务来源再次写回多套并行策略
 - 不会把 `db push` 继续误读为正式 PostgreSQL 迁移链
 - 不会在数据访问真相不清时提前进入部署切线
+
+## 八、`phase10-05` 收口结果
+### 8.1 最低验证要求
+- `phase10` 当前轮最低验证命令冻结为：
+  - `npm run audit:phase09:legacy-routes`
+  - `npm run lint`
+  - `npm run type-check`
+- 若本轮仅涉及文档，最小验证要求仍包括：
+  - 三份 `docs/phase10_*` 互链复核
+  - 被引用文档、脚本与代码路径存在性复核
+
+### 8.2 供 `phase11` 直接继承的最小上游输入
+- 长期数据访问层方案判断
+- 正式/兼容/治理查询分层与 canonical read path 判断
+- 统一事务边界与单一策略来源
+- 迁移兼容项、`db push` compat path 与 `migrate deploy` 正式目标的职责边界
+- 与 `phase09-06` legacy route inventory 对齐后的退出/保留判断

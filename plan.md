@@ -3,8 +3,8 @@
 ## 当前默认入口
 - 当前默认工作流：`phase10-data-access-and-migration-closure`
 - 当前阶段目标：在 `phase09` 已完成共享领域服务、正式宿主、compat wrapper 清单与主链验证矩阵冻结的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
-- 当前执行方式：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、smoke 路径与 legacy route 清单收口；当前已基于这些上游输入完成 `phase10` 的阶段级文档产出。
-- 当前下一步：审核 `docs/phase10_data_access_and_migration_closure_architecture_plan.md`、`docs/phase10_data_access_and_migration_closure_dev_plan.md` 与 `docs/phase10_data_access_and_migration_closure_shared_baseline.md`，审核通过后再进入 `phase10` 的 `/spec`。
+- 当前执行方式：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、smoke 路径与 legacy route 清单收口；`phase10` 已在这些上游输入基础上完成阶段级文档与 `phase10-01 ~ phase10-05` 的 `/spec` 收口。
+- 当前下一步：审核 `docs/phase10_data_access_and_migration_closure_architecture_plan.md`、`docs/phase10_data_access_and_migration_closure_dev_plan.md`、`docs/phase10_data_access_and_migration_closure_shared_baseline.md` 与 `phase10-05` 收口结果，确认 `phase10` 是否通过当前轮最终审核；未经批准，不切换默认工作流到 `phase11`。
 - 当前阶段说明：`phase09` 已完成并作为 `phase10` 的直接上游输入保留；旧 `phase01~phase08` 继续作为历史连续性输入保留。
 
 ## 阶段顺序
@@ -164,13 +164,15 @@
   - 查询模式与事务边界收口
   - 迁移链兼容项说明与退出条件
   - 与领域服务一致的数据访问约束
+  - 最低验证命令、仅文档变更时的最小验证要求与 `phase11` 直接继承输入清单
 - 验收条件：
   - 数据访问层服务于已冻结的领域语义，而非反向驱动业务设计
   - 历史迁移兼容项的存在原因、当前作用与退出条件明确
   - 不再存在“运行时已切换但数据访问层真相不清”的状态
 - 当前结论：
-  - 已完成阶段级文档产出，待审核
-  - `phase09-06` 的 legacy route inventory、Prisma 事务口径与 SQLite 兼容残留已被纳入本阶段直接输入
+  - 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前等待 `phase10` 最终审核
+  - `phase09-06` 的 legacy route inventory、Prisma 事务口径与 SQLite 兼容残留已被纳入本阶段直接输入，并已冻结最低验证命令为 `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`
+  - 若本轮仅涉及文档，仍至少完成 `docs/phase10_*` 互链与被引用路径存在性复核
 
 ### phase11-deployment-cutover-and-cutline-closure
 - 目标：完成部署主线切换、回滚基线冻结、旧运行线退出条件与最终发布门禁收口。
@@ -188,8 +190,8 @@
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“先冻结统一 API/Auth 骨架、共享领域服务与正式宿主边界”推进到“进入 `phase10-data-access-and-migration-closure` 的 `/plan`”。
-- 当前默认推进方向：基于 `phase09` 已完成的领域边界、compat wrapper 清单、主链 smoke 路径与历史数据保留结论，进入 `phase10` 的数据访问层与迁移链收口规划；在此之前，不直接扩张到部署切线实现。
+- 当前最优策略已从“进入 `phase10-data-access-and-migration-closure` 的 `/plan`”推进到“完成 `phase10` 文档与 `/spec` 收口，并等待最终审核是否通过”。
+- 当前默认推进方向：继续把 `phase10` 保持为默认工作流，先完成最终审核，再决定是否进入后续阶段；在此之前，不直接扩张到部署切线实现。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。
@@ -203,6 +205,7 @@
 - `docs/phase08_*` 将承接统一 API 宿主、认证门禁、中间件链、错误处理、最小公开 API 白名单与页面守卫边界等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase09_*` 将承接共享领域服务落点、合同/账单/支付周期/仪表/抄表/删除门禁迁移顺序、兼容宿主边界与主链验证矩阵等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase10_*` 将承接长期数据访问层方案、查询分层、事务边界、迁移兼容项与 legacy route inventory 对齐等阶段细节；本文件继续只保留阶段总览与验收结论。
+- `phase10` 收口后的最低验证命令固定为 `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若仅文档变更，至少补做 `docs/phase10_*` 互链与被引用路径存在性复核。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

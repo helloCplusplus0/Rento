@@ -1,0 +1,8 @@
+- [x] `phase10-05` 的 spec 明确限定为文档一致性、验证命令与 `phase11` handoff 收口任务，没有越界到新增实现代码或切换默认工作流
+- [x] `AGENTS.md`、`plan.md`、`architecture_map.md`、`project_rules.md` 与 `docs/phase10_*` 的阶段状态一致
+- [x] 三份 `docs/phase10_*` 已齐备且互相引用正确
+- [x] `phase10` 的最低验证命令、验证脚本与仅文档变更时的最小验证要求已被明确
+- [x] `phase11` 直接继承的最小上游输入清单已被明确冻结
+- [x] `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check` 已运行并记录
+- [x] 文档互链与路径存在性已完成复核
+- [x] `phase10-05` 的输出可以作为 `phase10` 最终阶段收口与后续阶段的稳定输入
