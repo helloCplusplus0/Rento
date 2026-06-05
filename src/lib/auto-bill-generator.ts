@@ -3,6 +3,10 @@ import {
 } from '@/lib/bill-calculations'
 import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import {
+  generateBaseBillsForContract,
+  repairMissingRentBillsForContract,
+} from '@/lib/domain/billing'
+import {
   ErrorLogger,
   ErrorSeverity,
   ErrorType,
@@ -97,90 +101,11 @@ export async function generateBillsOnContractSigned(contractId: string) {
 
     console.log(`[账单生成] 合同查询完成，耗时: ${Date.now() - startTime}ms`)
 
-    const bills = []
-
-    // 1. 生成押金账单（一次性）
-    if (Number(contract.deposit) > 0) {
-      console.log(`[账单生成] 开始生成押金账单`)
-      const depositBill = await prisma.bill.create({
-        data: {
-          billNumber: generateBillNumber('DEPOSIT', contract.contractNumber),
-          type: 'DEPOSIT',
-          amount: contract.deposit,
-          receivedAmount: 0,
-          pendingAmount: contract.deposit,
-          dueDate: contract.startDate,
-          period: `${contract.startDate.toISOString().slice(0, 10)} 至 ${contract.endDate.toISOString().slice(0, 10)}`,
-          status: 'PENDING',
-          contractId: contract.id,
-          paymentMethod: contract.paymentMethod || '待确定',
-          operator: 'SYSTEM',
-          remarks: `押金账单 - 合同${contract.contractNumber}`,
-        },
-      })
-      bills.push(depositBill)
-      console.log(`[账单生成] 押金账单生成完成: ${depositBill.billNumber}`)
-    }
-
-    // 2. 生成钥匙押金账单（如果有）
-    if (contract.keyDeposit && Number(contract.keyDeposit) > 0) {
-      console.log(`[账单生成] 开始生成钥匙押金账单`)
-      const keyDepositBill = await prisma.bill.create({
-        data: {
-          billNumber: generateBillNumber('OTHER', contract.contractNumber),
-          type: 'OTHER',
-          amount: contract.keyDeposit,
-          receivedAmount: 0,
-          pendingAmount: contract.keyDeposit,
-          dueDate: contract.startDate,
-          period: `${contract.startDate.toISOString().slice(0, 10)} 至 ${contract.endDate.toISOString().slice(0, 10)}`,
-          status: 'PENDING',
-          contractId: contract.id,
-          paymentMethod: contract.paymentMethod || '待确定',
-          operator: 'SYSTEM',
-          itemLabel: '钥匙押金',
-          remarks: `钥匙押金 - 合同${contract.contractNumber}`,
-        },
-      })
-      bills.push(keyDepositBill)
-      console.log(
-        `[账单生成] 钥匙押金账单生成完成: ${keyDepositBill.billNumber}`
-      )
-    }
-
-    // 3. 生成卫生费账单（如果有）
-    if (contract.cleaningFee && Number(contract.cleaningFee) > 0) {
-      console.log(`[账单生成] 开始生成卫生费账单`)
-      const cleaningFeeBill = await prisma.bill.create({
-        data: {
-          billNumber: generateBillNumber('OTHER', contract.contractNumber),
-          type: 'OTHER',
-          amount: contract.cleaningFee,
-          receivedAmount: 0,
-          pendingAmount: contract.cleaningFee,
-          dueDate: contract.startDate,
-          period: `${contract.startDate.toISOString().slice(0, 10)} 至 ${contract.endDate.toISOString().slice(0, 10)}`,
-          status: 'PENDING',
-          contractId: contract.id,
-          paymentMethod: contract.paymentMethod || '待确定',
-          operator: 'SYSTEM',
-          itemLabel: '卫生费',
-          remarks: `卫生费 - 合同${contract.contractNumber}`,
-        },
-      })
-      bills.push(cleaningFeeBill)
-      console.log(
-        `[账单生成] 卫生费账单生成完成: ${cleaningFeeBill.billNumber}`
-      )
-    }
-
-    // 4. 生成租金账单（根据支付周期）
     console.log(
-      `[账单生成] 开始生成租金账单，支付方式: ${contract.paymentMethod}`
+      `[账单生成] 开始通过共享领域服务生成基础账单，支付方式: ${contract.paymentMethod}`
     )
-    const rentBills = await generateAllRentBills(contract)
-    bills.push(...rentBills)
-    console.log(`[账单生成] 租金账单生成完成，共${rentBills.length}个`)
+    const bills = await generateBaseBillsForContract(contractId)
+    console.log(`[账单生成] 基础账单生成完成，共${bills.length}个`)
 
     const totalTime = Date.now() - startTime
     console.log(
@@ -228,57 +153,6 @@ export async function generateBillsOnContractSigned(contractId: string) {
       throw error // 抛出原始错误
     }
   }
-}
-
-/**
- * 生成合同期内所有租金账单
- * 根据支付周期预生成整个合同期的租金账单
- */
-async function generateAllRentBills(contract: any): Promise<any[]> {
-  const startTime = Date.now()
-  console.log(`[租金账单] 开始生成，合同: ${contract.contractNumber}`)
-
-  const rentBillPlan = buildContractRentBillPlan(
-    contract.startDate,
-    contract.endDate,
-    contract.monthlyRent,
-    contract.paymentMethod
-  )
-  console.log(`[租金账单] 计算出${rentBillPlan.periods.length}个账单周期`)
-
-  // 为每个周期生成账单
-  const bills = []
-  for (const period of rentBillPlan.periods) {
-    console.log(
-      `[租金账单] 生成第${period.index}个账单，周期: ${period.periodLabel}`
-    )
-
-    const rentBill = await prisma.bill.create({
-      data: {
-        billNumber: generateBillNumber('RENT', contract.contractNumber),
-        type: 'RENT',
-        amount: rentBillPlan.rentAmountPerPeriod,
-        receivedAmount: 0,
-        pendingAmount: rentBillPlan.rentAmountPerPeriod,
-        dueDate: period.dueDate,
-        period: period.periodLabel,
-        status: 'PENDING',
-        contractId: contract.id,
-        paymentMethod: contract.paymentMethod || '待确定',
-        operator: 'SYSTEM',
-        remarks: `${rentBillPlan.paymentCycleLabel}租金 - 合同${contract.contractNumber} - 第${period.index}期`,
-      },
-    })
-
-    bills.push(rentBill)
-  }
-
-  const totalTime = Date.now() - startTime
-  console.log(
-    `[租金账单] 生成完成，共${bills.length}个账单，耗时: ${totalTime}ms`
-  )
-
-  return bills
 }
 
 /**
@@ -546,43 +420,10 @@ export async function checkAndGenerateUpcomingBills() {
  * 检查合同是否有缺失的租金账单
  */
 export async function checkMissingRentBills(contract: any): Promise<any[]> {
-  const rentBillPlan = buildExpectedRentBillPlan(contract)
-  const existingBills = contract.bills.filter(
-    (bill: any) => bill.type === 'RENT'
-  )
-
-  const missingBills = []
-
-  // 检查每个预期的账单周期是否都有对应的账单
-  for (const period of rentBillPlan.periods) {
-    const periodStr = period.periodLabel
-
-    // 检查是否已存在该周期的账单
-    const existingBill = existingBills.find(
-      (bill: any) => bill.period === periodStr
-    )
-
-    if (!existingBill) {
-      const rentBill = await prisma.bill.create({
-        data: {
-          billNumber: generateBillNumber('RENT', contract.contractNumber),
-          type: 'RENT',
-          amount: rentBillPlan.rentAmountPerPeriod,
-          receivedAmount: 0,
-          pendingAmount: rentBillPlan.rentAmountPerPeriod,
-          dueDate: period.dueDate,
-          period: periodStr,
-          status: 'PENDING',
-          contractId: contract.id,
-          paymentMethod: contract.paymentMethod || '待确定',
-          operator: 'SYSTEM',
-          remarks: `${rentBillPlan.paymentCycleLabel}租金账单 - 第${period.index}期 - 补充生成`,
-        },
-      })
-
-      missingBills.push(rentBill)
-    }
+  if (!contract?.id) {
+    throw new Error('缺少合同ID，无法补齐缺失租金账单')
   }
 
-  return missingBills
+  buildExpectedRentBillPlan(contract)
+  return repairMissingRentBillsForContract(contract.id)
 }

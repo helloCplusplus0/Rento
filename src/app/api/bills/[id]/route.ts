@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
+import {
+  billingDomainService,
+  isBillDeleteGuardBlockedError,
+  isBillingDomainValidationError,
+} from '@/lib/domain/billing'
 import { ErrorType } from '@/lib/error-logger'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
-import { prisma } from '@/lib/prisma'
 import { billQueries } from '@/lib/queries'
 
 /**
@@ -53,6 +57,10 @@ export const GET = withApiErrorHandler(handleGetBill, {
 /**
  * 更新账单API
  * PATCH /api/bills/[id]
+ *
+ * compat wrapper:
+ * phase09-03 起正式账务写路径迁入 src/lib/domain/billing 与 server/routes/bills.ts，
+ * 旧 Next 入口只做请求适配与缓存失效，不再独占账务真相。
  */
 async function handlePatchBill(
   request: NextRequest,
@@ -67,101 +75,46 @@ async function handlePatchBill(
     return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
   }
 
-  // 权限检查：只有 PENDING 状态的账单才能编辑关键信息
-  if (existingBill.status !== 'PENDING') {
-    return NextResponse.json(
-      {
-        error: 'Only pending bills can be edited',
-        message: '只有待付款状态的账单才能编辑关键信息',
-      },
-      { status: 400 }
-    )
-  }
-
-  // 提取可编辑的字段
   const { amount, pendingAmount, dueDate, period, itemLabel, remarks } = body
 
-  // 构建更新数据
-  const updateData: any = {}
-
-  if (amount !== undefined) {
-    if (amount <= 0) {
+  let billData
+  try {
+    billData = await billingDomainService.updatePendingBillDraft(id, {
+      amount,
+      pendingAmount,
+      dueDate,
+      period,
+      itemLabel,
+      remarks,
+    })
+  } catch (error) {
+    if (isBillingDomainValidationError(error)) {
       return NextResponse.json(
-        { error: 'Amount must be greater than 0' },
-        { status: 400 }
-      )
-    }
-    updateData.amount = amount
-  }
-
-  if (pendingAmount !== undefined) {
-    updateData.pendingAmount = pendingAmount
-  }
-
-  if (dueDate !== undefined) {
-    const parsedDate = new Date(dueDate)
-    if (Number.isNaN(parsedDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid due date format' },
-        { status: 400 }
-      )
-    }
-    updateData.dueDate = parsedDate
-  }
-
-  if (period !== undefined) {
-    updateData.period = period
-  }
-
-  if (itemLabel !== undefined) {
-    const normalizedItemLabel =
-      typeof itemLabel === 'string' ? itemLabel.trim() : ''
-
-    if (existingBill.type === 'OTHER' && !normalizedItemLabel) {
-      return NextResponse.json(
-        { error: '其他账单必须填写条目名' },
+        {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          compatMode: true,
+          migrationHost: 'src/lib/domain/billing',
+        },
         { status: 400 }
       )
     }
 
-    updateData.itemLabel =
-      existingBill.type === 'OTHER' ? normalizedItemLabel : null
-  }
-
-  if (remarks !== undefined) {
-    updateData.remarks = remarks
-  }
-
-  const updatedBill = await billQueries.update(id, updateData)
-
-  const billData = {
-    ...updatedBill,
-    amount: Number(updatedBill.amount),
-    receivedAmount: Number(updatedBill.receivedAmount),
-    pendingAmount: Number(updatedBill.pendingAmount),
-    contract: {
-      ...updatedBill.contract,
-      monthlyRent: Number(updatedBill.contract.monthlyRent),
-      totalRent: Number(updatedBill.contract.totalRent),
-      deposit: Number(updatedBill.contract.deposit),
-      keyDeposit: updatedBill.contract.keyDeposit
-        ? Number(updatedBill.contract.keyDeposit)
-        : null,
-      cleaningFee: updatedBill.contract.cleaningFee
-        ? Number(updatedBill.contract.cleaningFee)
-        : null,
-    },
+    throw error
   }
 
   await revalidateMutationPaths({
     scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
-    detailPaths: [`/bills/${id}`, `/contracts/${updatedBill.contractId}`],
+    detailPaths: [`/bills/${id}`, `/contracts/${billData.contractId}`],
   })
 
   return NextResponse.json({
     success: true,
-    message: 'Bill updated successfully',
+    message: 'Bill updated successfully via compat wrapper',
     data: billData,
+    compatMode: true,
+    migrationHost: 'src/lib/domain/billing',
   })
 }
 
@@ -174,6 +127,9 @@ export const PATCH = withApiErrorHandler(handlePatchBill, {
 /**
  * 删除账单API
  * DELETE /api/bills/[id]
+ *
+ * compat wrapper:
+ * phase09-03 起账单删除门禁与受控删除由 src/lib/domain/billing 承接。
  */
 async function handleDeleteBill(
   _request: NextRequest,
@@ -181,97 +137,52 @@ async function handleDeleteBill(
 ) {
   const { id } = await params
 
-  const existingBill = await prisma.bill.findUnique({
-    where: { id },
-    include: {
-      billDetails: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  })
+  const safetyCheck = await billingDomainService.performBillDeleteSafetyCheck(id)
 
-  if (!existingBill) {
-    return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
-  }
-
-  const amount = Number(existingBill.amount)
-  const receivedAmount = Number(existingBill.receivedAmount)
-  const pendingAmount = Number(existingBill.pendingAmount)
-  const billDetailCount = existingBill.billDetails.length
-  const hasSettlementTrace =
-    receivedAmount > 0 ||
-    pendingAmount < amount ||
-    existingBill.paidDate !== null ||
-    existingBill.status === 'PAID' ||
-    existingBill.status === 'COMPLETED'
-  const hasUsageHistory =
-    Boolean(existingBill.meterReadingId) || billDetailCount > 0
-
-  if (existingBill.status !== 'PENDING') {
+  if (!safetyCheck.canDelete) {
     return NextResponse.json(
       {
-        error: 'Cannot delete bill outside pending status',
-        code: 'BILL_STATUS_NOT_DELETABLE',
-        details: {
-          status: existingBill.status,
-          suggestion:
-            '账单已进入正式账务流程，请改用收款、作废、终止合同或专用归档流程处理',
-        },
+        error: 'Cannot delete bill with protected business history',
+        code: safetyCheck.errorCode,
+        details: safetyCheck,
+        compatMode: true,
+        migrationHost: 'src/lib/domain/billing',
       },
       { status: 400 }
     )
   }
 
-  if (hasSettlementTrace) {
-    return NextResponse.json(
-      {
-        error: 'Cannot delete bill with settlement history',
-        code: 'BILL_HAS_SETTLEMENT_HISTORY',
-        details: {
-          amount,
-          pendingAmount,
-          receivedAmount,
-          paidDate: existingBill.paidDate,
-          suggestion: '账单已产生收款或结清痕迹，必须保留财务事实',
+  let result
+  try {
+    result = await billingDomainService.deletePendingBillWithoutHistory(id)
+  } catch (error) {
+    if (isBillDeleteGuardBlockedError(error)) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.details.errorCode,
+          details: error.details,
+          compatMode: true,
+          migrationHost: 'src/lib/domain/billing',
         },
-      },
-      { status: 400 }
-    )
-  }
+        { status: 400 }
+      )
+    }
 
-  if (hasUsageHistory) {
-    return NextResponse.json(
-      {
-        error: 'Cannot delete bill with meter reading history',
-        code: 'BILL_HAS_USAGE_HISTORY',
-        details: {
-          meterReadingId: existingBill.meterReadingId,
-          billDetailCount,
-          suggestion:
-            '该账单已关联抄表或账单明细，请保留历史并通过专用业务流程处理',
-        },
-      },
-      { status: 400 }
-    )
+    throw error
   }
-
-  await prisma.bill.delete({
-    where: { id },
-  })
 
   await revalidateMutationPaths({
     scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
-    detailPaths: existingBill.contractId
-      ? [`/bills/${id}`, `/contracts/${existingBill.contractId}`]
+    detailPaths: result.contractId
+      ? [`/bills/${id}`, `/contracts/${result.contractId}`]
       : [`/bills/${id}`],
   })
 
   return NextResponse.json({
-    success: true,
-    action: 'hard_delete',
-    message: '账单删除成功，仅删除了未进入正式账务链的待付款账单',
+    ...result,
+    compatMode: true,
+    migrationHost: 'src/lib/domain/billing',
   })
 }
 

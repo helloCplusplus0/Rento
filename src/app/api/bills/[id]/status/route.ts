@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import {
-  resolveBillAmounts,
-  resolveBillStatus,
-  toBillAmount,
-} from '@/lib/bill-semantics'
+  billingDomainService,
+  isBillingDomainValidationError,
+} from '@/lib/domain/billing'
 import { ErrorType } from '@/lib/error-logger'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { billQueries } from '@/lib/queries'
@@ -24,6 +23,9 @@ import { billQueries } from '@/lib/queries'
  *   operator?: string,
  *   remarks?: string
  * }
+ *
+ * compat wrapper:
+ * phase09-03 起正式状态语义与金额校验迁入 src/lib/domain/billing。
  */
 async function handlePatchBillStatus(
   request: NextRequest,
@@ -55,109 +57,44 @@ async function handlePatchBillStatus(
     return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
   }
 
-  const amount = toBillAmount(existingBill.amount)
-  const currentReceivedAmount = toBillAmount(existingBill.receivedAmount)
-  const currentPendingAmount = toBillAmount(existingBill.pendingAmount)
-
-  let normalizedAmounts
-
+  let billData
   try {
-    normalizedAmounts = resolveBillAmounts({
-      amount,
-      receivedAmount:
-        receivedAmount !== undefined ? receivedAmount : currentReceivedAmount,
-      pendingAmount:
-        pendingAmount !== undefined ? pendingAmount : currentPendingAmount,
+    billData = await billingDomainService.updateBillCollectionStatus(id, {
+      status,
+      receivedAmount,
+      pendingAmount,
+      paidDate,
+      paymentMethod,
+      operator,
+      remarks,
     })
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Invalid bill amounts',
-      },
-      { status: 400 }
-    )
-  }
-
-  if (
-    status === 'COMPLETED' &&
-    normalizedAmounts.pendingAmount > 0.01
-  ) {
-    return NextResponse.json(
-      { error: 'Completed bill must have zero pending amount' },
-      { status: 400 }
-    )
-  }
-
-  const openStatusBase =
-    status === 'OVERDUE'
-      ? 'OVERDUE'
-      : existingBill.status === 'OVERDUE'
-        ? 'OVERDUE'
-        : 'PENDING'
-
-  const normalizedStatus = resolveBillStatus({
-    requestedStatus: status === 'COMPLETED' ? 'COMPLETED' : openStatusBase,
-    pendingAmount: normalizedAmounts.pendingAmount,
-  })
-
-  const hasPaymentChange =
-    Math.abs(normalizedAmounts.receivedAmount - currentReceivedAmount) > 0.01
-
-  const updateData: any = {
-    status: normalizedStatus,
-    receivedAmount: normalizedAmounts.receivedAmount,
-    pendingAmount: normalizedAmounts.pendingAmount,
-  }
-
-  if (hasPaymentChange || normalizedStatus === 'PAID' || normalizedStatus === 'COMPLETED') {
-    if (paidDate) {
-      updateData.paidDate = new Date(paidDate)
-    } else if (!existingBill.paidDate && normalizedAmounts.receivedAmount > 0) {
-      updateData.paidDate = new Date()
+    if (isBillingDomainValidationError(error)) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          compatMode: true,
+          migrationHost: 'src/lib/domain/billing',
+        },
+        { status: 400 }
+      )
     }
 
-    if (paymentMethod) {
-      updateData.paymentMethod = paymentMethod
-    }
-
-    if (operator) {
-      updateData.operator = operator
-    }
-  } else if (normalizedAmounts.receivedAmount === 0) {
-    updateData.paidDate = null
-  }
-
-  if (remarks) {
-    updateData.remarks = remarks
-  }
-
-  const updatedBill = await billQueries.update(id, updateData)
-
-  const billData = {
-    ...updatedBill,
-    amount: Number(updatedBill.amount),
-    receivedAmount: Number(updatedBill.receivedAmount),
-    pendingAmount: Number(updatedBill.pendingAmount),
-    contract: {
-      ...updatedBill.contract,
-      monthlyRent: Number(updatedBill.contract.monthlyRent),
-      totalRent: Number(updatedBill.contract.totalRent),
-      deposit: Number(updatedBill.contract.deposit),
-      keyDeposit: updatedBill.contract.keyDeposit
-        ? Number(updatedBill.contract.keyDeposit)
-        : null,
-      cleaningFee: updatedBill.contract.cleaningFee
-        ? Number(updatedBill.contract.cleaningFee)
-        : null,
-    },
+    throw error
   }
 
   await revalidateMutationPaths({
     scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
-    detailPaths: [`/bills/${id}`, `/contracts/${updatedBill.contractId}`],
+    detailPaths: [`/bills/${id}`, `/contracts/${billData.contractId}`],
   })
 
-  return NextResponse.json(billData)
+  return NextResponse.json({
+    ...billData,
+    compatMode: true,
+    migrationHost: 'src/lib/domain/billing',
+  })
 }
 
 export const PATCH = withApiErrorHandler(handlePatchBillStatus, {

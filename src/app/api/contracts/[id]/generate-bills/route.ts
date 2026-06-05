@@ -22,6 +22,10 @@ interface BillData {
  * POST /api/contracts/[id]/generate-bills
  *
  * 当合同状态变更为ACTIVE时，自动触发账单生成
+ *
+ * compat wrapper:
+ * phase09-03 起基础支付周期出账由 src/lib/domain/billing 承接，
+ * 旧 Next 入口仅保留请求适配与缓存失效职责。
  */
 export async function POST(
   request: NextRequest,
@@ -51,6 +55,8 @@ export async function POST(
         return Response.json({
           success: true,
           message: `成功为合同 ${id} 生成 ${bills.length} 个账单（通过回退机制）`,
+          compatMode: true,
+          migrationHost: 'src/lib/domain/billing',
           bills: bills.map((bill: BillData) => ({
             id: bill.id,
             billNumber: bill.billNumber,
@@ -76,6 +82,8 @@ export async function POST(
     return Response.json({
       success: true,
       message: `成功为合同 ${id} 生成 ${bills.length} 个账单`,
+      compatMode: true,
+      migrationHost: 'src/lib/domain/billing',
       bills: bills.map((bill: BillData) => ({
         id: bill.id,
         billNumber: bill.billNumber,
