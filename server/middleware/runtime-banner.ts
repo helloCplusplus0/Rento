@@ -1,6 +1,13 @@
 import type { MiddlewareHandler } from 'hono'
 
-export const runtimeBanner: MiddlewareHandler = async (c, next) => {
-  c.header('x-rento-runtime', 'minix')
-  await next()
+import type { MinixServerEnv } from '../lib/env'
+
+export function runtimeBanner(
+  env: Pick<MinixServerEnv, 'nodeEnv' | 'runtimeName'>
+): MiddlewareHandler {
+  return async (c, next) => {
+    await next()
+    c.res.headers.set('x-rento-runtime', env.runtimeName)
+    c.res.headers.set('x-rento-runtime-mode', env.nodeEnv)
+  }
 }

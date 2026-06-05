@@ -3,6 +3,8 @@ import path from 'node:path'
 
 import type { Context } from 'hono'
 
+import type { MinixServerEnv } from './env'
+
 const MIME_TYPES: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -17,26 +19,41 @@ const MIME_TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 }
 
-export async function serveMinixAsset(c: Context, distDir: string) {
+export async function serveMinixAsset(
+  c: Context,
+  env: Pick<MinixServerEnv, 'distDir' | 'isProduction' | 'webPort'>
+) {
   const requestPath = normalizeRequestPath(c.req.path)
-  const indexPath = path.join(distDir, 'index.html')
+  const indexPath = path.join(env.distDir, 'index.html')
+  const expectsStaticAsset = hasAssetExtension(requestPath)
 
   const assetPath =
-    requestPath === '/' ? null : resolveAssetPath(distDir, requestPath.slice(1))
+    requestPath === '/' ? null : resolveAssetPath(env.distDir, requestPath.slice(1))
 
   if (assetPath && (await isFile(assetPath))) {
     return createFileResponse(assetPath)
   }
 
-  if (await isFile(indexPath)) {
+  // Only extensionless paths fall back to the SPA shell.
+  if (!expectsStaticAsset && (await isFile(indexPath))) {
     return createFileResponse(indexPath, 'text/html; charset=utf-8')
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    return c.json({
-      message: 'Minix runtime is healthy. Use the Vite dev server for frontend pages in development.',
-      suggestedFrontendOrigin: `http://localhost:${process.env.MINIX_WEB_PORT || '5173'}`,
-    })
+  if (!env.isProduction) {
+    return c.json(
+      {
+        message: expectsStaticAsset
+          ? 'Frontend asset is not served by the Hono runtime in development.'
+          : 'Minix runtime is healthy. Use the Vite dev server for frontend pages in development.',
+        spaFallbackReserved: !expectsStaticAsset,
+        suggestedFrontendOrigin: `http://localhost:${env.webPort}`,
+      },
+      expectsStaticAsset ? 404 : 200
+    )
+  }
+
+  if (expectsStaticAsset) {
+    return c.text('Minix frontend asset not found in dist output.', 404)
   }
 
   return c.text(
@@ -75,6 +92,11 @@ function normalizeRequestPath(requestPath: string) {
   }
 
   return requestPath.startsWith('/') ? requestPath : `/${requestPath}`
+}
+
+function hasAssetExtension(requestPath: string) {
+  const basename = path.posix.basename(requestPath)
+  return basename.includes('.') && basename !== '.well-known'
 }
 
 function resolveAssetPath(distDir: string, relativePath: string) {

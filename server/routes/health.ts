@@ -2,37 +2,49 @@ import { Hono } from 'hono'
 
 import { deriveOverallStatusFromSignals, getHealthHttpStatus } from '../../src/lib/observability'
 import { prisma } from '../../src/lib/prisma'
+import type { MinixServerEnv } from '../lib/env'
 
-const healthRoutes = new Hono()
+export function createHealthRoutes(env: MinixServerEnv) {
+  const healthRoutes = new Hono()
 
-healthRoutes.get('/health', async (c) => {
-  const startedAt = Date.now()
-  const database = await checkDatabase()
-  const status = deriveOverallStatusFromSignals([database.status])
-  const httpStatus = getHealthHttpStatus(status) as 200 | 503
-  const memory = process.memoryUsage()
+  healthRoutes.get('/health', async (c) => {
+    const startedAt = Date.now()
+    const database = await checkDatabase()
+    const status = deriveOverallStatusFromSignals([database.status])
+    const httpStatus = getHealthHttpStatus(status) as 200 | 503
+    const memory = process.memoryUsage()
 
-  return c.json(
-    {
-      status,
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      service: 'rento-minix-runtime',
-      checks: {
-        database,
-      },
-      metrics: {
-        memory: {
-          heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
-          heapTotalMb: Math.round(memory.heapTotal / 1024 / 1024),
-          rssMb: Math.round(memory.rss / 1024 / 1024),
+    return c.json(
+      {
+        status,
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        service: env.runtimeName,
+        runtime: {
+          distDir: env.distDir,
+          host: env.host,
+          mode: env.nodeEnv,
+          port: env.port,
+          staticHosting: env.isProduction ? 'dist' : 'vite-dev-server',
         },
-        responseTimeMs: Date.now() - startedAt,
+        checks: {
+          database,
+        },
+        metrics: {
+          memory: {
+            heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
+            heapTotalMb: Math.round(memory.heapTotal / 1024 / 1024),
+            rssMb: Math.round(memory.rss / 1024 / 1024),
+          },
+          responseTimeMs: Date.now() - startedAt,
+        },
       },
-    },
-    httpStatus
-  )
-})
+      httpStatus
+    )
+  })
+
+  return healthRoutes
+}
 
 async function checkDatabase() {
   if (!process.env.DATABASE_URL) {
@@ -60,5 +72,3 @@ async function checkDatabase() {
     }
   }
 }
-
-export { healthRoutes }

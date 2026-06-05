@@ -1,48 +1,56 @@
 import { Hono } from 'hono'
-import { logger } from 'hono/logger'
 
-import { runtimeBanner } from './middleware/runtime-banner'
+import type { MinixServerEnv } from './lib/env'
 import { getMinixServerEnv } from './lib/env'
 import { serveMinixAsset } from './lib/static'
-import { healthRoutes } from './routes/health'
+import { createRequestLogger } from './middleware/request-logger'
+import { runtimeBanner } from './middleware/runtime-banner'
+import { createHealthRoutes } from './routes/health'
 
-const app = new Hono()
-const env = getMinixServerEnv()
+export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
+  const app = new Hono()
 
-app.use('*', runtimeBanner)
-app.use('/api/*', logger())
+  // Phase07 only freezes the minimal runtime chain. Auth and API guards land later.
+  app.use('*', runtimeBanner(env))
+  app.use('*', createRequestLogger(env))
 
-app.route('/api', healthRoutes)
-
-app.get('*', async (c) => serveMinixAsset(c, env.distDir))
-
-app.notFound((c) => {
-  if (c.req.path.startsWith('/api/')) {
+  app.route('/api', createHealthRoutes(env))
+  app.all('/api/*', (c) => {
     return c.json(
       {
         message: 'Minix runtime route not found.',
         path: c.req.path,
+        runtime: env.runtimeName,
       },
       404
     )
-  }
+  })
 
-  return c.text('Minix frontend asset not found.', 404)
-})
+  app.get('*', async (c) => serveMinixAsset(c, env))
 
-app.onError((error, c) => {
-  console.error('[minix-runtime] unhandled error', error)
+  app.notFound((c) => {
+    return c.text('Minix frontend route not found.', 404)
+  })
 
-  if (c.req.path.startsWith('/api/')) {
-    return c.json(
-      {
-        message: 'Minix runtime error.',
-      },
-      500
-    )
-  }
+  app.onError((error, c) => {
+    console.error(`[${env.runtimeName}] unhandled error`, error)
 
-  return c.text('Minix runtime error.', 500)
-})
+    if (c.req.path.startsWith('/api/')) {
+      return c.json(
+        {
+          message: 'Minix runtime error.',
+          runtime: env.runtimeName,
+        },
+        500
+      )
+    }
+
+    return c.text('Minix runtime error.', 500)
+  })
+
+  return app
+}
+
+const app = createApp()
 
 export default app
