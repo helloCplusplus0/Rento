@@ -1,5 +1,14 @@
 # Phase09 Domain Service Migration 开发规划
 
+## 当前完成状态
+- `phase09-01-domain-shared-semantics-and-service-host`
+- `phase09-02-contract-lifecycle-and-delete-guards`
+- `phase09-03-billing-and-payment-cycle-services`
+- `phase09-04-meter-reading-and-utility-billing-chain`
+- `phase09-05-checkout-renewal-and-main-flow-consistency`
+- `phase09-06-legacy-route-compat-and-exit-checklist`
+- 以上子任务均已完成当前轮实现、校验、提交顺序推进与阶段收口；本文档现作为 `phase09` 的任务拆分记录与完结依据。
+
 ## 一、文档定位
 本文档用于把 `phase09-domain-service-migration` 拆分为顺序执行的子任务，确保当前仓库先完成共享领域服务落点、正式宿主边界、主链读写与删除门禁迁移，再进入 `phase10` 的数据访问层收口。
 

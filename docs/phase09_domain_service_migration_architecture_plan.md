@@ -1,5 +1,10 @@
 # Phase09 Domain Service Migration 架构规划
 
+## 当前完成状态
+- `phase09-01 ~ phase09-06` 已全部完成当前轮实现与验证。
+- 共享领域服务落点、正式宿主边界、主链验证矩阵、主链 smoke 路径与旧 `src/app/api/*` compat wrapper 清单已完成当前轮收口。
+- 本文档现作为 `phase09` 的架构冻结与完结记录，继续为 `phase10` 提供上游输入。
+
 ## 一、文档定位
 本文档用于承接 `phase08-api-and-auth-foundation` 完成后的下一阶段工作流，回答以下问题：
 

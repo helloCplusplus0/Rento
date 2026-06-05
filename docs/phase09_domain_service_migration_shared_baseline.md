@@ -1,5 +1,10 @@
 # Phase09 Domain Service Migration Shared Baseline
 
+## 当前完成状态
+- `phase09` 的共享边界、允许路线、禁止路线与统一判断标准已完成当前轮实施验证。
+- 共享领域服务、正式宿主、历史数据保留、主链 smoke 路径与旧 `src/app/api/*` compat wrapper 清单均已按本基线完成收口。
+- 本文档现作为 `phase09` 完结后的共享基线记录，并继续为 `phase10` 提供上游输入。
+
 ## 一、文档目的
 本文档用于冻结 `phase09-domain-service-migration` 全部子任务共享的边界、允许路线、禁止路线与统一判断标准，避免后续 `phase09` 子任务各自扩写出不同解释。
 

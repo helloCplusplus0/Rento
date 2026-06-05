@@ -1,11 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase09-domain-service-migration`
-- 当前阶段目标：在 `phase08` 已完成统一 API 宿主、认证门禁、中间件链、错误处理与最小页面守卫冻结的前提下，为 `Rento-miniX` 冻结合同、账单、支付周期、仪表、抄表与删除门禁等主链领域服务迁移边界。
-- 当前执行方式：已完成根级规范文档同步，并产出 `docs/phase09_domain_service_migration_architecture_plan.md`、`docs/phase09_domain_service_migration_dev_plan.md` 与 `docs/phase09_domain_service_migration_shared_baseline.md`；当前停在审核门禁，等待用户确认。
-- 当前下一步：先审核 `phase09-domain-service-migration` 的阶段文档，确认共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界；未经审核，不直接进入 `phase09` 的 `/spec` 或实现。
-- 当前阶段说明：`phase08` 已完成并作为 `phase09` 的直接上游输入保留；旧 `phase01~phase05` 继续作为历史连续性输入保留。
+- 当前默认工作流：`phase10-data-access-and-migration-closure`
+- 当前阶段目标：在 `phase09` 已完成共享领域服务、正式宿主、compat wrapper 清单与主链验证矩阵冻结的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
+- 当前执行方式：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、smoke 路径与 legacy route 清单收口；当前应以上游冻结结论进入 `phase10` 的 `/plan`。
+- 当前下一步：启动 `phase10-data-access-and-migration-closure` 的阶段级文档产出，明确长期数据访问层方案判断、查询/写路径收口、事务边界与迁移链兼容项退出条件。
+- 当前阶段说明：`phase09` 已完成并作为 `phase10` 的直接上游输入保留；旧 `phase01~phase08` 继续作为历史连续性输入保留。
 
 ## 阶段顺序
 
@@ -154,8 +154,8 @@
   - 历史数据保留原则未被破坏
   - 页面预期、服务端生成结果与数据库事实口径一致
 - 当前结论：
-  - 规划已完成，待审核
-  - 已产出 `docs/phase09_domain_service_migration_architecture_plan.md`、`docs/phase09_domain_service_migration_dev_plan.md` 与 `docs/phase09_domain_service_migration_shared_baseline.md`，并冻结共享领域服务落点、正式宿主边界、旧兼容宿主保留策略与主链验证矩阵
+  - 已完成
+  - 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证、`smoke:phase09:all` 与 `audit:phase09:legacy-routes` 收口；`docs/phase09_*` 已成为后续 `phase10` 的直接上游输入
 
 ### phase10-data-access-and-migration-closure
 - 目标：冻结长期数据访问层方案，收口 ORM、查询模式、事务边界、迁移链兼容项与退出条件。
@@ -187,8 +187,8 @@
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“先冻结统一 API/Auth 骨架”推进到“先进入 `phase09-domain-service-migration` 的 `/plan`”。
-- 当前默认推进方向：先审核已完成的 `phase09` 阶段文档，确认共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界，再进入该阶段的 `/spec`；在此之前，不直接扩张到 ORM 定案或部署切线。
+- 当前最优策略已从“先冻结统一 API/Auth 骨架、共享领域服务与正式宿主边界”推进到“进入 `phase10-data-access-and-migration-closure` 的 `/plan`”。
+- 当前默认推进方向：基于 `phase09` 已完成的领域边界、compat wrapper 清单、主链 smoke 路径与历史数据保留结论，进入 `phase10` 的数据访问层与迁移链收口规划；在此之前，不直接扩张到部署切线实现。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。

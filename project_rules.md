@@ -2,9 +2,9 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation` 与 `phase08-api-and-auth-foundation` 已完成阶段收口；当前默认优先进入 `phase09-domain-service-migration` 的阶段级规划与审核，不直接扩张到 ORM 定案或部署切线。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation` 与 `phase09-domain-service-migration` 已完成当前轮阶段收口；当前默认优先进入 `phase10-data-access-and-migration-closure` 的阶段级规划，不直接扩张到部署切线。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
-- `phase09` 当前轮只冻结领域服务迁移边界：共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界；不提前扩张到 ORM 定案或部署切线。
+- `phase10` 的当前轮重点应建立在 `phase09` 已冻结的共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界之上，不反向改写这些结论。
 
 ## 2. 安全与发布规则
 - 在完整安全边界未收口前，禁止把应用作为公网匿名可访问后台部署。
@@ -52,7 +52,7 @@
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已从 `phase08-api-and-auth-foundation` 推进到 `phase09-domain-service-migration` 的规划阶段；正式实现必须建立在 `phase09` 阶段文档审核通过之后。
+- 当前默认工作流已从 `phase09-domain-service-migration` 推进到 `phase10-data-access-and-migration-closure` 的规划阶段；后续实现必须建立在 `phase10` 阶段文档审核通过之后。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。
 - `phase08` 审核通过的最低前提，至少包括：统一 API 宿主、认证门禁、中间件链、错误处理、环境变量约束与最小安全边界均已冻结并通过审核。

@@ -22,17 +22,15 @@
 - 所有重构都必须明确标注“参考来源、复用内容、调整内容、舍弃内容与原因”。
 
 ## 4. 当前默认入口
-- 当前默认工作流：`phase09-domain-service-migration`
-- 当前主问题：在不破坏当前 UI 展示效果、业务主链语义与 PostgreSQL 主线的前提下，为 `Rento-miniX` 冻结合同、账单、支付周期、仪表、抄表与删除门禁等主链领域服务迁移边界，使新主线开始承接业务真相。
+- 当前默认工作流：`phase10-data-access-and-migration-closure`
+- 当前主问题：在不破坏 `phase09` 已冻结的共享领域服务边界、正式宿主边界、历史数据保留与主链一致性口径的前提下，为 `Rento-miniX` 收口长期数据访问层方案、事务边界与迁移链兼容项。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：已完成 `phase09-domain-service-migration` 的 `/plan` 产物，等待用户审核 `docs/phase09_*` 阶段文档；未经审核，不直接进入 `phase09` 的 `/spec` 或实现。
+- 当前下一步：`phase09-domain-service-migration` 已完成 `phase09-01 ~ phase09-06` 子任务实现、验证与兼容宿主清单收口；下一步应基于 [docs/phase09_domain_service_migration_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_architecture_plan.md)、[docs/phase09_domain_service_migration_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_dev_plan.md) 与 [docs/phase09_domain_service_migration_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase09_domain_service_migration_shared_baseline.md) 进入 `phase10` 的 `/plan`。
 - 当前阶段重点：
-  - 把 `phase08` 已完成的统一 API 宿主、认证门禁、中间件链、错误处理与最小页面守卫作为 `phase09` 的稳定上游输入
-  - 冻结共享领域服务落点、正式领域 API 宿主边界与旧兼容宿主保留策略
-  - 冻结合同锚点、账单金额/状态语义、支付周期、仪表/抄表、多仪表历史保留与删除门禁的共享口径
-  - 冻结主链查询与写路径的一致性验证矩阵，不回退到“页面、服务端、数据库三套真相”
-  - 冻结 `phase09` 的历史数据保留底线、主链 smoke 路径与后续 `phase10` 的上游输出
-  - 保持 `phase06`、`phase07`、`phase08` 已完成的路线图、目录治理和宿主映射继续作为上游输入
+  - 把 `phase09` 已完成的共享领域服务、正式宿主、compat wrapper 清单与主链 smoke 路径作为 `phase10` 的稳定上游输入
+  - 冻结长期数据访问层方案判断，不让 ORM、查询模式和事务边界重新反向驱动领域设计
+  - 冻结迁移链兼容项、旧 `Next.js` API 存量接口与 `phase10` 数据访问收口之间的关系
+  - 保持 `phase06`、`phase07`、`phase08`、`phase09` 已完成的路线图、目录治理和宿主映射继续作为上游输入
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
@@ -58,7 +56,8 @@
 - `phase06-minix-replatform` 已完成当前轮文档治理收口：完整 `Hono` 路线图、模块迁移分类与原内嵌目录清理结果已冻结到主真相源。
 - `phase07-app-shell-and-runtime-foundation` 已完成：新前端应用壳、新运行时入口、旧运行线映射与退出条件已冻结为后续阶段上游输入。
 - `phase08-api-and-auth-foundation` 已完成：统一 API 宿主、最小认证闭环、请求治理、统一错误出口、环境变量兼容口径与 `src/minix` 最小页面守卫已完成当前阶段收口。
-- `phase09-domain-service-migration` 已完成当前轮 `/plan` 产物：已冻结共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界，等待审核后进入 `/spec`。
+- `phase09-domain-service-migration` 已完成当前轮阶段收口：共享领域服务落点、正式宿主边界、合同/账单/仪表/抄表/退租/删除门禁主链迁移、主链 smoke 路径、旧 `src/app/api/*` compat wrapper 清单与 `phase10` 上游输入已完成当前轮验证。
+- `phase10-data-access-and-migration-closure` 待启动：将以 `phase09` 已冻结的领域边界、主链一致性矩阵、compat wrapper 清单与验证脚本作为直接上游输入。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
