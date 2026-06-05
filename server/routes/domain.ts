@@ -1,0 +1,25 @@
+import { Hono } from 'hono'
+
+import type { AuthAppEnv } from '../lib/auth-context'
+import type { MinixServerEnv } from '../lib/env'
+
+import { createBillRoutes } from './bills'
+import { createCheckoutRoutes } from './checkout'
+import { createContractRoutes } from './contracts'
+import { createMeterReadingRoutes } from './meter-readings'
+import { createRoomRoutes } from './rooms'
+
+export function createDomainRoutes(env: MinixServerEnv) {
+  const domainRoutes = new Hono<AuthAppEnv>()
+
+  // 先在子应用内部挂完整领域骨架，再由 server/app.ts 一次性挂到 /api。
+  // Hono 路由树要求“先组装子路由，再挂父应用”，避免父应用过早挂接导致缺失子路径。
+  // 更窄的 checkout 子路径需要先于 /contracts 挂接，避免被更宽泛的 contracts 路由骨架提前吞掉。
+  domainRoutes.route('/contracts/:contractId/checkout', createCheckoutRoutes(env))
+  domainRoutes.route('/contracts', createContractRoutes(env))
+  domainRoutes.route('/bills', createBillRoutes(env))
+  domainRoutes.route('/meter-readings', createMeterReadingRoutes(env))
+  domainRoutes.route('/rooms', createRoomRoutes(env))
+
+  return domainRoutes
+}

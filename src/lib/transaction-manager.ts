@@ -198,6 +198,13 @@ export class TransactionManager {
    * 错误分类
    */
   private classifyError(error: Error): TransactionErrorType {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2034'
+    ) {
+      return TransactionErrorType.DEADLOCK_ERROR
+    }
+
     const message = error.message.toLowerCase()
 
     if (

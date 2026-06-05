@@ -1,11 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase08-api-and-auth-foundation`
-- 当前阶段目标：在 `phase07` 已完成应用壳与运行时基础承接位冻结的前提下，为 `Rento-miniX` 冻结统一 API 宿主、认证会话、中间件、错误处理与最小安全边界。
-- 当前执行方式：已完成根级规范文档同步，并产出 `docs/phase08_api_and_auth_foundation_architecture_plan.md`、`docs/phase08_api_and_auth_foundation_dev_plan.md` 与 `docs/phase08_api_and_auth_foundation_shared_baseline.md`；当前停在审核门禁，等待用户确认。
-- 当前下一步：先审核 `phase08-api-and-auth-foundation` 的阶段文档，确认统一 API 宿主、认证门禁、错误处理、最小公开 API 白名单、环境变量兼容口径与最小页面守卫方案；未经审核，不直接进入 `phase08` 的 `/spec` 或实现。
-- 当前阶段说明：`phase07` 已完成并作为 `phase08` 的直接上游输入保留；旧 `phase01~phase05` 继续作为历史连续性输入保留。
+- 当前默认工作流：`phase09-domain-service-migration`
+- 当前阶段目标：在 `phase08` 已完成统一 API 宿主、认证门禁、中间件链、错误处理与最小页面守卫冻结的前提下，为 `Rento-miniX` 冻结合同、账单、支付周期、仪表、抄表与删除门禁等主链领域服务迁移边界。
+- 当前执行方式：已完成根级规范文档同步，并产出 `docs/phase09_domain_service_migration_architecture_plan.md`、`docs/phase09_domain_service_migration_dev_plan.md` 与 `docs/phase09_domain_service_migration_shared_baseline.md`；当前停在审核门禁，等待用户确认。
+- 当前下一步：先审核 `phase09-domain-service-migration` 的阶段文档，确认共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界；未经审核，不直接进入 `phase09` 的 `/spec` 或实现。
+- 当前阶段说明：`phase08` 已完成并作为 `phase09` 的直接上游输入保留；旧 `phase01~phase05` 继续作为历史连续性输入保留。
 
 ## 阶段顺序
 
@@ -139,8 +139,8 @@
   - 页面门禁与 API 门禁继续保持一致
   - 不因切换宿主而破坏既有最小安全边界
 - 当前结论：
-  - 规划已完成，待审核
-  - 已产出 `docs/phase08_api_and_auth_foundation_architecture_plan.md`、`docs/phase08_api_and_auth_foundation_dev_plan.md` 与 `docs/phase08_api_and_auth_foundation_shared_baseline.md`，并冻结最小 API/Auth 骨架边界、公开 API 白名单、环境变量“新主旧兼”口径与 `src/minix` 最小页面守卫方向
+  - 已完成
+  - 已完成统一 API 宿主、最小认证闭环、请求治理、统一错误出口、最小公开 API 白名单、环境变量“新主旧兼”口径与 `src/minix` 最小页面守卫收口，作为 `phase09` 的直接上游输入保留
 
 ### phase09-domain-service-migration
 - 目标：迁移合同、账单、支付周期、仪表、抄表、删除门禁等主链领域服务，使新主线承接业务真相。
@@ -154,7 +154,8 @@
   - 历史数据保留原则未被破坏
   - 页面预期、服务端生成结果与数据库事实口径一致
 - 当前结论：
-  - 待启动
+  - 规划已完成，待审核
+  - 已产出 `docs/phase09_domain_service_migration_architecture_plan.md`、`docs/phase09_domain_service_migration_dev_plan.md` 与 `docs/phase09_domain_service_migration_shared_baseline.md`，并冻结共享领域服务落点、正式宿主边界、旧兼容宿主保留策略与主链验证矩阵
 
 ### phase10-data-access-and-migration-closure
 - 目标：冻结长期数据访问层方案，收口 ORM、查询模式、事务边界、迁移链兼容项与退出条件。
@@ -186,8 +187,8 @@
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“先完成 `phase07-app-shell-and-runtime-foundation` 的应用壳与运行时基础冻结”推进到“先进入 `phase08-api-and-auth-foundation` 的 `/plan`”。
-- 当前默认推进方向：先审核已完成的 `phase08` 阶段文档，确认统一 API 宿主、最小认证骨架、错误处理、环境变量兼容口径与最小页面守卫方案，再进入该阶段的 `/spec`；在此之前，不直接扩张到领域服务或部署切线。
+- 当前最优策略已从“先冻结统一 API/Auth 骨架”推进到“先进入 `phase09-domain-service-migration` 的 `/plan`”。
+- 当前默认推进方向：先审核已完成的 `phase09` 阶段文档，确认共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界，再进入该阶段的 `/spec`；在此之前，不直接扩张到 ORM 定案或部署切线。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。
@@ -195,10 +196,11 @@
 - 每个 `phase*` 默认先产出 `docs/phaseX_<workflow>_architecture_plan.md` 与 `docs/phaseX_<workflow>_dev_plan.md`；存在共享边界时，再补 `docs/phaseX_<workflow>_shared_baseline.md`。
 - 阶段级文档产出后即停止工作流，等待用户审核；未经用户明确批准，禁止直接进入 `/spec` 或实现。
 - 用户审核后，按 `dev_plan` 的子任务顺序逐个进入 `/spec`、开发、验收、提交并推送；每个子任务通过验收后再进入下一个子任务。
-- `phase08` 审核通过前，不直接扩张到正式业务 API、领域服务或部署切线实现。
+- `phase09` 审核通过前，不直接扩张到 ORM 最终定案、迁移链收口或部署切线实现。
 - 完整 `Rento -> Rento-miniX` 阶段路线图由本文件长期承接；`docs/phase06_*` 仅负责解释本阶段为何冻结该路线图以及如何把它提升为全局真相源。
 - `docs/phase07_*` 将承接应用壳、运行时入口、开发拓扑、实现目录与共享基线等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase08_*` 将承接统一 API 宿主、认证门禁、中间件链、错误处理、最小公开 API 白名单与页面守卫边界等阶段细节；本文件继续只保留阶段总览与验收结论。
+- `docs/phase09_*` 将承接共享领域服务落点、合同/账单/支付周期/仪表/抄表/删除门禁迁移顺序、兼容宿主边界与主链验证矩阵等阶段细节；本文件继续只保留阶段总览与验收结论。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

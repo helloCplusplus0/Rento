@@ -26,6 +26,7 @@ import {
   createSecurityHeaders,
 } from './middleware/security-headers'
 import { createAuthRoutes } from './routes/auth'
+import { createDomainRoutes } from './routes/domain'
 import { createHealthRoutes } from './routes/health'
 
 export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
@@ -43,14 +44,19 @@ export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
 
   apiApp.route('/', createHealthRoutes(env))
   apiApp.route('/auth', createAuthRoutes(env))
+  // 先挂公共路由，再挂受保护的正式领域骨架，最后保留统一的受保护兜底出口。
+  apiApp.route('/', createDomainRoutes(env))
   apiApp.all('*', requireAuth(), (c) =>
     jsonApiError(
       c,
       notImplementedError(
-        '当前接口已通过最小认证门禁，但正式业务路由尚未迁入 Hono。phase08-03 只冻结请求治理、错误出口与安全边界，不扩展业务 API。',
+        '当前接口已通过最小认证门禁，但正式领域 API 仍处于 phase09-01 骨架期。未覆盖的受保护路径继续保留统一占位响应，不在本次任务中迁移业务逻辑。',
         {
           protected: true,
           publicPaths: env.api.publicPaths,
+          domainHost: 'server/routes/*',
+          domainServiceHost: 'src/lib/domain/*',
+          migrationState: 'skeleton-only',
         }
       ),
       { env }

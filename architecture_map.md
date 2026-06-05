@@ -6,16 +6,16 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不是回退重做应用壳或运行时基础，而是以已完成的 `phase07` 结论为前提，冻结 `phase08` 的统一 API 宿主、认证门禁、中间件链、错误处理与环境变量约束。
+- 当前阶段的核心任务不是回退重做应用壳、运行时基础或最小 API/Auth 骨架，而是以已完成的 `phase07`、`phase08` 结论为前提，冻结 `phase09` 的共享领域服务落点、正式宿主边界、主链验证路径与历史数据保留约束。
 
 ## 当前双层结构说明
 ### 现有实现层
 - 现有代码仍位于根级 `src/`、`prisma/`、`public/`、`scripts/` 等目录。
 - 这部分是旧 `Rento` 的现状实现，也是后续原地重构的直接参考基线。
-- 在 `phase08` 审核前，不把这部分现有实现一次性大爆炸改写成新架构。
+- 在 `phase09` 审核前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -65,6 +65,7 @@
 - 后续输入
   - `phase08` 直接输入：`server/`、旧 `src/app/api/*`、`src/middleware.ts`、`src/lib/auth/*`、`src/lib/api-error-handler.ts`
   - `phase09` 直接输入：`server/`、`src/minix/`、旧 `src/app/*`、旧 `src/app/api/*`、`src/lib/prisma.ts`、`src/lib/queries.ts`
+  - `phase10` 直接输入：`phase09` 已冻结的共享领域服务边界、事务边界候选、查询/写路径需求与仍存在的 schema/迁移链兼容项
 
 ### `phase08-01` 最小公开路由口径
 - 公开页面
@@ -76,6 +77,51 @@
   - `/api/auth/logout`
   - `/api/auth/session`
 - 其他后续迁入 `server/` 的新 API 默认受认证守卫保护；正式业务 API 与治理/辅助接口继续暂留旧宿主，作为后续阶段迁移参考输入。
+
+## `phase09` 目标结构说明
+### 规划中的共享领域服务层
+- `phase09` 规划中的主链业务真相优先收口到共享领域服务层，用于承接合同、账单、支付周期、仪表、抄表、退租结算与删除门禁等主链语义。
+- 该层的职责是把当前分散在旧 `src/app/api/*` 与 `src/lib/*` 中的核心业务规则收口为可被新旧宿主共同复用的单一真相源，而不是复制一份只给 `Hono` 使用的平行实现。
+- 规划中的共享服务目录默认收口到 `src/lib/domain/` 或等价共享目录，由后续 `phase09` 文档冻结具体命名。
+
+### 规划中的正式领域 API 宿主层
+- `phase09` 规划中的正式领域 API 继续收口到 `server/`，在 `phase08` 已完成的统一 `/api` 宿主、认证门禁、中间件链与错误处理基础上，继续承接正式领域路由外壳。
+- 该层在 `phase09` 允许迁入：
+  - 合同生命周期与删除门禁相关路由
+  - 账单与支付周期相关路由
+  - 仪表、抄表、相关账单追溯与退租结算相关路由
+- 该层在 `phase09` 不负责：
+  - ORM 最终定案
+  - 最终部署主线
+  - 完整前端页面迁移
+
+### 规划中的旧宿主兼容层
+- `phase09` 期间旧 `src/app/api/*` 继续保留，但其职责应逐步降为：
+  - 未迁移接口的存量运行线
+  - 已迁接口的兼容包装或只读参考实现
+  - 新主线主链行为的对照基线
+- `phase09` 明确禁止继续把新增主链业务真相写回旧 `src/app/api/*`。
+
+### `phase09` 的直接输入与禁止越界项
+- 正式宿主输入
+  - `server/` 中已冻结的统一 `/api` 宿主
+  - `server/middleware/*` 中已冻结的认证门禁、中间件链与错误处理骨架
+  - `src/minix/` 中已冻结的最小登录守卫与页面壳承接位
+- 存量参考输入
+  - 旧 `src/app/*` 页面行为
+  - 旧 `src/app/api/*` 领域接口
+  - `src/lib/prisma.ts`
+  - `src/lib/queries.ts`
+  - `src/lib/validation.ts`
+  - `src/lib/auto-bill-generator.ts`
+  - `src/lib/checkout-settlement.ts`
+  - `src/lib/bill-semantics.ts`
+  - `src/lib/contract-activation.ts`
+- 禁止越界项
+  - 不在领域迁移阶段反向重写 UI 设计语言
+  - 不提前切 ORM 最终主线或迁移链方案
+  - 不提前切部署主线
+  - 不以删除旧宿主替代迁移验收
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
@@ -190,7 +236,7 @@ Rento/
 - `src/app/page.tsx`：工作台首页入口
 - `src/app/rooms`、`renters`、`contracts`、`bills`：核心业务页面
 - `src/app/add/*`：新增流程入口
-- `src/app/api/*`：当前 Next.js 后端 API；在 `phase08` 期间继续作为存量业务 API、治理/辅助 API 与兼容宿主
+- `src/app/api/*`：当前 Next.js 后端 API；在 `phase09` 期间继续作为存量业务 API、治理/辅助 API、未迁移接口与兼容宿主
 - `src/app/login/page.tsx`：管理员登录页
 - 当前定位：`phase07-04` 后继续保留为参考基线、存量运行线和未迁移页面壳，不再作为新增前端宿主逻辑默认落点
 
@@ -200,7 +246,7 @@ Rento/
 - `api-error-handler.ts`：API 错误处理与请求约束
 - `auth/*`：认证、密码校验、会话守卫
 - `health-checker.ts` 等：运行治理能力
-- 当前定位：`phase08` 期间继续作为统一 API 宿主的直接复用/适配参考基线，其中 `auth/*`、`api-error-handler.ts` 与 `observability.ts` 是最小 API/Auth 骨架的核心输入
+- 当前定位：`phase09` 期间继续作为共享领域语义与正式宿主适配的直接参考基线，其中 `queries.ts`、`validation.ts`、`auto-bill-generator.ts`、`checkout-settlement.ts`、`bill-semantics.ts` 与 `contract-activation.ts` 是主链领域服务迁移的核心输入
 
 ### `scripts`
 - `scripts/dev-entry.mjs`：旧 `Next.js` 开发态入口，继续承担现状对照与回滚参考职责
@@ -229,5 +275,5 @@ Rento/
 - 后续 `Rento-miniX` 的正式实现仍在当前根级源码目录中推进；原内嵌 `Rento-miniX/` 目录已删除，不再存在第二套目录主线。
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
-- `phase08` 已完成当前轮 `/plan` 文档：已冻结统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫方向。
-- 当前默认下一步是审核 `docs/phase08_*` 并据此进入 `phase08` 的 `/spec`，而不是执行领域迁移或部署切线。
+- `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
+- 当前默认下一步是审核 `docs/phase09_*` 并据此进入 `phase09` 的 `/spec`，而不是提前执行 ORM 定案或部署切线。

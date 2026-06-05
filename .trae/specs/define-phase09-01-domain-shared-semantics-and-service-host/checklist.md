@@ -1,0 +1,9 @@
+- [x] 已建立 `src/lib/domain/` 或经 spec 批准的等价共享目录，并能表达 `contracts`、`billing`、`meters`、`delete-guards`、`shared` 的主链分组
+- [x] 已建立 `server/routes/*` 的 phase09 正式领域路由承接位
+- [x] `server/app.ts` 已明确领域路由挂接顺序，且新增路由挂接位位于兜底 `requireAuth()` 之前
+- [x] 旧 `src/app/api/*` 与新 `server/` 的调用关系已可解释，并明确 compat wrapper / 薄包装 / 只读参考边界
+- [x] 已冻结最小事务归属约定，明确共享领域服务承接事务边界候选，路由层不承载新的业务真相
+- [x] 本子任务未迁移合同、账单、抄表等具体业务逻辑
+- [x] 本子任务未迁移治理/辅助接口
+- [x] 本子任务未切换 ORM、迁移链或最终部署主线
+- [x] `npm run lint` 与 `npm run type-check` 通过
