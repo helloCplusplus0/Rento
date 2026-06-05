@@ -1,0 +1,6 @@
+- [x] 仓库新增独立的正式部署资产主路径，`deploy/caddy/` 与 `deploy/systemd/` 不与 legacy `nginx/`、`docker-compose.yml` 混用
+- [x] `deploy/caddy/Caddyfile` 只承担公网入口、自动 HTTPS 与 `reverse_proxy`，不复制 `file_server` 或 SPA fallback 正式语义
+- [x] `deploy/systemd/rento-minix.service` 固定单一 Hono 守护进程，包含 `WorkingDirectory`、`EnvironmentFile`、`ExecStart` 与自动重启策略
+- [x] `ExecStart` 与 `phase11-01` 已冻结的生产启动入口保持一致，继续承接 `scripts/start-minix.mjs`
+- [x] `DEPLOYMENT.md`、`README.md`、`architecture_map.md` 与 `docs/phase11_*` 对正式部署资产路径、服务命名、端口职责和 legacy 边界的描述一致
+- [x] `npm run lint` 与 `npm run type-check` 通过

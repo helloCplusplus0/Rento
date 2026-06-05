@@ -186,15 +186,14 @@
 ### 规划中的服务端产物链
 - 当前 `server/index.ts`、`server/app.ts` 与 `server/lib/static.ts` 已具备正式运行时承接位。
 - 当前仍缺的不是运行时骨架，而是：
-  - 服务端 JS 预构建产物链
-  - 正式 `start:minix` 生产入口不再依赖 `tsx` 直接跑源码
-  - 与 `Caddy + systemd` 对齐的正式部署资产与环境模板
+  - 与 `Caddy + systemd` 对齐的环境模板、健康检查与发布门禁进一步收口
 - 因此 `phase11` 的直接实现承接位将围绕：
   - `package.json`
   - `scripts/start-minix.mjs`
   - `tsconfig` 的服务端产物配置
   - `DEPLOYMENT.md`
-  - 后续新增的正式部署资产目录
+  - `deploy/caddy/Caddyfile`
+  - `deploy/systemd/rento-minix.service`
 
 ### 规划中的发布门禁与回滚基线
 - `phase11` 的发布门禁需要统一收口到：
@@ -282,7 +281,7 @@
 
 ## 正式部署真相源
 - 根级 `DEPLOYMENT.md`、`README.md`、`AGENTS.md`、`project_rules.md`、`plan.md` 与 `docs/phase11_*` 将共同承接 `Rento-miniX` 的正式部署说明、发布门禁与 cutline 退出条件。
-- 在 `phase11` 当前轮文档中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，但实现仍需后续 `/spec` 顺序落地。
+- 在 `phase11` 当前轮实现中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，并已落地 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 作为正式部署资产基线。
 
 ## legacy 回滚基线
 以下文件仍对应旧 `Rento` 的当前存量运行形态与回滚基线，而不是未来 `Rento-miniX` 的最终部署主线：
@@ -302,6 +301,7 @@ Rento/
 ├── public/               # 静态资源
 ├── scripts/              # 启动、初始化、部署脚本
 ├── server/               # 已落地的 phase07 Hono 运行时承接位
+├── deploy/               # 已落地的 phase11 正式部署资产基线
 ├── docs/                 # 阶段设计、问题分析、归档与 phase06 文档
 ├── nginx/                # 当前容器化 HTTPS 配置
 ├── backups/              # 运行时备份挂载目录
@@ -363,4 +363,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是审核 `phase11` 的阶段文档，确认正式部署主线、环境模板、健康检查、legacy 回滚基线与 cutline 退出条件已形成单一闭环；未经批准，不进入任何 `phase11-*` `/spec`，也不提前执行部署切线实现。
+- 当前默认下一步是继续按已批准的 `phase11-*` `/spec` 顺序推进：`phase11-02` 已完成正式部署资产基线，后续继续收口环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件。

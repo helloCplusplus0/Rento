@@ -1,0 +1,8 @@
+# Replace `rento.example.com` with the real public domain before enabling the site.
+rento.example.com {
+	# Caddy remains the only public entry and forwards all traffic to Hono.
+	reverse_proxy 127.0.0.1:{$MINIX_SERVER_PORT:3002}
+
+	# Hono continues to own `dist/` static assets and SPA fallback semantics.
+	# Do not add `file_server` or duplicate frontend routing rules here.
+}

@@ -5,6 +5,7 @@
 - 本文档直接建立在 `phase10` 已完成的长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界之上。
 - 本文档不替代 `architecture_plan` 的结构判断，也不替代 `dev_plan` 的任务拆分；它只负责冻结所有 `phase11-*` 子任务必须共同遵守的边界与词汇。
 - 当前互链文档为 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)。
+- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；后续子任务继续复用这两处承接位而不再另起第二套部署入口。
 
 ## 一、文档目的
 本文档用于冻结 `phase11-deployment-cutover-and-cutline-closure` 的共享判断标准，避免后续子任务分别从部署拓扑、环境变量、健康检查、发布门禁或 legacy 回滚基线视角出发，重新产出互相冲突的解释。
@@ -157,7 +158,7 @@
 
 ## 九、允许路线
 - 允许继续复用 `server/`、`src/minix/`、`scripts/start-minix.mjs` 与 `server/lib/env.ts` 作为正式部署主线的直接承接位
-- 允许在后续 `/spec` 中补齐服务端产物链、`Caddy` 配置、`systemd` 单元与正式健康检查脚本
+- 允许在后续 `/spec` 中继续围绕已落地的 `deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service`、服务端产物链与正式健康检查脚本做收口
 - 允许保留 legacy 容器化资产作为回滚基线，但必须明确其身份与退出条件
 
 ## 十、禁止路线

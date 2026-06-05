@@ -18,7 +18,7 @@
 
 ## 当前文档状态
 - 本文档已与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 和 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 完成互链收口。
-- `phase11` 当前已完成阶段文档产出；默认工作流已切换到 `phase11`，等待用户审核，不直接进入 `/spec` 或部署切线实现。
+- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线。
 
 ## 二、当前阶段前提
 ### 2.1 已完成上游
@@ -47,9 +47,11 @@
   - `scripts/dev-minix.mjs`
   - `scripts/start-minix.mjs`
 - 当前最大缺口不是运行时骨架，而是正式交付链：
-  - `build:minix` 只构建前端 `dist/`
-  - `start:minix` 仍通过 `tsx server/index.ts` 运行源码
-  - 仓库内尚无 `Caddy` / `systemd` 正式部署资产
+  - `build:minix` 已产出前端 `dist/` 与服务端 `build/minix-server/`，但环境模板、健康检查与发布门禁仍待继续收口
+  - `start:minix` 已切换为读取预构建产物的生产入口，后续需要与正式部署手册和 cutover 门禁保持一致
+- `phase11-02` 已补齐正式部署资产基线：
+  - `deploy/caddy/Caddyfile`
+  - `deploy/systemd/rento-minix.service`
 - 当前代码已经证明：
   - Hono 可以统一承接 `/api/*` 与 `dist/` 静态壳
   - `redis` 不再是当前新主线的正式运行依赖
@@ -120,9 +122,9 @@ phase11-deployment-cutover-and-cutline-closure
 ### 3.4 正式交付链：必须先补齐服务端预构建产物
 选择原因：
 
-- `package.json` 当前 `build:minix` 只执行 `vite build`，不能产出服务端运行所需 JS。
-- `scripts/start-minix.mjs` 当前仍通过 `tsx server/index.ts` 直接执行源码，违反“云端不构建，只运行预构建产物”的冻结底线。
-- 如果不先收口服务端产物链，`phase11` 的所谓部署切线只会把源码运行迁到 systemd，而不会真正完成主线切换。
+- 在 `phase11-01` 前，`build:minix` 只执行 `vite build`，不能产出服务端运行所需 JS。
+- 在 `phase11-01` 前，`scripts/start-minix.mjs` 仍通过源码入口启动，无法满足“云端不构建，只运行预构建产物”的冻结底线。
+- 因此必须先收口服务端产物链，避免所谓部署切线只把源码运行迁到 systemd，而没有真正完成正式主线切换。
 
 本阶段结论：
 
@@ -174,6 +176,8 @@ phase11-deployment-cutover-and-cutline-closure
 - `scripts/bootstrap-deploy-assets.sh`
 - `scripts/start-entry.mjs`
 - `DEPLOYMENT.md`
+- `deploy/caddy/Caddyfile`
+- `deploy/systemd/rento-minix.service`
 
 ### 4.2 允许做的事
 - 冻结正式部署拓扑、服务端产物链、环境模板、健康检查与发布门禁
@@ -195,6 +199,7 @@ phase11-deployment-cutover-and-cutline-closure
 公网入口：Caddy
 应用进程：systemd -> Hono runtime
 前端与 API：server/app.ts + server/lib/static.ts
+部署资产：deploy/caddy/Caddyfile + deploy/systemd/rento-minix.service
 数据库：PostgreSQL
 健康检查：/api/health
 ```

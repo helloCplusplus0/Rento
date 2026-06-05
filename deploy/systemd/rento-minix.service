@@ -1,0 +1,23 @@
+[Unit]
+Description=Rento-miniX Hono Runtime
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rento
+Group=rento
+WorkingDirectory=/opt/rento-minix/current
+EnvironmentFile=/etc/rento-minix/rento-minix.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/rento-minix/current/scripts/start-minix.mjs
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rento-minix
+
+[Install]
+WantedBy=multi-user.target

@@ -2,8 +2,8 @@
 
 > 状态说明：
 > - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 回滚基线边界。
-> - 当前仓库已完成 `phase11-deployment-cutover-and-cutline-closure` 的阶段文档产出，但尚未进入 `phase11-*` `/spec` 或正式部署实现。
-> - 因此，本文档当前冻结的是“正式部署目标、资产边界、发布门禁与回滚职责”，而不是宣称所有正式部署资产已经落地。
+> - 当前仓库已进入已批准的 `phase11-*` `/spec` 顺序实现；`phase11-02` 已落地正式 `Caddy` / `systemd` 资产基线。
+> - 因此，本文档既承接正式部署目标与边界，也记录已经落位的正式部署资产与仍待后续 `/spec` 收口的内容。
 
 ## 正式部署主线
 - 正式部署目标固定为：`Caddy + systemd + Hono + PostgreSQL`
@@ -20,11 +20,12 @@
 - `phase08` 已冻结统一 `/api` 宿主、认证门禁、错误处理与环境变量口径
 - `phase09` 已冻结共享领域服务、正式宿主边界与 compat wrapper 清单
 - `phase10` 已冻结长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界
-- `phase11` 当前只完成阶段级文档产出，正式部署资产仍待后续 `/spec` 顺序落地
+- `phase11-01` 已把 `build:minix` / `start:minix` 收口到“前端 `dist/` + 服务端 `build/minix-server/`”的预构建产物链
+- `phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线
 - 当前脚本边界固定为：
   - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
-  - `npm run build:minix`：当前仅产出前端 `dist/` 静态壳，不产出服务端 JS
-  - `npm run start:minix`：当前生产模式校验入口，仍通过 `tsx server/index.ts` 运行源码，不能误读为“云端只运行预构建产物”的正式部署入口
+  - `npm run build:minix`：当前产出前端 `dist/` 与服务端 `build/minix-server/` 预构建产物
+  - `npm run start:minix`：当前生产模式入口，读取预构建产物并启动单一 Hono 运行时
 
 ## 正式部署拓扑
 ```text
@@ -44,15 +45,32 @@ Internet
 - `package.json`：正式构建与启动脚本入口
 - `scripts/start-minix.mjs`：当前生产模式校验入口，也是后续正式生产启动入口的直接承接位
 - `server/index.ts` / `server/app.ts` / `server/lib/static.ts`：正式运行时承接位
+- `deploy/caddy/Caddyfile`：正式公网入口配置基线，只负责域名、HTTPS 与 `reverse_proxy`
+- `deploy/systemd/rento-minix.service`：正式 Hono 守护进程基线，只负责单一进程托管
 - `docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md`
 - `docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md`
 - `docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md`
 
 后续 `phase11` 实施应补齐但当前尚未落地的正式资产包括：
-- 服务端 JS 预构建产物链
-- `Caddy` 正式配置
-- `systemd` 服务单元
 - 与正式主线对齐的部署手册、健康检查与发布验证脚本
+- `phase11-03 ~ phase11-05` 继续需要收口的环境模板、发布门禁、legacy cutline 与部署演练记录
+
+## 正式部署资产基线
+- `deploy/caddy/Caddyfile`
+  - 站点入口使用单一公网域名占位
+  - 只反向代理到 `127.0.0.1:${MINIX_SERVER_PORT}`
+  - 不新增 `file_server` 或第二套 SPA fallback 语义
+- `deploy/systemd/rento-minix.service`
+  - 服务名固定为 `rento-minix.service`
+  - 默认使用专用运行账户 `rento:rento`
+  - `WorkingDirectory` 固定为 `/opt/rento-minix/current`
+  - `EnvironmentFile` 固定为 `/etc/rento-minix/rento-minix.env`
+  - `ExecStart` 固定为 `/usr/bin/node /opt/rento-minix/current/scripts/start-minix.mjs`
+  - `Restart=on-failure` 作为最小自动重启策略
+- 正式部署边界继续保持：
+  - `Caddy` 只占用 `80/443`
+  - Hono 只监听 `MINIX_SERVER_PORT`
+  - PostgreSQL 不直接暴露给公网入口
 
 ## 环境变量主口径
 正式部署主线应以以下变量为主：
@@ -123,5 +141,6 @@ legacy 回滚职责边界：
 
 ## 当前结论
 - 根级部署说明已经切换到 `Rento-miniX` 的正式部署主线口径
+- `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 已成为正式部署资产承接位
 - legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口职责
-- 在 `phase11` 阶段文档审核通过前，不直接进入正式部署实现或切线执行
+- 后续仍按 `phase11-03 ~ phase11-05` 顺序继续收口环境模板、发布门禁、legacy cutline 与部署演练要求

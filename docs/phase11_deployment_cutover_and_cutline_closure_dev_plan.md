@@ -5,7 +5,7 @@
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
   - [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)
   - [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)
-- `phase11` 当前已完成阶段级文档产出；未经用户批准，不进入任何 `phase11-*` `/spec`，也不提前落地部署切线实现。
+- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已完成正式部署资产基线落位，后续继续推进 `phase11-03 ~ phase11-05`。
 
 ## 一、文档定位
 本文档用于把 `phase11-deployment-cutover-and-cutline-closure` 拆分为顺序执行的子任务，确保仓库先把正式部署主线、服务端产物链、环境模板、健康检查、发布门禁与 legacy 回滚基线解释清楚，再进入具体实现。
@@ -94,6 +94,10 @@
 - `Caddy`、`systemd`、Hono 三者职责不重叠
 - 正式部署资产承接位明确
 
+### 当前实现承接位
+- `deploy/caddy/Caddyfile`
+- `deploy/systemd/rento-minix.service`
+
 ### 验证要求
 - 确认部署拓扑与 `server/` 当前承接位一致
 - 确认正式部署资产与 legacy 运行资产的边界不冲突
@@ -165,7 +169,7 @@
 
 ## phase11-05-documentation-consistency-and-deployment-rehearsal-closure
 ### 目标
-收口顶层真相源、阶段文档、部署说明、验证清单与部署演练记录，形成“`phase11` 阶段文档已闭环、等待审核”的稳定状态。
+收口顶层真相源、阶段文档、部署说明、验证清单与部署演练记录，形成“`phase11` 阶段文档与已批准 spec 实现保持一致”的稳定状态。
 
 ### 范围
 - 复核：
