@@ -18,7 +18,7 @@
 
 ## 当前文档状态
 - 本文档已与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 和 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 完成互链收口。
-- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线，`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到统一部署口径。
+- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线，`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到统一部署口径，`phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 边界同步到根级真相源与 `docs/phase11_*`。
 
 ## 二、当前阶段前提
 ### 2.1 已完成上游
@@ -155,9 +155,10 @@ phase11-deployment-cutover-and-cutline-closure
 
 本阶段结论：
 
-- `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/start-entry.mjs` 等资产继续保留，但身份明确降级为 legacy rollback baseline
-- legacy 线的回滚职责边界、保留条件与退出条件必须写入 `phase11` 文档
+- `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 与历史容器化镜像/容器/`nginx`/`redis` 变量口径继续保留，但身份明确降级为 legacy rollback baseline
+- legacy 线的回滚职责边界、保留条件与退出条件已写入 `phase11` 文档，并固定为“历史运行参考 + 故障回滚 + 差异对照”
 - 不通过切换 remote 到 `Rento-legacy` 来处理部署或运行问题
+- 只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，legacy 基线才允许进入后续退出决策
 
 ## 四、承接资产与实现边界
 ### 4.1 允许直接承接的资产
@@ -227,6 +228,11 @@ scripts/cloud-deploy.sh
 scripts/bootstrap-deploy-assets.sh
 scripts/start-entry.mjs
 ```
+
+补充冻结说明：
+- 以上资产只继续承担历史运行参考、故障回滚与新旧运行线差异对照职责
+- 它们不再作为默认部署入口、默认运维入口或正式真相源
+- 本阶段只冻结保留条件与退出条件，不直接删除这些资产
 
 ## 六、阶段结论
 `phase11-deployment-cutover-and-cutline-closure` 的价值不在于“立即上线正式部署栈”，而在于：

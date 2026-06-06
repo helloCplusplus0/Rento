@@ -5,7 +5,7 @@
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
   - [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)
   - [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)
-- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已完成正式部署资产基线落位，`phase11-03` 已完成环境模板、健康检查与发布门禁的当前轮收口，后续继续推进 `phase11-04 ~ phase11-05`。
+- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已完成正式部署资产基线落位，`phase11-03` 已完成环境模板、健康检查与发布门禁的当前轮收口，`phase11-04` 已完成 legacy 回滚基线降级、保留条件、退出条件与 `Rento-legacy` 边界收口，后续继续推进 `phase11-05`。
 
 ## 一、文档定位
 本文档用于把 `phase11-deployment-cutover-and-cutline-closure` 拆分为顺序执行的子任务，确保仓库先把正式部署主线、服务端产物链、环境模板、健康检查、发布门禁与 legacy 回滚基线解释清楚，再进入具体实现。
@@ -162,11 +162,13 @@
 ### DoD
 - legacy 回滚资产清单完整
 - 回滚职责边界、保留条件与退出条件明确
+- `Rento-legacy` 已明确固定为 GitHub 侧只读历史备份与对照参考
 - 不再存在“正式主线”和“legacy 基线”混写状态
 
 ### 验证要求
 - 复核所有 legacy 资产路径真实存在
 - 确认根级真相源与 `DEPLOYMENT.md` 的 legacy 表述一致
+- 确认 legacy 基线未被重新写成默认部署入口、默认运维入口或第二真相源
 
 ## phase11-05-documentation-consistency-and-deployment-rehearsal-closure
 ### 目标
@@ -234,6 +236,10 @@ phase11-05-documentation-consistency-and-deployment-rehearsal-closure
   - 三份 `docs/phase11_*` 互链复核
   - 被引用文档、脚本与代码路径存在性复核
   - 顶层真相源与 `DEPLOYMENT.md` 状态一致性复核
+- `phase11-04` 当前轮已额外收口：
+  - legacy 回滚资产清单与统一身份说明
+  - legacy 基线保留条件、退出条件与不得继续扩写的边界
+  - `Rento-legacy` 只读备份边界与非部署/非回滚入口说明
 - 后续进入实现或部署演练前，最低工程验证要求固定为：
   - `npm run lint`
   - `npm run type-check`

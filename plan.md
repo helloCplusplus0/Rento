@@ -3,9 +3,9 @@
 ## 当前默认入口
 - 当前默认工作流：`phase11-deployment-cutover-and-cutline-closure`
 - 当前阶段目标：在 `phase10` 已冻结长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界的前提下，为 `Rento-miniX` 收口正式部署主线、回滚基线、旧运行线退出条件与发布门禁。
-- 当前执行方式：`phase10` 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；当前已基于这些上游输入完成 `phase11` 的阶段级文档产出。
-- 当前下一步：审核 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)、[phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)；审核通过前，不进入任何 `phase11-*` `/spec`，也不提前落地部署切线实现。
-- 当前阶段说明：`phase10` 已完成并作为 `phase11` 的直接上游输入保留；旧 `phase01~phase09` 继续作为历史连续性输入保留。
+- 当前执行方式：`phase10` 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；`phase11` 已基于这些上游输入进入已批准 spec 的顺序实现，`phase11-01 ~ phase11-04` 已完成当前轮收口。
+- 当前下一步：继续以 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 为阶段真相源，继续按已批准的 `phase11-*` spec 顺序推进；当前已完成 legacy 回滚基线降级与边界收口，在正式 cutover 审核完成前不提前删除 legacy 资产。
+- 当前阶段说明：`phase10` 已完成并作为 `phase11` 的直接上游输入保留；旧 `phase01~phase09` 继续作为历史连续性输入保留，`phase11` 当前以正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线收口为主。
 
 ## 阶段顺序
 
@@ -186,13 +186,13 @@
   - 回滚路径、健康检查与发布门禁完整可解释
   - 旧容器化运行线已明确退为历史运行线/回滚参考
 - 当前结论：
-  - 已完成阶段级文档产出，待审核
-  - 正式部署主线、legacy 回滚基线、环境模板、健康检查与发布门禁已冻结到 `docs/phase11_*`
+  - 已进入已批准 spec 的顺序实现，`phase11-01 ~ phase11-04` 已完成当前轮收口
+  - 正式部署主线、legacy 回滚基线、环境模板、健康检查与发布门禁已同步冻结到 `docs/phase11_*` 与根级真相源
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“完成 `phase10` 文档与 `/spec` 收口”推进到“完成 `phase11` 阶段文档并等待审核是否通过”。
-- 当前默认推进方向：继续把 `phase11` 保持为默认工作流，先完成阶段文档审核，再决定是否进入后续 `/spec`；在此之前，不直接扩张到部署切线实现。
+- 当前最优策略已从“完成 `phase10` 文档与 `/spec` 收口”推进到“按已批准的 `phase11-*` spec 顺序持续收口部署切线与回滚基线”。
+- 当前默认推进方向：继续把 `phase11` 保持为默认工作流，按既定 spec 顺序推进后续任务与验证；在正式 cutover 审核完成前，不直接删除 legacy 资产或跳过既定发布门禁。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。

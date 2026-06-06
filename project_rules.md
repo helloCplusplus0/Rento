@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；当前默认工作流已切换到 `phase11-deployment-cutover-and-cutline-closure` 的规划阶段，在阶段文档审核通过前不直接进入部署切线实现。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；当前默认工作流已切换到 `phase11-deployment-cutover-and-cutline-closure` 的已批准 spec 顺序实现阶段，但仍不得跳过既定验证与 cutline 审核直接执行正式切线。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase11` 的当前轮重点必须建立在 `phase10` 已冻结的长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断之上，不反向改写这些结论。
 
@@ -54,7 +54,7 @@
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已推进到 `phase11-deployment-cutover-and-cutline-closure` 的规划阶段；后续部署实现必须建立在 `phase11` 阶段文档审核通过之后。
+- 当前默认工作流已推进到 `phase11-deployment-cutover-and-cutline-closure` 的已批准 spec 顺序实现阶段；后续部署实现必须继续建立在 `docs/phase11_*` 与已批准 spec 的共同边界之上。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。
 - `phase08` 审核通过的最低前提，至少包括：统一 API 宿主、认证门禁、中间件链、错误处理、环境变量约束与最小安全边界均已冻结并通过审核。
@@ -84,6 +84,10 @@
 - `phase11` 期间正式部署主线默认不再引入 `redis`；`redis` 仅允许继续留在旧容器化运行线的历史回滚基线中。
 - `phase11` 期间根级 `DEPLOYMENT.md` 必须升级为当前正式部署真相源；旧容器化部署说明应明确降级为 legacy 回滚基线，并迁入归档入口或保留为附录。
 - `phase11` 期间若调整部署方式、环境变量或健康检查，必须同步更新实现、`.env.example`、`README.md`、`architecture_map.md`、`project_rules.md` 与 `DEPLOYMENT.md`。
+- `phase11-04` 期间必须盘点并持续保留以下 legacy 回滚资产清单，直到退出条件满足：`docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs`，以及历史容器化镜像、容器、`nginx`、`redis` 变量口径。
+- `phase11-04` 期间必须把 legacy 容器化运行线冻结为“历史运行参考 + 故障回滚基线 + 差异对照”职责，不得再作为默认部署入口、默认运维入口或正式真相源扩写。
+- `phase11-04` 期间 `Rento-legacy` 只允许作为 GitHub 侧只读历史备份与对照参考，不得作为部署入口、回滚入口、默认 remote、默认上游或第二真相源重新引入。
+- legacy 资产只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，才允许进入后续退出决策；本阶段不得直接删除这些资产。
 - `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
@@ -101,5 +105,5 @@
 - 当前 `origin` 已收口到 `Rento-miniX`，但仍需持续防止把 `Rento-legacy` 或旧 `Rento` 地址重新引回主动开发、默认推送或部署资产入口。
 - 迁移锁与早期迁移文件仍带有 SQLite 历史痕迹，当前通过部署脚本兼容；在后续专项任务中再完成正式收口。
 - 最小鉴权门禁已落地，但角色控制、最小审计与公网发布所需的完整安全边界仍未全部完成。
-- 旧容器化部署链仍能支撑存量运行线，但不应被误读为 `Rento-miniX` 的未来正式部署主线。
-- 新主线运行时虽已具备 `Vite + Hono` 承接位，但当前 `build:minix` 仍只覆盖前端静态产物、`start:minix` 仍直接运行 `tsx server/index.ts`；服务端预构建产物链仍需在 `phase11` 后续任务中正式收口。
+- 旧容器化部署链仍能支撑存量运行线，但不应被误读为 `Rento-miniX` 的未来正式部署主线；其退出仍依赖 `phase11-04` 已冻结的保留条件、退出条件与回滚记录收口。
+- 新主线运行时虽已完成 `build:minix` 前端 `dist/` 与服务端 `build/minix-server/` 预构建产物链收口，但正式部署演练、legacy 基线退出审计与最终 cutline 验证仍需在 `phase11` 后续任务中继续完成。

@@ -186,7 +186,7 @@
 ### 规划中的服务端产物链
 - 当前 `server/index.ts`、`server/app.ts` 与 `server/lib/static.ts` 已具备正式运行时承接位。
 - 当前仍缺的不是运行时骨架，而是：
-  - `phase11-04 ~ phase11-05` 中继续需要冻结的 legacy cutline、退出条件与部署演练记录
+  - `phase11-05` 中继续需要冻结的部署演练记录与最终文档一致性复核
 - 因此 `phase11` 的直接实现承接位将围绕：
   - `package.json`
   - `scripts/start-minix.mjs`
@@ -285,6 +285,7 @@
 - 根级 `DEPLOYMENT.md`、`README.md`、`AGENTS.md`、`project_rules.md`、`plan.md` 与 `docs/phase11_*` 将共同承接 `Rento-miniX` 的正式部署说明、发布门禁与 cutline 退出条件。
 - 在 `phase11` 当前轮实现中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，并已落地 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 作为正式部署资产基线。
 - 当前 `.env.example` 已升级为正式共享环境模板，`scripts/health-check.sh` 已固定默认命中 `/api/health`，并与 `NEXTAUTH_URL` / `MINIX_SERVER_PORT` 口径保持一致。
+- `phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界收口到根级文档与 `docs/phase11_*`。
 
 ## legacy 回滚基线
 以下文件仍对应旧 `Rento` 的当前存量运行形态与回滚基线，而不是未来 `Rento-miniX` 的最终部署主线：
@@ -292,7 +293,14 @@
 - `nginx/nginx.conf`：当前 HTTPS 反向代理配置
 - `scripts/cloud-deploy.sh`：当前部署执行脚本
 - `scripts/bootstrap-deploy-assets.sh`：当前部署资产拉取脚本
+- `scripts/start-entry.mjs`：当前 `Next.js standalone` 生产启动入口
 - 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径：继续仅作为 legacy 回滚参考
+
+legacy 基线统一边界：
+- 只承担历史运行参考、故障回滚与新旧运行线差异对照职责
+- 不再作为默认部署入口、默认运维入口或正式真相源
+- 在正式部署主线、发布门禁、部署演练与回滚验证完成并通过审核前继续保留
+- 只有在替代真相源与回滚记录冻结后，才允许进入后续退出决策；本轮不直接删除资产
 
 ## 根目录结构
 ```text
@@ -365,4 +373,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是继续按已批准的 `phase11-*` `/spec` 顺序推进：`phase11-03` 已完成环境模板、健康检查与发布门禁口径收口，后续继续冻结 legacy 回滚基线与 cutline 退出条件。
+- 当前默认下一步是继续按已批准的 `phase11-*` `/spec` 顺序推进：`phase11-04` 已完成 legacy 回滚基线降级与边界收口，后续继续进入部署演练记录与最终一致性复核。

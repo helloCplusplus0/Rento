@@ -5,7 +5,7 @@
 - 本文档直接建立在 `phase10` 已完成的长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界之上。
 - 本文档不替代 `architecture_plan` 的结构判断，也不替代 `dev_plan` 的任务拆分；它只负责冻结所有 `phase11-*` 子任务必须共同遵守的边界与词汇。
 - 当前互链文档为 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)。
-- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口为统一环境与健康检查口径。后续子任务继续复用这些承接位而不再另起第二套部署入口。
+- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口为统一环境与健康检查口径；`phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 边界收口到单一解释。后续子任务继续复用这些承接位而不再另起第二套部署入口。
 
 ## 一、文档目的
 本文档用于冻结 `phase11-deployment-cutover-and-cutline-closure` 的共享判断标准，避免后续子任务分别从部署拓扑、环境变量、健康检查、发布门禁或 legacy 回滚基线视角出发，重新产出互相冲突的解释。
@@ -51,6 +51,7 @@
 - `scripts/cloud-deploy.sh`
 - `scripts/bootstrap-deploy-assets.sh`
 - `scripts/start-entry.mjs`
+- 历史容器化镜像、容器、`nginx` 与 `redis` 变量口径
 
 ### 4.3 顶层治理输入
 - `AGENTS.md`
@@ -70,6 +71,8 @@
 - 指旧 `docker-compose + nginx + Next.js standalone` 容器化运行线
 - 它仍是历史运行线与回滚参考
 - 它不再是正式主线，也不再承担未来默认交付职责
+- 它只继续承担历史运行参考、故障回滚与新旧运行线差异对照职责
+- 它不是默认部署入口、默认运维入口或正式真相源
 
 ### 5.3 cutover
 - 指从 legacy 容器化运行线切换到正式新部署主线的过程
@@ -78,6 +81,7 @@
 ### 5.4 cutline closure
 - 指把“正式主线是什么、legacy 基线保留到何时、何时允许退出 legacy 资产”这三类问题收口为单一答案
 - 它不等同于“立即删除所有 legacy 资产”
+- 当前退出条件固定为：正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结
 
 ### 5.5 发布门禁
 - 指部署切线前必须共同满足的工程、运行和业务验证要求
@@ -156,6 +160,7 @@
 - 不得把“文档已冻结”误读成“正式部署资产已全部落地”
 - 不得把 legacy 容器化运行线继续表述成正式主线
 - 不得把 `Rento-legacy` 仓库写成部署或回滚入口
+- 不得把 legacy 基线重新写成默认运维入口或第二真相源
 
 ## 九、允许路线
 - 允许继续复用 `server/`、`src/minix/`、`scripts/start-minix.mjs` 与 `server/lib/env.ts` 作为正式部署主线的直接承接位
@@ -168,6 +173,7 @@
 - 禁止在 `phase11` 中重新打开 SQLite 正式支持选项
 - 禁止在 `phase11` 中继续把 `redis` 放入正式部署主线
 - 禁止通过切换 remote 到 `Rento-legacy` 来处理部署或运行故障
+- 禁止在退出条件满足前直接删除 legacy 回滚资产
 
 ## 十一、统一验证要求
 - 至少确认：

@@ -55,7 +55,7 @@ Internet
 - `docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md`
 
 后续 `phase11` 实施应补齐但当前尚未落地的正式资产包括：
-- `phase11-04 ~ phase11-05` 继续需要收口的 legacy cutline、回滚退出条件与部署演练记录
+- `phase11-05` 继续需要收口的部署演练记录、最终审核链路与文档一致性复核
 
 ## 正式部署资产基线
 - `deploy/caddy/Caddyfile`
@@ -126,25 +126,54 @@ REQUEST_TIMEOUT=30000
 ## legacy 回滚基线
 以下资产仍服务于旧容器化运行线的历史运行与回滚参考职责：
 - `docker-compose.yml`
+-   当前容器编排入口，继续承接旧 `app + postgres + redis + nginx` 组合关系
 - `nginx/nginx.conf`
+-   当前容器化 HTTPS 反向代理配置，继续服务 legacy 容器网络中的 `app:3001`
 - `scripts/cloud-deploy.sh`
+-   当前容器化部署执行脚本，继续服务镜像拉取、编排启动与存量运维
 - `scripts/bootstrap-deploy-assets.sh`
+-   当前 legacy 部署资产拉取脚本，默认仍拉取容器化部署所需文件集合
 - `scripts/start-entry.mjs`
+-   当前 `Next.js standalone` 生产启动入口，继续对应旧运行线的启动语义
 - 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径
+
+这些资产的统一身份固定为：
+- 只服务于旧 `docker-compose + nginx + Next.js standalone` 运行线
+- 只承担历史运行参考、故障回滚基线与新旧部署差异对照职责
+- 不再作为当前默认部署入口、默认运维入口或正式部署真相源
 
 legacy 回滚职责边界：
 - 只回滚存量容器化运行线的镜像、部署资产、环境配置与验证路径
+- 只用于正式部署主线稳定验证完成前的应急恢复与差异对照
 - 不通过把当前开发 remote 切回 `Rento-legacy` 来处理运行问题
 - 不继续把 `docker-compose + nginx + Next.js standalone` 扩写成未来正式部署主线
+- 不把 legacy 容器化脚本重新包装成 `Rento-miniX` 的正式发布或运维入口
+
+legacy 资产保留条件：
+- 在 `Caddy + systemd + Hono + PostgreSQL` 正式部署主线完成稳定验证前继续保留
+- 在正式发布门禁、健康检查、部署演练与回滚演练尚未形成闭环前继续保留
+- 保留目的仅限历史运行参考、故障回滚与新旧运行线差异对照
+
+legacy 资产退出条件：
+- 正式部署主线、发布门禁、部署演练与回滚验证均已完成并通过审核
+- `DEPLOYMENT.md`、根级真相源与 `docs/phase11_*` 已冻结可替代 legacy 说明的正式真相源
+- legacy 回滚记录、替代入口与退出决策已形成可审计记录
+- 本任务只冻结退出条件，不直接删除 legacy 资产
+
+cutline 说明：
+- 当前 cutline 的目标是把正式主线与 legacy 基线完全分离，而不是立即清空 legacy 资产
+- 只有在正式主线验证闭环稳定、回滚记录冻结且退出条件满足后，legacy 基线才允许进入后续归档或下线决策
 
 ## 与 `Rento-legacy` 的关系
 - `Rento-legacy` 只承担 GitHub 侧只读历史备份与对照职责
-- 它不是部署入口、回滚入口、默认 remote 或第二真相源
+- 它不是部署入口、回滚入口、默认 remote、默认上游或第二真相源
+- 它不承接当前仓库的 cutline 决策、正式部署资产或 legacy 回滚记录
 - 当前正式部署、正式文档与正式阶段工作流都只围绕当前仓库展开
 
 ## 当前结论
 - 根级部署说明已经切换到 `Rento-miniX` 的正式部署主线口径
 - `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 已成为正式部署资产承接位
 - `.env.example`、`scripts/health-check.sh` 与 `/api/health` 已收口为正式部署主线的统一环境与健康检查口径
-- legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口职责
-- 后续仍按 `phase11-04 ~ phase11-05` 顺序继续收口 legacy cutline 与部署演练要求
+- legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口、默认运维入口或正式真相源职责
+- `Rento-legacy` 的职责已冻结为只读历史备份与对照参考，不参与当前仓库的部署或回滚入口
+- legacy 基线的保留条件、退出条件与 cutline 解释已收口到单一部署说明入口
