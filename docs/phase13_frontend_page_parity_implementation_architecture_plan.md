@@ -82,6 +82,15 @@
   - `src/minix/routes/<domain>/*Route.tsx`
   为正式页面装配与数据边界落点，而不是把旧页面逻辑重新塞回单一全局壳层。
 
+### 3.4 `phase13-01` 当前实现缺口
+- `phase13-01` 的一轮实现已经证明：首页可以脱离纯说明页并落到 `src/minix/routes/HomePage.tsx`，但这不等于首页迁移已经完成。
+- 当前 `HomePage` 与旧 [DashboardPageWithStats.tsx](file:///home/dell/Projects/Rento/src/components/pages/DashboardPageWithStats.tsx) 相比，仍存在以下严重差异：
+  - 新首页新增了迁移说明文案、宿主标签、入口协同卡与首页状态边界卡，这些都不是旧首页原型的一部分。
+  - 新首页没有以旧 `FunctionGrid`、`UnifiedAlertsPanel`、`NotificationEntryButton`、`UserProfileSheet` 的原始结构完成高保真承接，而是改写成新的快捷入口区、说明卡与侧栏信息卡。
+  - 新首页一度出现重复 `设置` 快捷入口，说明装配结构仍未收口到旧原型节奏。
+  - 统计区错误呈现暴露技术态/HTTP 状态码，尚未达到正式工作台的生产级表达。
+- 因此 `phase13-01` 当前只能视为“首页壳层已落位的中间实现结果”，不能视为验收通过。
+
 ## 四、首批实施范围
 ### 4.1 `phase13` 首批正式页面范围
 `phase13` 只承接 `phase12` 已冻结的 P0 / P1 正式业务页面：
@@ -294,6 +303,7 @@
 `phase13` 至少要为以下维度建立统一验收矩阵：
 
 - 页面是否已从 placeholder / 说明页切换为真实页面壳
+- 页面是否继续以旧 `Rento` 源代码为直接原型，并在除最小技术适配外达到接近 `100%` 的页面保真度
 - 页面信息结构是否与旧原型保持一致
 - 导航节奏与返回/跳转语义是否一致
 - 列表页搜索/筛选/空态是否可用
@@ -335,6 +345,7 @@
 - 确认架构描述与现有 `src/minix/router/index.tsx`、`src/minix/layout/*` 结构一致
 - 确认所有实施边界都没有混写 `phase14 ~ phase16` 职责
 - 确认页面迁移仍保持 `Prisma + PostgreSQL`、UI 保真与历史保留约束
+- 确认任何页面验收都不会把“页面壳已落位”误判为“页面迁移已完成”；若与旧原型仍有显著结构漂移，必须明确回退验收结论
 
 ## 十一、阶段结论
 `phase13-frontend-page-parity-implementation` 的架构价值不在于“立即写完所有页面代码”，而在于：

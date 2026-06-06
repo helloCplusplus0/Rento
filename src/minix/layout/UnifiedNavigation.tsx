@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Bell, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { Input } from '@/components/ui/input'
 import { getWorkbenchSearchHref } from '@/lib/workbench-search'
 import { cn } from '@/lib/utils'
 
+import {
+  MinixNotificationEntryButton,
+  MinixUserProfileSheet,
+} from '../components/homepage/MinixDashboardAdapters'
 import { minixHomeRoute, minixPrimaryRoutes } from '../routes/route-manifest'
 
 interface UnifiedNavigationProps {
@@ -143,6 +147,7 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const [desktopSearchQuery, setDesktopSearchQuery] = useState('')
+  const [showUserSheet, setShowUserSheet] = useState(false)
 
   const mobileItems = useMemo(
     () => [minixHomeRoute, ...minixPrimaryRoutes.filter((route) => route.showInMobileNav)],
@@ -191,103 +196,99 @@ export function UnifiedNavigation({ variant }: UnifiedNavigationProps) {
   }
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 border-b border-gray-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                <span className="text-sm font-bold text-white">R</span>
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-xl font-bold text-gray-900">Rento</span>
-                <span className="text-[11px] text-gray-500">miniX</span>
-              </div>
-            </Link>
-          </div>
-
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
-              {desktopItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    'relative rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                    isActiveRoute(location.pathname, item.path)
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
+    <>
+      <nav className="fixed top-0 right-0 left-0 z-50 border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                  <span className="text-sm font-bold text-white">R</span>
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="text-xl font-bold text-gray-900">Rento</span>
+                  <span className="text-[11px] text-gray-500">miniX</span>
+                </div>
+              </Link>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <div className="hidden w-72 items-center md:flex">
-              <div className="relative w-full">
-                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  value={desktopSearchQuery}
-                  onChange={(event) => setDesktopSearchQuery(event.target.value)}
-                  onKeyDown={handleDesktopSearchKeyDown}
-                  placeholder="搜索房源、房间号、合同"
-                  className="h-10 border-gray-200 bg-gray-50 pl-10 pr-10 text-sm focus:border-blue-300 focus:bg-white"
-                  aria-label="搜索房源、房间号、合同"
-                />
-                <button
-                  type="button"
-                  onClick={handleDesktopSearch}
-                  className="absolute top-1/2 right-1.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none"
-                  disabled={!desktopSearchQuery.trim()}
-                  aria-label="执行搜索"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
+            <div className="hidden md:block">
+              <div className="ml-10 flex items-baseline space-x-4">
+                {desktopItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      'relative rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActiveRoute(location.pathname, item.path)
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </div>
             </div>
 
-            <span className="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 sm:inline-flex">
-              React Router 宿主
-            </span>
-
-            <button
-              type="button"
-              className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              aria-label="提醒中心占位"
-              title="phase07-02 仅保留提醒入口占位"
-            >
-              <Bell className="h-5 w-5" />
-            </button>
-
-            <Link
-              to="/settings"
-              className={cn(
-                'rounded-md p-2 transition-colors',
-                isActiveRoute(location.pathname, '/settings')
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              )}
-              aria-label="系统设置"
-            >
-              <SettingsIcon className="h-5 w-5" />
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="flex items-center space-x-2 rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              aria-label="登录页入口"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300">
-                <span className="text-sm font-medium text-gray-700">U</span>
+            <div className="flex items-center space-x-3">
+              <div className="hidden w-72 items-center md:flex">
+                <div className="relative w-full">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    value={desktopSearchQuery}
+                    onChange={(event) => setDesktopSearchQuery(event.target.value)}
+                    onKeyDown={handleDesktopSearchKeyDown}
+                    placeholder="搜索房源、房间号、合同"
+                    className="h-10 border-gray-200 bg-gray-50 pl-10 pr-10 text-sm focus:border-blue-300 focus:bg-white"
+                    aria-label="搜索房源、房间号、合同"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDesktopSearch}
+                    className="absolute top-1/2 right-1.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none"
+                    disabled={!desktopSearchQuery.trim()}
+                    aria-label="执行搜索"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-            </button>
+
+              <MinixNotificationEntryButton />
+
+              <Link
+                to="/settings"
+                className={cn(
+                  'rounded-md p-2 transition-colors',
+                  isActiveRoute(location.pathname, '/settings')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                )}
+                aria-label="系统设置"
+              >
+                <SettingsIcon className="h-5 w-5" />
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setShowUserSheet(true)}
+                className="flex items-center space-x-2 rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                aria-label="打开个人中心"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300">
+                  <span className="text-sm font-medium text-gray-700">U</span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <MinixUserProfileSheet
+        open={showUserSheet}
+        onOpenChange={setShowUserSheet}
+      />
+    </>
   )
 }

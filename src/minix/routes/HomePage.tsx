@@ -1,121 +1,204 @@
-import { minixClientEnv } from '../env'
-import { legacyGuardParallelBoundaryChecklist } from '../router/guards'
+import { Suspense, useState } from 'react'
+import { AlertTriangle, RefreshCw, User } from 'lucide-react'
+import {
+  Await,
+  defer,
+  isRouteErrorResponse,
+  Link,
+  useLoaderData,
+  useRevalidator,
+  useRouteError,
+} from 'react-router-dom'
 
-import { minixOpsGovernanceRoutes, minixPrimaryRoutes, minixStateRoutes } from './route-manifest'
+import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
+import {
+  StatisticsCards,
+  StatisticsCardsSkeleton,
+} from '@/components/business/StatisticsCards'
+import { useStatistics } from '@/hooks/useStatistics'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function HomePage() {
+import {
+  MinixFunctionGrid,
+  MinixFunctionGridSkeleton,
+  MinixNotificationEntryButton,
+  MinixSearchBar,
+  MinixSearchBarSkeleton,
+  MinixUnifiedAlertsPanel,
+  MinixUnifiedAlertsPanelSkeleton,
+  MinixUserProfileSheet,
+} from '../components/homepage/MinixDashboardAdapters'
+
+interface HomePageLoaderData {
+  pageReady: Promise<null>
+}
+
+export function homePageLoader() {
+  return defer({
+    pageReady: Promise.resolve(null),
+  })
+}
+
+function normalizeHomePageError(error: unknown) {
+  if (isRouteErrorResponse(error)) {
+    if (error.status >= 500) {
+      return '工作台暂时不可用，请稍后重试。'
+    }
+
+    return error.statusText || '工作台暂时不可用，请稍后重试。'
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return '工作台暂时不可用，请稍后重试。'
+}
+
+function HomePageErrorPanel({ message }: { message: string }) {
+  const revalidator = useRevalidator()
+
   return (
-    <section className="space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <article className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-4xl space-y-3">
-            <p className="text-sm font-medium text-primary">
-              phase08-04 Minix Login Guard And Legacy Mapping
-            </p>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              新前端壳已接入最小登录守卫，并冻结与旧宿主的并行门禁边界
-            </h2>
-            <p className="text-sm leading-7 text-muted-foreground">
-              当前工作台用于确认 `src/minix/` 已接入真实认证 API、最小登录态探测与登录回跳。现有 UI 风格、图标语义和信息架构继续沿用旧实现，完整业务逻辑仍保留在旧宿主作为参考基线。
-            </p>
+    <section className="px-4 py-4 sm:px-6 sm:py-6 lg:px-0 lg:py-8">
+      <Card className="border-red-200 bg-red-50/60">
+        <CardHeader className="px-4 py-4 sm:px-6">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-red-100 p-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <CardTitle className="text-base text-red-900 sm:text-lg">
+                工作台装配失败
+              </CardTitle>
+              <p className="text-sm leading-6 text-red-700">{message}</p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-border/80 bg-background px-4 py-3 text-sm text-muted-foreground">
-            <p>应用名: {minixClientEnv.appName}</p>
-            <p>运行模式: {minixClientEnv.mode}</p>
-            <p>API 基址: {minixClientEnv.apiBaseUrl}</p>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3 px-4 pb-4 sm:px-6">
+          <Button
+            type="button"
+            onClick={() => revalidator.revalidate()}
+            disabled={revalidator.state === 'loading'}
+          >
+            <RefreshCw
+              className={cn(
+                'h-4 w-4',
+                revalidator.state === 'loading' && 'animate-spin'
+              )}
+            />
+            重新加载首页
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">返回工作台</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </section>
+  )
+}
+
+function HomePageInlineError() {
+  return <HomePageErrorPanel message="工作台暂时不可用，请稍后重试。" />
+}
+
+export function HomePageRouteErrorBoundary() {
+  const routeError = useRouteError()
+
+  return <HomePageErrorPanel message={normalizeHomePageError(routeError)} />
+}
+
+export function HomePagePending() {
+  return (
+    <section className="space-y-4 px-4 py-4 sm:px-6 sm:py-6 lg:px-0 lg:py-8">
+      <div className={dashboardMobileStyles.pageSection}>
+        <div className="lg:hidden">
+          <div className={dashboardMobileStyles.workbenchHero}>
+            <div className={dashboardMobileStyles.workbenchTopBar}>
+              <div className="h-10 w-10 animate-pulse rounded-xl bg-white/20" />
+              <MinixSearchBarSkeleton />
+              <div className="h-10 w-16 animate-pulse rounded-xl bg-white/20" />
+            </div>
           </div>
         </div>
-      </article>
 
-      <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm">
-          <h3 className="text-lg font-semibold tracking-tight">正式业务路径承接位</h3>
-          <div className="mt-4 space-y-3">
-            {minixPrimaryRoutes.map((route) => (
-              <div
-                key={route.path}
-                className="rounded-2xl border border-border/80 bg-background p-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h4 className="font-medium">{route.label}</h4>
-                  <span className="rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
-                    {route.path}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  {route.description}
-                </p>
-              </div>
-            ))}
+        <div className={dashboardMobileStyles.section}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="h-5 w-24 animate-pulse rounded bg-gray-200" />
+            <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
           </div>
-        </article>
+          <StatisticsCardsSkeleton />
+        </div>
 
-        <aside className="space-y-6">
-          <section className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm">
-            <h3 className="text-lg font-semibold tracking-tight">基础状态页承接位</h3>
-            <div className="mt-4 space-y-3">
-              {minixStateRoutes.map((route) => (
-                <div
-                  key={route.path}
-                  className="rounded-2xl border border-border/80 bg-background p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <h4 className="font-medium">{route.label}</h4>
-                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      {route.path}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                    {route.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm">
-            <h3 className="text-lg font-semibold tracking-tight">phase08-04 并行门禁边界清单</h3>
-            <div className="mt-4 space-y-3">
-              {legacyGuardParallelBoundaryChecklist.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-2xl border border-border/80 bg-background p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h4 className="font-medium">{item.title}</h4>
-                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      {item.owner}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{item.boundary}</p>
-                  <p className="mt-2 text-sm leading-7 text-foreground/80">
-                    验证方式：{item.verification}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm">
-            <h3 className="text-lg font-semibold tracking-tight">共享治理来源</h3>
-            <ul className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
-              <li>`src/lib/route-config.ts` 提供页面标题、描述与主导航元数据基线。</li>
-              <li>`src/lib/navigation-config.ts` 提供桌面/移动端导航顺序与入口差异。</li>
-              <li>`src/lib/page-governance.ts` 继续承接运维治理页与辅助页边界。</li>
-            </ul>
-            <div className="mt-4 rounded-2xl border border-dashed border-border/80 bg-background p-4">
-              <p className="text-sm font-medium text-foreground">治理页仍保留在旧宿主参考侧</p>
-              <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                {minixOpsGovernanceRoutes.map((route) => (
-                  <p key={route.path}>
-                    {route.path}：{route.label}，分类为 {route.category}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </section>
-        </aside>
-      </section>
+        <MinixFunctionGridSkeleton />
+        <MinixUnifiedAlertsPanelSkeleton />
+      </div>
     </section>
+  )
+}
+
+function HomePageContent() {
+  const { stats, isLoading, error, refreshStats } = useStatistics(true, 3600000)
+  const [showUserSheet, setShowUserSheet] = useState(false)
+
+  return (
+    <section className="space-y-4 px-4 py-4 sm:px-6 sm:py-6 lg:px-0 lg:py-8">
+      <div className={dashboardMobileStyles.pageSection}>
+        <div className="lg:hidden">
+          <div className={dashboardMobileStyles.workbenchHero}>
+            <div className={dashboardMobileStyles.workbenchTopBar}>
+              <button
+                type="button"
+                onClick={() => setShowUserSheet(true)}
+                className={dashboardMobileStyles.workbenchAvatarButton}
+                aria-label="打开个人中心"
+              >
+                <User className="h-5 w-5" />
+              </button>
+              <Suspense fallback={<MinixSearchBarSkeleton />}>
+                <MinixSearchBar
+                  placeholder="搜房源、房间号、合同"
+                  showButton={false}
+                />
+              </Suspense>
+              <MinixNotificationEntryButton variant="hero" />
+            </div>
+          </div>
+        </div>
+
+        <StatisticsCards
+          stats={stats}
+          isLoading={isLoading}
+          error={error}
+          onRefresh={refreshStats}
+        />
+
+        <Suspense fallback={<MinixFunctionGridSkeleton />}>
+          <MinixFunctionGrid />
+        </Suspense>
+
+        <Suspense fallback={<MinixUnifiedAlertsPanelSkeleton />}>
+          <MinixUnifiedAlertsPanel />
+        </Suspense>
+
+        <MinixUserProfileSheet
+          open={showUserSheet}
+          onOpenChange={setShowUserSheet}
+        />
+      </div>
+    </section>
+  )
+}
+
+export function HomePage() {
+  const loaderData = useLoaderData() as HomePageLoaderData
+
+  return (
+    <Suspense fallback={<HomePagePending />}>
+      <Await resolve={loaderData.pageReady} errorElement={<HomePageInlineError />}>
+        {() => <HomePageContent />}
+      </Await>
+    </Suspense>
   )
 }

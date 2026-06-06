@@ -4,6 +4,33 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
 
+function normalizeStatisticsError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return '财务统计暂时不可用，请稍后重试'
+  }
+
+  const statusMatch = error.message.match(/HTTP error!\s*status:\s*(\d+)/i)
+  const status = statusMatch ? Number(statusMatch[1]) : null
+
+  if (status === 401 || status === 403) {
+    return '当前登录状态已失效，请重新登录后查看财务统计'
+  }
+
+  if (status === 404) {
+    return '财务统计接口暂未就绪，请联系管理员检查配置'
+  }
+
+  if (status === 408) {
+    return '财务统计加载超时，请稍后重试'
+  }
+
+  if (status !== null && status >= 500) {
+    return '财务统计服务暂时不可用，请稍后重试'
+  }
+
+  return error.message || '财务统计暂时不可用，请稍后重试'
+}
+
 /**
  * 统计数据Hook
  * 处理数据获取、加载状态、错误处理和自动刷新
@@ -31,8 +58,7 @@ export function useStatistics(autoRefresh = false, refreshInterval = 30000) {
       // 从新的API响应格式中提取实际数据
       setStats(data.data)
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '获取统计数据失败'
+      const errorMessage = normalizeStatisticsError(err)
       setError(errorMessage)
       console.error('统计数据获取失败:', err)
     } finally {

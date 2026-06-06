@@ -19,13 +19,14 @@
 - 优先保持低复杂度：单仓库、单主线、单一真相源，不让旧 `Rento` 运行线与新 `Rento-miniX` 主线长期争夺同层职责。
 - 在满足业务真实、状态可解释、历史可追溯的前提下，优先保持轻量、高效、灵活、低耦合。
 - 当前 `Rento` 前端 UI 展示效果已符合预期，默认视为承接资产；非必要不得擅自改变展示效果。
+- 任何迁移操作都必须以旧 `Rento` 源代码为直接原型；除已在阶段文档中显式批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，是验收通过的硬门槛之一。
 - 所有重构都必须明确标注“参考来源、复用内容、调整内容、舍弃内容与原因”。
 
 ## 4. 当前默认入口
 - 当前默认工作流：`phase13-frontend-page-parity-implementation`
 - 当前主问题：在不反向干扰 `phase07~11` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层、部署主线与迁移兼容边界的前提下，把旧 `Rento` 的正式页面、旧宿主 API 与 PWA 能力完整迁入 `Rento-miniX`，并为最终 legacy 退出建立可验证的对齐路径。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase12-05` 已完成路线图一致性收口，当前已进入 `phase13-frontend-page-parity-implementation` 的 `/plan` 文档审核阶段。当前应继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与 [plan.md](file:///home/dell/Projects/Rento/plan.md) 作为当前阶段真相源，并保持本轮只做阶段文档产出与一致性收口，不进入 `/spec` 或页面/API/PWA/cutover 实现。
+- 当前下一步：`phase12-05` 已完成路线图一致性收口，当前已进入 `phase13-frontend-page-parity-implementation` 的 `/plan` 文档审核阶段。当前应继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与 [plan.md](file:///home/dell/Projects/Rento/plan.md) 作为当前阶段真相源；其中 `phase13-01` 已因首页与旧 `Rento` 原型存在严重漂移而被视为验收失败，必须按首页迁移缺口清单重开修复后，才允许重新申请验收。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入

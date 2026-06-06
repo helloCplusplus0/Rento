@@ -28,9 +28,9 @@ export const minixHomeRoute: MinixRouteDefinition = {
   path: '/',
   segment: '',
   label: '工作台',
-  title: '工作台承接位',
+  title: '工作台',
   description:
-    '当前页面复用既有工作台信息架构，作为 phase07-02 的统一前端宿主首页；后续迁移继续挂接在此壳层中，而不是回退到旧 Next.js 页面宿主。',
+    '查看财务统计、快捷入口与工作台首页装配，并继续承接在统一前端宿主导航壳内。',
   iconKey: 'dashboard',
   kind: 'primary',
   shell: 'app',

@@ -6,7 +6,11 @@ import {
   requireAuthenticatedGuard,
 } from './guards'
 import { ErrorPage, RouteErrorBoundary } from '../routes/ErrorPage'
-import { HomePage } from '../routes/HomePage'
+import {
+  HomePage,
+  homePageLoader,
+  HomePageRouteErrorBoundary,
+} from '../routes/HomePage'
 import { LoadingPage } from '../routes/LoadingPage'
 import { LoginPage } from '../routes/LoginPage'
 import { NotFoundPage } from '../routes/NotFoundPage'
@@ -42,7 +46,12 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     loader: requireAuthenticatedGuard,
     children: [
-      { index: true, element: <HomePage /> },
+      {
+        index: true,
+        element: <HomePage />,
+        loader: homePageLoader,
+        errorElement: <HomePageRouteErrorBoundary />,
+      },
       ...minixPrimaryRoutes.map((route) => ({
         path: route.segment,
         element: <PlaceholderPage route={route} />,

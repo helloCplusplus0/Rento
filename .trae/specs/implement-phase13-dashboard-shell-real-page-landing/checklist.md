@@ -1,0 +1,7 @@
+- [x] 已确认首页真实承接输入建立在 `src/minix/routes/HomePage.tsx`、`src/minix/layout/*`、`src/minix/router/index.tsx` 与旧首页表达层事实上
+- [x] 已将 `/` 从阶段说明页升级为真实工作台页面壳，且除最小技术适配外接近 `100%` 还原旧 `DashboardPage.tsx` / `DashboardPageWithStats.tsx` 原型
+- [x] 已明确首页快捷入口、搜索入口与设置入口的承接方式，并保持旧导航节奏、入口语义与 UI 原型，不存在说明性卡片、占位交互或重复入口
+- [x] 已为首页冻结 loader / pending / error 同类边界的最小实现口径
+- [x] 已确认首页未引入新的视觉语言、第二套导航骨架或开发态/迁移态展示结构
+- [x] 已确认首页实现未越界到 dashboard retained-legacy API/query parity、通知中心、个人资料或 PWA runtime
+- [x] 已完成独立子代理重新审核验收，并得到通过结论

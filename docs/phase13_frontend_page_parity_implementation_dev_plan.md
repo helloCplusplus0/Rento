@@ -6,6 +6,8 @@
   - [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)
   - [phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)
 - 当前轮只产出阶段文档与顶层真相源同步，不进入 `/spec` 或实现。
+- 补充约束：`phase13` 任一页面迁移子任务都必须以旧 `Rento` 源代码为直接原型；除已批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，是验收通过的硬门槛之一。
+- 补充判断：`phase13-01` 的一轮实现虽然完成了首页壳层落位，但因与旧 `DashboardPageWithStats` 原型存在严重结构漂移，不能视为验收通过；后续必须按首页迁移缺口清单重开修复。
 
 ## 一、文档定位
 本文档用于把 `phase13-frontend-page-parity-implementation` 拆分为顺序执行的实施子任务，确保仓库先明确“先迁哪些页面、如何拆宿主绑定、如何承接页面级数据边界、如何验收”，再进入逐个页面切片实施。
@@ -47,6 +49,8 @@
 - 当前 `/` 已由 `HomePage` 挂载，但内容仍是阶段说明与承接清单，而不是正式工作台页面。
 - `src/minix/layout/UnifiedNavigation.tsx` 已完成 React Router 导航壳承接，可作为首页真实化后的稳定壳层输入。
 - `src/components/pages/DashboardPage.tsx` 与 `DashboardPageWithStats.tsx` 已提供旧首页主体表达参考，但仍需判断其是否直接依赖旧宿主或旧数据获取方式。
+- `phase13-01` 的一轮实现结果已经暴露出严重漂移：首页混入迁移说明文案、宿主状态卡、入口协同卡、首页状态边界卡与重复 `设置` 快捷入口，这些都不属于旧 `Rento` 首页原型的一部分。
+- 因此 `phase13-01` 的当前阻断不再是“首页是否已经脱离说明页”，而是“首页是否已经以旧 `DashboardPageWithStats` 为直接原型完成高保真承接”。
 
 ### 参考来源
 - `src/minix/routes/HomePage.tsx`
@@ -65,11 +69,16 @@
 - `/` 不再只是阶段说明页，而是具备真实工作台页面壳与装配结构
 - 首页快捷入口、搜索入口、设置入口与导航节奏有单一解释
 - 首页 loader / pending / error 同类边界可被后续页面复用
+- 除最小技术适配外，首页必须以旧 `DashboardPageWithStats` / `DashboardPage` 源代码为直接原型，接近 `100%` 还原其信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义
+- 首页不得保留迁移说明文案、宿主标签、开发态状态卡、验收辅助卡片、占位交互或重复快捷入口
 
 ### 验证要求
 - 确认首页仍保持旧工作台信息结构与导航节奏
 - 确认首页未引入新的视觉语言或第二套导航骨架
 - 确认首页实现未越界到 API/query parity 或 PWA parity
+- 确认首页逐项对照旧 `DashboardPageWithStats` / `DashboardPage` 后，不再存在显著结构漂移
+- 确认首页中的搜索入口、快捷入口、提醒/个人入口语义、告警/统计承接方式与旧 `Rento` 原型保持单一解释
+- 若仍存在迁移说明卡、入口协同卡、首页状态边界卡、重复 `设置` 快捷入口或裸露技术态错误文案，则本子任务不得验收通过
 
 ## phase13-02-primary-list-routes-parity
 ### 目标
