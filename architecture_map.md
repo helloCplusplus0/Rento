@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认工作流已进入 `phase12-05` 文档收口 spec，正在为 `phase12 ~ phase15` 冻结页面 parity、API/query parity、PWA parity 与 cutover/legacy-exit 的统一路线图。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认工作流已从 `phase12-05` 文档收口推进到 `phase13-frontend-page-parity-implementation` 的阶段文档审核阶段，开始把 `phase12 ~ phase16` 的路线图从“冻结层”推进到“真实页面迁移实施层”。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -15,7 +15,7 @@
 - 在 `phase10` 数据访问层方案冻结前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*`、`docs/phase12_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*`、`docs/phase12_*`、`docs/phase13_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -213,14 +213,19 @@
   - 演练记录必须标明“正式主线验证”或“legacy 回滚验证”，并可被根级真相源或阶段文档引用
 - `phase11` 的回滚基线继续固定为旧容器化运行线，而不是切回 `Rento-legacy` 仓库或恢复第二真相源。
 
-## `phase12 ~ phase15` 目标结构说明
-### 规划中的页面 parity 承接层
-- `phase12` 规划中的前端 parity 继续收口到 `src/minix/`，用于承接旧 `src/app/*` 的正式页面壳、路由落点与页面装配边界。
-- 该层的职责是把旧宿主页面逐步迁成纯新主线可用的正式页面，而不是借迁移重做 UI 或重写主链语义。
-- 该层默认继续复用现有 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*`，并把旧 `src/app/*` 视为页面原型与行为参考基线。
+## `phase12 ~ phase16` 目标结构说明
+### 规划中的页面 parity 冻结层
+- `phase12` 规划中的前端 parity 继续收口到 `docs/phase12_*` 与根级真相源，用于冻结旧 `src/app/*` 的页面事实表、路由落点、页面装配边界、UI 保真规则与后续多阶段路线图。
+- 该层的职责是把“迁哪些页面、先迁哪些页面、如何复用、哪些 UI 不能动、页面与 retained-legacy API 如何联动”冻结成单一答案，而不是直接承担真实页面迁移实施。
+- 该层默认继续把旧 `src/app/*` 视为页面原型与行为参考基线，并把现有 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*` 的复用策略先收口到文档。
+
+### 规划中的页面 parity 实施层
+- 新增 `phase13-frontend-page-parity-implementation`，其前端 parity 实施继续收口到 `src/minix/`，用于把旧 `src/app/*` 的正式页面壳、路由落点与页面装配边界真实迁入纯新主线。
+- 该层的职责是逐步把旧宿主页面迁成纯新主线可用的正式页面，而不是借迁移重做 UI、重写主链语义或提前切 API / PWA / cutover。
+- 该层默认继续复用现有 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*`，只在技术适配确有必要时调整宿主绑定层。
 
 ### 规划中的 API / query parity 承接层
-- `phase13` 规划中的 API / query parity 继续收口到根级 `server/` 与 `src/lib/domain/*`、`src/lib/queries.ts` 等既有正式数据访问承接位。
+- `phase14` 规划中的 API / query parity 继续收口到根级 `server/` 与 `src/lib/domain/*`、`src/lib/queries.ts` 等既有正式数据访问承接位。
 - 该层的职责是清空旧 `src/app/api/*` 中仍承担正式业务职责的 retained-legacy 路由，而不是重新打开 ORM 替换议题。
 - 当前正式数据访问主线继续固定为：
   - `Prisma + PostgreSQL`
@@ -229,25 +234,26 @@
   - `src/lib/transaction-manager.ts`
 
 ### 规划中的新主线 PWA 承接层
-- `phase14` 规划中的 PWA parity 将继续收口到 `src/minix/`、根级 `public/`、`vite.config.ts` 与 `server/lib/static.ts` 所承接的纯新主线产物链。
+- `phase15` 规划中的 PWA parity 将继续收口到 `src/minix/`、根级 `public/`、`vite.config.ts` 与 `server/lib/static.ts` 所承接的纯新主线产物链。
 - 该层的职责是把安装、更新、最小离线兜底与发布口径迁到 `Vite + Hono` 主线，而不是继续依赖旧 Next PWA 宿主。
 - 该层默认继续保持最小受控策略，不通过缓存动态鉴权业务接口来换取“离线更强”的表面效果。
 
 ### 规划中的 parity 验收与 legacy 退出层
-- `phase15` 规划中的 cutover 与 legacy 退出继续建立在：
+- `phase16` 规划中的 cutover 与 legacy 退出继续建立在：
   - `phase11` 已冻结的正式部署主线与发布门禁
-  - `phase12` 的页面 parity 结果
-  - `phase13` 的 API / query parity 结果
-  - `phase14` 的新主线 PWA parity 结果
+  - `phase13` 的页面 parity 结果
+  - `phase14` 的 API / query parity 结果
+  - `phase15` 的新主线 PWA parity 结果
 - 该层只负责回答“纯新主线是否已完整替代旧技术栈、何时允许退出 legacy 资产”，不再反向重写业务边界。
 
-### `phase12 ~ phase15` 闭环路线图矩阵
+### `phase12 ~ phase16` 闭环路线图矩阵
 | 阶段 | 结构承接位 | 主要职责 | 前置依赖 | 退出条件 | 文档轮次最小验证要求 |
 | --- | --- | --- | --- | --- | --- |
-| `phase12` | `src/minix/router/*`、`src/minix/layout/*`、`src/minix/routes/*`、旧 `src/app/**/page.tsx` 参考基线 | 冻结页面范围、页面映射、页面装配复用、UI 保真边界与多阶段路线图 | `phase10` 数据访问边界、`phase11` 部署主线、旧页面原型 | 页面映射、复用矩阵、UI 保真边界与后续路线图均已形成单一解释，且顶层真相源同步完成 | `docs/phase12_*` 互链复核、被引用路径存在性复核、顶层真相源状态一致性复核 |
-| `phase13` | `server/*`、`src/lib/domain/*`、`src/lib/queries*`、`server/lib/legacy-route-inventory.ts` | 收口正式 API/query 宿主，清退 retained-legacy 路由 | `phase12` 页面-API 映射、`phase10` query/事务边界、`phase11` 发布门禁 | retained-legacy / compat / formal-host-owned 清单与 route drain 顺序单一可解释 | 未来 `docs/phase13_*` 互链复核、被引用正式 API/query 路径存在性复核、顶层真相源状态一致性复核 |
-| `phase14` | `src/minix/*`、`public/*`、`vite.config.ts`、`server/lib/static.ts` | 迁入 manifest、service worker、安装/更新策略、最小离线页与缓存边界 | `phase12` 页面壳、`phase13` API 边界、`phase05` PWA 基线、`phase11` 静态托管主线 | 纯 `Vite + Hono` 主线可独立承接最小受控 PWA 能力，不再依赖旧 Next PWA 宿主 | 未来 `docs/phase14_*` 互链复核、被引用 PWA/静态托管路径存在性复核、顶层真相源状态一致性复核 |
-| `phase15` | parity 验收矩阵、部署/回滚记录、legacy 资产清单与归档入口 | 完成功能 parity 验收、cutover 审核、回滚演练与 legacy 退出 | `phase11` 部署/回滚基线、`phase12` 页面 parity、`phase13` API parity、`phase14` PWA parity | 能证明纯新主线在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 | 未来 `docs/phase15_*` 互链复核、被引用验收记录/部署记录/legacy 资产清单路径存在性复核、顶层真相源状态一致性复核 |
+| `phase12` | `docs/phase12_*`、根级真相源、旧 `src/app/**/page.tsx` 参考基线 | 冻结页面范围、页面映射、页面装配复用、UI 保真边界与多阶段路线图 | `phase10` 数据访问边界、`phase11` 部署主线、旧页面原型 | 页面映射、复用矩阵、UI 保真边界与后续路线图均已形成单一解释，且顶层真相源同步完成 | `docs/phase12_*` 互链复核、被引用路径存在性复核、顶层真相源状态一致性复核 |
+| `phase13` | `src/minix/router/*`、`src/minix/layout/*`、`src/minix/routes/*`、复用后的 `src/components/*` | 真实迁移正式页面壳、页面装配层、数据加载边界与正式路由承接位 | `phase12` 页面事实表、映射表、复用矩阵与 UI 保真边界 | 首批正式页面已在新宿主真实落位，不再只是规划或 placeholder | 未来 `docs/phase13_*` 互链复核、被引用 `src/minix/*`/`src/components/*`/旧 `src/app/**/page.tsx` 路径存在性复核、顶层真相源状态一致性复核 |
+| `phase14` | `server/*`、`src/lib/domain/*`、`src/lib/queries*`、`server/lib/legacy-route-inventory.ts` | 收口正式 API/query 宿主，清退 retained-legacy 路由 | `phase12` 页面-API 映射、`phase13` 页面 parity 结果、`phase10` query/事务边界、`phase11` 发布门禁 | retained-legacy / compat / formal-host-owned 清单与 route drain 顺序单一可解释 | 未来 `docs/phase14_*` 互链复核、被引用正式 API/query 路径存在性复核、顶层真相源状态一致性复核 |
+| `phase15` | `src/minix/*`、`public/*`、`vite.config.ts`、`server/lib/static.ts` | 迁入 manifest、service worker、安装/更新策略、最小离线页与缓存边界 | `phase13` 页面壳、`phase14` API 边界、`phase05` PWA 基线、`phase11` 静态托管主线 | 纯 `Vite + Hono` 主线可独立承接最小受控 PWA 能力，不再依赖旧 Next PWA 宿主 | 未来 `docs/phase15_*` 互链复核、被引用 PWA/静态托管路径存在性复核、顶层真相源状态一致性复核 |
+| `phase16` | parity 验收矩阵、部署/回滚记录、legacy 资产清单与归档入口 | 完成功能 parity 验收、cutover 审核、回滚演练与 legacy 退出 | `phase11` 部署/回滚基线、`phase13` 页面 parity、`phase14` API parity、`phase15` PWA parity | 能证明纯新主线在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 | 未来 `docs/phase16_*` 互链复核、被引用验收记录/部署记录/legacy 资产清单路径存在性复核、顶层真相源状态一致性复核 |
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
@@ -416,4 +422,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步不再表述为“等待审核/不进入 spec”，而是已完成 `phase12-05` 文档收口：后续继续以 `docs/phase12_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15` 路线图推进；在进入页面/API/PWA/cutover 实施前，legacy 资产继续保留为回滚基线。
+- 当前默认下一步已从 `phase12` 路线图重分层审核推进到 `phase13` 阶段文档审核：后续继续以 `docs/phase12_*`、新增的 `docs/phase13_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase13` 专门承接真实前端页面迁移实施，在进入 `/spec`、页面/API/PWA/cutover 实施前，legacy 资产继续保留为回滚基线。

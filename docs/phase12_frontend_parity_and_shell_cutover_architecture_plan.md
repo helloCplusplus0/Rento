@@ -7,7 +7,7 @@
 - 为什么后续路线图不能只规划一个笼统的 `phase12-full-minix-parity-and-legacy-exit`
 - 为什么当前应继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，而不重新打开 Prisma 替换议题
 - 为什么 `Rento-miniX` 在后续迁移中必须继续沿用旧 `Rento` 的页面原型与 UI 表达
-- 为什么 `phase12` 必须同时冻结 `phase12 ~ phase15` 的完整路线图，才能避免重新退回“走一步看一步”的推进方式
+- 为什么 `phase12` 必须同时冻结 `phase12 ~ phase16` 的完整路线图，才能避免重新退回“走一步看一步”的推进方式
 
 本文档不替代：
 
@@ -96,7 +96,7 @@
 #### 2.2.1.2 页面分类表
 | 分类 | 页面路径 | 数量 | 说明 |
 | --- | --- | --- | --- |
-| 正式业务页面 | `/`、`/rooms`、`/rooms/[id]`、`/rooms/[id]/edit`、`/add`、`/add/room`、`/add/contract`、`/contracts`、`/contracts/new`、`/contracts/[id]`、`/contracts/[id]/edit`、`/contracts/[id]/renew`、`/contracts/[id]/checkout`、`/bills`、`/bills/create`、`/bills/[id]`、`/bills/[id]/edit`、`/bills/stats`、`/renters`、`/renters/new`、`/renters/[id]`、`/renters/[id]/edit`、`/meter-readings/batch`、`/meter-readings/history`、`/settings` | 25 | 承载房源、租客、合同、账单、抄表、设置与工作台主链，属于 `phase12 ~ phase15` 的正式 parity 输入 |
+| 正式业务页面 | `/`、`/rooms`、`/rooms/[id]`、`/rooms/[id]/edit`、`/add`、`/add/room`、`/add/contract`、`/contracts`、`/contracts/new`、`/contracts/[id]`、`/contracts/[id]/edit`、`/contracts/[id]/renew`、`/contracts/[id]/checkout`、`/bills`、`/bills/create`、`/bills/[id]`、`/bills/[id]/edit`、`/bills/stats`、`/renters`、`/renters/new`、`/renters/[id]`、`/renters/[id]/edit`、`/meter-readings/batch`、`/meter-readings/history`、`/settings` | 25 | 承载房源、租客、合同、账单、抄表、设置与工作台主链，属于 `phase12 ~ phase16` 的正式 parity 输入 |
 | 状态/支持页面 | `/login`、`/offline`、`/profile`、`/notifications` | 4 | 承担登录、离线兜底与支持类入口，不与正式业务主链混写 |
 | 运维治理页面 | `/system-health`、`/data-consistency` | 2 | 治理与排障入口，分类口径与 `src/lib/page-governance.ts` 保持一致 |
 | dev-only / 待归档候选 | `/performance-test`、`/performance-benchmark`、`/performance-analysis`、`/layout-demo`、`/components`、`/business-flow-validation` | 6 | 仅用于开发、验证或演示，不进入正式 parity 范围 |
@@ -104,7 +104,7 @@
 #### 2.2.1.3 正式页面范围表
 | 范围类型 | 页面路径 | 当前冻结结论 |
 | --- | --- | --- |
-| 正式业务页面 | `/`、`/rooms`、`/rooms/[id]`、`/rooms/[id]/edit`、`/add`、`/add/room`、`/add/contract`、`/contracts`、`/contracts/new`、`/contracts/[id]`、`/contracts/[id]/edit`、`/contracts/[id]/renew`、`/contracts/[id]/checkout`、`/bills`、`/bills/create`、`/bills/[id]`、`/bills/[id]/edit`、`/bills/stats`、`/renters`、`/renters/new`、`/renters/[id]`、`/renters/[id]/edit`、`/meter-readings/batch`、`/meter-readings/history`、`/settings` | 必须进入 `phase12 ~ phase15` 默认 parity 路线图，并作为后续页面映射、页面装配与 API parity 的共享输入 |
+| 正式业务页面 | `/`、`/rooms`、`/rooms/[id]`、`/rooms/[id]/edit`、`/add`、`/add/room`、`/add/contract`、`/contracts`、`/contracts/new`、`/contracts/[id]`、`/contracts/[id]/edit`、`/contracts/[id]/renew`、`/contracts/[id]/checkout`、`/bills`、`/bills/create`、`/bills/[id]`、`/bills/[id]/edit`、`/bills/stats`、`/renters`、`/renters/new`、`/renters/[id]`、`/renters/[id]/edit`、`/meter-readings/batch`、`/meter-readings/history`、`/settings` | 必须进入 `phase12 ~ phase16` 默认 parity 路线图，并作为后续页面映射、页面装配与 API parity 的共享输入 |
 | 状态/支持页面 | `/login`、`/offline`、`/profile`、`/notifications` | 属于支持类 parity 输入；其中 `/login`、`/offline` 已有新宿主承接位，`/profile`、`/notifications` 继续延后到核心业务页之后承接 |
 
 #### 2.2.1.4 延后 / 不进入 parity 范围表
@@ -256,7 +256,7 @@ phase12-frontend-parity-and-shell-cutover
   - 页面映射表
   - 页面装配复用策略
   - UI 保真边界
-  - `phase12 ~ phase15` 完整路线图
+  - `phase12 ~ phase16` 完整路线图
   而不是马上进入实现。
 
 ### 2.4 外部资料校验
@@ -264,8 +264,8 @@ phase12-frontend-parity-and-shell-cutover
 
 - React Router 官方继续支持使用 `createBrowserRouter` 与 `RouterProvider` 组织 data router，并以 loader 形式把数据加载边界挂在路由树上；这与 `src/minix` 继续作为正式前端路由承接位的方向一致。
 - React Router 官方继续支持按 route module 懒加载组件与 loader；这意味着后续页面 parity 可以优先迁移页面壳与装配边界，而不需要一次性把所有页面逻辑重写成单体。
-- `vite-plugin-pwa` 官方继续支持在 `vite.config.ts` 中以插件方式冻结 manifest、service worker、更新策略与离线提示；这与后续 `phase14` 把 PWA 能力迁入纯新主线的方向一致。
-- `vite-plugin-pwa` 官方继续提供自动更新与更新提示模式；这意味着后续 `phase14` 可以在“最小受控 PWA”前提下复用当前安装/更新价值，而不必继续绑定旧 Next 宿主。
+- `vite-plugin-pwa` 官方继续支持在 `vite.config.ts` 中以插件方式冻结 manifest、service worker、更新策略与离线提示；这与后续 `phase15` 把 PWA 能力迁入纯新主线的方向一致。
+- `vite-plugin-pwa` 官方继续提供自动更新与更新提示模式；这意味着后续 `phase15` 可以在“最小受控 PWA”前提下复用当前安装/更新价值，而不必继续绑定旧 Next 宿主。
 
 ## 三、关键决策
 ### 3.1 当前正式数据访问主线继续固定为 `Prisma + PostgreSQL`
@@ -328,7 +328,7 @@ phase12-frontend-parity-and-shell-cutover
 - 整体视觉风格：
   - 继续沿用当前灰底、白卡、蓝色品牌强调、圆角卡片、轻阴影、线性图标和移动端优先间距体系；`src/minix` 只承接宿主协议，不重新定义品牌视觉。
 
-### 3.3 `phase12` 只负责前端页面 parity 与路线图冻结，不直接吞掉后续全部问题
+### 3.3 `phase12` 只负责前端页面 parity 冻结与路线图收口，不直接吞掉后续全部问题
 选择原因：
 
 - 页面 parity、API parity、PWA parity、最终 cutover/legacy exit 在风险性质、验收方式与回滚边界上明显不同。
@@ -338,13 +338,14 @@ phase12-frontend-parity-and-shell-cutover
 本阶段结论：
 
 - `phase12` 负责：
-  - 页面映射与页面装配复用策略
-  - UI 保真边界
-  - 旧页面到 `src/minix` 的承接原则
-  - `phase12 ~ phase15` 完整路线图冻结
-- `phase13` 负责 retained-legacy API / query drain
-- `phase14` 负责纯新主线 PWA parity
-- `phase15` 负责自动化 / 人工 parity 验收、cutover 审核与 legacy 退出
+  - 页面映射与页面装配复用策略冻结
+  - UI 保真边界冻结
+  - 旧页面到 `src/minix` 的承接原则冻结
+  - `phase12 ~ phase16` 完整路线图冻结
+- 新增 `phase13-frontend-page-parity-implementation`，专门负责真实前端页面迁移实施
+- `phase14` 负责 retained-legacy API / query drain
+- `phase15` 负责纯新主线 PWA parity
+- `phase16` 负责自动化 / 人工 parity 验收、cutover 审核与 legacy 退出
 
 ### 3.3.1 为什么当前文档还必须继续补“事实表”
 选择原因：
@@ -384,9 +385,9 @@ phase12-frontend-parity-and-shell-cutover
 
 本阶段结论：
 
-- `phase14` 单独承接 PWA parity
-- `phase12` 只负责为 `phase14` 提供页面壳、路由壳与 UI 保真前提
-- `phase14` 默认继续保持最小受控 PWA 策略，不引入第二套前端宿主或第二套缓存真相源
+- `phase15` 单独承接 PWA parity
+- `phase12` 只负责为 `phase13 ~ phase15` 提供页面壳、路由壳与 UI 保真前提
+- `phase15` 默认继续保持最小受控 PWA 策略，不引入第二套前端宿主或第二套缓存真相源
 
 ## 四、承接资产与实现边界
 ### 4.1 允许直接承接的资产
@@ -415,7 +416,7 @@ phase12-frontend-parity-and-shell-cutover
 | --- | --- | --- | --- | --- | --- |
 | 页面壳 | `src/app/**/page.tsx`、`src/components/pages/*` | `src/minix/routes/<domain>/*Route.tsx` + 复用后的 `src/components/pages/*` | 页面 URL、信息结构、标题区块、主操作区与状态反馈默认沿用旧页；`src/minix/routes/*` 只负责接住页面壳，不重写页面主体组件 | `params/searchParams` 解析、`generateMetadata`、`notFound()`、`dynamic = 'force-dynamic'`、`Suspense` 包装，以及 `next/*` 路由协议带来的跳转、刷新与链接语义 | 不在本轮创建任何新 route 文件，不提前改写页面主体实现 |
 | 页面装配层 | 旧 `src/app/**/page.tsx` 中“查询 + 数据整形 + 组件拼装”组合逻辑 | `src/minix/routes/*Route.tsx` | 旧页面中的装配逻辑要先从 Next 页面入口里拆成“路由承接 + 页面主体”两层；后续 route module 只承接参数、装配顺序和错误/加载边界 | 直接调用 `roomQueries` / `contractQueries` / `globalSettings` 的 server page 入口、Decimal 转换、search query 归一化、Next 页面级错误跳转 | 不在 `phase12-03` 里切 API、不重做 query 层、不把装配逻辑继续散落回 `src/app/*` |
-| 数据加载边界 | 旧 `src/app/**/page.tsx`、`generateMetadata()`、页面内 server query | `src/minix/router/*` 与后续 `src/minix/routes/*Route.tsx` 的 route-level loader / pending / error 边界 | 统一冻结为“数据边界属于 route module，不属于布局壳、导航壳或纯展示组件”；页面主体优先接收已解析的 props/loaderData，而不是自行承担宿主取数协议 | Next server component 取数、`notFound()`、页面级 metadata 生成、依赖 `searchParams` 的初始筛选注入 | 本轮只冻结边界，不决定最终是直挂 loader 还是经 `phase13` API parity 后再切正式请求路径 |
+| 数据加载边界 | 旧 `src/app/**/page.tsx`、`generateMetadata()`、页面内 server query | `src/minix/router/*` 与后续 `src/minix/routes/*Route.tsx` 的 route-level loader / pending / error 边界 | 统一冻结为“数据边界属于 route module，不属于布局壳、导航壳或纯展示组件”；页面主体优先接收已解析的 props/loaderData，而不是自行承担宿主取数协议 | Next server component 取数、`notFound()`、页面级 metadata 生成、依赖 `searchParams` 的初始筛选注入 | 本轮只冻结边界，不决定最终是直挂 loader 还是经 `phase14` API parity 后再切正式请求路径 |
 | 导航壳 | `src/components/layout/UnifiedNavigation.tsx`、`src/lib/navigation-config.ts`、`src/lib/route-config.ts` | `src/minix/layout/UnifiedNavigation.tsx`、`src/minix/routes/route-manifest.tsx` | 继续复用导航顺序、图标语义、搜索入口语义与主导航信息架构；新宿主只承接激活态、跳转协议和最小桌面/移动导航骨架 | `next/link`、`usePathname()`、`useRouter()`、`NotificationEntryButton`、`UserProfileSheet`、旧提醒/用户抽屉联动 | 不在本轮扩写通知中心、个人资料抽屉和治理入口暴露方式；支持页保持 P2 / 延后承接 |
 | 布局壳 | `src/app/layout.tsx`、`src/components/layout/AppLayout.tsx`、`src/components/layout/PageContainer.tsx` | `src/minix/layout/MinixShellLayout.tsx` + 后续 route-level page container 适配 | 继续复用键盘 inset、桌面/移动双导航切换、主内容容器宽度与 sticky 页面头部表达；布局壳只承接宿主级骨架，不吞页面数据与业务动作 | `Metadata` / `Viewport`、`next/font`、`html/body`、`AlertManagerProvider`、PWA runtime / install prompt、`PageContainer` 内的 `router.back()` | PWA 运行时与安装提示延后到 `phase14`；provider 收口按页面 parity 真正需要再逐步迁入，不在本轮扩写 |
 
@@ -472,7 +473,7 @@ phase12-frontend-parity-and-shell-cutover
 - 冻结旧页面到 `src/minix` 的映射表
 - 冻结页面壳、布局壳、导航壳与页面装配复用策略
 - 冻结 UI 保真边界与允许的最小技术适配
-- 冻结 `phase12 ~ phase15` 的完整阶段职责、顺序与上游输入关系
+- 冻结 `phase12 ~ phase16` 的完整阶段职责、顺序与上游输入关系
 - 明确 `Prisma + PostgreSQL` 的继续保留口径
 
 ### 4.2.1 `phase12-04` 允许的四类最小调整
@@ -510,12 +511,13 @@ phase12-frontend-parity-and-shell-cutover
 - 禁止以“用户体验优化”为名扩大范围：
   - 不把文案统一、图标替换、配色焕新、卡片密度重做、动画增强、主页改版、用户中心重构等包装成 `phase12-04` 的允许改动。
 - 禁止越界到实现与后续阶段：
-  - 不在本 spec 中直接决定具体组件重写方案，不顺带打开 `phase13` API parity、`phase14` PWA parity、`profile/notifications` 支持页扩写或治理页重新暴露方式。
+  - 不在本 spec 中直接决定具体组件重写方案，不顺带打开 `phase14` API parity、`phase15` PWA parity、`profile/notifications` 支持页扩写或治理页重新暴露方式。
 
 ## 五、与后续阶段的关系
 ### 5.1 `phase13` 直接继承内容
-- 旧页面与新页面之间的页面-API 映射
-- 页面 parity 对 retained-legacy 路由的切流优先级判断
+- 旧页面到 `src/minix` 的页面映射表
+- 页面壳、页面装配层、数据加载边界与复用矩阵
+- UI 保真边界与允许的最小技术适配规则
 - `Prisma + PostgreSQL` 继续保留的前提
 
 ### 5.1.1 页面 parity 与 retained-legacy API 的联动基线
@@ -523,30 +525,37 @@ phase12-frontend-parity-and-shell-cutover
 
 | 页面模块 | 直接牵动的旧 API 族 | 当前事实 |
 | --- | --- | --- |
-| 房源 | `/api/rooms*` | 旧页面与旧 API 仍是主路径，页面 parity 会直接影响 rooms retained-legacy 退出顺序 |
-| 合同 | `/api/contracts*` | 合同列表、详情、编辑、续租、退租页面 parity 会直接影响 contracts retained-legacy 清理 |
-| 账单 | `/api/bills*` | 账单列表、详情、编辑、统计页面 parity 会直接影响 bills retained-legacy 清理 |
-| 租客 | `/api/renters*` | 租客列表、详情、编辑页面 parity 会直接影响 renters retained-legacy 清理 |
-| 抄表 | `/api/meter-readings*` | 批量抄表与历史页 parity 会直接影响 meter-readings retained-legacy 清理 |
-| 设置 / 工作台 | `/api/settings*`、`/api/dashboard/*` | 设置页、工作台与统计页 parity 会影响 settings / dashboard retained-legacy 清理 |
+| 房源 | `/api/rooms*` | `phase13` 页面实施会直接影响 `phase14` 中 rooms retained-legacy 的退出顺序 |
+| 合同 | `/api/contracts*` | 合同列表、详情、编辑、续租、退租页面实施会直接影响 contracts retained-legacy 清理 |
+| 账单 | `/api/bills*` | 账单列表、详情、编辑、统计页面实施会直接影响 bills retained-legacy 清理 |
+| 租客 | `/api/renters*` | 租客列表、详情、编辑页面实施会直接影响 renters retained-legacy 清理 |
+| 抄表 | `/api/meter-readings*` | 批量抄表与历史页实施会直接影响 meter-readings retained-legacy 清理 |
+| 设置 / 工作台 | `/api/settings*`、`/api/dashboard/*` | 设置页、工作台与统计页实施会影响 settings / dashboard retained-legacy 清理 |
 
 ### 5.2 `phase14` 直接继承内容
+- `phase13` 已真实落位的页面壳与页面装配结果
+- 页面 parity 对 retained-legacy 路由切流优先级的实际验证结果
+- `Prisma + PostgreSQL`、查询分层与事务边界的继续保留前提
+
+### 5.3 `phase15` 直接继承内容
 - 新宿主正式路由壳与页面壳
 - 旧 PWA 页面入口到新宿主入口的承接关系
 - 不重做 UI 的共享约束
 
-### 5.3 `phase15` 直接继承内容
+### 5.4 `phase16` 直接继承内容
 - 页面 parity 矩阵
 - UI 保真验收标准
 - 旧页面与新页面之间的人工浏览器验收对照基线
+- `phase15` 的 PWA parity 结果
 
-### 5.4 `phase12 ~ phase15` 闭环路线图矩阵
+### 5.5 `phase12 ~ phase16` 闭环路线图矩阵
 | 阶段 | 核心职责 | 直接继承输入 | 前后依赖 | DoD | 退出条件 | 仅文档轮次最小验证要求 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `phase12-frontend-parity-and-shell-cutover` | 冻结旧页面清单、页面映射、页面装配复用策略、UI 保真边界与多阶段路线图 | `phase10` 的 `Prisma + PostgreSQL`、查询分层、事务边界、迁移兼容边界；`phase11` 的正式部署主线、发布门禁与 legacy 回滚基线；旧 `src/app/*` 页面原型与 `src/minix/*` 承接位 | 前置依赖：`phase10`、`phase11`；直接后继：`phase13`、`phase14`、`phase15` 都把本阶段映射表与 UI 约束作为共享输入 | `docs/phase12_*` 已写入真实页面清单、真实映射、真实优先级、页面-API 联动说明、页面装配复用矩阵与 `phase12 ~ phase15` 路线图矩阵；顶层真相源状态同步完成 | `phase12-05` 已完成，当前真相源不再保留“等待审核/不进入 spec”的旧口径；后续只在用户批准相应实施后进入页面 parity 实现 | `docs/phase12_*` 三份文档互链复核、被引用路径存在性复核、`README.md`/`AGENTS.md`/`project_rules.md`/`architecture_map.md`/`plan.md` 与 `docs/phase12_*` 状态一致性复核，并确认当前轮仍不进入页面/API/PWA/cutover 实现 |
-| `phase13-api-query-parity-and-legacy-route-drain` | 清空 retained-legacy 正式业务 API，收口正式 API/query 到 `server/` 与已冻结数据访问主线 | `phase12` 的页面映射、页面-API 联动与优先级；`phase10` 的 query/事务边界；`phase11` 的发布门禁与回滚基线 | 前置依赖：`phase12` 已冻结页面-API 关系；后继依赖：`phase14` 需要其正式 API 边界，`phase15` 需要其 route inventory 与退出判断 | retained-legacy / compat-wrapper / formal-host-owned 清单单一可解释；正式业务 API 宿主与查询层归属明确；compat 保留原因与退出顺序可追溯 | `server/lib/legacy-route-inventory.ts`、阶段文档与顶层真相源对正式 API 宿主、compat 保留项与 route drain 顺序保持一致，且不再把新增主链语义写回旧 `src/app/api/*` | 进入该阶段文档轮次时，至少完成 `docs/phase13_*` 互链复核、被引用 `server/*`/`src/lib/domain/*`/`src/lib/queries*`/`server/lib/legacy-route-inventory.ts` 路径存在性复核，以及顶层真相源与 `phase13` 文档状态一致性复核 |
-| `phase14-minix-pwa-and-runtime-parity` | 把安装、更新、manifest、service worker、最小离线页与缓存边界迁入纯 `Vite + Hono` 新主线 | `phase05` 的 PWA 价值基线；`phase12` 的页面壳与正式入口映射；`phase13` 的正式 API 宿主边界；`phase11` 的静态托管与部署主线 | 前置依赖：`phase12` 页面壳、`phase13` API 边界；后继依赖：`phase15` 需要其 PWA parity 结果参与 cutover 审核 | PWA 安装、更新、离线兜底与缓存边界有单一解释；不缓存动态鉴权业务接口；新主线产物链与发布口径可直接引用 | 纯 `src/minix + server + public + vite.config.ts` 路径可独立承接最小受控 PWA 能力，不再依赖旧 Next PWA 宿主 | 进入该阶段文档轮次时，至少完成 `docs/phase14_*` 互链复核、被引用 `vite.config.ts`/`public/*`/`server/lib/static.ts` 等路径存在性复核，以及顶层真相源与 `phase12`、`phase13`、`phase14` 状态一致性复核 |
-| `phase15-parity-verification-cutover-and-legacy-exit` | 完成功能 parity 验收、cutover 审核、回滚演练与 legacy 退出条件收口 | `phase11` 的正式部署主线与回滚基线；`phase12` 页面 parity 基线；`phase13` API/query parity 结果；`phase14` PWA parity 结果 | 前置依赖：`phase12 ~ phase14` 已提供可验证输出；后继依赖：legacy 资产退出、归档与只读化判断 | 页面/API/PWA parity 矩阵、自动化 smoke、人工浏览器验收、cutover/rollback 记录与 legacy 退出清单已形成单一闭环 | 能证明纯新主线在不依赖旧 `src/app/*`、旧 `src/app/api/*` 与旧 Next PWA 宿主的前提下可完成正式交付，且 cutover/rollback/legacy-exit 的顺序与门禁可执行 | 进入该阶段文档轮次时，至少完成 `docs/phase15_*` 互链复核、被引用验证矩阵/部署记录/回滚记录/legacy 资产清单路径存在性复核，以及顶层真相源与 `phase11 ~ phase15` 状态一致性复核 |
+| `phase12-frontend-parity-and-shell-cutover` | 冻结旧页面清单、页面映射、页面装配复用策略、UI 保真边界与多阶段路线图 | `phase10` 的 `Prisma + PostgreSQL`、查询分层、事务边界、迁移兼容边界；`phase11` 的正式部署主线、发布门禁与 legacy 回滚基线；旧 `src/app/*` 页面原型与 `src/minix/*` 承接位 | 前置依赖：`phase10`、`phase11`；直接后继：`phase13`、`phase14`、`phase15`、`phase16` 都把本阶段映射表与 UI 约束作为共享输入 | `docs/phase12_*` 已写入真实页面清单、真实映射、真实优先级、页面-API 联动说明、页面装配复用矩阵与 `phase12 ~ phase16` 路线图矩阵；顶层真相源状态同步完成 | `phase12-05` 已完成，当前真相源不再保留“等待审核/不进入 spec”的旧口径；后续只在用户批准相应实施后进入真实页面迁移实现 | `docs/phase12_*` 三份文档互链复核、被引用路径存在性复核、`README.md`/`AGENTS.md`/`project_rules.md`/`architecture_map.md`/`plan.md` 与 `docs/phase12_*` 状态一致性复核，并确认当前轮仍不进入页面/API/PWA/cutover 实现 |
+| `phase13-frontend-page-parity-implementation` | 把首页、房源、合同、账单、租客、抄表、设置等正式页面真实迁入 `src/minix`，完成页面壳、页面装配层与数据加载边界承接 | `phase12` 的页面映射、页面装配复用矩阵、UI 保真边界与页面-API 联动；`phase10` 的数据访问边界；`phase11` 的发布门禁与回滚基线 | 前置依赖：`phase12` 已冻结页面迁移前置决策；后继依赖：`phase14` 需要其真实页面 parity 结果，`phase15` 需要其正式页面入口 | 首批正式页面不再只是 placeholder，真实页面壳、页面装配与页面级加载/错态边界已在新宿主落位 | `src/minix/*` 与阶段文档对首批正式页面承接结果、复用策略与浏览器验收基线保持一致，且不把 API/PWA/cutover 职责混写进本阶段 | 进入该阶段文档轮次时，至少完成 `docs/phase13_*` 互链复核、被引用 `src/minix/*`/`src/components/pages/*`/`src/components/business/*`/`src/components/layout/*`/旧 `src/app/**/page.tsx` 路径存在性复核，以及顶层真相源与 `phase13` 文档状态一致性复核 |
+| `phase14-api-query-parity-and-legacy-route-drain` | 清空 retained-legacy 正式业务 API，收口正式 API/query 到 `server/` 与已冻结数据访问主线 | `phase13` 的真实页面 parity 结果；`phase12` 的页面-API 联动与优先级；`phase10` 的 query/事务边界；`phase11` 的发布门禁与回滚基线 | 前置依赖：`phase12` 已冻结页面-API 关系，`phase13` 已提供真实页面承接结果；后继依赖：`phase15` 需要其正式 API 边界，`phase16` 需要其 route inventory 与退出判断 | retained-legacy / compat-wrapper / formal-host-owned 清单单一可解释；正式业务 API 宿主与查询层归属明确；compat 保留原因与退出顺序可追溯 | `server/lib/legacy-route-inventory.ts`、阶段文档与顶层真相源对正式 API 宿主、compat 保留项与 route drain 顺序保持一致，且不再把新增主链语义写回旧 `src/app/api/*` | 进入该阶段文档轮次时，至少完成 `docs/phase14_*` 互链复核、被引用 `server/*`/`src/lib/domain/*`/`src/lib/queries*`/`server/lib/legacy-route-inventory.ts` 路径存在性复核，以及顶层真相源与 `phase14` 文档状态一致性复核 |
+| `phase15-minix-pwa-and-runtime-parity` | 把安装、更新、manifest、service worker、最小离线页与缓存边界迁入纯 `Vite + Hono` 新主线 | `phase05` 的 PWA 价值基线；`phase13` 的页面壳与正式入口映射；`phase14` 的正式 API 宿主边界；`phase11` 的静态托管与部署主线 | 前置依赖：`phase13` 页面壳、`phase14` API 边界；后继依赖：`phase16` 需要其 PWA parity 结果参与 cutover 审核 | PWA 安装、更新、离线兜底与缓存边界有单一解释；不缓存动态鉴权业务接口；新主线产物链与发布口径可直接引用 | 纯 `src/minix + server + public + vite.config.ts` 路径可独立承接最小受控 PWA 能力，不再依赖旧 Next PWA 宿主 | 进入该阶段文档轮次时，至少完成 `docs/phase15_*` 互链复核、被引用 `vite.config.ts`/`public/*`/`server/lib/static.ts` 等路径存在性复核，以及顶层真相源与 `phase13`、`phase14`、`phase15` 状态一致性复核 |
+| `phase16-parity-verification-cutover-and-legacy-exit` | 完成功能 parity 验收、cutover 审核、回滚演练与 legacy 退出条件收口 | `phase11` 的正式部署主线与回滚基线；`phase13` 页面 parity 结果；`phase14` API/query parity 结果；`phase15` PWA parity 结果 | 前置依赖：`phase13 ~ phase15` 已提供可验证输出；后继依赖：legacy 资产退出、归档与只读化判断 | 页面/API/PWA parity 矩阵、自动化 smoke、人工浏览器验收、cutover/rollback 记录与 legacy 退出清单已形成单一闭环 | 能证明纯新主线在不依赖旧 `src/app/*`、旧 `src/app/api/*` 与旧 Next PWA 宿主的前提下可完成正式交付，且 cutover/rollback/legacy-exit 的顺序与门禁可执行 | 进入该阶段文档轮次时，至少完成 `docs/phase16_*` 互链复核、被引用验证矩阵/部署记录/回滚记录/legacy 资产清单路径存在性复核，以及顶层真相源与 `phase11 ~ phase16` 状态一致性复核 |
 
 ## 六、当前阶段最低验证要求
 - 若本轮仅涉及 `phase12-05` 文档收口，至少完成：
@@ -562,7 +571,7 @@ phase12-frontend-parity-and-shell-cutover
 `phase12-frontend-parity-and-shell-cutover` 的价值不在于“立刻迁完所有页面”，而在于：
 
 ```text
-先把页面 parity、UI 保真、Prisma 保留与 phase12 ~ phase15 完整路线图冻结成单一答案，
+先把页面 parity、UI 保真、Prisma 保留与 phase12 ~ phase16 完整路线图冻结成单一答案，
 再让后续 /spec 和实现建立在稳定的迁移蓝图之上。
 ```
 

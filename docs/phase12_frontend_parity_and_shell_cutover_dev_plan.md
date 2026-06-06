@@ -8,7 +8,7 @@
 - `phase12` 当前轮已进入并完成 `phase12-05` 文档收口 spec；当前轮只更新路线图、依赖、DoD、退出条件与文档一致性，不进入页面 parity、API parity、PWA parity 或 cutover 实现。
 
 ## 一、文档定位
-本文档用于把 `phase12-frontend-parity-and-shell-cutover` 拆分为顺序执行的子任务，确保仓库先把页面映射、页面装配复用策略、UI 保真边界与 `phase12 ~ phase15` 路线图解释清楚，再进入具体实现。
+本文档用于把 `phase12-frontend-parity-and-shell-cutover` 拆分为顺序执行的子任务，确保仓库先把页面映射、页面装配复用策略、UI 保真边界与 `phase12 ~ phase16` 路线图解释清楚，再进入具体实现。
 
 ## 二、总体推进结论
 `phase12` 的固定顺序为：
@@ -22,14 +22,14 @@
     ->
 再冻结 UI 保真边界与允许的最小技术适配
     ->
-最后收口 phase12 ~ phase15 的完整路线图、验证要求与文档一致性
+最后收口 phase12 ~ phase16 的完整路线图、验证要求与文档一致性
 ```
 
 原因如下：
 - 若不先盘点旧页面清单，后续页面迁移优先级无法单一解释。
 - 若不先冻结页面映射表，API parity、PWA parity 与最终验收都无法建立在稳定输入之上。
 - 若不先把 UI 保真边界单独冻结，迁移实施会很容易漂移成重做 UI。
-- 若不把 `phase12 ~ phase15` 的完整路线图放到最后一起收口，当前规划仍会退回“先做一个阶段，再看下个阶段”的状态。
+- 若不把 `phase12 ~ phase16` 的完整路线图放到最后一起收口，当前规划仍会退回“先做一个阶段，再看下个阶段”的状态。
 
 ## 三、任务拆分建议
 ## phase12-01-page-inventory-and-formal-scope-freeze
@@ -43,7 +43,7 @@
   - 治理/辅助页面
   - 开发辅助入口
   - 待归档候选
-- 明确当前哪些页面必须进入 `phase12 ~ phase15` 的 parity 路线图
+- 明确当前哪些页面必须进入 `phase12 ~ phase16` 的 parity 路线图
 
 ### 当前事实基线
 - 旧 `src/app/**/page.tsx` 当前至少包含 37 个页面入口。
@@ -119,7 +119,7 @@
 ### DoD
 - 页面映射表完整且可追溯
 - 页面迁移优先顺序单一可解释
-- 能作为 `phase13 ~ phase15` 的共同输入
+- 能作为 `phase13 ~ phase16` 的共同输入
 - 映射表至少包含以下字段：
   - 旧页面路径
   - 页面类别
@@ -256,16 +256,17 @@
   - 以“用户体验优化”为名扩大改动范围
   - 越界到实现、PWA parity 或 retained-legacy API 切流
 
-## phase12-05-roadmap-consistency-and-phase12-to-phase15-closure
+## phase12-05-roadmap-consistency-and-phase12-to-phase16-closure
 ### 目标
-收口 `phase12 ~ phase15` 的完整路线图、上游输入、文档一致性与当前轮最小验证要求，形成后续实施的统一蓝图。
+收口 `phase12 ~ phase16` 的完整路线图、上游输入、文档一致性与当前轮最小验证要求，形成后续实施的统一蓝图。
 
 ### 范围
 - 收口：
-  - `phase12` 页面 parity
-  - `phase13` API / query parity
-  - `phase14` PWA parity
-  - `phase15` parity 验收与 legacy 退出
+  - `phase12` 页面 parity 冻结
+  - `phase13` 真实前端页面迁移实施
+  - `phase14` API / query parity
+  - `phase15` PWA parity
+  - `phase16` parity 验收与 legacy 退出
 - 明确各阶段前后依赖、DoD 与退出条件
 - 冻结本轮仅文档变更时的最小验证要求
 
@@ -280,10 +281,11 @@
 ### 路线图闭环矩阵
 | 阶段 | 本轮必须冻结的结论 | 前置依赖 | DoD | 退出条件 | 仅文档轮次最小验证要求 |
 | --- | --- | --- | --- | --- | --- |
-| `phase12` | 页面盘点、页面映射、页面装配复用、UI 保真边界与 `phase12 ~ phase15` 路线图单一解释 | `phase10` 数据访问边界、`phase11` 部署主线、旧 `src/app/*` 页面原型、新 `src/minix/*` 承接位 | `docs/phase12_*` 与顶层真相源已写清页面事实表、路线图矩阵、当前状态与后续依赖 | `phase12-05` 完成，且当前文档不再保留“等待审核/不进入 spec”的旧状态描述 | `docs/phase12_*` 互链复核、被引用路径存在性复核、`README.md`/`AGENTS.md`/`project_rules.md`/`architecture_map.md`/`plan.md` 状态一致性复核 |
-| `phase13` | retained-legacy API/query drain 顺序、正式宿主归属、compat 保留条件与 route inventory 退出判断 | `phase12` 页面-API 映射、`phase10` query/事务边界、`phase11` 发布门禁 | retained-legacy / compat-wrapper / formal-host-owned 清单与 route drain 顺序单一可解释 | 正式业务 API 不再依赖新增旧宿主写路径，route inventory 与真相源一致 | 未来 `docs/phase13_*` 互链复核、被引用 `server/*`/`src/lib/domain/*`/`src/lib/queries*`/`server/lib/legacy-route-inventory.ts` 路径存在性复核、顶层真相源一致性复核 |
-| `phase14` | 纯新主线 PWA manifest、service worker、更新策略、最小离线兜底与缓存边界 | `phase12` 页面壳与入口、`phase13` 正式 API 边界、`phase05` PWA 基线、`phase11` 部署主线 | 安装、更新、离线兜底与缓存边界单一可解释，且不缓存动态鉴权业务接口 | 纯 `Vite + Hono` 主线可独立承接最小受控 PWA 能力 | 未来 `docs/phase14_*` 互链复核、被引用 `vite.config.ts`/`public/*`/`server/lib/static.ts` 路径存在性复核、顶层真相源一致性复核 |
-| `phase15` | parity 验收矩阵、cutover 审核、回滚演练与 legacy 退出门禁 | `phase11` 部署/回滚基线、`phase12` 页面 parity、`phase13` API parity、`phase14` PWA parity | 页面/API/PWA parity、自动化 smoke、人工验收、cutover/rollback/legacy-exit 清单形成单一闭环 | 纯新主线可在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 | 未来 `docs/phase15_*` 互链复核、被引用验证记录/部署记录/legacy 资产清单路径存在性复核、顶层真相源一致性复核 |
+| `phase12` | 页面盘点、页面映射、页面装配复用、UI 保真边界与 `phase12 ~ phase16` 路线图单一解释 | `phase10` 数据访问边界、`phase11` 部署主线、旧 `src/app/*` 页面原型、新 `src/minix/*` 承接位 | `docs/phase12_*` 与顶层真相源已写清页面事实表、路线图矩阵、当前状态与后续依赖 | `phase12-05` 完成，且当前文档不再保留“等待审核/不进入 spec”的旧状态描述 | `docs/phase12_*` 互链复核、被引用路径存在性复核、`README.md`/`AGENTS.md`/`project_rules.md`/`architecture_map.md`/`plan.md` 状态一致性复核 |
+| `phase13` | 正式页面真实迁移实施、页面壳与页面装配层落位、浏览器验收基线建立 | `phase12` 页面映射、五层复用矩阵、UI 保真边界、页面-API 联动 | 首批正式页面不再只是 placeholder，真实页面壳与页面级加载/错态边界进入新宿主 | 正式页面 parity 结果可被 `phase14` API/query parity、`phase15` PWA parity 与 `phase16` 最终验收直接引用 | 未来 `docs/phase13_*` 互链复核、被引用 `src/minix/*`/`src/components/*`/旧 `src/app/**/page.tsx` 路径存在性复核、顶层真相源一致性复核 |
+| `phase14` | retained-legacy API/query drain 顺序、正式宿主归属、compat 保留条件与 route inventory 退出判断 | `phase13` 真实页面 parity、`phase12` 页面-API 映射、`phase10` query/事务边界、`phase11` 发布门禁 | retained-legacy / compat-wrapper / formal-host-owned 清单与 route drain 顺序单一可解释 | 正式业务 API 不再依赖新增旧宿主写路径，route inventory 与真相源一致 | 未来 `docs/phase14_*` 互链复核、被引用 `server/*`/`src/lib/domain/*`/`src/lib/queries*`/`server/lib/legacy-route-inventory.ts` 路径存在性复核、顶层真相源一致性复核 |
+| `phase15` | 纯新主线 PWA manifest、service worker、更新策略、最小离线兜底与缓存边界 | `phase13` 页面壳与入口、`phase14` 正式 API 边界、`phase05` PWA 基线、`phase11` 部署主线 | 安装、更新、离线兜底与缓存边界单一可解释，且不缓存动态鉴权业务接口 | 纯 `Vite + Hono` 主线可独立承接最小受控 PWA 能力 | 未来 `docs/phase15_*` 互链复核、被引用 `vite.config.ts`/`public/*`/`server/lib/static.ts` 路径存在性复核、顶层真相源一致性复核 |
+| `phase16` | parity 验收矩阵、cutover 审核、回滚演练与 legacy 退出门禁 | `phase11` 部署/回滚基线、`phase13` 页面 parity、`phase14` API parity、`phase15` PWA parity | 页面/API/PWA parity、自动化 smoke、人工验收、cutover/rollback/legacy-exit 清单形成单一闭环 | 纯新主线可在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 | 未来 `docs/phase16_*` 互链复核、被引用验证记录/部署记录/legacy 资产清单路径存在性复核、顶层真相源一致性复核 |
 
 ### 参考来源
 - 顶层真相源
@@ -295,10 +297,10 @@
 ### 不在范围内
 - 不启动页面迁移实现
 - 不启动 retained-legacy API/query drain 实现、PWA 迁移实现或 cutover 实现
-- 不在本子任务中新增 `phase13 ~ phase15` 阶段文档正文
+- 不在本子任务中新增 `phase13 ~ phase16` 阶段文档正文
 
 ### DoD
-- `phase12 ~ phase15` 路线图具备单一解释，且每个阶段都已明确职责、继承输入、前后依赖、DoD、退出条件与仅文档轮次最小验证要求
+- `phase12 ~ phase16` 路线图具备单一解释，且每个阶段都已明确职责、继承输入、前后依赖、DoD、退出条件与仅文档轮次最小验证要求
 - `phase12` 三份文档齐备并互链正确
 - 顶层真相源与阶段文档状态一致
 - `phase12` 三份文档已补齐真实清单、真实映射、真实优先级与页面-API 联动，而不仅是框架化原则说明
@@ -322,7 +324,7 @@ phase12-01-page-inventory-and-formal-scope-freeze
 phase12-02-page-to-minix-route-mapping
 phase12-03-composition-reuse-and-shell-closure
 phase12-04-ui-parity-and-adaptation-boundary
-phase12-05-roadmap-consistency-and-phase12-to-phase15-closure
+phase12-05-roadmap-consistency-and-phase12-to-phase16-closure
 ```
 
 ## 四点五、子任务实施验收门禁

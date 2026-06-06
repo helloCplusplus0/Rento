@@ -40,13 +40,15 @@ reference-driven in-place replatform workflow
 - 对 `phase06-minix-replatform-01-*`，必须先冻结真相源切换、UI 承接、参考基线与重构顺序，再进入任何实现子任务。
 - 对“目标技术栈已明确、且旧实现为直接参考基线”的原地重构项目，应优先冻结完整 Phase 路线图、模块级 `直接复用 / 包一层适配 / 必须重写 / 延后决策` 分类，以及历史规划材料的文件级吸收映射，再进入首个正式实现阶段 `/plan`。
 - 当推进到 `phase07-app-shell-and-runtime-foundation` 时，必须先冻结前端路由方案、开发拓扑、并行壳切入策略、实现目录与最小环境变量口径，再进入该阶段 `/spec`。
-- 当推进到 `phase12-frontend-parity-and-shell-cutover` 时，必须先冻结旧页面到 `src/minix` 的映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径，以及 `phase12 ~ phase15` 的完整路线图，再进入该阶段 `/spec`。
+- 当推进到 `phase12-frontend-parity-and-shell-cutover` 时，必须先冻结旧页面到 `src/minix` 的映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径，以及 `phase12 ~ phase16` 的完整路线图，再进入该阶段 `/spec`。
+- 当推进到 `phase13-frontend-page-parity-implementation` 时，必须先冻结 P0/P1 页面切片顺序、route module 组织方式、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界与浏览器验收基线，再进入该阶段 `/spec`。
 
 ## 6. 迁移保真技能
 - 涉及合同、账单、支付周期、仪表、抄表主链时，优先验证业务真实、状态可解释、历史可追溯，而不是先追求形式上的极简。
 - 对每次迁移至少检查：页面预展示链路、服务端执行链路、数据模型映射、历史数据影响、其他复用路径。
 - 若发现某段历史实现与正式业务语义冲突，应先写清楚“保留、调整还是舍弃”的理由。
 - 当前 `Rento` UI 展示效果已符合预期，默认冻结；若需调整，必须先说明收益与范围。
+- 当进入 `phase13` 的真实页面迁移实施阶段时，优先把旧 `src/app/**/page.tsx` 中的宿主绑定、服务端 query 入口、`generateMetadata()`、`notFound()` 与 `next/*` 路由协议拆离到新宿主 route module，而不是把页面主体表达层整目录搬运到 `src/minix`。
 
 ## 7. 工程校验技能
 - 对阶段切换至少检查：文档是否一致、仓库远端是否正确、技术栈是否仍匹配目标方案、验证路径是否可执行。
@@ -72,6 +74,6 @@ reference-driven in-place replatform workflow
 - 对 `phase11` 相关问题，可额外优先识别两类高风险项：
 - `cutover-blocker`：会导致正式部署主线无法替代 legacy 运行线的问题，例如服务端产物链缺失、环境模板失真、健康检查失效。
 - `rollback-gap`：会导致切线后无法回退到已知可用基线的问题，例如 legacy 资产职责不清、回滚路径与发布门禁混写。
-- 对 `phase12 ~ phase15` 相关问题，可额外优先识别两类高风险项：
+- 对 `phase12 ~ phase16` 相关问题，可额外优先识别两类高风险项：
 - `parity-blocker`：会导致纯新主线无法完整承接旧页面、旧 API 或旧 PWA 能力的问题，例如页面映射缺失、保真边界不清或 retained-legacy 无法退出。
 - `ui-drift`：会导致迁移过程脱离旧 `Rento` 页面原型、重新设计视觉体系或破坏现有交互节奏的问题。

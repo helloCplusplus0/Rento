@@ -32,7 +32,7 @@ description: 针对项目的skills
 
 ## 6. UI 承接技能
 - 当前 `Rento` 前端 UI 展示效果已符合预期，原地重构时默认优先承接页面信息结构、组件表达、交互节奏与整体风格。
-- 非必要不得擅自改变展示效果；允许的调整仅限最小技术适配、减少闪烁、提升移动端与表单可用性、修复明显 bug。
+- 非必要不得擅自改变展示效果；允许的调整仅限宿主适配、明显 bug 修复、移动端可用性改善、最小信息架构优化，且每类调整都必须附最小技术适配说明或明确收益说明。
 - 不允许借迁移之名重新设计整套视觉体系。
 
 ## 7. 原地重构承接技能
@@ -64,9 +64,12 @@ description: 针对项目的skills
 - 若后续再次评估 Prisma 替换，必须作为独立议题重新规划，不得与页面 parity、API 宿主切流或 legacy 退出绑定为同一阶段任务。
 
 ## 8.2 前端 parity 技能
-- 当进入 `phase12 ~ phase15` 时，默认优先迁移页面壳、页面装配、数据加载边界与正式路由承接位，而不是重做 UI 或重写业务语义。
+- 当进入 `phase12 ~ phase16` 时，默认优先围绕页面 parity -> API parity -> PWA parity -> cutover 分层推进；其中 `phase12` 先冻结页面壳、页面装配、数据加载边界与正式路由承接位的迁移蓝图，而不是重做 UI 或重写业务语义。
 - 新宿主优先复用现有 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*`，只在技术适配确有必要时调整宿主绑定层。
 - 旧 `src/app` 页面应优先作为页面原型与行为参考基线；迁移验收默认比较页面信息结构、导航节奏、表单交互、状态反馈与主链流程一致性。
+- 进入 `phase13-frontend-page-parity-implementation` 后，默认先完成 P0/P1 正式页面的真实 route module 承接、页面装配层落位、页面级加载/错态边界迁移与宿主绑定拆分，再把结果交给 `phase14` 承接 API/query parity。
+- `phase13` 中出现 `next/navigation`、`next/link`、`generateMetadata()`、`notFound()`、`dynamic = 'force-dynamic'`、页面级 server query 与 Decimal 转换时，默认优先拆出宿主协议和 route-level 数据边界，而不是直接判定整页必须重写。
+- `phase13` 的页面验收默认至少比较：首页快捷入口与导航节奏、列表页搜索/筛选与空态、详情页信息结构与错误恢复、编辑/新建页表单交互与提交后回跳、流程动作页状态反馈与历史语义保真。
 
 ## 8.3 PWA 承接技能
 - 当前 PWA 能力的价值已经在 `phase05` 冻结，后续目标不是取消 PWA，而是把安装、更新、最小离线兜底与发布口径迁到纯新主线。
