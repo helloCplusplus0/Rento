@@ -143,45 +143,64 @@
 ### 2.2.3 当前页面 parity 基线映射表
 下表冻结 `phase12` 当前轮必须吸收的真实映射基线；后续 `/spec` 只能在这个表的基础上细化实现，不再重新发明范围。
 
-| 旧页面路径 | 分类 | 当前新宿主承接现状 | `phase12` 判断 | 优先级 |
-| --- | --- | --- | --- | --- |
-| `/` | 正式业务 | 已有 `HomePage`，但仍是承接说明页 | 保留现有首页路由，后续替换为真实工作台页面 parity | P0 |
-| `/login` | 状态页 | 已有 `LoginPage` | 继续保留为正式状态页，无需重定义范围 | P0 |
-| `/offline` | 状态页 | 已有 `OfflinePage` | 继续保留为正式状态页，并作为 `phase14` PWA 输入 | P0 |
-| `/rooms` | 正式业务 | 已有 `/rooms` placeholder | 作为首批正式业务列表页迁移落点 | P0 |
-| `/add` | 正式业务 | 已有 `/add` placeholder | 作为首批聚合入口页迁移落点 | P0 |
-| `/contracts` | 正式业务 | 已有 `/contracts` placeholder | 作为首批正式业务列表页迁移落点 | P0 |
-| `/bills` | 正式业务 | 已有 `/bills` placeholder | 作为首批正式业务列表页迁移落点 | P0 |
-| `/settings` | 正式业务 | 已有 `/settings` placeholder | 作为首批正式设置入口页迁移落点 | P0 |
-| `/rooms/[id]` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/rooms/:id` 正式页面壳 | P1 |
-| `/rooms/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/rooms/:id/edit` 正式页面壳 | P1 |
-| `/add/room` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/add/room` 子路由壳，继续复用现有表单表达 | P1 |
-| `/add/contract` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/add/contract` 子路由壳 | P1 |
-| `/contracts/new` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/contracts/new` 页面壳 | P1 |
-| `/contracts/[id]` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/contracts/:id` 页面壳 | P1 |
-| `/contracts/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/contracts/:id/edit` 页面壳 | P1 |
-| `/contracts/[id]/renew` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/contracts/:id/renew` 页面壳 | P1 |
-| `/contracts/[id]/checkout` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/contracts/:id/checkout` 页面壳 | P1 |
-| `/bills/create` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/bills/create` 页面壳 | P1 |
-| `/bills/[id]` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/bills/:id` 页面壳 | P1 |
-| `/bills/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 需要新增 `/bills/:id/edit` 页面壳 | P1 |
-| `/renters` | 正式业务 | 新宿主尚无正式路由 | 需要新增 `/renters` 顶级正式路由 | P1 |
-| `/renters/new` | 正式业务 | 新宿主尚无正式路由 | 需要新增 `/renters/new` 页面壳 | P1 |
-| `/renters/[id]` | 正式业务 | 新宿主尚无正式路由 | 需要新增 `/renters/:id` 页面壳 | P1 |
-| `/renters/[id]/edit` | 正式业务 | 新宿主尚无正式路由 | 需要新增 `/renters/:id/edit` 页面壳 | P1 |
-| `/meter-readings/batch` | 正式业务 | 新宿主尚无正式路由 | 需要新增 `/meter-readings/batch` 页面壳 | P1 |
-| `/meter-readings/history` | 正式业务 | 新宿主尚无正式路由 | 需要新增 `/meter-readings/history` 页面壳 | P1 |
-| `/bills/stats` | 正式业务 | 新宿主尚无正式路由 | 保留为正式业务统计页，迁移顺序晚于核心 CRUD 页 | P2 |
-| `/profile` | 状态/支持 | 新宿主尚无正式路由 | 作为支持页延后，待核心业务页 parity 后再承接 | P2 |
-| `/notifications` | 状态/支持 | 新宿主尚无正式路由 | 作为支持页延后，待核心业务页 parity 后再承接 | P2 |
-| `/system-health` | 运维治理 | 仅在 `route-manifest` 的 governance 说明中出现，router 未挂载 | 不进入 `phase12` 首批页面 parity，实现承接延后至治理相关阶段 | P3 |
-| `/data-consistency` | 运维治理 | 仅在 `route-manifest` 的 governance 说明中出现，router 未挂载 | 不进入 `phase12` 首批页面 parity，实现承接延后至治理相关阶段 | P3 |
-| `/performance-test` | dev-only | 新宿主无路由 | 继续归类为 dev-only，不进入正式 parity 范围 | P4 |
-| `/performance-benchmark` | dev-only | 新宿主无路由 | 继续归类为 dev-only，不进入正式 parity 范围 | P4 |
-| `/performance-analysis` | dev-only | 新宿主无路由 | 继续归类为 dev-only，不进入正式 parity 范围 | P4 |
-| `/layout-demo` | dev-only | 新宿主无路由 | 继续归类为 dev-only，不进入正式 parity 范围 | P4 |
-| `/components` | dev-only | 新宿主无路由 | 继续归类为 dev-only，不进入正式 parity 范围 | P4 |
-| `/business-flow-validation` | dev-only | 新宿主无路由 | 继续归类为 dev-only，不进入正式 parity 范围 | P4 |
+| 旧页面路径 | 分类 | 当前新宿主承接现状 | 目标新路由/承接位 | `phase12` 判断 | 优先级 | 是否阻塞 `phase13` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/` | 正式业务 | 已有 `HomePage`，但仍是承接说明页 | 保留 `/`，由 [HomePage](file:///home/dell/Projects/Rento/src/minix/routes/HomePage.tsx) 逐步承接真实工作台页面壳 | 保留现有首页路由，后续替换为真实工作台页面 parity | P0 | 是 |
+| `/login` | 状态页 | 已有 `LoginPage` | 保留 `/login`，继续由 [LoginPage](file:///home/dell/Projects/Rento/src/minix/routes/LoginPage.tsx) 承接 | 继续保留为正式状态页，无需重定义范围 | P0 | 否 |
+| `/offline` | 状态页 | 已有 `OfflinePage` | 保留 `/offline`，继续由 [OfflinePage](file:///home/dell/Projects/Rento/src/minix/routes/OfflinePage.tsx) 承接 | 继续保留为正式状态页，并作为 `phase14` PWA 输入 | P0 | 否 |
+| `/rooms` | 正式业务 | 已有 `/rooms` placeholder | 保留 `/rooms`，后续以 `src/minix/routes/rooms/RoomListRoute.tsx` 替换 placeholder | 作为首批正式业务列表页迁移落点 | P0 | 是 |
+| `/add` | 正式业务 | 已有 `/add` placeholder | 保留 `/add`，后续以 `src/minix/routes/add/AddHubRoute.tsx` 替换 placeholder | 作为首批聚合入口页迁移落点 | P0 | 是 |
+| `/contracts` | 正式业务 | 已有 `/contracts` placeholder | 保留 `/contracts`，后续以 `src/minix/routes/contracts/ContractListRoute.tsx` 替换 placeholder | 作为首批正式业务列表页迁移落点 | P0 | 是 |
+| `/bills` | 正式业务 | 已有 `/bills` placeholder | 保留 `/bills`，后续以 `src/minix/routes/bills/BillListRoute.tsx` 替换 placeholder | 作为首批正式业务列表页迁移落点 | P0 | 是 |
+| `/settings` | 正式业务 | 已有 `/settings` placeholder | 保留 `/settings`，后续以 `src/minix/routes/settings/SettingsRoute.tsx` 替换 placeholder | 作为首批正式设置入口页迁移落点 | P0 | 是 |
+| `/rooms/[id]` | 正式业务 | 新宿主无对应子路由 | 新增 `/rooms/:id`，承接位命名为 `src/minix/routes/rooms/RoomDetailRoute.tsx` | 需要新增 `/rooms/:id` 正式页面壳 | P1 | 是 |
+| `/rooms/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/rooms/:id/edit`，承接位命名为 `src/minix/routes/rooms/RoomEditRoute.tsx` | 需要新增 `/rooms/:id/edit` 正式页面壳 | P1 | 是 |
+| `/add/room` | 正式业务 | 新宿主无对应子路由 | 新增 `/add/room`，承接位命名为 `src/minix/routes/add/AddRoomRoute.tsx` | 需要新增 `/add/room` 子路由壳，继续复用现有表单表达 | P1 | 是 |
+| `/add/contract` | 正式业务 | 新宿主无对应子路由 | 新增 `/add/contract`，承接位命名为 `src/minix/routes/add/AddContractRoute.tsx` | 需要新增 `/add/contract` 子路由壳 | P1 | 是 |
+| `/contracts/new` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/new`，承接位命名为 `src/minix/routes/contracts/ContractCreateRoute.tsx` | 需要新增 `/contracts/new` 页面壳 | P1 | 是 |
+| `/contracts/[id]` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id`，承接位命名为 `src/minix/routes/contracts/ContractDetailRoute.tsx` | 需要新增 `/contracts/:id` 页面壳 | P1 | 是 |
+| `/contracts/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id/edit`，承接位命名为 `src/minix/routes/contracts/ContractEditRoute.tsx` | 需要新增 `/contracts/:id/edit` 页面壳 | P1 | 是 |
+| `/contracts/[id]/renew` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id/renew`，承接位命名为 `src/minix/routes/contracts/ContractRenewRoute.tsx` | 需要新增 `/contracts/:id/renew` 页面壳 | P1 | 是 |
+| `/contracts/[id]/checkout` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id/checkout`，承接位命名为 `src/minix/routes/contracts/ContractCheckoutRoute.tsx` | 需要新增 `/contracts/:id/checkout` 页面壳 | P1 | 是 |
+| `/bills/create` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/create`，承接位命名为 `src/minix/routes/bills/BillCreateRoute.tsx` | 需要新增 `/bills/create` 页面壳 | P1 | 是 |
+| `/bills/[id]` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/:id`，承接位命名为 `src/minix/routes/bills/BillDetailRoute.tsx` | 需要新增 `/bills/:id` 页面壳 | P1 | 是 |
+| `/bills/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/:id/edit`，承接位命名为 `src/minix/routes/bills/BillEditRoute.tsx` | 需要新增 `/bills/:id/edit` 页面壳 | P1 | 是 |
+| `/renters` | 正式业务 | 新宿主尚无正式路由 | 新增 `/renters`，承接位命名为 `src/minix/routes/renters/RenterListRoute.tsx` | 需要新增 `/renters` 顶级正式路由 | P1 | 是 |
+| `/renters/new` | 正式业务 | 新宿主尚无正式路由 | 新增 `/renters/new`，承接位命名为 `src/minix/routes/renters/RenterCreateRoute.tsx` | 需要新增 `/renters/new` 页面壳 | P1 | 是 |
+| `/renters/[id]` | 正式业务 | 新宿主尚无正式路由 | 新增 `/renters/:id`，承接位命名为 `src/minix/routes/renters/RenterDetailRoute.tsx` | 需要新增 `/renters/:id` 页面壳 | P1 | 是 |
+| `/renters/[id]/edit` | 正式业务 | 新宿主尚无正式路由 | 新增 `/renters/:id/edit`，承接位命名为 `src/minix/routes/renters/RenterEditRoute.tsx` | 需要新增 `/renters/:id/edit` 页面壳 | P1 | 是 |
+| `/meter-readings/batch` | 正式业务 | 新宿主尚无正式路由 | 新增 `/meter-readings/batch`，承接位命名为 `src/minix/routes/meter-readings/MeterReadingBatchRoute.tsx` | 需要新增 `/meter-readings/batch` 页面壳 | P1 | 是 |
+| `/meter-readings/history` | 正式业务 | 新宿主尚无正式路由 | 新增 `/meter-readings/history`，承接位命名为 `src/minix/routes/meter-readings/MeterReadingHistoryRoute.tsx` | 需要新增 `/meter-readings/history` 页面壳 | P1 | 是 |
+| `/bills/stats` | 正式业务 | 新宿主尚无正式路由 | 新增 `/bills/stats`，承接位命名为 `src/minix/routes/bills/BillStatsRoute.tsx` | 保留为正式业务统计页，迁移顺序晚于核心 CRUD 页 | P2 | 是 |
+| `/profile` | 状态/支持 | 新宿主尚无正式路由 | 新增 `/profile`，承接位命名为 `src/minix/routes/support/ProfileRoute.tsx` | 作为支持页延后，待核心业务页 parity 后再承接 | P2 | 否 |
+| `/notifications` | 状态/支持 | 新宿主尚无正式路由 | 新增 `/notifications`，承接位命名为 `src/minix/routes/support/NotificationsRoute.tsx` | 作为支持页延后，待核心业务页 parity 后再承接 | P2 | 否 |
+| `/system-health` | 运维治理 | 仅在 `route-manifest` 的 governance 说明中出现，router 未挂载 | 延后新增 `/system-health`，承接位预留为 `src/minix/routes/governance/SystemHealthRoute.tsx` | 不进入 `phase12` 首批页面 parity，实现承接延后至治理相关阶段 | P3 | 否 |
+| `/data-consistency` | 运维治理 | 仅在 `route-manifest` 的 governance 说明中出现，router 未挂载 | 延后新增 `/data-consistency`，承接位预留为 `src/minix/routes/governance/DataConsistencyRoute.tsx` | 不进入 `phase12` 首批页面 parity，实现承接延后至治理相关阶段 | P3 | 否 |
+| `/performance-test` | dev-only | 新宿主无路由 | 不新增正式路由，若保留仅允许 dev-only 承接位 `src/minix/routes/dev/PerformanceTestRoute.tsx` | 继续归类为 dev-only，不进入正式 parity 范围 | P4 | 否 |
+| `/performance-benchmark` | dev-only | 新宿主无路由 | 不新增正式路由，若保留仅允许 dev-only 承接位 `src/minix/routes/dev/PerformanceBenchmarkRoute.tsx` | 继续归类为 dev-only，不进入正式 parity 范围 | P4 | 否 |
+| `/performance-analysis` | dev-only | 新宿主无路由 | 不新增正式路由，若保留仅允许 dev-only 承接位 `src/minix/routes/dev/PerformanceAnalysisRoute.tsx` | 继续归类为 dev-only，不进入正式 parity 范围 | P4 | 否 |
+| `/layout-demo` | dev-only | 新宿主无路由 | 不新增正式路由，若保留仅允许 dev-only 承接位 `src/minix/routes/dev/LayoutDemoRoute.tsx` | 继续归类为 dev-only，不进入正式 parity 范围 | P4 | 否 |
+| `/components` | dev-only | 新宿主无路由 | 不新增正式路由，若保留仅允许 dev-only 承接位 `src/minix/routes/dev/ComponentsRoute.tsx` | 继续归类为 dev-only，不进入正式 parity 范围 | P4 | 否 |
+| `/business-flow-validation` | dev-only | 新宿主无路由 | 不新增正式路由，若保留仅允许 dev-only 承接位 `src/minix/routes/dev/BusinessFlowValidationRoute.tsx` | 继续归类为 dev-only，不进入正式 parity 范围 | P4 | 否 |
+
+#### 2.2.3.1 缺失承接位命名规则
+- 本轮只冻结命名与路由落点，不创建任何新页面文件，也不修改 `src/minix/router/index.tsx`。
+- 目标新路由默认保持旧页面 URL 语义稳定；仅在 `React Router` 动态段语法上把 Next 风格的 `[id]` 统一转换为 `:id`。
+- 缺失承接位文件命名统一遵循 `src/minix/routes/<domain>/<PascalCase>Route.tsx`：
+  - 列表页使用 `*ListRoute.tsx`
+  - 详情页使用 `*DetailRoute.tsx`
+  - 编辑页使用 `*EditRoute.tsx`
+  - 新增/新建页使用 `*CreateRoute.tsx`
+  - 聚合入口页使用 `*HubRoute.tsx`
+  - 流程动作页使用 `*<Action>Route.tsx`
+- 支持页承接位统一落到 `src/minix/routes/support/*Route.tsx`，治理页统一落到 `src/minix/routes/governance/*Route.tsx`，dev-only 入口若未来仍需保留，只允许落到 `src/minix/routes/dev/*Route.tsx`。
+- 已存在的首页、登录页、离线页与 placeholder 顶级路由保持原路径不变；后续实现只允许“替换承接组件”，不允许重新发明另一套路由别名。
+
+#### 2.2.3.2 P0 / P1 / P2 优先级说明
+- `P0`：已在新宿主真实挂载，且属于首页、状态入口或主导航一级入口；这些页面决定 `src/minix` 能否先稳定承接工作台、核心列表与设置壳层，也是 `phase13` 开始切 rooms / contracts / bills / settings / dashboard retained-legacy 路由顺序的最小前提。
+- `P1`：尚未在新宿主挂载，但属于核心主链的详情、编辑、新建或流程动作页；这些页面必须在 `P0` 路由骨架稳定后补齐，否则 `phase13` 无法对合同、账单、房源、租客、抄表等 retained-legacy 路由进行实质性清退。
+- `P2`：统计页与支持页，依赖核心 CRUD 页面已经完成基本 parity；它们需要进入后续路线图，但不应反向阻塞 `phase12` 首批页面壳冻结。
+- `P3` 与 `P4` 继续分别表示治理页延后承接、dev-only / 待归档候选不进入正式 parity 范围；它们保留在表中只是为了防止后续阶段重新扩写范围。
 
 ### 2.2.4 当前 `phase12` 的首批 parity 范围
 结合上表，`phase12` 当前轮默认首批页面 parity 范围应冻结为：

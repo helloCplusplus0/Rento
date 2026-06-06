@@ -153,6 +153,26 @@
   - 是否直接影响 `phase13` retained-legacy API 退出顺序
 - 若没有这张映射表，`phase12` 当前轮不视为规划完成。
 
+### 6.5.1 缺失承接位命名规则
+- 本阶段只冻结命名规则与目标承接位，不创建新页面文件、不挂载新路由、不切 retained-legacy API。
+- 目标新路由默认保持旧页面 URL 语义稳定；仅把 Next 风格动态段 `[id]` 统一转换为 `React Router` 的 `:id`。
+- 缺失承接位文件命名统一遵循 `src/minix/routes/<domain>/<PascalCase>Route.tsx`：
+  - 列表页使用 `*ListRoute.tsx`
+  - 详情页使用 `*DetailRoute.tsx`
+  - 编辑页使用 `*EditRoute.tsx`
+  - 新增/新建页使用 `*CreateRoute.tsx`
+  - 聚合入口页使用 `*HubRoute.tsx`
+  - 流程动作页使用 `*<Action>Route.tsx`
+- 支持页统一落到 `src/minix/routes/support/*Route.tsx`，治理页统一落到 `src/minix/routes/governance/*Route.tsx`，dev-only 入口若未来仍保留，只允许落到 `src/minix/routes/dev/*Route.tsx`。
+- 已存在的 `/`、`/login`、`/offline` 与 `minixPrimaryRoutes` 中的顶级占位路由保持原路径不变；后续只允许替换承接组件，不允许额外引入第二套路由别名。
+
+### 6.5.2 P0 / P1 / P2 优先级共享语义
+- `P0`：已在新宿主真实挂载，且承担首页、状态入口或主导航一级入口；它们是 `phase13` 开始切 rooms / contracts / bills / settings / dashboard retained-legacy 路由的最小页面前提。
+- `P1`：尚未在新宿主挂载，但属于核心主链的详情、编辑、新建或流程动作页；这些页面若未冻结目标承接位，会直接阻塞 `phase13` 对主链 retained-legacy 路由的实质性清退。
+- `P2`：统计页与支持页，属于路线图正式输入，但应晚于核心 CRUD 页承接；它们默认不反向阻塞 `phase12` 首批页面壳冻结。
+- `P3`：治理页延后承接，不进入 `phase12` 首批正式页面 parity 范围。
+- `P4`：dev-only / 待归档候选，不进入正式 parity 范围，仅保留分类与退出边界说明。
+
 ## 七、与后续阶段的共享边界
 ### 7.1 对 `phase13` 的共享输入
 - 页面映射表
@@ -169,6 +189,9 @@
   - 抄表页面 parity -> `/api/meter-readings*`
   - 设置 / 工作台 / 统计页面 parity -> `/api/settings*`、`/api/dashboard/*`
 - 因此页面映射表必须至少标记“是否阻塞 `phase13`”，防止后续阶段重新自行判断依赖关系。
+- “是否阻塞 `phase13`” 的统一口径为：
+  - `是`：该页面的页面壳或目标承接位若未冻结，`phase13` 不应对对应 retained-legacy API 族做正式退出判断。
+  - `否`：该页面不直接决定 `phase13` 的 retained-legacy API 退出顺序，只作为支持页、治理页或 dev-only 边界保留。
 
 ### 7.2 对 `phase14` 的共享输入
 - 新宿主页面壳与正式路由壳
