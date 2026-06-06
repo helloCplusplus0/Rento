@@ -5,7 +5,7 @@
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
   - [phase12_frontend_parity_and_shell_cutover_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_architecture_plan.md)
   - [phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md)
-- `phase12` 当前轮只完成阶段文档规划产出，尚未进入 `/spec` 或实现。
+- `phase12` 当前轮已进入并完成 `phase12-05` 文档收口 spec；当前轮只更新路线图、依赖、DoD、退出条件与文档一致性，不进入页面 parity、API parity、PWA parity 或 cutover 实现。
 
 ## 一、文档定位
 本文档用于把 `phase12-frontend-parity-and-shell-cutover` 拆分为顺序执行的子任务，确保仓库先把页面映射、页面装配复用策略、UI 保真边界与 `phase12 ~ phase15` 路线图解释清楚，再进入具体实现。
@@ -277,6 +277,14 @@
   - 页面 parity 与 retained-legacy API 的联动说明
 - 因此当前轮规划完成的关键前提已经具备；后续 `/spec` 与实施只能在这些既有事实表基础上细化，不再回退为重新定义范围与优先级。
 
+### 路线图闭环矩阵
+| 阶段 | 本轮必须冻结的结论 | 前置依赖 | DoD | 退出条件 | 仅文档轮次最小验证要求 |
+| --- | --- | --- | --- | --- | --- |
+| `phase12` | 页面盘点、页面映射、页面装配复用、UI 保真边界与 `phase12 ~ phase15` 路线图单一解释 | `phase10` 数据访问边界、`phase11` 部署主线、旧 `src/app/*` 页面原型、新 `src/minix/*` 承接位 | `docs/phase12_*` 与顶层真相源已写清页面事实表、路线图矩阵、当前状态与后续依赖 | `phase12-05` 完成，且当前文档不再保留“等待审核/不进入 spec”的旧状态描述 | `docs/phase12_*` 互链复核、被引用路径存在性复核、`README.md`/`AGENTS.md`/`project_rules.md`/`architecture_map.md`/`plan.md` 状态一致性复核 |
+| `phase13` | retained-legacy API/query drain 顺序、正式宿主归属、compat 保留条件与 route inventory 退出判断 | `phase12` 页面-API 映射、`phase10` query/事务边界、`phase11` 发布门禁 | retained-legacy / compat-wrapper / formal-host-owned 清单与 route drain 顺序单一可解释 | 正式业务 API 不再依赖新增旧宿主写路径，route inventory 与真相源一致 | 未来 `docs/phase13_*` 互链复核、被引用 `server/*`/`src/lib/domain/*`/`src/lib/queries*`/`server/lib/legacy-route-inventory.ts` 路径存在性复核、顶层真相源一致性复核 |
+| `phase14` | 纯新主线 PWA manifest、service worker、更新策略、最小离线兜底与缓存边界 | `phase12` 页面壳与入口、`phase13` 正式 API 边界、`phase05` PWA 基线、`phase11` 部署主线 | 安装、更新、离线兜底与缓存边界单一可解释，且不缓存动态鉴权业务接口 | 纯 `Vite + Hono` 主线可独立承接最小受控 PWA 能力 | 未来 `docs/phase14_*` 互链复核、被引用 `vite.config.ts`/`public/*`/`server/lib/static.ts` 路径存在性复核、顶层真相源一致性复核 |
+| `phase15` | parity 验收矩阵、cutover 审核、回滚演练与 legacy 退出门禁 | `phase11` 部署/回滚基线、`phase12` 页面 parity、`phase13` API parity、`phase14` PWA parity | 页面/API/PWA parity、自动化 smoke、人工验收、cutover/rollback/legacy-exit 清单形成单一闭环 | 纯新主线可在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 | 未来 `docs/phase15_*` 互链复核、被引用验证记录/部署记录/legacy 资产清单路径存在性复核、顶层真相源一致性复核 |
+
 ### 参考来源
 - 顶层真相源
 - `docs/phase12_*`
@@ -285,15 +293,16 @@
 - `server/lib/legacy-route-inventory.ts`
 
 ### 不在范围内
-- 不直接进入 `/spec`
 - 不启动页面迁移实现
-- 不在本子任务中执行 cutover
+- 不启动 retained-legacy API/query drain 实现、PWA 迁移实现或 cutover 实现
+- 不在本子任务中新增 `phase13 ~ phase15` 阶段文档正文
 
 ### DoD
-- `phase12 ~ phase15` 路线图具备单一解释
+- `phase12 ~ phase15` 路线图具备单一解释，且每个阶段都已明确职责、继承输入、前后依赖、DoD、退出条件与仅文档轮次最小验证要求
 - `phase12` 三份文档齐备并互链正确
 - 顶层真相源与阶段文档状态一致
-- `phase12` 三份文档已补齐真实清单、真实映射与真实优先级，而不仅是框架化原则说明
+- `phase12` 三份文档已补齐真实清单、真实映射、真实优先级与页面-API 联动，而不仅是框架化原则说明
+- 目标文件中不再保留把当前状态表述为“等待审核/不进入 spec”的旧口径，同时仍明确本轮不进入页面/API/PWA/cutover 实现
 
 ### 验证要求
 - 若本轮仅涉及文档，至少完成：
@@ -303,6 +312,7 @@
   三份文档互链复核
 - 复核被引用路径与文件真实存在
 - 复核 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与本阶段文档状态一致
+- 复核目标文件已同步为“当前已进入并完成 `phase12-05` 文档收口 spec，当前轮不进入页面/API/PWA/cutover 实现”的真实状态
 
 ## 四、推荐实施顺序
 建议严格按如下顺序推进：

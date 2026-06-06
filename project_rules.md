@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；当前默认下一阶段已切换到 `phase12-frontend-parity-and-shell-cutover` 的规划审核阶段，并已在 `plan.md` 中一次性补齐 `phase12 ~ phase15` 的完整路线图。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；当前默认工作流已进入 `phase12-frontend-parity-and-shell-cutover` 的 `phase12-05` 文档收口 spec，并已把 `phase12 ~ phase15` 的完整路线图、前后依赖、DoD、退出条件与文档轮次最小验证要求同步冻结到 `plan.md` 与 `docs/phase12_*`。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase12 ~ phase15` 的当前轮重点必须建立在 `phase10` 已冻结的 `Prisma + PostgreSQL` 长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断，以及 `phase11` 已冻结的正式部署主线、发布门禁与 legacy 回滚基线之上，不反向改写这些结论。
 
@@ -57,7 +57,7 @@
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已推进到 `phase12-frontend-parity-and-shell-cutover` 的阶段文档审核阶段；后续实施必须继续建立在 `docs/phase12_*` 与 `plan.md` 已补齐的 `phase12 ~ phase15` 共同边界之上。
+- 当前默认工作流已推进到 `phase12-frontend-parity-and-shell-cutover` 的 `phase12-05` 文档收口 spec；后续实施必须继续建立在 `docs/phase12_*` 与 `plan.md` 已补齐的 `phase12 ~ phase15` 共同边界之上。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。
 - `phase08` 审核通过的最低前提，至少包括：统一 API 宿主、认证门禁、中间件链、错误处理、环境变量约束与最小安全边界均已冻结并通过审核。
@@ -95,7 +95,7 @@
 - `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
 - `phase11-05` 已冻结部署/回滚演练的最小记录要求：至少包含演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件与最终结论；记录必须明确标注“正式主线验证”或“legacy 回滚验证”，并可被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 引用用于审核。
 - `phase12` 期间允许冻结旧页面到 `src/minix` 的承接顺序、页面装配复用策略与 UI 保真规则，但不得把 UI 迁移扩写为视觉重设计，也不得在本阶段重新打开 ORM 替换议题；`Prisma + PostgreSQL` 继续固定为当前正式数据访问主线。
-- `phase12` 当前轮最低文档验证要求固定为：`docs/phase12_*` 互链复核、被引用路径存在性复核，以及根级真相源与 `README.md` / `plan.md` 状态一致性复核；进入后续 `/spec` 前，不以“路线图已规划”为理由跳过页面映射表、UI 保真边界与完整路线图审核。
+- `phase12` 当前轮最低文档验证要求固定为：`docs/phase12_*` 互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核；进入后续页面/API/PWA/cutover 实施前，不以“路线图已规划”为理由跳过页面映射表、UI 保真边界、完整路线图、前后依赖、DoD 与退出条件审核。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
   - 是否影响历史数据

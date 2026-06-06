@@ -4,7 +4,7 @@
 - `phase12` 的共享基线已完成当前轮产出，继续作为当前默认工作流的统一语义输入。
 - 本文档直接建立在 `phase10` 已完成的 `Prisma + PostgreSQL` 数据访问主线冻结、`phase11` 已完成的正式部署主线冻结之上。
 - 本文档不替代 `architecture_plan` 的结构判断，也不替代 `dev_plan` 的任务拆分；它只负责冻结所有 `phase12-*` 子任务必须共同遵守的边界与词汇。
-- 当前互链文档为 [phase12_frontend_parity_and_shell_cutover_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_architecture_plan.md) 与 [phase12_frontend_parity_and_shell_cutover_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_dev_plan.md)。
+- 当前互链文档为 [phase12_frontend_parity_and_shell_cutover_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_architecture_plan.md) 与 [phase12_frontend_parity_and_shell_cutover_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_dev_plan.md)；当前轮状态已同步为“`phase12-05` 文档收口 spec 已完成，当前仍不进入页面/API/PWA/cutover 实现”。
 
 ## 一、文档目的
 本文档用于冻结 `phase12-frontend-parity-and-shell-cutover` 的共享判断标准，避免后续子任务分别从页面盘点、页面映射、页面装配、UI 保真或路线图规划视角出发，重新产出互相冲突的解释。
@@ -267,6 +267,20 @@
 - 页面原型对照关系
 - 纯新主线的页面承接清单
 
+### 7.4 `phase12 ~ phase15` 路线图共享闭环
+| 阶段 | 共享职责 | 必须继承的上游输入 | 对后续阶段的直接输出 | DoD / 退出条件摘要 |
+| --- | --- | --- | --- | --- |
+| `phase12` | 冻结页面范围、映射、页面装配复用策略、UI 保真边界与路线图 | `phase10` 数据访问边界、`phase11` 部署主线与回滚基线、旧 `src/app/*` 页面原型、新 `src/minix/*` 承接位 | 页面映射表、页面-API 联动、UI 保真边界、`phase12 ~ phase15` 路线图矩阵 | `phase12-05` 完成且顶层真相源同步完成后，才允许进入后续页面 parity 实施；当前轮保持只做文档收口 |
+| `phase13` | 清退 retained-legacy API / query，冻结正式 API 宿主与 compat 退出判断 | `phase12` 页面-API 关系、`phase10` query/事务边界、`phase11` 发布门禁 | 更新后的 route inventory、正式 API/query 归属与 compat 保留清单 | 正式业务 API 宿主、route drain 顺序与 compat 保留原因单一可解释，且不回写旧宿主真相 |
+| `phase14` | 把 PWA 能力迁入纯 `Vite + Hono` 主线 | `phase05` PWA 基线、`phase12` 页面壳、`phase13` API 边界、`phase11` 静态托管主线 | 新主线 manifest、service worker、更新/离线边界与发布口径 | 纯新主线可独立承接最小受控 PWA 能力，且不缓存动态鉴权业务接口 |
+| `phase15` | 完成功能 parity 验收、cutover 审核、回滚演练与 legacy 退出 | `phase11` 部署/回滚基线、`phase12` 页面 parity、`phase13` API parity、`phase14` PWA parity | parity 矩阵、cutover/rollback 记录、legacy 退出顺序与门禁 | 纯新主线可在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 |
+
+### 7.5 文档轮次最小验证共享口径
+- `phase12` 文档轮次：完成 `docs/phase12_*` 互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核。
+- `phase13` 文档轮次：完成未来 `docs/phase13_*` 互链复核、被引用 `server/*`/`src/lib/domain/*`/`src/lib/queries*`/`server/lib/legacy-route-inventory.ts` 路径存在性复核，以及顶层真相源状态一致性复核。
+- `phase14` 文档轮次：完成未来 `docs/phase14_*` 互链复核、被引用 `vite.config.ts`/`public/*`/`server/lib/static.ts` 路径存在性复核，以及顶层真相源与 `phase12`、`phase13` 状态一致性复核。
+- `phase15` 文档轮次：完成未来 `docs/phase15_*` 互链复核、被引用 parity 验收记录/部署记录/回滚记录/legacy 资产清单路径存在性复核，以及顶层真相源与 `phase11 ~ phase15` 状态一致性复核。
+
 ## 八、允许路线
 - 允许继续复用旧 `src/app/*` 作为页面原型与行为参考输入
 - 允许继续复用 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*`
@@ -291,6 +305,8 @@
 - 至少确认“Prisma 保留、UI 保真、完整路线图一次性规划”的表述已形成单一判断标准
 - 至少确认正式页面范围、延后页面范围与 dev-only / 候选归档范围已形成单一判断标准
 - 至少确认旧页面到 `src/minix` 的映射表已写入阶段文档，而不是只保留为待办事项
+- 至少确认 `phase12 ~ phase15` 的职责、前后依赖、DoD、退出条件与文档轮次最小验证要求已经形成共享闭环
+- 至少确认目标文件已同步为“当前已进入并完成 `phase12-05` 文档收口 spec，当前轮不进入页面/API/PWA/cutover 实现”的真实状态
 - 至少确认被引用代码、脚本与文档路径真实存在
 
 ## 十一、阶段结论

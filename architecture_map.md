@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认下一步已切换到 `phase12` 的页面 parity 与后续 `phase12 ~ phase15` 路线图规划。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认工作流已进入 `phase12-05` 文档收口 spec，正在为 `phase12 ~ phase15` 冻结页面 parity、API/query parity、PWA parity 与 cutover/legacy-exit 的统一路线图。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -15,7 +15,7 @@
 - 在 `phase10` 数据访问层方案冻结前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*`、`docs/phase12_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -241,6 +241,14 @@
   - `phase14` 的新主线 PWA parity 结果
 - 该层只负责回答“纯新主线是否已完整替代旧技术栈、何时允许退出 legacy 资产”，不再反向重写业务边界。
 
+### `phase12 ~ phase15` 闭环路线图矩阵
+| 阶段 | 结构承接位 | 主要职责 | 前置依赖 | 退出条件 | 文档轮次最小验证要求 |
+| --- | --- | --- | --- | --- | --- |
+| `phase12` | `src/minix/router/*`、`src/minix/layout/*`、`src/minix/routes/*`、旧 `src/app/**/page.tsx` 参考基线 | 冻结页面范围、页面映射、页面装配复用、UI 保真边界与多阶段路线图 | `phase10` 数据访问边界、`phase11` 部署主线、旧页面原型 | 页面映射、复用矩阵、UI 保真边界与后续路线图均已形成单一解释，且顶层真相源同步完成 | `docs/phase12_*` 互链复核、被引用路径存在性复核、顶层真相源状态一致性复核 |
+| `phase13` | `server/*`、`src/lib/domain/*`、`src/lib/queries*`、`server/lib/legacy-route-inventory.ts` | 收口正式 API/query 宿主，清退 retained-legacy 路由 | `phase12` 页面-API 映射、`phase10` query/事务边界、`phase11` 发布门禁 | retained-legacy / compat / formal-host-owned 清单与 route drain 顺序单一可解释 | 未来 `docs/phase13_*` 互链复核、被引用正式 API/query 路径存在性复核、顶层真相源状态一致性复核 |
+| `phase14` | `src/minix/*`、`public/*`、`vite.config.ts`、`server/lib/static.ts` | 迁入 manifest、service worker、安装/更新策略、最小离线页与缓存边界 | `phase12` 页面壳、`phase13` API 边界、`phase05` PWA 基线、`phase11` 静态托管主线 | 纯 `Vite + Hono` 主线可独立承接最小受控 PWA 能力，不再依赖旧 Next PWA 宿主 | 未来 `docs/phase14_*` 互链复核、被引用 PWA/静态托管路径存在性复核、顶层真相源状态一致性复核 |
+| `phase15` | parity 验收矩阵、部署/回滚记录、legacy 资产清单与归档入口 | 完成功能 parity 验收、cutover 审核、回滚演练与 legacy 退出 | `phase11` 部署/回滚基线、`phase12` 页面 parity、`phase13` API parity、`phase14` PWA parity | 能证明纯新主线在不依赖旧 `src/app/*`、旧 `src/app/api/*`、旧 Next PWA 宿主的前提下正式交付 | 未来 `docs/phase15_*` 互链复核、被引用验收记录/部署记录/legacy 资产清单路径存在性复核、顶层真相源状态一致性复核 |
+
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态
 - 原 `Rento-miniX/` 目录已完成“抽取 -> 复核 -> 清理”，当前仓库中已不存在该目录。
@@ -408,4 +416,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是继续以已完成的 `phase11-01 ~ phase11-05` 当前轮收口结果为真相源，按冻结的最低工程验证命令与部署/回滚演练记录要求准备后续 cutover 审核；在审核通过前，legacy 资产继续保留为回滚基线。
+- 当前默认下一步不再表述为“等待审核/不进入 spec”，而是已完成 `phase12-05` 文档收口：后续继续以 `docs/phase12_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15` 路线图推进；在进入页面/API/PWA/cutover 实施前，legacy 资产继续保留为回滚基线。

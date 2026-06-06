@@ -25,7 +25,7 @@
 - 当前默认工作流：`phase12-frontend-parity-and-shell-cutover`
 - 当前主问题：在不反向干扰 `phase07~11` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层、部署主线与迁移兼容边界的前提下，把旧 `Rento` 的正式页面、旧宿主 API 与 PWA 能力完整迁入 `Rento-miniX`，并为最终 legacy 退出建立可验证的对齐路径。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase11-05` 已完成当前轮部署主线、回滚基线与部署演练记录要求收口；当前应继续以 [phase12_frontend_parity_and_shell_cutover_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_architecture_plan.md)、[phase12_frontend_parity_and_shell_cutover_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_dev_plan.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 为当前阶段规划真相源，并按 `plan.md` 已补齐的 `phase12 ~ phase15` 路线图推进后续审核；在用户审核通过前，不直接进入 `/spec` 或实现。
+- 当前下一步：`phase11-05` 已完成当前轮部署主线、回滚基线与部署演练记录要求收口；当前已进入并完成 `phase12-05` 文档收口 spec，应继续以 [phase12_frontend_parity_and_shell_cutover_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_architecture_plan.md)、[phase12_frontend_parity_and_shell_cutover_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_dev_plan.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与 [plan.md](file:///home/dell/Projects/Rento/plan.md) 作为当前阶段真相源，并保持本轮只做路线图与文档一致性收口，不进入页面/API/PWA/cutover 实现。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入
@@ -45,6 +45,7 @@
 ## 6. 运行与质量基线
 - 发布前最低门禁至少包括：`npm run lint`、`npm run type-check`、构建、健康检查与核心业务 smoke test。
 - 若 `phase11` 某轮仅涉及文档，最低验证要求至少包括：`docs/phase11_*` 互链复核、被引用路径存在性复核，以及根级真相源与 `DEPLOYMENT.md` 状态一致性复核。
+- 若当前轮仅涉及 `phase12-05` 文档收口，最低验证要求至少包括：`docs/phase12_*` 互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核。
 - 数据质量底线：合同、账单、抄表、仪表关联必须可追溯；历史账务记录优先保留。
 - 安全底线：对外部署前必须具备登录、会话保护、来源控制与最小审计线索。
 - 部署底线：未来主线默认云端不做源码构建，优先运行预构建产物。
@@ -62,7 +63,7 @@
 - `phase09-domain-service-migration` 已完成当前轮阶段收口：共享领域服务落点、正式宿主边界、合同/账单/仪表/抄表/退租/删除门禁主链迁移、主链 smoke 路径、旧 `src/app/api/*` compat wrapper 清单与 `phase10` 上游输入已完成当前轮验证。
 - `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成单一闭环。
 - `phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口：正式部署主线、预构建产物链、环境变量、健康检查、发布门禁、legacy 回滚基线、文档最小验证要求与部署/回滚演练记录要求均已同步冻结到根级真相源、`DEPLOYMENT.md` 与 `docs/phase11_*`。
-- `phase12-frontend-parity-and-shell-cutover` 已完成当前轮阶段文档规划产出：后续默认以前端页面 parity、旧 UI 承接、`Prisma + PostgreSQL` 保留与 `phase12 ~ phase15` 完整路线图为统一输入，等待用户审核后再进入 `/spec` 或实现。
+- `phase12-frontend-parity-and-shell-cutover` 已完成当前轮阶段文档与 `phase12-05` 路线图一致性收口：后续默认以前端页面 parity、旧 UI 承接、`Prisma + PostgreSQL` 保留、`phase12 ~ phase15` 完整路线图、前后依赖、DoD、退出条件与文档轮次最小验证要求为统一输入；当前仍不进入页面/API/PWA/cutover 实现。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -138,7 +139,7 @@
 - `phase09` 的职责是冻结共享领域服务落点、迁移合同/账单/支付周期/仪表/抄表/删除门禁等主链领域服务，并收口主链查询与写路径一致性，而不是在当前回合直接切 ORM 最终主线或改写最终部署主线。
 - `phase10` 的职责是冻结长期数据访问层方案、查询分层、统一事务边界、迁移兼容项与 `phase11` 最小上游输入；该阶段现已完成当前轮收口。
 - `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板、发布门禁、文档最小验证要求与部署演练记录要求；当前轮 `phase11-05` 已完成上述文档闭环，但在正式 cutover 审核通过前，仍不得删除 legacy 回滚资产。
-- `phase12` 的职责是冻结前端页面 parity、`src/minix` 页面装配承接边界、旧 UI 复用规则与后续 `phase12 ~ phase15` 的多阶段路线图；在用户审核通过前，不直接进入页面迁移实现。
+- `phase12` 的职责是冻结前端页面 parity、`src/minix` 页面装配承接边界、旧 UI 复用规则与后续 `phase12 ~ phase15` 的多阶段路线图；当前轮 `phase12-05` 已完成路线图一致性收口，后续在用户批准相应实施前，不直接进入页面/API/PWA/cutover 实现。
 - `phase11-04` 已进一步冻结 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界；后续阶段不得把 `Rento-legacy` 重新引入为默认 remote、部署入口、回滚入口或第二真相源。
 - `phase08` 当前轮规划已明确：只冻结最小 API/Auth 骨架，不提前迁移治理接口、正式领域服务或部署切线。
 - `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。

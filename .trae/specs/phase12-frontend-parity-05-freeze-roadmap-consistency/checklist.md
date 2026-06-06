@@ -1,0 +1,8 @@
+- [x] 已明确 `phase12`、`phase13`、`phase14`、`phase15` 的职责、前后依赖、DoD 与退出条件
+- [x] 已确保 `phase12 ~ phase15` 路线图具备单一解释
+- [x] 已确保 `docs/phase12_*` 三份文档互链正确
+- [x] 已复核被引用路径与文件真实存在
+- [x] 已确保 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致
+- [x] 已冻结仅文档变更轮次的最小验证要求
+- [x] 已确认当前轮规划建立在真实页面清单、真实映射、真实优先级与 retained-legacy 联动说明之上
+- [x] 已完成独立子代理审核验收，并得到通过结论
