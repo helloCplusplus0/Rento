@@ -161,6 +161,14 @@
   - `src/minix/layout/*`
   - `src/minix/routes/*`
 - 当前 `HomePage` 与 `PlaceholderPage` 已明确表述“完整业务逻辑仍保留在旧宿主作为参考基线”，因此 `phase12` 必须先冻结“从旧页面抽什么、在新宿主适配什么”的边界。
+- 当前不能把 `src/components/pages/*` 简单等同于“可整目录直搬”：
+  - 现有多份页面组件直接依赖 `next/navigation`
+  - `PageContainer`、旧 `UnifiedNavigation` 也仍带有 Next 宿主跳转协议
+  - `src/app/**/page.tsx` 仍混有 `params/searchParams`、`generateMetadata()`、`notFound()`、server query 与数据整形逻辑
+- 因此 `phase12-03` 的最低交付不只是原则说明，而是必须落成：
+  - 页面壳 / 页面装配层 / 数据加载边界 / 导航壳 / 布局壳五层复用矩阵
+  - 目录级策略表
+  - “直接复用 / 拆宿主绑定后复用 / 延后治理”的单一分类口径
 
 ### 参考来源
 - `src/components/pages/*`
@@ -182,10 +190,17 @@
   - 可直接复用的组件层目录
   - 需要迁移或改造的页面装配层目录
   - 暂不处理的治理/辅助层目录
+- 至少形成两张事实化表格：
+  - 五层复用矩阵
+  - 目录级策略表
+- 至少明确一份清单：
+  - 旧 `src/app` 中必须拆出的 Next 宿主绑定逻辑
 
 ### 验证要求
 - 复核引用的组件目录与页面装配文件真实存在
 - 确认复用策略与 UI 承接硬约束不冲突
+- 确认含 `next/navigation`、`next/link`、`generateMetadata()`、`notFound()`、`dynamic = 'force-dynamic'` 的文件未被误判为“可直接整目录复用”
+- 确认 `architecture_plan`、`shared_baseline` 与本任务对“延后治理 / 支持层”的划分保持一致
 
 ## phase12-04-ui-parity-and-adaptation-boundary
 ### 目标

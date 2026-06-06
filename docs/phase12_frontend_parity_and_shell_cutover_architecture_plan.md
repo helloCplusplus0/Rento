@@ -376,6 +376,64 @@ phase12-frontend-parity-and-shell-cutover
 - `architecture_map.md`
 - `plan.md`
 
+### 4.1.1 页面壳 / 页面装配层 / 数据加载边界 / 导航壳 / 布局壳复用矩阵
+| 层次 | 旧宿主主要落点 | 新宿主正式落点 | 当前冻结复用策略 | 必须拆出的旧宿主绑定 | 当前不进入本轮实现的边界 |
+| --- | --- | --- | --- | --- | --- |
+| 页面壳 | `src/app/**/page.tsx`、`src/components/pages/*` | `src/minix/routes/<domain>/*Route.tsx` + 复用后的 `src/components/pages/*` | 页面 URL、信息结构、标题区块、主操作区与状态反馈默认沿用旧页；`src/minix/routes/*` 只负责接住页面壳，不重写页面主体组件 | `params/searchParams` 解析、`generateMetadata`、`notFound()`、`dynamic = 'force-dynamic'`、`Suspense` 包装，以及 `next/*` 路由协议带来的跳转、刷新与链接语义 | 不在本轮创建任何新 route 文件，不提前改写页面主体实现 |
+| 页面装配层 | 旧 `src/app/**/page.tsx` 中“查询 + 数据整形 + 组件拼装”组合逻辑 | `src/minix/routes/*Route.tsx` | 旧页面中的装配逻辑要先从 Next 页面入口里拆成“路由承接 + 页面主体”两层；后续 route module 只承接参数、装配顺序和错误/加载边界 | 直接调用 `roomQueries` / `contractQueries` / `globalSettings` 的 server page 入口、Decimal 转换、search query 归一化、Next 页面级错误跳转 | 不在 `phase12-03` 里切 API、不重做 query 层、不把装配逻辑继续散落回 `src/app/*` |
+| 数据加载边界 | 旧 `src/app/**/page.tsx`、`generateMetadata()`、页面内 server query | `src/minix/router/*` 与后续 `src/minix/routes/*Route.tsx` 的 route-level loader / pending / error 边界 | 统一冻结为“数据边界属于 route module，不属于布局壳、导航壳或纯展示组件”；页面主体优先接收已解析的 props/loaderData，而不是自行承担宿主取数协议 | Next server component 取数、`notFound()`、页面级 metadata 生成、依赖 `searchParams` 的初始筛选注入 | 本轮只冻结边界，不决定最终是直挂 loader 还是经 `phase13` API parity 后再切正式请求路径 |
+| 导航壳 | `src/components/layout/UnifiedNavigation.tsx`、`src/lib/navigation-config.ts`、`src/lib/route-config.ts` | `src/minix/layout/UnifiedNavigation.tsx`、`src/minix/routes/route-manifest.tsx` | 继续复用导航顺序、图标语义、搜索入口语义与主导航信息架构；新宿主只承接激活态、跳转协议和最小桌面/移动导航骨架 | `next/link`、`usePathname()`、`useRouter()`、`NotificationEntryButton`、`UserProfileSheet`、旧提醒/用户抽屉联动 | 不在本轮扩写通知中心、个人资料抽屉和治理入口暴露方式；支持页保持 P2 / 延后承接 |
+| 布局壳 | `src/app/layout.tsx`、`src/components/layout/AppLayout.tsx`、`src/components/layout/PageContainer.tsx` | `src/minix/layout/MinixShellLayout.tsx` + 后续 route-level page container 适配 | 继续复用键盘 inset、桌面/移动双导航切换、主内容容器宽度与 sticky 页面头部表达；布局壳只承接宿主级骨架，不吞页面数据与业务动作 | `Metadata` / `Viewport`、`next/font`、`html/body`、`AlertManagerProvider`、PWA runtime / install prompt、`PageContainer` 内的 `router.back()` | PWA 运行时与安装提示延后到 `phase14`；provider 收口按页面 parity 真正需要再逐步迁入，不在本轮扩写 |
+
+### 4.1.2 目录级策略表
+| 目录 / 组 | 当前职责 | `phase12-03` 冻结策略 | 原因与边界 |
+| --- | --- | --- | --- |
+| `src/components/ui/*` | 基础 UI 原子组件 | 直接复用 | 不承载 Next 宿主协议，可继续作为新旧宿主共享底层组件 |
+| `src/components/business/*` | 领域片段、卡片、表单块、统计块 | 仅不含 `next/*` 路由协议的文件可直接复用；凡直接依赖 `next/link`、`next/navigation` 等协议的文件都必须先拆宿主绑定。至少 [FunctionGrid.tsx](file:///home/dell/Projects/Rento/src/components/business/FunctionGrid.tsx) 当前使用 `next/link`，需先拆出链接承接层后再复用 | 保留业务表达与交互语义，不把导航协议、路由跳转继续埋在业务片段内，也不把含 `next/link` 的业务片段误判为可直接复用 |
+| `src/components/pages/*` | 旧页面主体表达与交互拼装 | 拆出宿主绑定后复用，不整目录直搬为新路由文件 | 多数页面可作为页面主体参考，但当前已有一批文件直接依赖 `next/*` 路由协议，必须先拆宿主动作 |
+| `src/components/layout/*` | 旧布局壳、页面容器、PWA 运行时与辅助布局 | 分层处理：`DetailPageTemplate` / `DesktopLayout` / `MobileLayout` 当前仍经由 `PageContainer` / `UnifiedNavigation` 转依赖 Next 宿主协议，必须先拆宿主绑定后再复用或仅作参考；`AppLayout` / `UnifiedNavigation` / `PageContainer` 需拆宿主绑定；`PwaRuntimeManager` / `PwaInstallPrompt` 延后 | 该目录同时混有纯布局表达、Next 宿主绑定与 PWA runtime，不允许整目录一刀切；凡是经由 `PageContainer` / `UnifiedNavigation` 带入 `next/navigation`、`next/link`、`router.back()` 的布局组件，都不能被误判为“可优先直接复用” |
+| `src/minix/router/*` | 新宿主路由树、守卫、未来 data boundary | 作为正式宿主唯一路由绑定层保留 | 后续 loader、guard、error boundary 都应优先收口在这里，而不是回写旧 `src/app` |
+| `src/minix/layout/*` | 新宿主布局壳与导航壳 | 直接作为正式宿主承接位扩展 | 该目录已经承接最小壳层，后续只补 route-level composition，不重造第二套布局体系 |
+| `src/minix/routes/*` | 当前首页 / 状态页 / placeholder 壳层 | 作为正式页面装配层目录扩展 | 后续新增 `*Route.tsx` 只负责页面壳、装配顺序和数据边界，不承载共享业务组件库职责 |
+| `src/app/**` | 旧 Next 页面宿主、页面级取数和 metadata 绑定 | 仅保留参考基线与拆壳来源，不再作为新增正式宿主落点 | `phase12` 之后不能再把新页面壳、新装配逻辑默认写回旧宿主 |
+| `src/app/api/*` | retained-legacy / compat API 宿主 | 延后到 `phase13`，本轮只作为依赖关系参考 | `phase12-03` 只冻结页面壳与复用策略，不切 API |
+| `src/lib/navigation-config.ts`、`src/lib/route-config.ts`、`src/lib/page-governance.ts` | 导航元数据、页面标题描述、治理分类 | 继续作为共享配置输入复用 | 导航顺序、治理页分类和路由说明应保持单一真相源，不在 `src/minix` 复制一份新配置 |
+
+### 4.1.3 旧 `src/app` 中必须拆出的 Next 宿主绑定逻辑
+- 根布局绑定：
+  - `src/app/layout.tsx` 中的 `Metadata`、`Viewport`、`next/font`、`html/body` 包裹、manifest / icons、`AlertManagerProvider`、`PwaRuntimeManager`、`PwaInstallPrompt`
+- 页面入口绑定：
+  - 各 `src/app/**/page.tsx` 中基于 `params` / `searchParams` 的 URL 解析、`generateMetadata()`、`dynamic = 'force-dynamic'`、`notFound()`、`Suspense` 骨架包裹与页面级 server query 入口
+- 数据整形绑定：
+  - 各 page 文件中面向宿主传递的 Decimal -> number 转换、初始搜索条件归一化、页面首屏 fallback 组装；这些逻辑后续要么进入 route loader，要么进入专门的 adapter，而不是继续绑定在 Next 页面文件里
+- 导航协议绑定：
+  - `next/link`、`next/navigation` 的 `push` / `replace` / `refresh` / `back`、`usePathname()`、`useSearchParams()`；后续统一改由 `React Router` 路由层或宿主适配函数承接
+- 支持与治理暴露绑定：
+  - `/system-health`、`/data-consistency` 从设置页跳出的治理入口，`/profile`、`/notifications` 的支持类入口，以及通知/用户抽屉联动，不在本轮混入核心业务页 parity
+
+### 4.1.4 当前可直接复用、需拆宿主绑定、延后治理的单一口径
+- 可直接复用：
+  - `src/components/ui/*`
+  - `src/lib/navigation-config.ts`
+  - `src/lib/route-config.ts`
+  - `src/lib/page-governance.ts`
+  - `src/minix/layout/*`
+  - `src/minix/router/*`
+- 拆出宿主绑定后复用：
+  - `src/components/pages/*`
+  - `src/components/layout/AppLayout.tsx`
+  - `src/components/layout/DetailPageTemplate.tsx`
+  - `src/components/layout/DesktopLayout.tsx`
+  - `src/components/layout/MobileLayout.tsx`
+  - `src/components/layout/UnifiedNavigation.tsx`
+  - `src/components/layout/PageContainer.tsx`
+  - `src/components/business/*` 中直接使用 `next/*` 路由协议的文件，包括 [FunctionGrid.tsx](file:///home/dell/Projects/Rento/src/components/business/FunctionGrid.tsx) 使用 `next/link` 的情况
+- 延后到后续阶段：
+  - `src/app/system-health/*`、`src/app/data-consistency/*` 及对应治理组件，延后到治理相关承接阶段
+  - `src/app/profile/*`、`src/app/notifications/*`、`NotificationEntryButton`、`UserProfileSheet`，延后到支持页 P2 parity
+  - `src/components/layout/PwaRuntimeManager.tsx`、`src/components/layout/PwaInstallPrompt.tsx` 与其运行时策略，延后到 `phase14`
+  - `src/app/performance-*`、`src/app/layout-demo/*`、`src/app/components/*`、`src/app/business-flow-validation/*`，继续保持 dev-only / 待归档候选
+
 ### 4.2 允许做的事
 - 冻结旧页面到 `src/minix` 的映射表
 - 冻结页面壳、布局壳、导航壳与页面装配复用策略

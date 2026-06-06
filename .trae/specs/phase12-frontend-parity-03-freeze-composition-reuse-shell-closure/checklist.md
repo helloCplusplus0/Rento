@@ -1,0 +1,10 @@
+- [x] 已基于 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*`、`src/components/ui/*` 复核当前可直接承接的表达层目录
+- [x] 已基于 `src/minix/router/*`、`src/minix/layout/*`、`src/minix/routes/*` 复核当前新宿主绑定层职责
+- [x] 已明确旧 `src/app` 中需要拆出的宿主绑定层范围
+- [x] 已形成页面壳、页面装配层、数据加载边界、导航壳、布局壳的复用矩阵
+- [x] 已至少列出可直接复用的组件层目录、需要迁移或改造的页面装配层目录、暂不处理的治理/辅助层目录
+- [x] 已清楚说明“复用什么、适配什么、舍弃什么及原因”
+- [x] 已确认复用策略与 UI 承接硬约束不冲突
+- [x] 已复核引用的组件目录与页面装配文件真实存在
+- [x] 已确保结果与 `phase12` 的 `architecture_plan`、`dev_plan`、`shared_baseline` 当前口径一致
+- [x] 已完成独立子代理审核验收，并得到通过结论

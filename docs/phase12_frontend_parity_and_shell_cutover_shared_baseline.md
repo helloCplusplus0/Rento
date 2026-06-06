@@ -173,6 +173,42 @@
 - `P3`：治理页延后承接，不进入 `phase12` 首批正式页面 parity 范围。
 - `P4`：dev-only / 待归档候选，不进入正式 parity 范围，仅保留分类与退出边界说明。
 
+### 6.5.3 `phase12-03` 五层复用矩阵共享语义
+| 层次 | 正式承接位 | 共享判断标准 |
+| --- | --- | --- |
+| 页面壳 | `src/minix/routes/*Route.tsx` + 复用后的 `src/components/pages/*` | 保持旧页面 URL 语义、信息结构与主交互节奏；route 文件只承接页面壳，不重做页面主体组件 |
+| 页面装配层 | `src/minix/routes/*Route.tsx` | 统一承担参数解析、页面主体拼装顺序、加载/错误边界，不继续把装配逻辑散落在旧 `src/app/**/page.tsx` |
+| 数据加载边界 | `src/minix/router/*` 与后续 route-level loader | 统一视为路由层职责，不属于布局壳、导航壳或纯展示组件；本轮只冻结边界，不决定最终请求切换方案 |
+| 导航壳 | `src/minix/layout/UnifiedNavigation.tsx` | 继续复用旧导航顺序、图标语义与搜索入口语义，但切换到 `React Router` 路由协议，不携带旧通知/用户抽屉耦合 |
+| 布局壳 | `src/minix/layout/MinixShellLayout.tsx` | 继续复用键盘 inset、桌面/移动双导航与主容器节奏；PWA runtime、Next metadata 和 provider 注入不混入本轮页面 parity |
+
+### 6.5.4 目录级策略共享表
+| 目录 / 组 | 共享结论 | 边界说明 |
+| --- | --- | --- |
+| `src/components/ui/*` | 直接复用 | 作为新旧宿主共享的原子组件层，不承载宿主协议 |
+| `src/components/business/*` | 仅不含 `next/*` 路由协议的文件可直接复用；凡直接依赖 `next/link`、`next/navigation` 等协议的文件都必须先拆宿主绑定，至少 [FunctionGrid.tsx](file:///home/dell/Projects/Rento/src/components/business/FunctionGrid.tsx) 当前使用 `next/link`，不能误判为可直接复用 | 业务表达可保留，但路由跳转、链接承接与搜索参数协议不能继续嵌在业务片段中 |
+| `src/components/pages/*` | 拆宿主绑定后复用 | 作为页面主体表达层保留，不直接等同于新宿主 route module |
+| `src/components/layout/*` | 分层处理，不整目录一刀切 | `DetailPageTemplate` / `DesktopLayout` / `MobileLayout` 当前仍通过 `PageContainer` / `UnifiedNavigation` 转依赖 Next 宿主协议，必须先拆宿主绑定后再复用或仅作参考；`AppLayout` / `UnifiedNavigation` / `PageContainer` 需拆宿主绑定；`PwaRuntimeManager` / `PwaInstallPrompt` 延后 |
+| `src/minix/router/*` | 正式宿主唯一前端路由绑定层 | guard、loader、error boundary 优先收口到这里 |
+| `src/minix/layout/*` | 正式布局壳 / 导航壳承接位 | 继续扩展，不再回写旧宿主布局 |
+| `src/minix/routes/*` | 正式页面装配层目录 | 负责页面壳、装配顺序和数据边界，不承担组件库职责 |
+| `src/app/**` | 仅保留参考基线与拆壳来源 | 不再作为新增正式页面壳落点 |
+| `src/app/api/*` | 延后到 `phase13` | 本轮不切 API、不改 query 主线 |
+| `src/lib/navigation-config.ts`、`src/lib/route-config.ts`、`src/lib/page-governance.ts` | 继续复用为共享配置输入 | 导航顺序、标题描述与治理分类维持单一真相源 |
+
+### 6.5.5 必须拆出的旧宿主绑定与延后层
+- 必须从旧 `src/app` / 旧 Next 宿主中拆出的绑定包括：
+  - `Metadata` / `Viewport` / `next/font` / `html-body` 包裹
+  - `params` / `searchParams` 解析、`generateMetadata()`、`notFound()`、`dynamic = 'force-dynamic'`
+  - 页面级 server query 入口、Decimal 数据整形、Next `Suspense` 外壳
+  - `next/link`、`next/navigation` 的 `push` / `replace` / `refresh` / `back` 协议
+- `src/components/business/*` 的共享冻结口径与 `dev_plan` 保持一致：不能只检查 `next/navigation`；凡是含 `next/*` 路由协议的文件都先归入“拆宿主绑定后复用”，其中 [FunctionGrid.tsx](file:///home/dell/Projects/Rento/src/components/business/FunctionGrid.tsx) 使用 `next/link` 是当前必须显式点名的阻断示例。
+- 继续延后到后续阶段的治理 / 辅助层包括：
+  - `/system-health`、`/data-consistency` 及其对应治理组件
+  - `/profile`、`/notifications`、`NotificationEntryButton`、`UserProfileSheet`
+  - `PwaRuntimeManager`、`PwaInstallPrompt` 与完整 PWA runtime 策略
+  - `performance-*`、`layout-demo`、`components`、`business-flow-validation` 等 dev-only / 待归档候选
+
 ## 七、与后续阶段的共享边界
 ### 7.1 对 `phase13` 的共享输入
 - 页面映射表
