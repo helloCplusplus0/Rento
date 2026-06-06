@@ -5,7 +5,7 @@
 - 本文档直接建立在 `phase10` 已完成的长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界之上。
 - 本文档不替代 `architecture_plan` 的结构判断，也不替代 `dev_plan` 的任务拆分；它只负责冻结所有 `phase11-*` 子任务必须共同遵守的边界与词汇。
 - 当前互链文档为 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)。
-- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口为统一环境与健康检查口径；`phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 边界收口到单一解释。后续子任务继续复用这些承接位而不再另起第二套部署入口。
+- `phase11-02` 已把 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 落位为正式部署资产基线；`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口为统一环境与健康检查口径；`phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 边界收口到单一解释；`phase11-05` 已把文档最小验证要求与部署/回滚演练记录要求补齐为单一审核入口。后续子任务继续复用这些承接位而不再另起第二套部署入口。
 
 ## 一、文档目的
 本文档用于冻结 `phase11-deployment-cutover-and-cutline-closure` 的共享判断标准，避免后续子任务分别从部署拓扑、环境变量、健康检查、发布门禁或 legacy 回滚基线视角出发，重新产出互相冲突的解释。
@@ -156,7 +156,28 @@
 - 业务 smoke：条件允许时执行 `smoke:phase09:all`
 - 运行验证：`/api/health`、登录页、房源/合同/账单主链可访问
 
-### 8.3 禁止误读
+### 8.3 文档最小验证要求
+- 若本轮仅涉及 `phase11` 文档，至少完成：
+  - `docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md`
+  - `docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md`
+  - `docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md`
+  三份文档互链复核
+- 若本轮仅涉及文档，仍需复核被引用文档、脚本与代码路径真实存在
+- 若本轮仅涉及文档，仍需确认根级真相源与 `DEPLOYMENT.md` 当前状态一致
+### 8.4 部署与回滚演练记录要求
+- 后续正式部署演练或回滚演练必须形成可追溯记录
+- 记录至少包含：
+  - 演练时间
+  - 目标环境
+  - 执行命令
+  - 健康检查结果
+  - 主链 smoke 结果
+  - 回滚触发条件
+  - 最终结论
+- 记录必须明确标注“正式主线验证”或“legacy 回滚验证”
+- 记录必须可被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 引用，作为 cutover 审核、legacy 退出判断与回滚基线保留/退出决策的依据
+
+### 8.5 禁止误读
 - 不得把“文档已冻结”误读成“正式部署资产已全部落地”
 - 不得把 legacy 容器化运行线继续表述成正式主线
 - 不得把 `Rento-legacy` 仓库写成部署或回滚入口
@@ -183,6 +204,7 @@
   三份文档已齐备并互相引用一致
 - 至少确认顶层真相源已与三份 `docs/phase11_*` 的状态一致
 - 至少确认正式部署主线、legacy 回滚基线、环境模板与发布门禁的边界已形成单一判断标准
+- 至少确认文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求已形成单一判断标准
 
 ## 十二、阶段结论
 `phase11-deployment-cutover-and-cutline-closure` 的共享基线价值不在于“马上上线 Caddy + systemd”，而在于：

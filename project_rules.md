@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；当前默认工作流已切换到 `phase11-deployment-cutover-and-cutline-closure` 的已批准 spec 顺序实现阶段，但仍不得跳过既定验证与 cutline 审核直接执行正式切线。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，但仍不得跳过既定验证、部署/回滚演练记录与 cutline 审核直接执行正式切线。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase11` 的当前轮重点必须建立在 `phase10` 已冻结的长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断之上，不反向改写这些结论。
 
@@ -89,6 +89,7 @@
 - `phase11-04` 期间 `Rento-legacy` 只允许作为 GitHub 侧只读历史备份与对照参考，不得作为部署入口、回滚入口、默认 remote、默认上游或第二真相源重新引入。
 - legacy 资产只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，才允许进入后续退出决策；本阶段不得直接删除这些资产。
 - `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
+- `phase11-05` 已冻结部署/回滚演练的最小记录要求：至少包含演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件与最终结论；记录必须明确标注“正式主线验证”或“legacy 回滚验证”，并可被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 引用用于审核。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
   - 是否影响历史数据
@@ -106,4 +107,4 @@
 - 迁移锁与早期迁移文件仍带有 SQLite 历史痕迹，当前通过部署脚本兼容；在后续专项任务中再完成正式收口。
 - 最小鉴权门禁已落地，但角色控制、最小审计与公网发布所需的完整安全边界仍未全部完成。
 - 旧容器化部署链仍能支撑存量运行线，但不应被误读为 `Rento-miniX` 的未来正式部署主线；其退出仍依赖 `phase11-04` 已冻结的保留条件、退出条件与回滚记录收口。
-- 新主线运行时虽已完成 `build:minix` 前端 `dist/` 与服务端 `build/minix-server/` 预构建产物链收口，但正式部署演练、legacy 基线退出审计与最终 cutline 验证仍需在 `phase11` 后续任务中继续完成。
+- 新主线运行时虽已完成 `build:minix` 前端 `dist/` 与服务端 `build/minix-server/` 预构建产物链收口，且 `phase11-05` 已冻结文档最小验证要求与部署/回滚演练记录要求，但正式部署演练执行、legacy 基线退出审计与最终 cutline 验证仍需在后续审核与演练中继续完成。

@@ -1,7 +1,7 @@
 # Phase10 Data Access And Migration Closure Shared Baseline
 
 ## 当前状态
-- `phase10` 的共享基线已完成当前轮产出，并已被 `phase10-01 ~ phase10-05` `/spec` 顺序消费，继续作为当前默认工作流的统一语义输入。
+- `phase10` 的共享基线已完成当前轮产出，并已被 `phase10-01 ~ phase10-05` `/spec` 顺序消费，现继续作为 `phase11` 的统一语义上游输入保留。
 - 本文档直接建立在 `phase09` 已完成的共享领域服务、正式宿主、主链 smoke 路径与 legacy route inventory 之上。
 - 本文档不替代 `architecture_plan` 的结构判断，也不替代 `dev_plan` 的任务拆分；它只负责冻结所有子任务必须共同遵守的边界与词汇。
 - 当前互链文档为 [phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md) 与 [phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md)。
@@ -19,7 +19,7 @@
 - `phase07-app-shell-and-runtime-foundation` 已完成新应用壳、新运行时入口与旧运行线映射冻结
 - `phase08-api-and-auth-foundation` 已完成统一 API 宿主、认证门禁、中间件链、错误处理与最小页面守卫冻结
 - `phase09-domain-service-migration` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口
-- 当前根级真相源已切换到 `phase10-data-access-and-migration-closure`
+- 当前根级真相源已推进到 `phase11-deployment-cutover-and-cutline-closure`，但 `phase10` 的长期数据访问层方案、最低验证命令与迁移兼容边界继续原样保留为直接上游输入
 - `phase09-06` 已产出以下 `phase10` 直接输入：
   - `server/lib/legacy-route-inventory.ts`
   - `scripts/phase09-06-legacy-route-inventory.ts`

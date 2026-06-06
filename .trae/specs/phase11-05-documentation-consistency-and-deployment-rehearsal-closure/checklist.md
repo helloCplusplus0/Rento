@@ -1,0 +1,6 @@
+- [x] `AGENTS.md`、`plan.md`、`architecture_map.md`、`project_rules.md`、`README.md` 与 `DEPLOYMENT.md` 对 `phase11` 当前状态、正式部署主线与 legacy 回滚基线的描述一致
+- [x] 三份 `docs/phase11_*` 文档齐备、互链正确，且 `phase11-01 ~ phase11-04` 的实现状态与 `phase11-05` 的收口结果表述一致
+- [x] `phase11` 当前轮仅文档变更时的最小验证要求已冻结为文档互链复核、被引用路径存在性复核与根级真相源状态复核
+- [x] 后续实施阶段必须执行的最低工程验证命令已明确记录为 `npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`
+- [x] 部署演练与回滚演练的最小记录字段、引用方式与审核用途已明确写清
+- [x] 本轮验证完成后，不再存在 `phase11` 文档与已批准 spec 实现状态漂移

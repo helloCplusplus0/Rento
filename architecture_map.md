@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前已进入 `phase11` 的部署切线实现阶段，并已收口正式环境模板与主健康入口口径。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -185,8 +185,10 @@
 
 ### 规划中的服务端产物链
 - 当前 `server/index.ts`、`server/app.ts` 与 `server/lib/static.ts` 已具备正式运行时承接位。
-- 当前仍缺的不是运行时骨架，而是：
-  - `phase11-05` 中继续需要冻结的部署演练记录与最终文档一致性复核
+- 当前 `phase11-05` 已补齐的不是新的运行时代码，而是：
+  - 顶层真相源、`DEPLOYMENT.md` 与 `docs/phase11_*` 的最终一致性复核
+  - 仅文档变更时的最小验证要求
+  - 后续部署/回滚演练的最小记录字段、引用方式与审核用途
 - 因此 `phase11` 的直接实现承接位将围绕：
   - `package.json`
   - `scripts/start-minix.mjs`
@@ -205,6 +207,10 @@
   - `npm run audit:phase09:legacy-routes`
   - 条件允许时的 `npm run smoke:phase09:all`
   - `/api/health` 与登录页的正式部署验证
+- `phase11-05` 进一步冻结：
+  - 仅文档变更时必须完成 `docs/phase11_*` 互链复核、被引用路径存在性复核与根级真相源状态复核
+  - 部署/回滚演练记录至少包含演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件与最终结论
+  - 演练记录必须标明“正式主线验证”或“legacy 回滚验证”，并可被根级真相源或阶段文档引用
 - `phase11` 的回滚基线继续固定为旧容器化运行线，而不是切回 `Rento-legacy` 仓库或恢复第二真相源。
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
@@ -286,6 +292,7 @@
 - 在 `phase11` 当前轮实现中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，并已落地 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 作为正式部署资产基线。
 - 当前 `.env.example` 已升级为正式共享环境模板，`scripts/health-check.sh` 已固定默认命中 `/api/health`，并与 `NEXTAUTH_URL` / `MINIX_SERVER_PORT` 口径保持一致。
 - `phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界收口到根级文档与 `docs/phase11_*`。
+- `phase11-05` 已把文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求收口到上述根级真相源与 `docs/phase11_*` 的单一闭环中。
 
 ## legacy 回滚基线
 以下文件仍对应旧 `Rento` 的当前存量运行形态与回滚基线，而不是未来 `Rento-miniX` 的最终部署主线：
@@ -373,4 +380,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步是继续按已批准的 `phase11-*` `/spec` 顺序推进：`phase11-04` 已完成 legacy 回滚基线降级与边界收口，后续继续进入部署演练记录与最终一致性复核。
+- 当前默认下一步是继续以已完成的 `phase11-01 ~ phase11-05` 当前轮收口结果为真相源，按冻结的最低工程验证命令与部署/回滚演练记录要求准备后续 cutover 审核；在审核通过前，legacy 资产继续保留为回滚基线。

@@ -3,8 +3,8 @@
 ## 当前默认入口
 - 当前默认工作流：`phase11-deployment-cutover-and-cutline-closure`
 - 当前阶段目标：在 `phase10` 已冻结长期数据访问层方案、查询分层、统一事务边界与迁移兼容边界的前提下，为 `Rento-miniX` 收口正式部署主线、回滚基线、旧运行线退出条件与发布门禁。
-- 当前执行方式：`phase10` 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；`phase11` 已基于这些上游输入进入已批准 spec 的顺序实现，`phase11-01 ~ phase11-04` 已完成当前轮收口。
-- 当前下一步：继续以 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 为阶段真相源，继续按已批准的 `phase11-*` spec 顺序推进；当前已完成 legacy 回滚基线降级与边界收口，在正式 cutover 审核完成前不提前删除 legacy 资产。
+- 当前执行方式：`phase10` 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；`phase11` 已基于这些上游输入完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并把正式部署主线、legacy 回滚基线、文档最小验证要求与部署演练记录要求同步冻结到根级真相源、`DEPLOYMENT.md` 与 `docs/phase11_*`。
+- 当前下一步：继续以 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)、[phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 与 [DEPLOYMENT.md](file:///home/dell/Projects/Rento/DEPLOYMENT.md) 为阶段真相源，按已冻结的最低工程验证命令和部署/回滚演练记录要求准备后续 cutover 审核；在正式 cutover 审核完成前不提前删除 legacy 资产。
 - 当前阶段说明：`phase10` 已完成并作为 `phase11` 的直接上游输入保留；旧 `phase01~phase09` 继续作为历史连续性输入保留，`phase11` 当前以正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线收口为主。
 
 ## 阶段顺序
@@ -170,7 +170,7 @@
   - 历史迁移兼容项的存在原因、当前作用与退出条件明确
   - 不再存在“运行时已切换但数据访问层真相不清”的状态
 - 当前结论：
-  - 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口，当前等待 `phase10` 最终审核
+  - 已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口，现已作为 `phase11` 的稳定上游输入保留，不再承担当前默认工作流职责
   - `phase09-06` 的 legacy route inventory、Prisma 事务口径与 SQLite 兼容残留已被纳入本阶段直接输入，并已冻结最低验证命令为 `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`
   - 若本轮仅涉及文档，仍至少完成 `docs/phase10_*` 互链与被引用路径存在性复核
 
@@ -180,19 +180,21 @@
   - 新部署主线与回滚基线
   - 旧容器化运行线退出条件
   - 发布前验收门禁与切线说明
+  - 文档最小验证要求与部署/回滚演练记录要求
   - `Rento-legacy`、当前仓库与新部署主线的最终关系收口
 - 验收条件：
   - 部署主线切换不会反向干扰前序应用壳、API、领域与数据访问层
   - 回滚路径、健康检查与发布门禁完整可解释
+  - 顶层真相源、`DEPLOYMENT.md` 与 `docs/phase11_*` 对当前状态、最低验证要求和部署演练要求保持单一解释
   - 旧容器化运行线已明确退为历史运行线/回滚参考
 - 当前结论：
-  - 已进入已批准 spec 的顺序实现，`phase11-01 ~ phase11-04` 已完成当前轮收口
-  - 正式部署主线、legacy 回滚基线、环境模板、健康检查与发布门禁已同步冻结到 `docs/phase11_*` 与根级真相源
+- 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口
+- 正式部署主线、legacy 回滚基线、环境模板、健康检查、发布门禁、文档最小验证要求与部署/回滚演练记录要求已同步冻结到 `docs/phase11_*`、`DEPLOYMENT.md` 与根级真相源
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“完成 `phase10` 文档与 `/spec` 收口”推进到“按已批准的 `phase11-*` spec 顺序持续收口部署切线与回滚基线”。
-- 当前默认推进方向：继续把 `phase11` 保持为默认工作流，按既定 spec 顺序推进后续任务与验证；在正式 cutover 审核完成前，不直接删除 legacy 资产或跳过既定发布门禁。
+- 当前最优策略已从“完成 `phase10` 文档与 `/spec` 收口”推进到“以已完成的 `phase11-01 ~ phase11-05` 当前轮收口结果为基础，准备后续 cutover 审核与演练验证”。
+- 当前默认推进方向：继续把 `phase11` 保持为默认工作流，按已冻结的最低工程验证命令、部署/回滚演练记录要求和既定发布门禁推进后续审核与演练；在正式 cutover 审核完成前，不直接删除 legacy 资产。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。
@@ -208,6 +210,7 @@
 - `docs/phase10_*` 将承接长期数据访问层方案、查询分层、事务边界、迁移兼容项与 legacy route inventory 对齐等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase11_*` 将承接正式部署主线、服务端产物链、环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `phase10` 收口后的最低验证命令固定为 `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若仅文档变更，至少补做 `docs/phase10_*` 互链与被引用路径存在性复核。
+- `phase11-05` 收口后，若本轮仅涉及 `phase11` 文档，最低验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核，以及根级真相源与 `DEPLOYMENT.md` 状态一致性复核；若进入后续实施、演练或发布验证，最低工程验证命令固定为 `npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

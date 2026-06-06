@@ -5,7 +5,7 @@
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
   - [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)
   - [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md)
-- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已完成正式部署资产基线落位，`phase11-03` 已完成环境模板、健康检查与发布门禁的当前轮收口，`phase11-04` 已完成 legacy 回滚基线降级、保留条件、退出条件与 `Rento-legacy` 边界收口，后续继续推进 `phase11-05`。
+- `phase11` 当前已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase11-02` 已完成正式部署资产基线落位，`phase11-03` 已完成环境模板、健康检查与发布门禁的当前轮收口，`phase11-04` 已完成 legacy 回滚基线降级、保留条件、退出条件与 `Rento-legacy` 边界收口，`phase11-05` 已完成文档一致性、文档最小验证要求与部署/回滚演练记录要求冻结。
 
 ## 一、文档定位
 本文档用于把 `phase11-deployment-cutover-and-cutline-closure` 拆分为顺序执行的子任务，确保仓库先把正式部署主线、服务端产物链、环境模板、健康检查、发布门禁与 legacy 回滚基线解释清楚，再进入具体实现。
@@ -201,10 +201,12 @@
 - 顶层真相源与阶段文档状态一致
 - 三份 `docs/phase11_*` 已齐备且互相引用正确
 - 正式部署主线、legacy 回滚基线、验证命令与后续 `/spec` 输入已形成闭环
+- 文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求已形成单一说明
 
 ### 验证要求
 - 若本轮仅涉及文档，至少完成文档互链与路径存在性复核
 - 记录后续实施阶段必须执行的最低工程验证命令与部署演练要求
+- 部署/回滚演练记录至少包含：演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件、最终结论，并明确标注“正式主线验证”或“legacy 回滚验证”
 
 ## 四、推荐实施顺序
 建议严格按如下顺序推进：
@@ -240,9 +242,18 @@ phase11-05-documentation-consistency-and-deployment-rehearsal-closure
   - legacy 回滚资产清单与统一身份说明
   - legacy 基线保留条件、退出条件与不得继续扩写的边界
   - `Rento-legacy` 只读备份边界与非部署/非回滚入口说明
+- `phase11-05` 当前轮已额外收口：
+  - 顶层真相源、`DEPLOYMENT.md` 与 `docs/phase11_*` 的最终一致性复核
+  - `phase11` 仅文档变更时的最小验证要求
+  - 后续实施、演练或发布验证前的最低工程验证命令
+  - 部署/回滚演练记录的最小字段、引用方式与审核用途
 - 后续进入实现或部署演练前，最低工程验证要求固定为：
   - `npm run lint`
   - `npm run type-check`
   - `npm run build:minix`
   - `npm run audit:phase09:legacy-routes`
   - 条件允许时执行 `npm run smoke:phase09:all`
+- 若本轮仅涉及文档，最小验证要求固定为：
+  - 三份 `docs/phase11_*` 互链复核
+  - 被引用文档、脚本与代码路径存在性复核
+  - 顶层真相源与 `DEPLOYMENT.md` 状态一致性复核

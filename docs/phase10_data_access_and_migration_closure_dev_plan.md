@@ -5,7 +5,7 @@
 - 本文档只负责拆分任务、定义顺序、DoD 与验证要求，不替代：
   - [phase10_data_access_and_migration_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_architecture_plan.md)
   - [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md)
-- `phase10` 当前已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；未经用户批准，不切换默认工作流到 `phase11`。
+- `phase10` 当前已完成阶段级文档与 `phase10-01 ~ phase10-05` `/spec` 收口；现已作为 `phase11` 的稳定上游输入保留，不再承担当前默认工作流职责；`phase11-05` 继续原样继承本阶段冻结的最低验证命令与迁移兼容边界。
 
 ## 一、文档定位
 本文档用于把 `phase10-data-access-and-migration-closure` 拆分为顺序执行的子任务，确保仓库先把数据访问层边界、查询分类、事务策略与迁移兼容项解释清楚，再进入 `phase11` 的部署切线。

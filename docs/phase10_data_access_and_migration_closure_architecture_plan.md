@@ -18,7 +18,7 @@
 
 ## 当前文档状态
 - 本文档已与 [phase10_data_access_and_migration_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_dev_plan.md) 和 [phase10_data_access_and_migration_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase10_data_access_and_migration_closure_shared_baseline.md) 完成互链收口。
-- `phase10` 当前已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口；默认工作流仍保持在 `phase10`，等待最终审核，不直接切换到 `phase11`。
+- `phase10` 当前已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口；当前已作为 `phase11` 的稳定上游输入保留，不再作为默认工作流；`phase11-05` 继续原样继承本阶段冻结的最低验证命令与迁移兼容边界。
 
 ## 二、当前阶段前提
 ### 2.1 已完成上游

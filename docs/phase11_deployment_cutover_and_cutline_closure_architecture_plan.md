@@ -18,7 +18,7 @@
 
 ## 当前文档状态
 - 本文档已与 [phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 和 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 完成互链收口。
-- `phase11` 当前已进入已批准 spec 的顺序实现；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线，`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到统一部署口径，`phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 边界同步到根级真相源与 `docs/phase11_*`。
+- `phase11` 当前已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线，`phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到统一部署口径，`phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 边界同步到根级真相源与 `docs/phase11_*`，`phase11-05` 已冻结文档最小验证要求与部署/回滚演练记录要求。
 
 ## 二、当前阶段前提
 ### 2.1 已完成上游
@@ -56,6 +56,10 @@
   - Hono 可以统一承接 `/api/*` 与 `dist/` 静态壳
   - `redis` 不再是当前新主线的正式运行依赖
   - `/api/health` 已是统一主健康入口
+- `phase11-05` 进一步证明：
+  - 顶层真相源、`DEPLOYMENT.md` 与 `docs/phase11_*` 已能对当前阶段状态给出单一解释
+  - 后续部署/回滚演练已经具备最小记录字段、引用方式与审核用途
+  - 仅文档变更时的最小验证要求已冻结，不再依赖口头约定
 
 ### 2.3 为什么现在进入 `phase11`
 当前最合理的下一阶段是：
@@ -160,6 +164,35 @@ phase11-deployment-cutover-and-cutline-closure
 - 不通过切换 remote 到 `Rento-legacy` 来处理部署或运行问题
 - 只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，legacy 基线才允许进入后续退出决策
 
+### 3.7 文档一致性、最小验证要求与部署演练记录：冻结为正式 cutover 的前置治理资产
+选择原因：
+
+- `phase11-01 ~ phase11-04` 已分别冻结了正式部署拓扑、预构建产物链、环境模板、健康检查、发布门禁与 legacy 回滚边界，但如果缺少最终一致性收口，根级文档与阶段文档仍可能继续漂移。
+- 正式 cutover 审核需要的不只是“知道要跑哪些命令”，还需要能回溯到每次部署/回滚演练的最小事实记录。
+- 若不显式冻结“仅文档变更时至少检查什么”，后续文档维护会再次脱离真实文件路径与阶段状态。
+
+本阶段结论：
+
+- 若本轮仅涉及 `phase11` 文档，最低验证要求固定为：
+  - `docs/phase11_*` 互链复核
+  - 被引用路径存在性复核
+  - 根级真相源与 `DEPLOYMENT.md` 状态一致性复核
+- 若进入后续实施、演练或发布验证，最低工程验证命令固定为：
+  - `npm run lint`
+  - `npm run type-check`
+  - `npm run build:minix`
+  - `npm run audit:phase09:legacy-routes`
+  - 条件允许时执行 `npm run smoke:phase09:all`
+- 部署/回滚演练记录至少包含：
+  - 演练时间
+  - 目标环境
+  - 执行命令
+  - 健康检查结果
+  - 主链 smoke 结果
+  - 回滚触发条件
+  - 最终结论
+- 演练记录必须标注“正式主线验证”或“legacy 回滚验证”，并可被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 引用
+
 ## 四、承接资产与实现边界
 ### 4.1 允许直接承接的资产
 - `package.json`
@@ -247,3 +280,4 @@ scripts/start-entry.mjs
 - 不让源码运行继续被误读为“云端只跑预构建产物”
 - 不让 `Caddy`、Hono 与静态壳托管形成多套路由真相源
 - 不让切线与回滚口径继续依赖口头约定或历史记忆
+- 不让文档更新、工程验证与部署演练记录再次各自漂移成多套解释

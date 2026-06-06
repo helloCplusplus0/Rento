@@ -25,12 +25,13 @@
 - 当前默认工作流：`phase11-deployment-cutover-and-cutline-closure`
 - 当前主问题：在不反向干扰 `phase07~10` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层与迁移兼容边界的前提下，为 `Rento-miniX` 冻结正式部署主线、回滚基线、旧运行线退出条件与发布门禁。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：继续按已批准的 `phase11-*` spec 顺序收口部署切线；当前应以 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md) 与 [phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 为阶段真相源，继续冻结 legacy 回滚基线、退出条件与文档一致性；在正式 cutover 审核完成前，不提前删除 legacy 资产。
+- 当前下一步：`phase11-05` 已完成当前轮文档一致性与部署演练要求收口；当前应继续以 [phase11_deployment_cutover_and_cutline_closure_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_architecture_plan.md)、[phase11_deployment_cutover_and_cutline_closure_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md)、[phase11_deployment_cutover_and_cutline_closure_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md) 与 [DEPLOYMENT.md](file:///home/dell/Projects/Rento/DEPLOYMENT.md) 为单一部署真相源，按已冻结的最低工程验证命令与部署/回滚演练记录要求准备后续 cutover 审核；在正式 cutover 审核完成前，不提前删除 legacy 资产。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入
   - 冻结正式部署拓扑：`Caddy + systemd + Hono + PostgreSQL`
   - 冻结“云端不构建、仅运行预构建产物”的服务端产物链与正式启动口径
   - 冻结 `.env.example`、`/api/health`、发布前 smoke test、legacy 回滚基线保留条件与 cutline 退出条件之间的关系
+  - 冻结 `phase11` 当前轮仅文档变更时的最小验证要求，以及后续部署/回滚演练的最小记录字段、引用方式与审核用途
   - 保持旧 `docker-compose + nginx + Next.js standalone` 运行线只承担历史运行线、故障回滚与差异对照职责
 
 ## 5. 当前明确冻结与禁止事项
@@ -43,6 +44,7 @@
 
 ## 6. 运行与质量基线
 - 发布前最低门禁至少包括：`npm run lint`、`npm run type-check`、构建、健康检查与核心业务 smoke test。
+- 若 `phase11` 某轮仅涉及文档，最低验证要求至少包括：`docs/phase11_*` 互链复核、被引用路径存在性复核，以及根级真相源与 `DEPLOYMENT.md` 状态一致性复核。
 - 数据质量底线：合同、账单、抄表、仪表关联必须可追溯；历史账务记录优先保留。
 - 安全底线：对外部署前必须具备登录、会话保护、来源控制与最小审计线索。
 - 部署底线：未来主线默认云端不做源码构建，优先运行预构建产物。
@@ -59,7 +61,7 @@
 - `phase08-api-and-auth-foundation` 已完成：统一 API 宿主、最小认证闭环、请求治理、统一错误出口、环境变量兼容口径与 `src/minix` 最小页面守卫已完成当前阶段收口。
 - `phase09-domain-service-migration` 已完成当前轮阶段收口：共享领域服务落点、正式宿主边界、合同/账单/仪表/抄表/退租/删除门禁主链迁移、主链 smoke 路径、旧 `src/app/api/*` compat wrapper 清单与 `phase10` 上游输入已完成当前轮验证。
 - `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成单一闭环。
-- `phase11-deployment-cutover-and-cutline-closure` 已进入已批准 spec 的顺序实现：正式部署主线、预构建产物链、环境变量、健康检查与发布门禁已完成当前轮收口；`phase11-04` 已把 legacy 资产清单、保留条件、退出条件与 `Rento-legacy` 边界同步到根级真相源和 `docs/phase11_*`。
+- `phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口：正式部署主线、预构建产物链、环境变量、健康检查、发布门禁、legacy 回滚基线、文档最小验证要求与部署/回滚演练记录要求均已同步冻结到根级真相源、`DEPLOYMENT.md` 与 `docs/phase11_*`。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -116,7 +118,7 @@
 - 进入 `phase09` 后，仍必须先完成共享领域服务落点、正式宿主边界、主链验证路径、历史数据保留约束与旧兼容宿主保留边界冻结，再进入该阶段任一 `/spec`。
 - 进入 `phase10` 后，仍必须先完成长期数据访问层方案、正式/兼容/治理查询分层、事务边界、迁移兼容项说明与退出条件冻结，再进入该阶段任一 `/spec`。
 - 进入 `phase11` 后，仍必须先完成正式部署主线、回滚基线、旧运行线退出条件、环境变量模板、健康检查、发布门禁与 legacy cutline 说明冻结，再进入该阶段任一 `/spec`。
-- 进入 `phase11-*` 已批准 spec 顺序实现后，仍必须持续同步 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`DEPLOYMENT.md` 与 `docs/phase11_*`，避免重新出现正式主线与 legacy 基线混写。
+- 进入 `phase11-*` 已批准 spec 顺序实现后，仍必须持续同步 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`DEPLOYMENT.md` 与 `docs/phase11_*`，避免重新出现正式主线与 legacy 基线混写；`phase11-05` 之后，文档最小验证要求与部署/回滚演练记录要求也必须继续保持一致。
 
 ## 10. 其他关键治理约束
 - 根目录只保留当前有效入口文档、配置文件和运行资产；历史任务记录应迁入 `docs/archive/`。
@@ -127,7 +129,7 @@
 - `phase08` 的职责是冻结统一 API 宿主、认证门禁、错误处理与最小安全边界；该阶段现已完成，其结论继续作为 `phase09` 的上游输入。
 - `phase09` 的职责是冻结共享领域服务落点、迁移合同/账单/支付周期/仪表/抄表/删除门禁等主链领域服务，并收口主链查询与写路径一致性，而不是在当前回合直接切 ORM 最终主线或改写最终部署主线。
 - `phase10` 的职责是冻结长期数据访问层方案、查询分层、统一事务边界、迁移兼容项与 `phase11` 最小上游输入；该阶段现已完成当前轮收口。
-- `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板与发布门禁；在该阶段文档审核通过前，不得直接进入部署切线实现或删除 legacy 回滚资产。
+- `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板、发布门禁、文档最小验证要求与部署演练记录要求；当前轮 `phase11-05` 已完成上述文档闭环，但在正式 cutover 审核通过前，仍不得删除 legacy 回滚资产。
 - `phase11-04` 已进一步冻结 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界；后续阶段不得把 `Rento-legacy` 重新引入为默认 remote、部署入口、回滚入口或第二真相源。
 - `phase08` 当前轮规划已明确：只冻结最小 API/Auth 骨架，不提前迁移治理接口、正式领域服务或部署切线。
 - `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。

@@ -2,8 +2,8 @@
 
 > 状态说明：
 > - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 回滚基线边界。
-> - 当前仓库已进入已批准的 `phase11-*` `/spec` 顺序实现；`phase11-03` 已收口正式环境模板、主健康入口与最低发布门禁口径。
-> - 因此，本文档既承接正式部署目标与边界，也记录已经落位的正式部署资产与仍待后续 `/spec` 收口的内容。
+> - 当前仓库已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；正式环境模板、主健康入口、最低发布门禁、文档最小验证要求与部署/回滚演练记录要求均已冻结。
+> - 因此，本文档既承接正式部署目标与边界，也记录已经落位的正式部署资产、后续演练要求与仍待 cutover 审核完成的事项。
 
 ## 正式部署主线
 - 正式部署目标固定为：`Caddy + systemd + Hono + PostgreSQL`
@@ -23,6 +23,7 @@
 - `phase11-01` 已把 `build:minix` / `start:minix` 收口到“前端 `dist/` + 服务端 `build/minix-server/`”的预构建产物链
 - `phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线
 - `phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到正式部署主线口径，并继续原样继承 `phase10` 的迁移兼容边界
+- `phase11-05` 已把顶层真相源、`docs/phase11_*`、最低工程验证命令、文档最小验证要求与部署/回滚演练记录要求收口到当前部署主线说明
 - 当前脚本边界固定为：
   - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
   - `npm run build:minix`：当前产出前端 `dist/` 与服务端 `build/minix-server/` 预构建产物
@@ -54,8 +55,10 @@ Internet
 - `docs/phase11_deployment_cutover_and_cutline_closure_shared_baseline.md`
 - `docs/phase11_deployment_cutover_and_cutline_closure_dev_plan.md`
 
-后续 `phase11` 实施应补齐但当前尚未落地的正式资产包括：
-- `phase11-05` 继续需要收口的部署演练记录、最终审核链路与文档一致性复核
+`phase11-05` 已把以下部署治理要求冻结为正式资产边界的一部分：
+- 文档最小验证要求：`docs/phase11_*` 互链复核、被引用路径存在性复核、根级真相源与 `DEPLOYMENT.md` 状态一致性复核
+- 后续实施最低工程验证命令：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`
+- 部署/回滚演练记录要求：最小字段、引用方式与审核用途
 
 ## 正式部署资产基线
 - `deploy/caddy/Caddyfile`
@@ -114,6 +117,11 @@ REQUEST_TIMEOUT=30000
 - `/api/health` 可用
 - 登录页与房源 / 合同 / 账单主链 smoke 通过
 
+若本轮仅涉及 `phase11` 文档变更，最小验证要求至少包括：
+- `docs/phase11_*` 互链复核
+- 被引用路径存在性复核
+- 根级真相源与 `DEPLOYMENT.md` 当前状态一致性复核
+
 ## 健康检查口径
 - 主健康入口固定为 `/api/health`
 - `scripts/health-check.sh` 默认优先使用 `NEXTAUTH_URL`，未配置时回退到 `http://127.0.0.1:${MINIX_SERVER_PORT}`；也允许通过 `--url` 显式覆盖做临时诊断
@@ -122,6 +130,20 @@ REQUEST_TIMEOUT=30000
   - `https://<domain>/login`
   - 首页、房源、合同、账单主链可访问
 - 任何更细粒度的健康路径都只能作为辅助定位入口，不替代主健康入口
+
+## 部署演练记录要求
+- 后续正式部署演练或回滚演练必须形成可追溯记录。
+- 每条记录至少包含：
+  - 演练时间
+  - 目标环境
+  - 执行命令
+  - 健康检查结果
+  - 主链 smoke 结果
+  - 回滚触发条件
+  - 最终结论
+- 记录必须明确标注本次演练属于“正式主线验证”还是“legacy 回滚验证”。
+- 记录可以落位到后续审核材料或阶段文档，但必须能被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 明确引用。
+- 这些记录用于 cutover 审核、legacy 退出判断与回滚基线保留/退出决策，不得以口头确认替代。
 
 ## legacy 回滚基线
 以下资产仍服务于旧容器化运行线的历史运行与回滚参考职责：
@@ -174,6 +196,7 @@ cutline 说明：
 - 根级部署说明已经切换到 `Rento-miniX` 的正式部署主线口径
 - `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 已成为正式部署资产承接位
 - `.env.example`、`scripts/health-check.sh` 与 `/api/health` 已收口为正式部署主线的统一环境与健康检查口径
+- `phase11-05` 已把文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求收口到当前部署真相源
 - legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口、默认运维入口或正式真相源职责
 - `Rento-legacy` 的职责已冻结为只读历史备份与对照参考，不参与当前仓库的部署或回滚入口
 - legacy 基线的保留条件、退出条件与 cutline 解释已收口到单一部署说明入口
