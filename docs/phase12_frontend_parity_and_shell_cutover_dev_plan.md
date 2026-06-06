@@ -218,6 +218,7 @@
   - 明显 bug 修复
   - 移动端可用性改善
   - 最小信息架构优化
+- 为四类允许改动分别补齐“最小技术适配说明”或“明确收益说明”的口径
 - 明确禁止路线
 
 ### 参考来源
@@ -225,6 +226,7 @@
 - `project_skills.md`
 - 旧 `src/app/*`
 - 现有 `src/components/*`
+- `src/minix/layout/*`
 
 ### 不在范围内
 - 不定义新的设计系统
@@ -234,10 +236,25 @@
 ### DoD
 - UI 保真边界与允许改动范围具备单一解释
 - 后续 `/spec` 可直接复用该边界，不再重复争论
+- 必须明确写出默认原型参考，至少覆盖：
+  - `src/app/**/page.tsx`
+  - `src/components/pages/*`
+  - `src/components/business/*`
+  - `src/components/layout/*`
+  - `src/minix/layout/*`
+- 必须把四类允许改动写成事实化边界，而不是仅保留原则口号
+- 每类允许改动都必须带有“最小技术适配说明”或“明确收益说明”的统一要求
+- 必须明确哪些调整仍停留在边界冻结、哪些已经越界到实现或视觉重设计
 
 ### 验证要求
 - 确认文档与顶层真相源关于 UI 承接的表述一致
 - 确认所有允许改动都属于最小技术适配或明确收益项
+- 确认旧 `src/app/*`、现有 `src/components/*` 与 `src/minix/layout/*` 的真实代码现状已被用于支撑边界，而不是只写抽象原则
+- 确认禁止路线已覆盖：
+  - 重做设计系统
+  - 引入新视觉语言
+  - 以“用户体验优化”为名扩大改动范围
+  - 越界到实现、PWA parity 或 retained-legacy API 切流
 
 ## phase12-05-roadmap-consistency-and-phase12-to-phase15-closure
 ### 目标

@@ -88,6 +88,34 @@
 - 后续页面迁移默认先复用现有页面表达，再做宿主适配
 - 不允许把 parity 迁移解释成“借机做全新 UI”
 
+### 6.1.1 UI 保真边界的默认原型参考
+- 旧页面入口与页面壳继续以 `src/app/**/page.tsx` 为参考来源。
+- 旧页面主体、业务卡片、搜索/筛选、详情卡与表单块继续以 `src/components/pages/*`、`src/components/business/*` 为参考来源。
+- 旧布局与页面容器节奏继续以 `src/components/layout/AppLayout.tsx`、`src/components/layout/PageContainer.tsx`、`src/components/layout/UnifiedNavigation.tsx`、`src/components/layout/DetailPageTemplate.tsx` 为参考来源。
+- 移动端样式细节继续以 `src/components/pages/*-mobile-styles.ts` 与 `src/components/business/*-mobile-styles.ts` 为参考来源。
+- 新宿主壳层承接继续以 `src/minix/layout/MinixShellLayout.tsx`、`src/minix/layout/UnifiedNavigation.tsx` 与 `src/minix/router/index.tsx` 为正式落点。
+- 导航原型口径继续以 `src/lib/navigation-config.ts` 为共享真相源：移动端底部导航默认仅显示“工作台 / 房源 / 添加 / 合同 / 账单”，桌面端顶栏主导航不包含“设置”一级项；“设置”继续通过工作台快捷入口与桌面端右上角入口访问。
+- 默认必须保真的对象固定为：
+  - 页面信息结构
+  - 导航节奏
+  - 表单交互
+  - 组件表达
+  - 整体视觉风格
+
+### 6.1.2 `phase12-04` 允许的最小调整与解释要求
+| 调整类别 | 共享结论 | 最低解释要求 | 不得顺带做的事 |
+| --- | --- | --- | --- |
+| 宿主适配 | 仅允许为退出 `Next.js` 宿主协议、接入 `React Router` 和挂接 `src/minix/layout/*` 壳层所需的最小 UI 变动；包括 `next/link` / `next/navigation` 替换、`params/searchParams` 承接迁移、页面级加载/错态边界迁移 | 必须解释“若不适配，哪个页面壳无法进入 `src/minix` 或哪个旧宿主协议无法退出” | 不得顺带改导航顺序、重做搜索区、改卡片体系或新增视觉语言 |
+| 明显 bug 修复 | 仅允许修复旧问题或迁移引入问题，例如返回/跳转错误、激活态错误、键盘遮挡、按钮失效、空态/错态不可恢复 | 必须说明 bug 现象与收益，且修复后仍保持同一页面语义和视觉主轴 | 不得把“想让页面更精致”包装为 bug 修复 |
+| 移动端可用性改善 | 仅允许提升触控区域、安全区避让、键盘弹起可用性、表单录入性、首屏可读性与操作区可达性 | 必须说明具体移动端收益，如减少遮挡、误触、首屏拥挤或提高录入完成度 | 不得借机重做桌面端布局或新增第二套导航骨架 |
+| 最小信息架构优化 | 仅允许消除入口歧义、治理页误暴露、重复入口或支持页/正式页混写；保持旧主导航主轴不变 | 必须说明“调整前为何造成误入、重复或定位困难” | 不得新增一级模块、重排正式业务主链或扩写支持页/治理页 |
+
+### 6.1.3 四类最小调整的统一约束
+- 每类允许改动都必须附带“最小技术适配说明”或“明确收益说明”；没有解释的改动默认不属于 `phase12-04`。
+- 四类允许改动都只处理宿主承接、可用性与错误修复，不处理视觉焕新、品牌升级或交互范式重写。
+- `src/components/layout/PageContainer.tsx`、`src/components/layout/UnifiedNavigation.tsx`、`src/components/business/FunctionGrid.tsx`、`src/app/**/page.tsx` 中的 `next/*` 依赖，属于典型“先拆宿主绑定、再判断是否复用”的输入，而不是 UI 重做理由。
+- `src/minix/layout/MinixShellLayout.tsx` 与 `src/minix/layout/UnifiedNavigation.tsx` 已经证明新宿主只需要承接键盘 inset、导航激活态、跳转协议和桌面/移动壳层，不需要重造第二套设计语言。
+
 ### 6.2 数据访问共享口径
 - 当前正式数据访问主线固定为 `Prisma + PostgreSQL`
 - `phase12` 不重新讨论 Prisma 替换
@@ -250,6 +278,8 @@
 - 禁止在 `phase12` 中把页面 parity 扩写为另一套 UI 设计系统
 - 禁止把 `phase13` / `phase14` / `phase15` 的职责混写到一个大而全的实现任务中
 - 禁止因为“旧页面暂时还能跑”而跳过 parity 路线图冻结
+- 禁止以“用户体验优化”为名重排正式业务主链导航、引入新视觉语言或把列表/表单/详情页改造成另一类产品形态
+- 禁止把治理页、支持页或 dev-only 页面重新包装成正式一级入口，或把 `profile/notifications/PWA` 扩写为本轮 UI 重构主题
 
 ## 十、统一验证要求
 - 至少确认：

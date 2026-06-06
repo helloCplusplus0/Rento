@@ -294,6 +294,40 @@ phase12-frontend-parity-and-shell-cutover
 - 允许的 UI 调整仅限最小技术适配、移动端可用性修复、明显 bug 修复与必要信息架构修正
 - 不允许借页面迁移之名重新设计整套 UI
 
+### 3.2.1 `phase12-04` UI 保真边界的默认原型参考
+当前 `phase12-04` 必须建立在以下真实参考基线上冻结 UI 保真边界，而不是抽象地讨论“风格一致”：
+
+- 旧页面入口与页面壳：
+  - `src/app/**/page.tsx`
+- 旧页面主体与交互表达：
+  - `src/components/pages/*`
+  - `src/components/business/*`
+- 旧布局与页面容器节奏：
+  - `src/components/layout/AppLayout.tsx`
+  - `src/components/layout/PageContainer.tsx`
+  - `src/components/layout/UnifiedNavigation.tsx`
+  - `src/components/layout/DetailPageTemplate.tsx`
+- 现有移动端样式资产：
+  - `src/components/pages/*-mobile-styles.ts`
+  - `src/components/business/*-mobile-styles.ts`
+- 新宿主已存在的壳层承接位：
+  - `src/minix/layout/MinixShellLayout.tsx`
+  - `src/minix/layout/UnifiedNavigation.tsx`
+  - `src/minix/router/index.tsx`
+
+基于上述参考，`phase12-04` 默认冻结以下 UI 保真对象：
+
+- 页面信息结构：
+  - 继续保留“页面头部 -> 搜索/筛选 -> 主列表/主表单/主详情 -> 状态反馈/操作区”的主节奏，不把列表页改成全新看板式布局，也不把详情页改成另一套信息分栏语言。
+- 导航节奏：
+  - 继续保留与 `src/lib/navigation-config.ts`、旧 `src/components/layout/UnifiedNavigation.tsx`、新 `src/minix/layout/UnifiedNavigation.tsx` 一致的双端导航节奏：移动端底部导航默认仅显示“工作台 / 房源 / 添加 / 合同 / 账单”，桌面端顶栏主导航不包含“设置”一级项；“设置”继续通过工作台快捷入口与桌面端右上角入口访问。治理入口、支持入口与 dev-only 入口不提升为新的一级导航。
+- 表单交互：
+  - 继续保留 `PageContainer`、`DetailPageTemplate` 等现有标题区、返回按钮、底部操作区、卡片分组和表单块节奏，不把核心表单统一改写为抽屉、分步向导或全屏 wizard。
+- 组件表达：
+  - 继续复用当前卡片、列表、状态徽标、搜索栏、统计卡、详情卡与空态/错态表达，不新增另一套视觉原子、色彩语义或卡片语言。
+- 整体视觉风格：
+  - 继续沿用当前灰底、白卡、蓝色品牌强调、圆角卡片、轻阴影、线性图标和移动端优先间距体系；`src/minix` 只承接宿主协议，不重新定义品牌视觉。
+
 ### 3.3 `phase12` 只负责前端页面 parity 与路线图冻结，不直接吞掉后续全部问题
 选择原因：
 
@@ -441,11 +475,42 @@ phase12-frontend-parity-and-shell-cutover
 - 冻结 `phase12 ~ phase15` 的完整阶段职责、顺序与上游输入关系
 - 明确 `Prisma + PostgreSQL` 的继续保留口径
 
+### 4.2.1 `phase12-04` 允许的四类最小调整
+`phase12-04` 允许的 UI 调整只限以下四类；后续任一 `/spec` 若引用这些边界，必须为每类改动补“最小技术适配说明”或“明确收益说明”，否则默认视为越界。
+
+| 调整类别 | 允许范围 | 当前代码基线示例 | 最低解释要求 | 明确不允许顺带做的事 |
+| --- | --- | --- | --- | --- |
+| 宿主适配 | 仅为去除 `Next.js` 宿主协议、接入 `React Router` 宿主、对齐 `src/minix/layout/*` 壳层所需的最小改动；包括 `next/link`/`next/navigation` 替换、`params/searchParams` 解析迁移、`generateMetadata()` / `notFound()` / `dynamic = 'force-dynamic'` 拆宿主绑定、把页面级加载/错态移到 route-level boundary | `src/components/layout/PageContainer.tsx` 的 `router.back()`、`src/components/layout/UnifiedNavigation.tsx` 与 `src/components/business/FunctionGrid.tsx` 的 `next/link` / `next/navigation`、`src/app/rooms/page.tsx` 的 `searchParams` 归一化与 `dynamic` 标记 | 必须说明“如果不做该调整，哪个页面壳无法挂到 `src/minix` 或哪个宿主协议无法退出”；只允许改承接协议，不允许顺带改页面层级、命名语义或视觉风格 | 不允许借宿主适配改导航顺序、重写搜索区布局、替换卡片体系、增删一级模块 |
+| 明显 bug 修复 | 仅修复已有 UI/交互错误、迁移后可复现错误或显著破坏使用的缺陷；包括错误返回、错误跳转、键盘遮挡、激活态错误、错态/空态不可恢复、按钮不可点、内容被安全区遮住 | `src/components/layout/PageContainer.tsx` 的返回按钮语义、`src/minix/layout/MinixShellLayout.tsx` 的键盘 inset、`src/minix/layout/UnifiedNavigation.tsx` 的激活态与跳转占位 | 必须能指出旧问题或迁移引入问题，并说明修复后保持同一页面语义与视觉表达；“看起来更舒服”不构成 bug 说明 | 不允许以修 bug 为名改成新交互范式、改文案风格、改卡片密度或新增视觉装饰 |
+| 移动端可用性改善 | 仅针对触达面积、底部安全区、键盘弹起遮挡、表单可录入性、列表首屏可读性和操作区可达性做最小优化；继续沿用现有移动端样式资产与 `PageContainer` / `MinixShellLayout` 节奏 | `src/minix/layout/MinixShellLayout.tsx` 的 `--keyboard-inset-height`、`src/components/pages/*-mobile-styles.ts`、`src/components/business/*-mobile-styles.ts`、`src/components/pages/BillListPage.tsx` 的移动端紧凑卡片表达 | 必须说明具体移动端收益，例如减少键盘遮挡、保证触控区域、降低首屏垂直占用或提升表单完成率；不能只写“更现代” | 不允许借移动端优化把桌面端也重做为另一套布局，不允许改为全新底栏/侧栏体系，不允许引入新的视觉语言 |
+| 最小信息架构优化 | 仅允许消除因宿主切换带来的入口歧义、治理页误暴露、重复入口或支持页/正式页混写；必须保持旧信息结构主轴不变 | `src/components/business/FunctionGrid.tsx` 当前仍含治理页与 dev-only 候选入口、`src/minix/routes/route-manifest.tsx` 已区分 primary/state/governance | 必须说明“为什么当前信息架构会让用户误入、重复或难以定位”，并说明调整后仍沿用旧导航主轴与页面命名 | 不允许新增第二套导航树、不允许重排正式业务主链顺序、不允许把支持页/治理页扩写为新的产品模块 |
+
+### 4.2.2 四类最小调整的统一执行约束
+- 宿主适配优先解释“为了退出旧宿主协议不得不做什么”，而不是解释“想把页面做得更现代”。
+- 明显 bug 修复优先解释“修复前的破坏性行为是什么”，而不是解释“修复后看起来更精致”。
+- 移动端可用性改善优先解释“减少遮挡、误触、滚动跳变、输入困难或首屏拥挤”，而不是解释“顺便统一视觉”。
+- 最小信息架构优化优先解释“减少误入、重复、歧义、支持页混写或治理页暴露”，而不是解释“顺便升级产品结构”。
+- 四类调整都必须保持业务语义、导航主轴、表单主流程和组件视觉语言稳定；凡需要引入新视觉资产、新色板、新组件体系或新导航骨架的改动，一律不属于 `phase12-04`。
+
 ### 4.3 不允许做的事
 - 不在 `phase12` 中直接重开 Prisma 替换议题
 - 不把页面迁移扩写成整套 UI 重设计
 - 不把 retained-legacy API 清零与 PWA 迁移全部塞入同一个实现阶段
 - 不以“旧页面还在”作为跳过 parity 验收的理由
+
+### 4.3.1 `phase12-04` 明确禁止路线
+- 禁止重做设计系统：
+  - 不新增第二套按钮、卡片、表单、表格、状态标签或图标体系，不把现有 `src/components/ui/*` 替换成另一套风格库。
+- 禁止引入新视觉语言：
+  - 不整体替换色板、字体、圆角、阴影、插画、动效风格，不把当前灰底白卡蓝色强调改成“品牌升级”项目。
+- 禁止大范围改导航信息架构：
+  - 不把桌面端顶栏改成侧栏信息架构，不新增新的一级业务模块，不把治理页、支持页或 dev-only 页面提升为正式主导航默认入口。
+- 禁止把交互节奏改成另一类产品：
+  - 不把核心列表页改为看板/瀑布流，不把核心表单改为向导式多步骤，不把详情页改成新的分屏工作台。
+- 禁止以“用户体验优化”为名扩大范围：
+  - 不把文案统一、图标替换、配色焕新、卡片密度重做、动画增强、主页改版、用户中心重构等包装成 `phase12-04` 的允许改动。
+- 禁止越界到实现与后续阶段：
+  - 不在本 spec 中直接决定具体组件重写方案，不顺带打开 `phase13` API parity、`phase14` PWA parity、`profile/notifications` 支持页扩写或治理页重新暴露方式。
 
 ## 五、与后续阶段的关系
 ### 5.1 `phase13` 直接继承内容
