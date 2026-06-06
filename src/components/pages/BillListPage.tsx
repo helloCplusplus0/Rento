@@ -1,8 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 
 import {
@@ -27,6 +25,9 @@ import { PageContainer } from '@/components/layout'
 // 简化类型定义，使用any避免复杂的类型转换
 interface BillListPageProps {
   initialBills: any[]
+  initialSearchQuery?: string
+  onOpenBill?: (bill: any) => void
+  onOpenStats?: () => void
 }
 
 /**
@@ -121,10 +122,18 @@ function BillGrid({
  * 账单列表页面组件
  * 实现账单展示、搜索、筛选和统计功能
  */
-export function BillListPage({ initialBills }: BillListPageProps) {
-  const router = useRouter()
+export function BillListPage({
+  initialBills,
+  initialSearchQuery = '',
+  onOpenBill,
+  onOpenStats,
+}: BillListPageProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
+
+  useEffect(() => {
+    setSearchQuery(initialSearchQuery)
+  }, [initialSearchQuery])
 
   // 筛选账单数据
   const filteredBills = useMemo(() => {
@@ -161,10 +170,26 @@ export function BillListPage({ initialBills }: BillListPageProps) {
     [initialBills]
   )
 
-  // 账单点击处理 - 使用 Next.js 路由优化性能
   const handleBillClick = (bill: any) => {
-    // 使用 Next.js 路由进行客户端导航，比 window.location.href 更快
-    router.push(`/bills/${bill.id}`)
+    if (onOpenBill) {
+      onOpenBill(bill)
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.assign(`/bills/${bill.id}`)
+    }
+  }
+
+  const handleOpenStats = () => {
+    if (onOpenStats) {
+      onOpenStats()
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.assign('/bills/stats')
+    }
   }
 
   return (
@@ -179,16 +204,16 @@ export function BillListPage({ initialBills }: BillListPageProps) {
               value={searchQuery}
               onChange={setSearchQuery}
             />
-            <Link href="/bills/stats" className="shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className={billListMobileStyles.toolbarActionButton}
-              >
-                <BarChart3 className="h-4 w-4 sm:mr-2" />
-                <span className="sr-only sm:not-sr-only">统计分析</span>
-              </Button>
-            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={billListMobileStyles.toolbarActionButton}
+              onClick={handleOpenStats}
+            >
+              <BarChart3 className="h-4 w-4 sm:mr-2" />
+              <span className="sr-only sm:not-sr-only">统计分析</span>
+            </Button>
           </div>
         </div>
 

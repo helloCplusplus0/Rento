@@ -15,8 +15,31 @@ import { LoadingPage } from '../routes/LoadingPage'
 import { LoginPage } from '../routes/LoginPage'
 import { NotFoundPage } from '../routes/NotFoundPage'
 import { OfflinePage } from '../routes/OfflinePage'
-import { PlaceholderPage } from '../routes/PlaceholderPage'
-import { minixPrimaryRoutes } from '../routes/route-manifest'
+import {
+  AddHubRoute,
+  AddHubRouteErrorBoundary,
+  addHubLoader,
+} from '../routes/add/AddHubRoute'
+import {
+  BillListRoute,
+  BillListRouteErrorBoundary,
+  billListLoader,
+} from '../routes/bills/BillListRoute'
+import {
+  ContractListRoute,
+  ContractListRouteErrorBoundary,
+  contractListLoader,
+} from '../routes/contracts/ContractListRoute'
+import {
+  RoomListRoute,
+  RoomListRouteErrorBoundary,
+  roomListLoader,
+} from '../routes/rooms/RoomListRoute'
+import {
+  SettingsRoute,
+  SettingsRouteErrorBoundary,
+  settingsLoader,
+} from '../routes/settings/SettingsRoute'
 
 export const router = createBrowserRouter([
   {
@@ -52,10 +75,36 @@ export const router = createBrowserRouter([
         loader: homePageLoader,
         errorElement: <HomePageRouteErrorBoundary />,
       },
-      ...minixPrimaryRoutes.map((route) => ({
-        path: route.segment,
-        element: <PlaceholderPage route={route} />,
-      })),
+      {
+        path: 'rooms',
+        element: <RoomListRoute />,
+        loader: roomListLoader,
+        errorElement: <RoomListRouteErrorBoundary />,
+      },
+      {
+        path: 'add',
+        element: <AddHubRoute />,
+        loader: addHubLoader,
+        errorElement: <AddHubRouteErrorBoundary />,
+      },
+      {
+        path: 'contracts',
+        element: <ContractListRoute />,
+        loader: contractListLoader,
+        errorElement: <ContractListRouteErrorBoundary />,
+      },
+      {
+        path: 'bills',
+        element: <BillListRoute />,
+        loader: billListLoader,
+        errorElement: <BillListRouteErrorBoundary />,
+      },
+      {
+        path: 'settings',
+        element: <SettingsRoute />,
+        loader: settingsLoader,
+        errorElement: <SettingsRouteErrorBoundary />,
+      },
     ],
   },
   {

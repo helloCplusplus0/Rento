@@ -1,0 +1,6 @@
+- [x] 已确认 `/rooms`、`/add`、`/contracts`、`/bills`、`/settings` 当前在 `src/minix` 中的 placeholder 承接现状与旧 `Rento` 原型输入
+- [x] 已将 `/rooms`、`/add`、`/contracts`、`/bills`、`/settings` 从 `PlaceholderPage` 升级为真实页面壳与页面装配层
+- [x] 已确认上述一级正式业务页除最小技术适配外接近 `100%` 还原旧 `Rento` 源代码原型，不存在说明性卡片、宿主标签、开发态状态卡或其他显著结构漂移项
+- [x] 已为上述页面建立首屏 loader / pending / error / not-found 同类边界，且页面级返回、跳转、搜索与错误恢复路径具备单一解释
+- [x] 已确认新增 route module 未继续引用 `next/*` 宿主协议，且未越界到 retained-legacy API/query parity、P1 详情动作页或支持/治理/dev-only 页面
+- [x] 已完成最小工程验证，并通过独立子代理审核验收

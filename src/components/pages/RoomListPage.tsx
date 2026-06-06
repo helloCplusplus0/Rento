@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Building, Search, X } from 'lucide-react'
 
 import type { RoomWithBuildingForClient } from '@/types/database'
@@ -16,6 +15,7 @@ import { PageContainer } from '@/components/layout'
 interface RoomListPageProps {
   initialRooms: RoomWithBuildingForClient[]
   initialSearchQuery?: string
+  onOpenRoom?: (room: RoomWithBuildingForClient) => void
 }
 
 /**
@@ -129,8 +129,8 @@ function BuildingFilter({
 export function RoomListPage({
   initialRooms,
   initialSearchQuery = '',
+  onOpenRoom,
 }: RoomListPageProps) {
-  const router = useRouter()
   // 状态管理
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null)
@@ -261,10 +261,15 @@ export function RoomListPage({
     return Object.keys(buildingCounts).length > 1 || !!selectedBuilding
   }, [buildingCounts, selectedBuilding])
 
-  // 房间点击处理 - 使用 Next.js 路由优化性能
   const handleRoomClick = (room: RoomWithBuildingForClient) => {
-    // 使用 Next.js 路由进行客户端导航，比 window.location.href 更快
-    router.push(`/rooms/${room.id}`)
+    if (onOpenRoom) {
+      onOpenRoom(room)
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.assign(`/rooms/${room.id}`)
+    }
   }
 
   return (

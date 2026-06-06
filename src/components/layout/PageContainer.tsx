@@ -1,7 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-
 import { cn } from '@/lib/utils'
 
 interface PageContainerProps {
@@ -9,6 +7,7 @@ interface PageContainerProps {
   title?: string
   subtitle?: string
   showBackButton?: boolean
+  onBack?: () => void
   className?: string
   loading?: boolean
   error?: string
@@ -24,15 +23,28 @@ export function PageContainer({
   title,
   subtitle,
   showBackButton = false,
+  onBack,
   className,
   loading = false,
   error,
   actions,
 }: PageContainerProps) {
-  const router = useRouter()
-
   const handleBack = () => {
-    router.back()
+    if (onBack) {
+      onBack()
+      return
+    }
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (window.history.length > 1) {
+      window.history.back()
+      return
+    }
+
+    window.location.assign('/')
   }
 
   if (loading) {

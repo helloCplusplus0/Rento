@@ -65,13 +65,37 @@ const defaultSettings: AppSettings = {
  * 提供设置的读取、更新和持久化功能
  * 支持数据库存储和localStorage备份
  */
-export function useSettings() {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isInitialized, setIsInitialized] = useState(false)
+export function useSettings(initialSettings?: Partial<AppSettings>) {
+  const mergedInitialSettings = {
+    ...defaultSettings,
+    ...(initialSettings ?? {}),
+  }
+
+  const [settings, setSettings] = useState<AppSettings>(mergedInitialSettings)
+  const [isLoading, setIsLoading] = useState(!initialSettings)
+  const [isInitialized, setIsInitialized] = useState(Boolean(initialSettings))
 
   // 从数据库加载设置
   useEffect(() => {
+    if (initialSettings) {
+      const hydratedSettings = {
+        ...defaultSettings,
+        ...initialSettings,
+      }
+
+      setSettings(hydratedSettings)
+      setIsLoading(false)
+      setIsInitialized(true)
+
+      try {
+        localStorage.setItem('app_settings', JSON.stringify(hydratedSettings))
+      } catch (error) {
+        console.error('[设置] 写入初始设置缓存失败:', error)
+      }
+
+      return
+    }
+
     const loadSettings = async () => {
       try {
         // 首先尝试从数据库加载
@@ -135,7 +159,7 @@ export function useSettings() {
     }
 
     loadSettings()
-  }, [])
+  }, [initialSettings])
 
   /**
    * 更新单个设置项

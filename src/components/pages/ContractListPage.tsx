@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { isContractExpiringSoon } from '@/lib/contract-alert-semantics'
 import type { ContractWithDetails } from '@/types/database'
@@ -124,6 +123,8 @@ interface ContractListPageProps {
   initialExpiryAlerts: ContractExpiryAlert[]
   contractExpiryAlertDays?: number
   initialSearchQuery?: string
+  onOpenContract?: (contract: ContractWithDetailsForClient) => void
+  onOpenRenewContract?: (contractId: string) => void
 }
 
 export function ContractListPage({
@@ -132,8 +133,9 @@ export function ContractListPage({
   initialExpiryAlerts,
   contractExpiryAlertDays = 30,
   initialSearchQuery = '',
+  onOpenContract,
+  onOpenRenewContract,
 }: ContractListPageProps) {
-  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [loading] = useState(false)
@@ -188,12 +190,26 @@ export function ContractListPage({
 
   // 处理合同点击
   const handleContractClick = (contract: ContractWithDetailsForClient) => {
-    router.push(`/contracts/${contract.id}`)
+    if (onOpenContract) {
+      onOpenContract(contract)
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.assign(`/contracts/${contract.id}`)
+    }
   }
 
   // 处理续约
   const handleRenewContract = (contractId: string) => {
-    router.push(`/contracts/${contractId}/renew`)
+    if (onOpenRenewContract) {
+      onOpenRenewContract(contractId)
+      return
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.assign(`/contracts/${contractId}/renew`)
+    }
   }
 
   return (
