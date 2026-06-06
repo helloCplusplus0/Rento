@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认下一步已切换到 `phase12` 的页面 parity 与后续 `phase12 ~ phase15` 路线图规划。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -212,6 +212,34 @@
   - 部署/回滚演练记录至少包含演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件与最终结论
   - 演练记录必须标明“正式主线验证”或“legacy 回滚验证”，并可被根级真相源或阶段文档引用
 - `phase11` 的回滚基线继续固定为旧容器化运行线，而不是切回 `Rento-legacy` 仓库或恢复第二真相源。
+
+## `phase12 ~ phase15` 目标结构说明
+### 规划中的页面 parity 承接层
+- `phase12` 规划中的前端 parity 继续收口到 `src/minix/`，用于承接旧 `src/app/*` 的正式页面壳、路由落点与页面装配边界。
+- 该层的职责是把旧宿主页面逐步迁成纯新主线可用的正式页面，而不是借迁移重做 UI 或重写主链语义。
+- 该层默认继续复用现有 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*`，并把旧 `src/app/*` 视为页面原型与行为参考基线。
+
+### 规划中的 API / query parity 承接层
+- `phase13` 规划中的 API / query parity 继续收口到根级 `server/` 与 `src/lib/domain/*`、`src/lib/queries.ts` 等既有正式数据访问承接位。
+- 该层的职责是清空旧 `src/app/api/*` 中仍承担正式业务职责的 retained-legacy 路由，而不是重新打开 ORM 替换议题。
+- 当前正式数据访问主线继续固定为：
+  - `Prisma + PostgreSQL`
+  - `src/lib/prisma.ts`
+  - `src/lib/domain/*`
+  - `src/lib/transaction-manager.ts`
+
+### 规划中的新主线 PWA 承接层
+- `phase14` 规划中的 PWA parity 将继续收口到 `src/minix/`、根级 `public/`、`vite.config.ts` 与 `server/lib/static.ts` 所承接的纯新主线产物链。
+- 该层的职责是把安装、更新、最小离线兜底与发布口径迁到 `Vite + Hono` 主线，而不是继续依赖旧 Next PWA 宿主。
+- 该层默认继续保持最小受控策略，不通过缓存动态鉴权业务接口来换取“离线更强”的表面效果。
+
+### 规划中的 parity 验收与 legacy 退出层
+- `phase15` 规划中的 cutover 与 legacy 退出继续建立在：
+  - `phase11` 已冻结的正式部署主线与发布门禁
+  - `phase12` 的页面 parity 结果
+  - `phase13` 的 API / query parity 结果
+  - `phase14` 的新主线 PWA parity 结果
+- 该层只负责回答“纯新主线是否已完整替代旧技术栈、何时允许退出 legacy 资产”，不再反向重写业务边界。
 
 ## 原内嵌 `Rento-miniX/` 目录治理说明
 ### 当前状态

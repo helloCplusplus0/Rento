@@ -55,6 +55,19 @@
 - 默认要求部署链低复杂度、低 I/O 峰值、低维护负担。
 - 当推进到 `phase11` 时，默认冻结 `Caddy + systemd + Hono + PostgreSQL` 作为正式部署主线，避免重新回到 `Docker-heavy` 或多入口并存。
 
+## 8.1 Prisma 保留技能
+- 当前默认目标不是替换 `Prisma`，而是在保留 `Prisma + PostgreSQL` 的前提下完成旧 `Next.js` / legacy API / legacy PWA / Docker-heavy 运行线退出。
+- 若后续再次评估 Prisma 替换，必须作为独立议题重新规划，不得与页面 parity、API 宿主切流或 legacy 退出绑定为同一阶段任务。
+
+## 8.2 前端 parity 技能
+- 当进入 `phase12 ~ phase15` 时，默认优先迁移页面壳、页面装配、数据加载边界与正式路由承接位，而不是重做 UI 或重写业务语义。
+- 新宿主优先复用现有 `src/components/pages/*`、`src/components/business/*`、`src/components/layout/*` 与 `src/components/ui/*`，只在技术适配确有必要时调整宿主绑定层。
+- 旧 `src/app` 页面应优先作为页面原型与行为参考基线；迁移验收默认比较页面信息结构、导航节奏、表单交互、状态反馈与主链流程一致性。
+
+## 8.3 PWA 承接技能
+- 当前 PWA 能力的价值已经在 `phase05` 冻结，后续目标不是取消 PWA，而是把安装、更新、最小离线兜底与发布口径迁到纯新主线。
+- PWA 迁移默认保持最小受控策略：不因“追求离线能力”而缓存动态鉴权业务接口，不因“安装体验”而引入第二套前端宿主或第二套缓存真相源。
+
 ## 9. 迁移链治理技能
 - 当前主线已是 PostgreSQL，但迁移链仍有 SQLite 时代遗留。
 - `migration_lock.toml`、历史 SQL、兼容脚本需要被明确标记为“兼容项”而不是“当前最佳实践”。

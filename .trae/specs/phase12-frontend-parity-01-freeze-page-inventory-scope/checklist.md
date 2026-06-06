@@ -1,0 +1,9 @@
+- [x] 已基于 `src/app/**/page.tsx` 冻结当前 37 个真实页面入口
+- [x] 已把页面按正式业务、状态/支持、运维治理、dev-only / 待归档候选四类完成分类
+- [x] 已产出页面分类表
+- [x] 已产出正式页面范围表
+- [x] 已产出延后/不进入 parity 范围表
+- [x] 已明确 `phase12-01` 不包含页面实现迁移、UI 重设计与 retained-legacy API 切流顺序冻结
+- [x] 已验证所有被列入清单的页面路径真实存在
+- [x] 已验证正式页面与 dev-only / 辅助页边界不混写
+- [x] 已验证结果与 `plan.md`、`docs/phase12_*`、`src/lib/page-governance.ts` 当前口径一致
