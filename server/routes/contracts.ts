@@ -12,6 +12,8 @@ import {
   isContractDeleteGuardBlockedError,
   performContractDeleteSafetyCheck,
 } from '@/lib/domain/delete-guards'
+import { globalSettings } from '@/lib/global-settings'
+import { optimizedContractQueries } from '@/lib/optimized-queries'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -43,6 +45,32 @@ const LEGACY_COMPAT = {
   exitCondition:
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/* compat wrapper 可移除。',
 } as const
+
+function toClientContract(contract: any) {
+  return {
+    ...contract,
+    monthlyRent: Number(contract.monthlyRent),
+    totalRent: Number(contract.totalRent),
+    deposit: Number(contract.deposit),
+    keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
+    cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
+    room: {
+      ...contract.room,
+      rent: Number(contract.room.rent),
+      area: contract.room.area ? Number(contract.room.area) : null,
+      building: {
+        ...contract.room.building,
+        totalRooms: Number(contract.room.building.totalRooms),
+      },
+    },
+    bills: contract.bills.map((bill: any) => ({
+      ...bill,
+      amount: Number(bill.amount),
+      receivedAmount: Number(bill.receivedAmount),
+      pendingAmount: Number(bill.pendingAmount),
+    })),
+  }
+}
 
 function appendContractsFallback(
   routeApp: Hono<AuthAppEnv>,
@@ -78,6 +106,54 @@ export function createContractRoutes(env: MinixServerEnv) {
   const routeApp = new Hono<AuthAppEnv>()
 
   routeApp.use('*', requireAuth())
+
+  routeApp.get('/', async (c) => {
+    const url = new URL(c.req.url)
+    const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10))
+    const limit = Math.min(
+      Math.max(1, Number.parseInt(url.searchParams.get('limit') || '20', 10)),
+      100
+    )
+    const search = url.searchParams.get('search')?.trim() || undefined
+    const status = url.searchParams.get('status')?.trim() || undefined
+    const buildingId = url.searchParams.get('buildingId')?.trim() || undefined
+    const isExpiringSoon = url.searchParams.get('isExpiringSoon') === 'true'
+    const shouldFilterExpiringSoon =
+      status === 'expiring_soon' || isExpiringSoon
+
+    let expiringDays: number | undefined
+    if (shouldFilterExpiringSoon) {
+      const contractAlertSettingsLoadResult =
+        await globalSettings.getContractAlertSettings()
+      expiringDays =
+        contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+    }
+
+    const result = await optimizedContractQueries.findWithPagination(
+      { page, limit },
+      {
+        ...(status && status !== 'all' && status !== 'expiring_soon'
+          ? { status: status as any }
+          : {}),
+        ...(search ? { search } : {}),
+        ...(buildingId ? { buildingId } : {}),
+        ...(expiringDays ? { expiringDays } : {}),
+      }
+    )
+
+    return jsonSuccess(c, {
+      data: {
+        contracts: result.data.map(toClientContract),
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev,
+      },
+      env,
+    })
+  })
 
   routeApp.post('/activate', async (c) => {
     const body =

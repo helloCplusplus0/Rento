@@ -21,6 +21,20 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.MINIX_API_ORIGIN || `http://127.0.0.1:${apiPort}`,
           changeOrigin: true,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req) => {
+              const forwardedHost = req.headers.host
+              if (forwardedHost) {
+                proxyReq.setHeader('x-forwarded-host', forwardedHost)
+              }
+
+              const forwardedProto =
+                req.socket instanceof Object && 'encrypted' in req.socket && req.socket.encrypted
+                  ? 'https'
+                  : 'http'
+              proxyReq.setHeader('x-forwarded-proto', forwardedProto)
+            })
+          },
         },
       },
     },

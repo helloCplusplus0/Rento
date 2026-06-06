@@ -7,7 +7,7 @@ import type { ContractWithDetails } from '@/types/database'
 import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
 import { ContractGrid } from '@/components/business/ContractGrid'
 import { ContractSearchBar } from '@/components/business/ContractSearchBar'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 // 为客户端组件定义的合同类型（Decimal 转换为 number）
 interface ContractWithDetailsForClient {

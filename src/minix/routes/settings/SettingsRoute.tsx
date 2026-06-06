@@ -3,7 +3,7 @@ import { Await, defer, useLoaderData } from 'react-router-dom'
 import type { LoaderFunctionArgs } from 'react-router-dom'
 
 import { settingsMobileStyles } from '@/components/business/settings-mobile-styles'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { SettingsPage } from '@/components/pages/SettingsPage'
 import { Card, CardContent } from '@/components/ui/card'
 

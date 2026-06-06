@@ -28,6 +28,7 @@ import {
 import { createAuthRoutes } from './routes/auth'
 import { createDomainRoutes } from './routes/domain'
 import { createHealthRoutes } from './routes/health'
+import { createSettingsRoutes } from './routes/settings'
 
 export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
   const app = new Hono<AuthAppEnv>()
@@ -44,6 +45,7 @@ export function createApp(env: MinixServerEnv = getMinixServerEnv()) {
 
   apiApp.route('/', createHealthRoutes(env))
   apiApp.route('/auth', createAuthRoutes(env))
+  apiApp.route('/settings', createSettingsRoutes(env))
   // 先挂公共路由，再挂受保护的正式领域骨架，最后保留统一的受保护兜底出口。
   apiApp.route('/', createDomainRoutes(env))
   apiApp.all('*', requireAuth(), (c) =>

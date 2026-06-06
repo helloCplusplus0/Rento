@@ -46,6 +46,7 @@
 ### 规划中的脚本层
 - `phase07` 规划中的运行脚本将补充到 `scripts/`，例如 `scripts/dev-minix.mjs`、`scripts/start-minix.mjs`。
 - 开发态采用 `Vite + Hono` 双服务代理；生产态最终切线不在 `phase07` 冻结。
+- `phase13` 过渡期若仍需从 `src/minix` 打开 legacy 二级详情/新建/治理页，当前通过 `VITE_LEGACY_APP_ORIGIN` 显式声明 legacy 页面宿主；未配置时，`dev:minix` 默认只承接已迁移的一级正式页面，避免落到当前宿主的假可用入口。
 
 ### `phase07-04` 旧运行线映射口径
 - 旧 `src/app`

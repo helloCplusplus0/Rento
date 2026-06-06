@@ -47,9 +47,15 @@ export function createAuthRoutes(env: MinixServerEnv) {
       }
 
       const token = await createSessionToken(username)
+      const shouldUseSecure = shouldUseSecureCookie(
+        c.req.raw,
+        c.req.header('x-forwarded-proto'),
+        c.req.header('x-forwarded-host'),
+        c.req.header('origin')
+      )
       const sessionCookie = buildSessionCookie(
         token,
-        shouldUseSecureCookie(c.req.raw, c.req.header('x-forwarded-proto'))
+        shouldUseSecure
       )
 
       setCookie(
@@ -84,7 +90,12 @@ export function createAuthRoutes(env: MinixServerEnv) {
 
   authRoutes.post('/logout', (c) => {
     const sessionCookie = clearSessionCookie(
-      shouldUseSecureCookie(c.req.raw, c.req.header('x-forwarded-proto'))
+      shouldUseSecureCookie(
+        c.req.raw,
+        c.req.header('x-forwarded-proto'),
+        c.req.header('x-forwarded-host'),
+        c.req.header('origin')
+      )
     )
 
     setCookie(
@@ -123,12 +134,56 @@ export function createAuthRoutes(env: MinixServerEnv) {
 
 function shouldUseSecureCookie(
   request: Request,
-  forwardedProto?: string | undefined
+  forwardedProto?: string | undefined,
+  forwardedHost?: string | undefined,
+  originHeader?: string | undefined
 ) {
+  const forwardedHostname = parseForwardedHostname(forwardedHost)
+  if (forwardedHostname) {
+    return shouldUseSecureSessionCookie({
+      protocol: forwardedProto,
+      hostname: forwardedHostname,
+    })
+  }
+
+  const originContext = parseOriginContext(originHeader)
+  if (originContext) {
+    return shouldUseSecureSessionCookie(originContext)
+  }
+
   const requestUrl = new URL(request.url)
 
   return shouldUseSecureSessionCookie({
     protocol: forwardedProto || requestUrl.protocol,
     hostname: requestUrl.hostname,
   })
+}
+
+function parseForwardedHostname(forwardedHost?: string) {
+  const value = forwardedHost?.split(',')[0]?.trim()
+
+  if (!value) {
+    return null
+  }
+
+  return value.replace(/:\d+$/, '')
+}
+
+function parseOriginContext(originHeader?: string) {
+  const value = originHeader?.trim()
+
+  if (!value) {
+    return null
+  }
+
+  try {
+    const url = new URL(value)
+
+    return {
+      protocol: url.protocol,
+      hostname: url.hostname,
+    }
+  } catch {
+    return null
+  }
 }

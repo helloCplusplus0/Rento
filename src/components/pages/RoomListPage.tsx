@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RoomGrid, RoomStatusFilter } from '@/components/business/room-grid'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface RoomListPageProps {
   initialRooms: RoomWithBuildingForClient[]

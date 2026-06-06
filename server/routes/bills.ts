@@ -4,6 +4,7 @@ import {
   isBillDeleteGuardBlockedError,
   isBillingDomainValidationError,
 } from '@/lib/domain/billing'
+import { optimizedBillQueries } from '@/lib/optimized-queries'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -39,6 +40,25 @@ const LEGACY_COMPAT = {
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/bills/* 与基础生成入口 compat wrapper 可移除。',
 } as const
 
+function toClientBill(bill: any) {
+  return {
+    ...bill,
+    amount: Number(bill.amount),
+    receivedAmount: Number(bill.receivedAmount),
+    pendingAmount: Number(bill.pendingAmount),
+    contract: {
+      ...bill.contract,
+      monthlyRent: Number(bill.contract.monthlyRent),
+      totalRent: Number(bill.contract.totalRent),
+      deposit: Number(bill.contract.deposit),
+      keyDeposit: bill.contract.keyDeposit ? Number(bill.contract.keyDeposit) : null,
+      cleaningFee: bill.contract.cleaningFee
+        ? Number(bill.contract.cleaningFee)
+        : null,
+    },
+  }
+}
+
 function appendBillsFallback(routeApp: Hono<AuthAppEnv>, env: MinixServerEnv) {
   routeApp.all('*', (c) => {
     return jsonApiError(
@@ -68,6 +88,47 @@ export function createBillRoutes(env: MinixServerEnv) {
   const routeApp = new Hono<AuthAppEnv>()
 
   routeApp.use('*', requireAuth())
+
+  routeApp.get('/', async (c) => {
+    const url = new URL(c.req.url)
+    const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10))
+    const limit = Math.min(
+      Math.max(1, Number.parseInt(url.searchParams.get('limit') || '20', 10)),
+      100
+    )
+    const status = url.searchParams.get('status')?.trim() || undefined
+    const type = url.searchParams.get('type')?.trim() || undefined
+    const contractId = url.searchParams.get('contractId')?.trim() || undefined
+    const search = url.searchParams.get('search')?.trim() || undefined
+    const startDate = url.searchParams.get('startDate')
+    const endDate = url.searchParams.get('endDate')
+    const buildingId = url.searchParams.get('buildingId')?.trim() || undefined
+    const renterId = url.searchParams.get('renterId')?.trim() || undefined
+
+    const result = await optimizedBillQueries.findWithPagination(
+      { page, limit },
+      {
+        ...(status ? { status: status as any } : {}),
+        ...(type ? { type: type as any } : {}),
+        ...(contractId ? { contractId } : {}),
+        ...(search ? { search } : {}),
+        ...(startDate ? { startDate: new Date(startDate) } : {}),
+        ...(endDate ? { endDate: new Date(endDate) } : {}),
+        ...(buildingId ? { buildingId } : {}),
+        ...(renterId ? { renterId } : {}),
+      }
+    )
+
+    return c.json({
+      data: result.data.map(toClientBill),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    })
+  })
 
   routeApp.get('/:id/semantics', async (c) => {
     const billId = c.req.param('id')

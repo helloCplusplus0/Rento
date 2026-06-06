@@ -9,7 +9,7 @@ import type { LoaderFunctionArgs } from 'react-router-dom'
 
 import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { BillCardCompactSkeleton } from '@/components/business/BillCardCompact'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { BillListPage } from '@/components/pages/BillListPage'
 
 import {

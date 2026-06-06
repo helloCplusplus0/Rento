@@ -8,7 +8,7 @@ import {
 import type { LoaderFunctionArgs } from 'react-router-dom'
 
 import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { ContractListPage } from '@/components/pages/ContractListPage'
 
 import {

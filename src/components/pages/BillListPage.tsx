@@ -11,7 +11,6 @@ import {
 } from '@/lib/bill-semantics'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { BillCard, BillCardSkeleton } from '@/components/business/bill-card'
 import {
   BillCardCompact,
   BillCardCompactSkeleton,
@@ -20,7 +19,7 @@ import { billListMobileStyles } from '@/components/business/bill-list-mobile-sty
 import { BillSearchBar } from '@/components/business/BillSearchBar'
 import { BillStatsOverview } from '@/components/business/BillStatsOverview'
 import { BillStatusFilter } from '@/components/business/BillStatusFilter'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 // 简化类型定义，使用any避免复杂的类型转换
 interface BillListPageProps {
@@ -33,7 +32,7 @@ interface BillListPageProps {
 /**
  * 账单网格布局组件
  * 响应式网格显示账单卡片，支持加载状态和空状态
- * 移动端使用紧凑型卡片，桌面端使用标准卡片
+ * 移动端与桌面端共用紧凑型卡片结构，仅在桌面端切换为多列排布
  */
 function BillGrid({
   bills,
@@ -55,10 +54,10 @@ function BillGrid({
             <BillCardCompactSkeleton key={i} />
           ))}
         </div>
-        {/* 桌面端显示网格骨架屏 */}
+        {/* 桌面端沿用与移动端一致的卡片结构，仅切换为多列排布 */}
         <div className="hidden gap-4 lg:grid lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <BillCardSkeleton key={i} />
+            <BillCardCompactSkeleton key={i} className="h-full" />
           ))}
         </div>
       </div>
@@ -104,12 +103,13 @@ function BillGrid({
         ))}
       </div>
 
-      {/* 桌面端：网格布局标准卡片 */}
+      {/* 桌面端：保持与移动端一致的卡片结构，仅切换为多列布局 */}
       <div className="hidden gap-4 lg:grid lg:grid-cols-3">
         {bills.map((bill) => (
-          <BillCard
+          <BillCardCompact
             key={bill.id}
             bill={bill as any}
+            className="h-full"
             onClick={() => onBillClick?.(bill)}
           />
         ))}

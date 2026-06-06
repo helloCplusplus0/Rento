@@ -9,7 +9,7 @@ import type { LoaderFunctionArgs } from 'react-router-dom'
 
 import { roomListMobileStyles } from '@/components/business/room-list-mobile-styles'
 import { RoomGridSkeleton } from '@/components/business/room-grid'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { RoomListPage } from '@/components/pages/RoomListPage'
 
 import {

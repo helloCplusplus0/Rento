@@ -3,7 +3,7 @@
 import { ArrowRight, Building, FileText, Plus, Users } from 'lucide-react'
 
 import { addPageMobileStyles } from '@/app/add/add-page-mobile-styles'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface AddHubPageProps {

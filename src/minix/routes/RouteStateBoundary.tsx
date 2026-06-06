@@ -7,7 +7,7 @@ import {
 } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 

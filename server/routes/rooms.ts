@@ -3,6 +3,12 @@ import {
   deleteGuardsDomainBoundary,
   metersDomainBoundary,
 } from '@/lib/domain'
+import { optimizedRoomQueries } from '@/lib/optimized-queries'
+import { roomQueries } from '@/lib/queries'
+import {
+  formatRoomSearchResponse,
+  parseRoomQueryParams,
+} from '@/lib/room-utils'
 import {
   deleteRoomWithoutRelatedHistory,
   isRoomDeleteGuardBlockedError,
@@ -69,6 +75,100 @@ export function createRoomRoutes(env: MinixServerEnv) {
   const routeApp = new Hono<AuthAppEnv>()
 
   routeApp.use('*', requireAuth())
+
+  routeApp.get('/', async (c) => {
+    const searchParams = new URL(c.req.url).searchParams
+    const includeMeters = searchParams.get('includeMeters') === 'true'
+
+    if (includeMeters) {
+      const now = new Date()
+      const rooms = await optimizedRoomQueries.findWithMeters()
+
+      const roomsWithMeters = rooms.map((room) => {
+        const activeContract =
+          room.contracts.find(
+            (contract: {
+              status: string
+              startDate: string | Date
+              endDate: string | Date
+            }) =>
+              contract.status === 'ACTIVE' &&
+              now >= new Date(contract.startDate) &&
+              now <= new Date(contract.endDate)
+          ) || null
+
+        const meters = room.meters.map(
+          (meter: {
+            id: string
+            displayName: string
+            meterType: string
+            unitPrice: number | string
+            unit: string
+            location: string | null
+            isActive: boolean
+            readings: Array<{
+              currentReading: number | string
+              readingDate: string | Date
+            }>
+          }) => ({
+            id: meter.id,
+            displayName: meter.displayName,
+            meterType: meter.meterType,
+            unitPrice: Number(meter.unitPrice),
+            unit: meter.unit,
+            location: meter.location,
+            isActive: meter.isActive,
+            lastReading:
+              meter.readings.length > 0
+                ? Number(meter.readings[0].currentReading)
+                : 0,
+            lastReadingDate:
+              meter.readings.length > 0 ? meter.readings[0].readingDate : null,
+            contractId: activeContract?.id || null,
+            contractNumber: activeContract?.contractNumber || null,
+            renterName: activeContract?.renter?.name || null,
+            contractStatus: activeContract?.status || null,
+          })
+        )
+
+        return {
+          ...room,
+          rent: Number(room.rent),
+          area: room.area ? Number(room.area) : null,
+          building: {
+            ...room.building,
+            totalRooms: Number(room.building.totalRooms),
+          },
+          meters,
+          activeContract: activeContract
+            ? {
+                id: activeContract.id,
+                contractNumber: activeContract.contractNumber,
+                renter: activeContract.renter,
+                startDate: activeContract.startDate,
+                endDate: activeContract.endDate,
+                status: activeContract.status,
+              }
+            : null,
+        }
+      })
+
+      return c.json(roomsWithMeters)
+    }
+
+    const params = parseRoomQueryParams(searchParams)
+    const result = await roomQueries.searchRooms(params)
+
+    return c.json(
+      formatRoomSearchResponse({
+        rooms: result.rooms,
+        total: result.pagination.total,
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        aggregations: result.aggregations,
+      })
+    )
+  })
 
   routeApp.delete('/:id', async (c) => {
     const roomId = c.req.param('id')

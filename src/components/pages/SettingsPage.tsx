@@ -6,7 +6,7 @@ import {
   SettingCategory,
   type SettingItemConfig,
 } from '@/components/business/SettingItem'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface SettingsPageProps {
