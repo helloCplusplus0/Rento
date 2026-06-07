@@ -4,7 +4,10 @@ import {
   isBillDeleteGuardBlockedError,
   isBillingDomainValidationError,
 } from '@/lib/domain/billing'
+import { billQueryCache } from '@/lib/bill-cache'
 import { optimizedBillQueries } from '@/lib/optimized-queries'
+import { prisma } from '@/lib/prisma'
+import { billQueries, contractQueries } from '@/lib/queries'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -40,6 +43,42 @@ const LEGACY_COMPAT = {
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/bills/* 与基础生成入口 compat wrapper 可移除。',
 } as const
 
+interface BillDetailItem {
+  id: string
+  billId: string
+  meterReadingId: string
+  meterType: string
+  meterName: string
+  usage: number
+  unitPrice: number
+  amount: number
+  unit: string
+  previousReading: number | null
+  currentReading: number
+  readingDate: string
+  priceSource: string
+  createdAt: string
+  updatedAt: string
+  meterReading?: unknown
+}
+
+interface BillDetailResponse {
+  success: boolean
+  data: BillDetailItem[]
+  metadata: {
+    source: 'bill_details' | 'meter_reading' | 'related_readings' | 'empty'
+    isLegacy: boolean
+    totalAmount?: number
+    billInfo?: {
+      id: string
+      billNumber: string
+      type: string
+      amount: number
+      status: string
+    }
+  }
+}
+
 function toClientBill(bill: any) {
   return {
     ...bill,
@@ -57,6 +96,64 @@ function toClientBill(bill: any) {
         : null,
     },
   }
+}
+
+function isBeforeToday(date: Date) {
+  const candidate = new Date(date)
+  candidate.setHours(0, 0, 0, 0)
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return candidate < today
+}
+
+async function validateBillCreation(data: {
+  contractId?: string
+  amount?: number
+  dueDate?: string
+  billNumber?: string
+  type?: 'RENT' | 'DEPOSIT' | 'UTILITIES' | 'OTHER'
+  itemLabel?: string
+}) {
+  try {
+    const contract = data.contractId
+      ? await contractQueries.findById(data.contractId)
+      : null
+    if (!contract || contract.status !== 'ACTIVE') {
+      return { valid: false, error: '合同不存在或已失效' }
+    }
+  } catch (_error) {
+    return { valid: false, error: '合同验证失败' }
+  }
+
+  if (
+    typeof data.amount !== 'number' ||
+    data.amount <= 0 ||
+    data.amount > 999999.99
+  ) {
+    return { valid: false, error: '金额必须在0.01-999999.99之间' }
+  }
+
+  const dueDate = new Date(data.dueDate ?? '')
+  if (Number.isNaN(dueDate.getTime()) || isBeforeToday(dueDate)) {
+    return { valid: false, error: '到期日期格式错误或早于今天' }
+  }
+
+  if (!data.billNumber || !/^BILL[A-Z0-9]{6,12}$/.test(data.billNumber)) {
+    return { valid: false, error: '账单编号格式不正确' }
+  }
+
+  if (data.type === 'OTHER') {
+    const itemLabel =
+      typeof data.itemLabel === 'string' ? data.itemLabel.trim() : ''
+
+    if (!itemLabel) {
+      return { valid: false, error: '其他账单必须填写条目名' }
+    }
+  }
+
+  return { valid: true }
 }
 
 function appendBillsFallback(routeApp: Hono<AuthAppEnv>, env: MinixServerEnv) {
@@ -128,6 +225,272 @@ export function createBillRoutes(env: MinixServerEnv) {
       hasNext: result.hasNext,
       hasPrev: result.hasPrev,
     })
+  })
+
+  routeApp.post('/', async (c) => {
+    const billData =
+      (await readJsonBody<{
+        billNumber?: string
+        contractId?: string
+        amount?: number
+        pendingAmount?: number
+        dueDate?: string
+        period?: string
+        itemLabel?: string
+        type?: 'RENT' | 'DEPOSIT' | 'UTILITIES' | 'OTHER'
+        paymentMethod?: string
+        operator?: string
+        remarks?: string
+      }>(c, {
+        maxBytes: env.requestGovernance.maxRequestSize,
+      })) ?? {}
+    const normalizedItemLabel =
+      typeof billData.itemLabel === 'string' ? billData.itemLabel.trim() : ''
+
+    if (
+      !billData.billNumber ||
+      !billData.contractId ||
+      !billData.amount ||
+      !billData.dueDate
+    ) {
+      return c.json(
+        { error: '缺少必填字段: billNumber, contractId, amount, dueDate' },
+        400
+      )
+    }
+
+    const validationResult = await validateBillCreation({
+      contractId: billData.contractId,
+      amount: billData.amount,
+      dueDate: billData.dueDate,
+      billNumber: billData.billNumber,
+      type: billData.type,
+      itemLabel: normalizedItemLabel,
+    })
+
+    if (!validationResult.valid) {
+      return c.json({ error: validationResult.error }, 400)
+    }
+
+    const newBill = await billQueries.create({
+      billNumber: billData.billNumber,
+      type: billData.type || 'OTHER',
+      itemLabel:
+        (billData.type || 'OTHER') === 'OTHER' ? normalizedItemLabel : undefined,
+      amount: billData.amount,
+      pendingAmount: billData.pendingAmount || billData.amount,
+      dueDate: new Date(billData.dueDate),
+      period: billData.period,
+      contractId: billData.contractId,
+      paymentMethod: billData.paymentMethod || '待确定',
+      operator: billData.operator || '手动创建',
+      remarks:
+        billData.remarks || `${billData.type || 'OTHER'}账单 - 手动创建`,
+    })
+
+    return c.json(toClientBill(newBill))
+  })
+
+  routeApp.get('/:id/details', async (c) => {
+    try {
+      const billId = c.req.param('id')
+      const result = await billQueryCache.getCachedQuery(
+        {
+          type: 'filter',
+          filters: { billId, type: 'details' },
+        },
+        async (): Promise<BillDetailResponse | { success: false; data: []; metadata: BillDetailResponse['metadata'] }> => {
+          const bill = await prisma.bill.findUnique({
+            where: { id: billId },
+            select: {
+              id: true,
+              billNumber: true,
+              type: true,
+              amount: true,
+              status: true,
+              meterReadingId: true,
+            },
+          })
+
+          if (!bill) {
+            return {
+              success: false,
+              data: [],
+              metadata: {
+                source: 'empty',
+                isLegacy: false,
+              },
+            }
+          }
+
+          const billDetails = await prisma.billDetail.findMany({
+            where: { billId },
+            include: {
+              meterReading: {
+                include: {
+                  meter: {
+                    select: {
+                      id: true,
+                      displayName: true,
+                      meterType: true,
+                      unit: true,
+                      unitPrice: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+
+          if (billDetails.length > 0) {
+            const detailItems: BillDetailItem[] = billDetails.map((detail) => ({
+              id: detail.id,
+              billId: detail.billId,
+              meterReadingId: detail.meterReadingId,
+              meterType: detail.meterType,
+              meterName:
+                detail.meterName ||
+                detail.meterReading?.meter?.displayName ||
+                '未知仪表',
+              usage: Number(detail.usage),
+              unitPrice: Number(detail.unitPrice),
+              amount: Number(detail.amount),
+              unit: detail.unit,
+              previousReading:
+                detail.previousReading !== null
+                  ? Number(detail.previousReading)
+                  : null,
+              currentReading: Number(detail.currentReading),
+              readingDate: detail.readingDate.toISOString(),
+              priceSource: detail.priceSource || 'METER_CONFIG',
+              createdAt: detail.createdAt.toISOString(),
+              updatedAt: detail.updatedAt.toISOString(),
+              meterReading: detail.meterReading,
+            }))
+
+            return {
+              success: true,
+              data: detailItems,
+              metadata: {
+                source: 'bill_details',
+                isLegacy: false,
+                totalAmount: detailItems.reduce((sum, item) => sum + item.amount, 0),
+                billInfo: {
+                  id: bill.id,
+                  billNumber: bill.billNumber,
+                  type: bill.type,
+                  amount: Number(bill.amount),
+                  status: bill.status,
+                },
+              },
+            }
+          }
+
+          if (bill.meterReadingId) {
+            const meterReading = await prisma.meterReading.findUnique({
+              where: { id: bill.meterReadingId },
+              include: {
+                meter: {
+                  select: {
+                    id: true,
+                    displayName: true,
+                    meterType: true,
+                    unit: true,
+                    unitPrice: true,
+                  },
+                },
+              },
+            })
+
+            if (meterReading) {
+              const legacyDetail: BillDetailItem = {
+                id: `legacy-${meterReading.id}`,
+                billId,
+                meterReadingId: meterReading.id,
+                meterType: meterReading.meter.meterType,
+                meterName: meterReading.meter.displayName,
+                usage: Number(meterReading.usage),
+                unitPrice: Number(meterReading.unitPrice),
+                amount: Number(meterReading.amount),
+                unit: meterReading.meter.unit,
+                previousReading:
+                  meterReading.previousReading !== null
+                    ? Number(meterReading.previousReading)
+                    : null,
+                currentReading: Number(meterReading.currentReading),
+                readingDate: meterReading.readingDate.toISOString(),
+                priceSource: 'METER_CONFIG',
+                createdAt: meterReading.createdAt.toISOString(),
+                updatedAt: meterReading.updatedAt.toISOString(),
+                meterReading,
+              }
+
+              return {
+                success: true,
+                data: [legacyDetail],
+                metadata: {
+                  source: 'meter_reading',
+                  isLegacy: true,
+                  totalAmount: legacyDetail.amount,
+                  billInfo: {
+                    id: bill.id,
+                    billNumber: bill.billNumber,
+                    type: bill.type,
+                    amount: Number(bill.amount),
+                    status: bill.status,
+                  },
+                },
+              }
+            }
+          }
+
+          return {
+            success: true,
+            data: [],
+            metadata: {
+              source: 'empty',
+              isLegacy: false,
+              totalAmount: 0,
+              billInfo: {
+                id: bill.id,
+                billNumber: bill.billNumber,
+                type: bill.type,
+                amount: Number(bill.amount),
+                status: bill.status,
+              },
+            },
+          }
+        }
+      )
+
+      return c.json(result)
+    } catch (error) {
+      console.error('获取账单明细失败:', error)
+      return c.json(
+        {
+          success: false,
+          error: '获取账单明细失败',
+          data: [],
+          metadata: {
+            source: 'empty',
+            isLegacy: false,
+          },
+        },
+        500
+      )
+    }
+  })
+
+  routeApp.get('/:id', async (c) => {
+    const billId = c.req.param('id')
+    const bill = await billQueries.findById(billId)
+
+    if (!bill) {
+      return c.json({ error: 'Bill not found' }, 404)
+    }
+
+    return c.json(toClientBill(bill))
   })
 
   routeApp.get('/:id/semantics', async (c) => {

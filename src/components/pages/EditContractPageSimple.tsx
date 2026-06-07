@@ -1,11 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import type { ContractStatus } from '@/lib/colors'
 import type { ContractWithDetailsForClient } from '@/types/database'
 import { formatDate } from '@/lib/format'
+import {
+  formatClientApiError,
+  readClientApiError,
+} from '@/lib/client-api-error'
 import { contractEditMobileStyles } from '@/components/pages/contract-edit-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,10 +16,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ContractStatusBadge } from '@/components/ui/status-badge'
 import { Textarea } from '@/components/ui/textarea'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
+import {
+  goBackWithHost,
+  navigateWithHost,
+  type PageHostNavigation,
+} from './page-host-navigation'
 
 interface EditContractPageSimpleProps {
   contract: ContractWithDetailsForClient
+  navigation?: PageHostNavigation
 }
 
 /**
@@ -26,8 +35,8 @@ interface EditContractPageSimpleProps {
  */
 export function EditContractPageSimple({
   contract,
+  navigation,
 }: EditContractPageSimpleProps) {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     signedBy: contract.signedBy || '',
@@ -55,13 +64,19 @@ export function EditContractPageSimple({
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || '更新合同失败')
+        const apiError = await readClientApiError(response, '更新合同失败')
+        throw new Error(
+          formatClientApiError(apiError, {
+            defaultTitle: '更新合同失败',
+            includeCode: true,
+          })
+        )
       }
 
       // 更新后刷新详情页，避免继续展示旧合同快照
-      router.replace(`/contracts/${contract.id}`)
-      router.refresh()
+      navigateWithHost(navigation, `/contracts/${contract.id}`, {
+        replace: true,
+      })
     } catch (error) {
       console.error('更新合同失败:', error)
       alert(error instanceof Error ? error.message : '更新合同失败，请重试')
@@ -71,7 +86,7 @@ export function EditContractPageSimple({
   }
 
   const handleCancel = () => {
-    router.back()
+    goBackWithHost(navigation, `/contracts/${contract.id}`)
   }
 
   return (

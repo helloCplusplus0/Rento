@@ -1,0 +1,10 @@
+- [x] 已确认 `/rooms/:id`、`/rooms/:id/edit`、`/add/room`、`/add/contract`、`/contracts/new`、`/contracts/:id`、`/contracts/:id/edit`、`/contracts/:id/renew`、`/contracts/:id/checkout`、`/bills/create`、`/bills/:id`、`/bills/:id/edit` 的旧宿主参考源、宿主绑定现状与新宿主承接策略
+- [x] 已在 `src/minix` 中为上述路由建立真实 route module 与页面装配层，不再依赖 legacy document fallback 作为默认访问路径
+- [x] 已确认详情页、编辑页、新建页、流程动作页的 loader / pending / error / not-found / 提交后回跳策略进入 route module，而不是继续散落在旧 `src/app/**/page.tsx`
+- [x] 已确认旧页面中的 `generateMetadata()`、`notFound()`、`dynamic = 'force-dynamic'`、页面级 server query 与 Decimal 转换已被拆离为新宿主可解释的数据加载与错误边界
+- [x] 已确认房源、合同、账单详情/表单/流程动作页在信息结构、组件表达、导航节奏、表单交互与状态反馈上高保真还原旧 `Rento` UI，未出现重新设计
+- [x] 已确认合同锚点、账务语义、多仪表语义、历史保留与删除门禁未因页面迁移被破坏或放宽
+- [x] 已确认 `/api/buildings*` 属于 `/add/room` 内嵌 `BuildingSelector` 的最小正式承接，且旧 `src/app/api/buildings*` 已降级为薄 compat wrapper 或显式回滚基线，不再与 formal host 描述形成双实现冲突
+- [x] 已确认 `/bills/stats` 仍属 `phase13` 已冻结的 P2 延后页，当前继续保留 legacy document fallback，不视为 `phase13-03` 范围阻断
+- [x] 已确认任何新增兼容逻辑都注明存在原因、适用范围与退出条件，且未越界到租客、抄表、retained-legacy API/query、PWA runtime 或 cutover
+- [x] 已完成最小工程验证与最小浏览器验收，并通过独立子代理审核验收

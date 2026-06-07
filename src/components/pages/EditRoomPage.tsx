@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { Building } from '@prisma/client'
 import { ArrowLeft, Save } from 'lucide-react'
 
@@ -18,11 +17,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface EditRoomPageProps {
   room: RoomWithBuildingForClient
   buildings: (Building & { totalRooms: number })[]
+  onSubmitSuccess?: (room: RoomWithBuildingForClient) => void
+  onCancel?: () => void
 }
 
 interface RoomFormData {
@@ -39,8 +40,12 @@ interface RoomFormData {
  * 房间编辑页面组件
  * 允许用户编辑房间的基本信息
  */
-export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
-  const router = useRouter()
+export function EditRoomPage({
+  room,
+  buildings,
+  onSubmitSuccess,
+  onCancel,
+}: EditRoomPageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<RoomFormData>({
     roomNumber: room.roomNumber,
@@ -89,10 +94,14 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
       })
 
       if (response.ok) {
+        const updatedRoom = (await response.json()) as RoomWithBuildingForClient
         // 显示成功提示
         alert('房间信息更新成功！')
-        // 使用 window.location.href 确保页面跳转
-        window.location.href = `/rooms/${room.id}`
+        if (onSubmitSuccess) {
+          onSubmitSuccess(updatedRoom)
+        } else {
+          window.location.assign(`/rooms/${updatedRoom.id}`)
+        }
       } else {
         const error = await response.json()
         alert(`更新失败: ${error.error || '未知错误'}`)
@@ -245,7 +254,14 @@ export function EditRoomPage({ room, buildings }: EditRoomPageProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.back()}
+                  onClick={() => {
+                    if (onCancel) {
+                      onCancel()
+                      return
+                    }
+
+                    window.history.back()
+                  }}
                   disabled={isLoading}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />

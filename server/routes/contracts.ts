@@ -2,6 +2,7 @@ import {
   contractsDomainBoundary,
   deleteGuardsDomainBoundary,
 } from '@/lib/domain'
+import { generateBillsOnContractSigned } from '@/lib/auto-bill-generator'
 import {
   contractDomainService,
   contractLifecycleService,
@@ -12,8 +13,12 @@ import {
   isContractDeleteGuardBlockedError,
   performContractDeleteSafetyCheck,
 } from '@/lib/domain/delete-guards'
+import { createInitialBaselineReadingsForContractTx } from '@/lib/domain/meters'
 import { globalSettings } from '@/lib/global-settings'
 import { optimizedContractQueries } from '@/lib/optimized-queries'
+import { prisma } from '@/lib/prisma'
+import { contractQueries, renterQueries, roomQueries } from '@/lib/queries'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -41,7 +46,7 @@ const LEGACY_COMPAT = {
     'src/app/api/contracts/[id]/generate-bills/route.ts',
   ] as const,
   reason:
-    'phase09-05 起由 server/routes/contracts.ts 与 src/lib/domain/contracts|delete-guards 承接合同激活、续租、补账单与删除门禁；旧 Next 入口仅保留 compat wrapper。',
+    'phase13-03 当前轮起由 server/routes/contracts.ts 与 src/lib/domain/contracts|delete-guards 承接合同列表、新签创建、详情、更新、激活、续租、补账单与删除门禁；旧 Next 入口仅保留 compat wrapper。',
   exitCondition:
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/* compat wrapper 可移除。',
 } as const
@@ -72,6 +77,92 @@ function toClientContract(contract: any) {
   }
 }
 
+type ContractUpdatePayload = {
+  monthlyRent?: number | string
+  deposit?: number | string
+  keyDeposit?: number | string | null
+  cleaningFee?: number | string | null
+  paymentMethod?: string | null
+  paymentTiming?: string | null
+  signedBy?: string | null
+  signedDate?: string | null
+  remarks?: string | null
+}
+
+type ContractCreatePayload = {
+  renterId?: string
+  roomId?: string
+  startDate?: string
+  endDate?: string
+  monthlyRent?: number | string
+  deposit?: number | string | null
+  keyDeposit?: number | string | null
+  cleaningFee?: number | string | null
+  paymentMethod?: string | null
+  paymentTiming?: string | null
+  signedBy?: string | null
+  signedDate?: string | null
+  remarks?: string | null
+  generateBills?: boolean
+  meterInitialReadings?: Record<string, number>
+}
+
+function normalizeContractPaymentMethod(defaultRentCycle?: string): string {
+  switch (defaultRentCycle) {
+    case 'monthly':
+    case '月付':
+      return '月付'
+    case 'quarterly':
+    case '季付':
+      return '季付'
+    case 'semiannual':
+    case '半年付':
+      return '半年付'
+    case 'yearly':
+    case '年付':
+      return '年付'
+    default:
+      return '月付'
+  }
+}
+
+function calculateLegacyContractMonthsDifference(
+  startDate: Date,
+  endDate: Date
+): number {
+  return Math.ceil(
+    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+  )
+}
+
+function calculateLegacyCreateContractMonthsDifference(
+  startDate: Date,
+  endDate: Date
+): number {
+  const timeDiff = endDate.getTime() - startDate.getTime()
+  const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1
+
+  if (daysDiff >= 365) {
+    const years = Math.floor(daysDiff / 365)
+    return years * 12
+  }
+
+  if (daysDiff >= 30) {
+    return Math.ceil(daysDiff / 30)
+  }
+
+  return 1
+}
+
+function mapGeneratedBillsForClient(bills: any[]) {
+  return bills.map((bill: any) => ({
+    ...bill,
+    amount: Number(bill.amount),
+    receivedAmount: Number(bill.receivedAmount),
+    pendingAmount: Number(bill.pendingAmount),
+  }))
+}
+
 function appendContractsFallback(
   routeApp: Hono<AuthAppEnv>,
   env: MinixServerEnv
@@ -80,9 +171,9 @@ function appendContractsFallback(
     return jsonApiError(
       c,
       notImplementedError(
-        'phase09-05 仅迁入合同激活、续租、补账单与合同删除门禁；其余合同入口仍由 compat wrapper 或后续子任务承接。',
+        '合同列表、新签创建、详情、更新、激活、续租、补账单与合同删除门禁已迁入统一 Hono 宿主；其余合同入口仍由 compat wrapper 或后续子任务承接。',
         {
-          phase: 'phase09-05',
+          phase: 'phase13-03',
           routeKey: 'contracts',
           domainServiceHost: 'src/lib/domain',
           migrationState: 'partial-migrated',
@@ -155,6 +246,219 @@ export function createContractRoutes(env: MinixServerEnv) {
     })
   })
 
+  routeApp.post('/', async (c) => {
+    const body = (await readJsonBody<ContractCreatePayload>(c, {
+      maxBytes: env.requestGovernance.maxRequestSize,
+    })) as ContractCreatePayload
+
+    const missingFields = ['renterId', 'roomId', 'startDate', 'endDate', 'monthlyRent']
+      .filter((field) => !body[field as keyof ContractCreatePayload])
+
+    if (missingFields.length > 0) {
+      throw validationError(`缺少必填字段: ${missingFields.join(', ')}`)
+    }
+
+    const start = new Date(body.startDate as string)
+    const end = new Date(body.endDate as string)
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      throw validationError('开始日期或结束日期格式无效')
+    }
+
+    if (end <= start) {
+      throw validationError('结束日期必须晚于开始日期')
+    }
+
+    const contractDefaultSettingsResult =
+      await globalSettings.getContractDefaultSettings()
+    const contractDefaults = contractDefaultSettingsResult.settings
+    const normalizedMonthlyRent = Number(body.monthlyRent)
+    const effectiveDeposit =
+      body.deposit !== undefined && body.deposit !== null
+        ? Number(body.deposit)
+        : normalizedMonthlyRent * contractDefaults.defaultDepositMonths
+
+    if (
+      !Number.isFinite(normalizedMonthlyRent) ||
+      normalizedMonthlyRent <= 0 ||
+      !Number.isFinite(effectiveDeposit) ||
+      effectiveDeposit < 0
+    ) {
+      throw validationError('租金必须大于0，押金不能小于0')
+    }
+
+    const [room, renter] = await Promise.all([
+      roomQueries.findById(body.roomId as string),
+      renterQueries.findById(body.renterId as string),
+    ])
+
+    if (!room) {
+      throw notFoundError('房间不存在')
+    }
+
+    if (room.status !== 'VACANT') {
+      throw validationError(`房间不可用，当前状态：${room.status}`)
+    }
+
+    if (!renter) {
+      throw notFoundError('租客不存在')
+    }
+
+    const hasActiveContract = renter.contracts.some(
+      (contract) => contract.status === 'ACTIVE'
+    )
+
+    if (hasActiveContract) {
+      throw validationError('该租客已有活跃合同')
+    }
+
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const contractNumber = `CT${year}${month}${String(Date.now()).slice(-6)}`
+    const monthsDiff = calculateLegacyCreateContractMonthsDifference(start, end)
+    const totalRent = normalizedMonthlyRent * monthsDiff
+    const effectivePaymentMethod =
+      body.paymentMethod ||
+      normalizeContractPaymentMethod(contractDefaults.defaultRentCycle)
+    const effectivePaymentTiming =
+      body.paymentTiming || contractDefaults.defaultPaymentTiming || undefined
+    const shouldGenerateBills =
+      typeof body.generateBills === 'boolean'
+        ? body.generateBills
+        : contractDefaults.autoGenerateContractBills
+
+    const contractData = {
+      contractNumber,
+      roomId: body.roomId as string,
+      renterId: body.renterId as string,
+      startDate: start,
+      endDate: end,
+      monthlyRent: normalizedMonthlyRent,
+      totalRent,
+      deposit: effectiveDeposit,
+      keyDeposit: body.keyDeposit ? Number(body.keyDeposit) : undefined,
+      cleaningFee: body.cleaningFee ? Number(body.cleaningFee) : undefined,
+      paymentMethod: effectivePaymentMethod,
+      paymentTiming: effectivePaymentTiming,
+      signedBy: body.signedBy || undefined,
+      signedDate: body.signedDate ? new Date(body.signedDate) : undefined,
+      remarks: body.remarks || undefined,
+    }
+
+    const createdContract = await prisma.$transaction(
+      async (tx) => {
+        const contract = await tx.contract.create({
+          data: contractData,
+        })
+
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const normalizedStartDate = new Date(contractData.startDate)
+        normalizedStartDate.setHours(0, 0, 0, 0)
+
+        const initialStatus =
+          normalizedStartDate > today ? 'PENDING' : 'ACTIVE'
+
+        const updatedContract = await tx.contract.update({
+          where: { id: contract.id },
+          data: { status: initialStatus },
+        })
+
+        if (initialStatus === 'ACTIVE') {
+          await tx.room.update({
+            where: { id: body.roomId as string },
+            data: {
+              status: 'OCCUPIED',
+              currentRenter: renter.name,
+            },
+          })
+        }
+
+        await createInitialBaselineReadingsForContractTx(tx, {
+          contractId: contract.id,
+          roomId: body.roomId as string,
+          contractStartDate: contract.startDate,
+          meterInitialReadings: body.meterInitialReadings || {},
+          operator: body.signedBy || 'SYSTEM',
+        })
+
+        return updatedContract
+      },
+      {
+        timeout: 8000,
+      }
+    )
+
+    let billGenerationPromise: Promise<unknown> | null = null
+    if (shouldGenerateBills) {
+      billGenerationPromise = generateBillsOnContractSigned(createdContract.id)
+        .then(async (generatedBills) => {
+          await revalidateMutationPaths({
+            scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+            detailPaths: [
+              `/contracts/${createdContract.id}`,
+              `/rooms/${body.roomId}`,
+              `/renters/${body.renterId}`,
+            ],
+          })
+
+          return generatedBills
+        })
+        .catch((error) => {
+          console.error('异步账单生成失败:', error)
+          return []
+        })
+    }
+
+    const fullContract = await contractQueries.findById(createdContract.id)
+
+    if (!fullContract) {
+      throw new Error('创建合同后无法获取完整信息')
+    }
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [
+        `/contracts/${createdContract.id}`,
+        `/rooms/${body.roomId}`,
+        `/renters/${body.renterId}`,
+      ],
+    })
+
+    let bills: any[] = []
+    if (billGenerationPromise) {
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('账单生成超时')), 2000)
+        )
+
+        const billGenerationResult = await Promise.race([
+          billGenerationPromise,
+          timeoutPromise,
+        ])
+        bills = Array.isArray(billGenerationResult) ? billGenerationResult : []
+      } catch (_error) {
+        // 保持旧链路语义：账单继续后台生成，不阻断合同创建成功响应。
+      }
+    }
+
+    const successMessage =
+      '合同创建成功' +
+      (bills.length > 0 ? `，已生成 ${bills.length} 个账单` : '，账单正在后台生成')
+
+    return jsonSuccess(c, {
+      data: {
+        contract: toClientContract(fullContract),
+        bills: mapGeneratedBillsForClient(bills),
+        message: successMessage,
+      },
+      message: successMessage,
+      env,
+    })
+  })
+
   routeApp.post('/activate', async (c) => {
     const body =
       (await readJsonBody<{ contractId?: string }>(c, {
@@ -197,6 +501,157 @@ export function createContractRoutes(env: MinixServerEnv) {
         message: `激活任务完成，成功激活 ${result.activated} 个合同`,
       },
       message: `激活任务完成，成功激活 ${result.activated} 个合同`,
+      env,
+    })
+  })
+
+  routeApp.get('/:id', async (c) => {
+    const contractId = c.req.param('id')
+
+    if (!contractId) {
+      return jsonApiError(c, validationError('合同ID不能为空'), { env })
+    }
+
+    const contract = await contractQueries.findById(contractId)
+
+    if (!contract) {
+      return jsonApiError(c, notFoundError('合同不存在'), { env })
+    }
+
+    return jsonSuccess(c, {
+      data: toClientContract(contract),
+      message: '获取合同详情成功',
+      env,
+    })
+  })
+
+  routeApp.put('/:id', async (c) => {
+    const contractId = c.req.param('id')
+
+    if (!contractId) {
+      return jsonApiError(c, validationError('合同ID不能为空'), { env })
+    }
+
+    const body = (await readJsonBody<ContractUpdatePayload>(c, {
+      maxBytes: env.requestGovernance.maxRequestSize,
+    })) as ContractUpdatePayload
+
+    const existingContract = await contractQueries.findById(contractId)
+
+    if (!existingContract) {
+      return jsonApiError(c, notFoundError('合同不存在'), { env })
+    }
+
+    const updateData: Record<string, unknown> = {}
+
+    if (
+      existingContract.status === 'ACTIVE' ||
+      existingContract.status === 'EXPIRED'
+    ) {
+      if (body.signedBy !== undefined) {
+        updateData.signedBy = body.signedBy
+      }
+      if (body.signedDate !== undefined) {
+        updateData.signedDate = body.signedDate ? new Date(body.signedDate) : null
+      }
+      if (body.remarks !== undefined) {
+        updateData.remarks = body.remarks
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return jsonApiError(c, validationError('没有提供要更新的数据'), { env })
+      }
+
+      const updatedContract = await prisma.contract.update({
+        where: { id: contractId },
+        data: updateData,
+        include: {
+          room: {
+            include: { building: true },
+          },
+          renter: true,
+          bills: {
+            orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+          },
+        },
+      })
+
+      await revalidateMutationPaths({
+        scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+        detailPaths: [`/contracts/${contractId}`],
+      })
+
+      return jsonSuccess(c, {
+        data: toClientContract(updatedContract),
+        message: '合同签约信息更新成功',
+        env,
+      })
+    }
+
+    if (body.monthlyRent !== undefined) {
+      const normalizedMonthlyRent = Number(body.monthlyRent)
+      updateData.monthlyRent = normalizedMonthlyRent
+
+      if (normalizedMonthlyRent !== Number(existingContract.monthlyRent)) {
+        const monthsDiff = calculateLegacyContractMonthsDifference(
+          new Date(existingContract.startDate),
+          new Date(existingContract.endDate)
+        )
+        updateData.totalRent = normalizedMonthlyRent * monthsDiff
+      }
+    }
+
+    if (body.deposit !== undefined) {
+      updateData.deposit = Number(body.deposit)
+    }
+    if (body.keyDeposit !== undefined) {
+      updateData.keyDeposit = body.keyDeposit ? Number(body.keyDeposit) : null
+    }
+    if (body.cleaningFee !== undefined) {
+      updateData.cleaningFee = body.cleaningFee ? Number(body.cleaningFee) : null
+    }
+    if (body.paymentMethod !== undefined) {
+      updateData.paymentMethod = body.paymentMethod
+    }
+    if (body.paymentTiming !== undefined) {
+      updateData.paymentTiming = body.paymentTiming
+    }
+    if (body.signedBy !== undefined) {
+      updateData.signedBy = body.signedBy
+    }
+    if (body.signedDate !== undefined) {
+      updateData.signedDate = body.signedDate ? new Date(body.signedDate) : null
+    }
+    if (body.remarks !== undefined) {
+      updateData.remarks = body.remarks
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return jsonApiError(c, validationError('没有提供要更新的数据'), { env })
+    }
+
+    const updatedContract = await prisma.contract.update({
+      where: { id: contractId },
+      data: updateData,
+      include: {
+        room: {
+          include: { building: true },
+        },
+        renter: true,
+        bills: {
+          orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+        },
+      },
+    })
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+      detailPaths: [`/contracts/${contractId}`],
+    })
+
+    return jsonSuccess(c, {
+      data: toClientContract(updatedContract),
+      message: '合同更新成功',
       env,
     })
   })

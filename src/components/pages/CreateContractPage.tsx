@@ -1,22 +1,31 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { useSettings } from '@/hooks/useSettings'
+import {
+  formatClientApiError,
+  readClientApiError,
+} from '@/lib/client-api-error'
 import type {
   RenterWithContractsForClient,
   RoomWithBuildingForClient,
 } from '@/types/database'
 import { contractCreateMobileStyles } from '@/components/business/contract-create-mobile-styles'
 import { ContractForm } from '@/components/business/ContractForm'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
+import {
+  goBackWithHost,
+  navigateWithHost,
+  type PageHostNavigation,
+} from './page-host-navigation'
 
 interface CreateContractPageProps {
   renters: RenterWithContractsForClient[]
   availableRooms: RoomWithBuildingForClient[]
   preselectedRoomId?: string // 预选房间ID
   preselectedRenterId?: string // 预选租客ID
+  navigation?: PageHostNavigation
 }
 
 /**
@@ -28,8 +37,8 @@ export function CreateContractPage({
   availableRooms,
   preselectedRoomId,
   preselectedRenterId,
+  navigation,
 }: CreateContractPageProps) {
-  const router = useRouter()
   const { settings, isLoading: settingsLoading } = useSettings()
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState('')
@@ -63,20 +72,16 @@ export function CreateContractPage({
       setProgress('正在处理响应...')
 
       if (!response.ok) {
-        const error = await response.json()
+        const apiError = await readClientApiError(response, '创建合同失败')
 
-        // 根据不同的错误类型提供更友好的提示
-        let errorMessage = '创建合同失败'
+        let errorMessage = formatClientApiError(apiError, {
+          defaultTitle: '创建合同失败',
+          includeCode: true,
+        })
+
         if (response.status === 408) {
           errorMessage =
             '请求超时，可能是因为数据处理时间较长。请稍后重试，或联系管理员。'
-        } else if (response.status === 400) {
-          errorMessage =
-            error.details || error.error || '请求参数有误，请检查输入信息'
-        } else if (response.status === 500) {
-          errorMessage = '服务器内部错误，请稍后重试或联系管理员'
-        } else {
-          errorMessage = error.message || error.error || errorMessage
         }
 
         throw new Error(errorMessage)
@@ -101,8 +106,9 @@ export function CreateContractPage({
       // 短暂显示成功消息后跳转
       setProgress(successMessage)
       setTimeout(() => {
-        router.replace(`/contracts/${contractId}`)
-        router.refresh()
+        navigateWithHost(navigation, `/contracts/${contractId}`, {
+          replace: true,
+        })
       }, 1500)
     } catch (error) {
       console.error('创建合同失败:', error)
@@ -126,7 +132,7 @@ export function CreateContractPage({
   }
 
   const handleCancel = () => {
-    router.back()
+    goBackWithHost(navigation, '/contracts')
   }
 
   return (

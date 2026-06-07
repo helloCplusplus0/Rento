@@ -198,6 +198,7 @@ export const roomQueries = {
     data: {
       roomNumber?: string
       floorNumber?: number
+      buildingId?: string
       roomType?: 'SHARED' | 'WHOLE' | 'SINGLE'
       area?: number
       rent?: number
@@ -206,10 +207,44 @@ export const roomQueries = {
       overdueDays?: number
     }
   ) =>
-    prisma.room.update({
-      where: { id },
-      data,
-      include: { building: true },
+    prisma.$transaction(async (tx) => {
+      const existingRoom = await tx.room.findUnique({
+        where: { id },
+        select: { buildingId: true },
+      })
+
+      if (!existingRoom) {
+        throw new Error(`房间不存在: ${id}`)
+      }
+
+      const updatedRoom = await tx.room.update({
+        where: { id },
+        data,
+        include: { building: true },
+      })
+
+      if (data.buildingId && data.buildingId !== existingRoom.buildingId) {
+        await Promise.all([
+          tx.building.update({
+            where: { id: existingRoom.buildingId },
+            data: {
+              totalRooms: {
+                decrement: 1,
+              },
+            },
+          }),
+          tx.building.update({
+            where: { id: data.buildingId },
+            data: {
+              totalRooms: {
+                increment: 1,
+              },
+            },
+          }),
+        ])
+      }
+
+      return updatedRoom
     }),
 
   // 删除房间

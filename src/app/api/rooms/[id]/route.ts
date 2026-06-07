@@ -4,12 +4,13 @@ import { withApiErrorHandler } from '@/lib/api-error-handler'
 import {
   deleteRoomWithoutRelatedHistory,
   isRoomDeleteGuardBlockedError,
+  performRoomBuildingReassignmentSafetyCheck,
   performRoomDeleteSafetyCheck,
 } from '@/lib/domain/delete-guards'
 import { ErrorType } from '@/lib/error-logger'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
-import { roomQueries } from '@/lib/queries'
+import { buildingQueries, roomQueries } from '@/lib/queries'
 import { transformRoomDecimalFields } from '@/lib/room-utils'
 
 /**
@@ -170,6 +171,7 @@ async function handlePutRoom(
   const updateData: {
     roomNumber?: string
     floorNumber?: number
+    buildingId?: string
     roomType?: 'SHARED' | 'WHOLE' | 'SINGLE'
     area?: number
     rent?: number
@@ -183,6 +185,9 @@ async function handlePutRoom(
   }
   if (requestData.floorNumber !== undefined) {
     updateData.floorNumber = requestData.floorNumber
+  }
+  if (requestData.buildingId !== undefined) {
+    updateData.buildingId = String(requestData.buildingId).trim()
   }
   if (requestData.roomType !== undefined) {
     updateData.roomType = requestData.roomType
@@ -203,13 +208,58 @@ async function handlePutRoom(
     updateData.overdueDays = requestData.overdueDays
   }
 
+  const targetBuildingId = updateData.buildingId ?? existingRoom.buildingId
+
+  if (updateData.buildingId !== undefined) {
+    if (!updateData.buildingId) {
+      return NextResponse.json({ error: '楼栋ID不能为空' }, { status: 400 })
+    }
+
+    if (updateData.buildingId !== existingRoom.buildingId) {
+      const building = await buildingQueries.findById(updateData.buildingId)
+      if (!building) {
+        return NextResponse.json({ error: '楼栋不存在' }, { status: 404 })
+      }
+
+      const reassignmentSafetyCheck =
+        await performRoomBuildingReassignmentSafetyCheck(
+          id,
+          updateData.buildingId
+        )
+
+      if (!reassignmentSafetyCheck.canReassign) {
+        return NextResponse.json(
+          {
+            error:
+              'Cannot reassign room to another building with related business history',
+            code: reassignmentSafetyCheck.errorCode,
+            details: {
+              currentBuildingId: reassignmentSafetyCheck.currentBuildingId,
+              targetBuildingId: reassignmentSafetyCheck.targetBuildingId,
+              contractCount: reassignmentSafetyCheck.contractCount,
+              billCount: reassignmentSafetyCheck.billCount,
+              meterCount: reassignmentSafetyCheck.meterCount,
+              meterReadingCount: reassignmentSafetyCheck.meterReadingCount,
+              billDetailCount: reassignmentSafetyCheck.billDetailCount,
+              relatedDataTypes: reassignmentSafetyCheck.relatedDataTypes,
+              blockingReasons: reassignmentSafetyCheck.blockingReasons,
+            },
+            suggestion: reassignmentSafetyCheck.suggestion,
+          },
+          { status: 400 }
+        )
+      }
+    }
+  }
+
   if (
     updateData.roomNumber &&
-    updateData.roomNumber !== existingRoom.roomNumber
+    (updateData.roomNumber !== existingRoom.roomNumber ||
+      targetBuildingId !== existingRoom.buildingId)
   ) {
     const duplicateRoom = await prisma.room.findFirst({
       where: {
-        buildingId: existingRoom.buildingId,
+        buildingId: targetBuildingId,
         roomNumber: updateData.roomNumber,
         id: { not: id },
       },

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
   Calendar,
@@ -12,6 +11,10 @@ import {
 } from 'lucide-react'
 
 import { formatCurrency, formatDate } from '@/lib/format'
+import {
+  formatClientApiError,
+  readClientApiError,
+} from '@/lib/client-api-error'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +26,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { ContractBillPreview } from '@/components/business/ContractBillPreview'
 import { EnhancedErrorAlert } from '@/components/business/EnhancedErrorAlert'
 import { SimpleErrorAlert } from '@/components/business/ErrorAlert'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
+import {
+  goBackWithHost,
+  navigateWithHost,
+  type PageHostNavigation,
+} from './page-host-navigation'
 import { renewContractMobileStyles } from './renew-contract-mobile-styles'
 
 interface RenewContractFormData {
@@ -74,18 +82,23 @@ interface ContractWithDetailsForClient {
 
 interface RenewContractPageProps {
   contractId: string
+  initialContract?: ContractWithDetailsForClient | null
+  navigation?: PageHostNavigation
 }
 
 /**
  * 续租页面组件
  * 根据renew_lease_chart.md设计实现
  */
-export function RenewContractPage({ contractId }: RenewContractPageProps) {
-  const router = useRouter()
+export function RenewContractPage({
+  contractId,
+  initialContract = null,
+  navigation,
+}: RenewContractPageProps) {
   const [contract, setContract] = useState<ContractWithDetailsForClient | null>(
-    null
+    initialContract
   )
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!initialContract)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errorType, setErrorType] = useState<string | null>(null)
@@ -107,6 +120,40 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
   // 1. 续租申请阶段 - 获取原合同详情
   useEffect(() => {
+    const applyContractDefaults = (contractData: ContractWithDetailsForClient) => {
+      setContract(contractData)
+
+      const originalEndDate = new Date(contractData.endDate)
+      const newStartDate = new Date(originalEndDate)
+      newStartDate.setDate(newStartDate.getDate() + 1)
+
+      const newEndDate = new Date(newStartDate)
+      newEndDate.setFullYear(newEndDate.getFullYear() + 1)
+      newEndDate.setDate(newEndDate.getDate() - 1)
+
+      setFormData({
+        newStartDate: newStartDate.toISOString().split('T')[0],
+        newEndDate: newEndDate.toISOString().split('T')[0],
+        newMonthlyRent: Number(contractData.monthlyRent),
+        newDeposit: Number(contractData.deposit),
+        newKeyDeposit: Number(contractData.keyDeposit) || 0,
+        newCleaningFee: Number(contractData.cleaningFee) || 0,
+        paymentMethod: contractData.paymentMethod || '',
+        paymentTiming: contractData.paymentTiming || '',
+        signedBy: contractData.signedBy || '',
+        signedDate: contractData.signedDate
+          ? new Date(contractData.signedDate).toISOString().split('T')[0]
+          : '',
+        remarks: contractData.remarks || '',
+      })
+    }
+
+    if (initialContract) {
+      applyContractDefaults(initialContract)
+      setLoading(false)
+      return
+    }
+
     const fetchContract = async () => {
       try {
         setLoading(true)
@@ -115,42 +162,23 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
         const response = await fetch(`/api/contracts/${contractId}`)
         if (!response.ok) {
-          throw new Error('获取合同信息失败')
+          const apiError = await readClientApiError(response, '获取合同信息失败')
+          setErrorType(
+            typeof apiError.payload.errorType === 'string'
+              ? apiError.payload.errorType
+              : null
+          )
+          throw new Error(
+            formatClientApiError(apiError, {
+              defaultTitle: '获取合同信息失败',
+              includeCode: true,
+            })
+          )
         }
 
         const result = await response.json()
-        // 提取data字段中的合同数据
         const contractData = result.success ? result.data : result
-        setContract(contractData)
-
-        // 预填原合同信息
-        const originalEndDate = new Date(contractData.endDate)
-        const newStartDate = new Date(originalEndDate)
-        // 修正：新合同从原合同结束日期的第二天开始，避免日期后移
-        // 如果原合同是2026-09-26结束，新合同应该从2026-09-27开始
-        newStartDate.setDate(newStartDate.getDate() + 1)
-
-        const newEndDate = new Date(newStartDate)
-        // 默认续租一年，但结束日期要减一天，保持租期的正确性
-        // 例如：2026-09-27开始，应该到2027-09-26结束（正好一年）
-        newEndDate.setFullYear(newEndDate.getFullYear() + 1)
-        newEndDate.setDate(newEndDate.getDate() - 1)
-
-        setFormData({
-          newStartDate: newStartDate.toISOString().split('T')[0],
-          newEndDate: newEndDate.toISOString().split('T')[0],
-          newMonthlyRent: Number(contractData.monthlyRent),
-          newDeposit: Number(contractData.deposit),
-          newKeyDeposit: Number(contractData.keyDeposit) || 0,
-          newCleaningFee: Number(contractData.cleaningFee) || 0,
-          paymentMethod: contractData.paymentMethod || '',
-          paymentTiming: contractData.paymentTiming || '',
-          signedBy: contractData.signedBy || '',
-          signedDate: contractData.signedDate
-            ? new Date(contractData.signedDate).toISOString().split('T')[0]
-            : '',
-          remarks: contractData.remarks || '', // 预填充原合同备注，用户可以在此基础上修改
-        })
+        applyContractDefaults(contractData)
       } catch (err) {
         setError(err instanceof Error ? err.message : '获取合同信息失败')
       } finally {
@@ -159,7 +187,7 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
     }
 
     fetchContract()
-  }, [contractId])
+  }, [contractId, initialContract])
 
   // 2. 前端表单验证
   const validateForm = (): string | null => {
@@ -199,11 +227,18 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        // 保存错误类型信息
-        setErrorType(errorData.errorType || null)
-        // 使用API返回的具体错误消息，而不是通用的错误消息
-        throw new Error(errorData.error || errorData.details || '续租失败')
+        const apiError = await readClientApiError(response, '续租失败')
+        setErrorType(
+          typeof apiError.payload.errorType === 'string'
+            ? apiError.payload.errorType
+            : null
+        )
+        throw new Error(
+          formatClientApiError(apiError, {
+            defaultTitle: '续租失败',
+            includeCode: true,
+          })
+        )
       }
 
       const result = await response.json()
@@ -211,8 +246,9 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
 
       // 显示成功弹框提示
       setTimeout(() => {
-        router.replace(`/contracts/${result.data.newContract.id}`)
-        router.refresh()
+        navigateWithHost(navigation, `/contracts/${result.data.newContract.id}`, {
+          replace: true,
+        })
       }, 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : '续租失败，请重试')
@@ -775,7 +811,9 @@ export function RenewContractPage({ contractId }: RenewContractPageProps) {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.back()}
+                    onClick={() =>
+                      goBackWithHost(navigation, `/contracts/${contractId}`)
+                    }
                     disabled={submitting}
                     className={renewContractMobileStyles.actionButton}
                   >

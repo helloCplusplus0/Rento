@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 interface RoomActionsProps {
   room: RoomWithBuildingForClient
   onEdit: () => void
+  onAddContract?: () => void
   onDelete: () => void
   isLoading?: boolean
 }
@@ -19,12 +20,19 @@ interface RoomActionsProps {
 export function RoomActions({
   room,
   onEdit,
+  onAddContract,
   onDelete,
   isLoading,
 }: RoomActionsProps) {
   const handleAddContract = () => {
-    // 跳转到添加合同页面，并预选当前房间
-    window.location.href = `/add/contract?roomId=${room.id}`
+    if (onAddContract) {
+      onAddContract()
+      return
+    }
+
+    // 兼容旧宿主直接渲染本组件的场景；在 minix route module 中会优先注入
+    // `onAddContract`，避免退回整页文档跳转。
+    window.location.assign(`/add/contract?roomId=${room.id}`)
   }
 
   return (

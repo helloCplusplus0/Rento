@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
   Calculator,
@@ -9,7 +8,12 @@ import {
 } from 'lucide-react'
 
 import { formatCurrency, formatDate } from '@/lib/format'
+import {
+  formatClientApiError,
+  readClientApiError,
+} from '@/lib/client-api-error'
 import { cn } from '@/lib/utils'
+import type { ContractWithDetailsForClient } from '@/types/database'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,7 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import {
   applyCheckoutSettlementSubmission,
   calculateCheckoutSettlement,
@@ -28,25 +32,14 @@ import {
   checkoutContractMobileStyles,
   checkoutSettlementToneStyles,
 } from './checkout-contract-mobile-styles'
+import {
+  goBackWithHost,
+  navigateWithHost,
+  type PageHostNavigation,
+} from './page-host-navigation'
 
-// 合同详情类型定义
-interface ContractWithDetailsForClient {
-  id: string
-  contractNumber: string
-  roomId: string
-  renterId: string
-  startDate: Date
-  endDate: Date
-  monthlyRent: number
-  totalRent: number
-  deposit: number
-  keyDeposit: number | null
-  cleaningFee: number | null
-  status: string
-  room: {
-    id: string
-    roomNumber: string
-    floorNumber: number
+type CheckoutContractWithMeters = ContractWithDetailsForClient & {
+  room: ContractWithDetailsForClient['room'] & {
     meters: Array<{
       id: string
       meterNumber: string
@@ -57,30 +50,12 @@ interface ContractWithDetailsForClient {
       location: string | null
       latestReading: number | null
     }>
-    building: {
-      id: string
-      name: string
-      address: string | null
-    }
   }
-  renter: {
-    id: string
-    name: string
-    phone: string
-  }
-  bills: Array<{
-    id: string
-    billNumber: string
-    type: string
-    amount: number
-    receivedAmount: number
-    pendingAmount: number
-    status: string
-  }>
 }
 
 interface CheckoutContractPageProps {
-  contract: ContractWithDetailsForClient
+  contract: CheckoutContractWithMeters
+  navigation?: PageHostNavigation
 }
 
 interface SettlementAdjustmentDraft {
@@ -95,8 +70,10 @@ const METER_TYPE_LABELS = {
   GAS: '燃气表',
 } as const
 
-export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
-  const router = useRouter()
+export function CheckoutContractPage({
+  contract,
+  navigation,
+}: CheckoutContractPageProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [settlementAdjustments, setSettlementAdjustments] = useState<
@@ -364,14 +341,20 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || '退租失败')
+        const apiError = await readClientApiError(response, '退租失败')
+        throw new Error(
+          formatClientApiError(apiError, {
+            defaultTitle: '退租失败',
+            includeCode: true,
+          })
+        )
       }
 
       // 退租成功后直接替换当前路由，避免在成功态重渲染与页面跳转并发时触发
       // App Router 的 RSC 请求中断噪音。
-      router.replace(`/contracts/${contract.id}`)
-      router.refresh()
+      navigateWithHost(navigation, `/contracts/${contract.id}`, {
+        replace: true,
+      })
     } catch (error) {
       console.error('退租失败:', error)
       setError(error instanceof Error ? error.message : '退租失败，请重试')
@@ -1126,7 +1109,9 @@ export function CheckoutContractPage({ contract }: CheckoutContractPageProps) {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.back()}
+                    onClick={() =>
+                      goBackWithHost(navigation, `/contracts/${contract.id}`)
+                    }
                     disabled={loading}
                     className={checkoutContractMobileStyles.actionButton}
                   >

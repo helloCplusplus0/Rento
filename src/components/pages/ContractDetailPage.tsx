@@ -1,41 +1,56 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
 import { contractDetailMobileStyles } from '@/components/business/contract-detail-mobile-styles'
 import { SingleMeterReadingModal } from '@/components/business/SingleMeterReadingModal'
-import { PageContainer } from '@/components/layout'
+import {
+  formatClientApiError,
+  readClientApiError,
+} from '@/lib/client-api-error'
+import { PageContainer } from '@/components/layout/PageContainer'
 import type { ContractWithDetailsForClient } from '@/types/database'
+import {
+  navigateWithHost,
+  reloadWithHost,
+  type PageHostNavigation,
+} from './page-host-navigation'
 
 interface ContractDetailPageProps {
   contract: ContractWithDetailsForClient
   contractExpiryAlertDays?: number
+  navigation?: PageHostNavigation
+  onOpenRenter?: (renterId: string) => void
+  onOpenRoom?: (roomId: string) => void
+  onOpenBill?: (billId: string) => void
 }
 
 export function ContractDetailPage({
   contract,
   contractExpiryAlertDays = 30,
+  navigation,
+  onOpenRenter,
+  onOpenRoom,
+  onOpenBill,
 }: ContractDetailPageProps) {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [showMeterReadingModal, setShowMeterReadingModal] = useState(false)
 
   // 处理编辑
   const handleEdit = () => {
-    router.push(`/contracts/${contract.id}/edit`)
+    navigateWithHost(navigation, `/contracts/${contract.id}/edit`)
   }
 
   // 处理续约
   const handleRenew = () => {
-    router.push(`/contracts/${contract.id}/renew`)
+    navigateWithHost(navigation, `/contracts/${contract.id}/renew`)
   }
 
   // 处理退租
   const handleCheckout = () => {
     // 跳转到退租页面
-    router.push(`/contracts/${contract.id}/checkout`)
+    navigateWithHost(navigation, `/contracts/${contract.id}/checkout`)
   }
 
   // 处理激活合同
@@ -65,16 +80,22 @@ export function ContractDetailPage({
         }),
       })
 
-      const result = await response.json()
-
       if (!response.ok) {
-        alert(`激活合同失败：${result.error || '未知错误'}`)
+        const apiError = await readClientApiError(response, '激活合同失败')
+        alert(
+          formatClientApiError(apiError, {
+            defaultTitle: '激活合同失败',
+            includeCode: true,
+          })
+        )
         return
       }
 
+      const result = await response.json()
+
       // 激活成功，刷新页面
       alert('合同激活成功！')
-      window.location.reload()
+      reloadWithHost(navigation)
     } catch (error) {
       console.error('激活合同失败:', error)
       alert('激活合同失败，请检查网络连接后重试')
@@ -106,26 +127,18 @@ export function ContractDetailPage({
         },
       })
 
-      const result = await response.json()
-
       if (!response.ok) {
-        // 根据错误代码提供具体的用户指引
-        let errorMessage = result.error || '删除合同失败'
-
-        if (result.code === 'INVALID_STATUS_ACTIVE') {
-          errorMessage = `无法删除生效中的合同\n\n${result.details?.suggestion || '请使用退租功能处理生效中的合同'}`
-        } else if (result.code === 'HAS_PAID_BILLS') {
-          errorMessage = `无法删除有已支付账单的合同\n\n已支付账单数量：${result.details?.paidBillCount || 0}\n${result.details?.suggestion || '已支付的账单包含重要的财务记录，不能删除'}`
-        } else if (
-          result.code === 'INVALID_STATUS_EXPIRED' ||
-          result.code === 'INVALID_STATUS_TERMINATED'
-        ) {
-          errorMessage = `无法删除已完成的合同\n\n${result.details?.suggestion || '已完成的合同不能删除，用于保护历史记录'}`
-        }
-
-        alert(errorMessage)
+        const apiError = await readClientApiError(response, '删除合同失败')
+        alert(
+          formatClientApiError(apiError, {
+            defaultTitle: '删除合同失败',
+            includeCode: true,
+          })
+        )
         return
       }
+
+      const result = await response.json()
 
       // 删除成功，显示成功信息并跳转
       alert(
@@ -133,7 +146,7 @@ export function ContractDetailPage({
       )
 
       // 跳转回合同列表
-      router.push('/contracts')
+      navigateWithHost(navigation, '/contracts')
     } catch (error) {
       console.error('删除合同失败:', error)
       alert('删除合同失败，请检查网络连接后重试')
@@ -159,6 +172,7 @@ export function ContractDetailPage({
         <EnhancedContractDetail
           contract={contract}
           contractExpiryAlertDays={contractExpiryAlertDays}
+          navigation={navigation}
           onEdit={handleEdit}
           onRenew={handleRenew}
           onTerminate={handleCheckout}
@@ -166,6 +180,9 @@ export function ContractDetailPage({
           onViewPDF={handleViewPDF}
           onActivate={handleActivate}
           onMeterReading={handleMeterReading}
+          onOpenRenter={onOpenRenter}
+          onOpenRoom={onOpenRoom}
+          onOpenBill={onOpenBill}
         />
       </div>
 
@@ -177,8 +194,7 @@ export function ContractDetailPage({
         onClose={() => setShowMeterReadingModal(false)}
         onSuccess={(readings) => {
           console.log('抄表成功:', readings)
-          // 使用 App Router 的局部刷新，避免整页重载导致回执体验中断。
-          router.refresh()
+          reloadWithHost(navigation)
         }}
       />
     </PageContainer>

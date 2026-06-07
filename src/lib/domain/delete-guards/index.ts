@@ -90,6 +90,22 @@ export interface DeletedRoomResult {
   buildingId: string
 }
 
+export interface RoomBuildingReassignmentSafetyCheck {
+  canReassign: boolean
+  currentBuildingId: string
+  targetBuildingId: string
+  contractCount: number
+  billCount: number
+  meterCount: number
+  meterReadingCount: number
+  billDetailCount: number
+  hasRelatedData: boolean
+  relatedDataTypes: string[]
+  errorCode: string | null
+  blockingReasons: string[]
+  suggestion: string | null
+}
+
 export class DeleteGuardBlockedError extends Error {
   constructor(
     message: string,
@@ -119,6 +135,22 @@ export function isRoomDeleteGuardBlockedError(
   error: unknown
 ): error is RoomDeleteGuardBlockedError {
   return error instanceof RoomDeleteGuardBlockedError
+}
+
+export class RoomBuildingReassignmentGuardBlockedError extends Error {
+  constructor(
+    message: string,
+    public readonly details: RoomBuildingReassignmentSafetyCheck
+  ) {
+    super(message)
+    this.name = 'RoomBuildingReassignmentGuardBlockedError'
+  }
+}
+
+export function isRoomBuildingReassignmentGuardBlockedError(
+  error: unknown
+): error is RoomBuildingReassignmentGuardBlockedError {
+  return error instanceof RoomBuildingReassignmentGuardBlockedError
 }
 
 export class ContractDeleteGuardBlockedError extends DeleteGuardBlockedError {
@@ -304,6 +336,104 @@ export async function performRoomDeleteSafetyCheck(
   }
 
   return buildRoomDeleteSafetyCheck(room)
+}
+
+function buildRoomBuildingReassignmentSafetyCheck(
+  room: NonNullable<Awaited<ReturnType<typeof getRoomDeleteGuardSnapshot>>>,
+  targetBuildingId: string
+): RoomBuildingReassignmentSafetyCheck {
+  const contracts = room.contracts || []
+  const meters = room.meters || []
+  const bills = contracts.flatMap((contract) => contract.bills || [])
+  const meterReadings = meters.flatMap((meter) => meter.readings || [])
+  const billDetails = meterReadings.flatMap((reading) => reading.billDetails || [])
+
+  const blockingReasons: string[] = []
+  const relatedDataTypes: string[] = []
+
+  if (contracts.length > 0) {
+    blockingReasons.push('ROOM_REASSIGN_HAS_CONTRACT_HISTORY')
+    relatedDataTypes.push('contracts')
+  }
+
+  if (bills.length > 0) {
+    blockingReasons.push('ROOM_REASSIGN_HAS_BILL_HISTORY')
+    relatedDataTypes.push('bills')
+  }
+
+  if (billDetails.length > 0) {
+    blockingReasons.push('ROOM_REASSIGN_HAS_BILL_DETAIL_HISTORY')
+    relatedDataTypes.push('billDetails')
+  }
+
+  if (meters.length > 0) {
+    blockingReasons.push('ROOM_REASSIGN_HAS_METER_BINDINGS')
+    relatedDataTypes.push('meters')
+  }
+
+  if (meterReadings.length > 0) {
+    blockingReasons.push('ROOM_REASSIGN_HAS_METER_READING_HISTORY')
+    relatedDataTypes.push('meterReadings')
+  }
+
+  const errorCode = blockingReasons[0] || null
+  const suggestion =
+    errorCode === 'ROOM_REASSIGN_HAS_CONTRACT_HISTORY'
+      ? '该房间已存在合同历史，请保留原楼栋归属；如需停用，请走归档或释放流程，不要跨楼栋改挂'
+      : errorCode === 'ROOM_REASSIGN_HAS_BILL_HISTORY' ||
+          errorCode === 'ROOM_REASSIGN_HAS_BILL_DETAIL_HISTORY'
+        ? '该房间已产生账务历史，请保留原楼栋归属，避免破坏账单和明细的历史追溯'
+        : errorCode === 'ROOM_REASSIGN_HAS_METER_BINDINGS'
+          ? '该房间已绑定仪表资产，请保留原楼栋归属，不要通过跨楼栋改挂重写历史关系'
+          : errorCode === 'ROOM_REASSIGN_HAS_METER_READING_HISTORY'
+            ? '该房间已产生抄表历史，请保留原楼栋归属，避免破坏抄表事实链'
+            : null
+
+  return {
+    canReassign: blockingReasons.length === 0,
+    currentBuildingId: room.buildingId,
+    targetBuildingId,
+    contractCount: contracts.length,
+    billCount: bills.length,
+    meterCount: meters.length,
+    meterReadingCount: meterReadings.length,
+    billDetailCount: billDetails.length,
+    hasRelatedData: relatedDataTypes.length > 0,
+    relatedDataTypes,
+    errorCode,
+    blockingReasons,
+    suggestion,
+  }
+}
+
+export async function performRoomBuildingReassignmentSafetyCheck(
+  roomId: string,
+  targetBuildingId: string
+): Promise<RoomBuildingReassignmentSafetyCheck> {
+  const room = await getRoomDeleteGuardSnapshot(prisma, roomId)
+
+  if (!room) {
+    throw new Error('Room not found')
+  }
+
+  return buildRoomBuildingReassignmentSafetyCheck(room, targetBuildingId)
+}
+
+export async function assertRoomBuildingReassignmentAllowed(
+  roomId: string,
+  targetBuildingId: string
+) {
+  const safetyCheck = await performRoomBuildingReassignmentSafetyCheck(
+    roomId,
+    targetBuildingId
+  )
+
+  if (!safetyCheck.canReassign) {
+    throw new RoomBuildingReassignmentGuardBlockedError(
+      'Cannot reassign room to another building with related business history',
+      safetyCheck
+    )
+  }
 }
 
 async function getContractDeleteGuardSnapshot(

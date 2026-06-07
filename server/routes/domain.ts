@@ -4,9 +4,12 @@ import type { AuthAppEnv } from '../lib/auth-context'
 import type { MinixServerEnv } from '../lib/env'
 
 import { createBillRoutes } from './bills'
+import { createBuildingRoutes } from './buildings'
 import { createCheckoutRoutes } from './checkout'
 import { createContractRoutes } from './contracts'
+import { createMeterRoutes } from './meters'
 import { createMeterReadingRoutes } from './meter-readings'
+import { createRenterRoutes } from './renters'
 import { createRoomRoutes } from './rooms'
 
 export function createDomainRoutes(env: MinixServerEnv) {
@@ -18,7 +21,10 @@ export function createDomainRoutes(env: MinixServerEnv) {
   domainRoutes.route('/contracts/:contractId/checkout', createCheckoutRoutes(env))
   domainRoutes.route('/contracts', createContractRoutes(env))
   domainRoutes.route('/bills', createBillRoutes(env))
+  domainRoutes.route('/buildings', createBuildingRoutes(env))
+  domainRoutes.route('/meters', createMeterRoutes(env))
   domainRoutes.route('/meter-readings', createMeterReadingRoutes(env))
+  domainRoutes.route('/renters', createRenterRoutes(env))
   domainRoutes.route('/rooms', createRoomRoutes(env))
 
   return domainRoutes

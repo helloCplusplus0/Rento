@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ExternalLink, HelpCircle } from 'lucide-react'
 
 import { getBillDisplayLabel } from '@/lib/bill-display'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { pushWithHostNavigation } from '@/lib/host-navigation'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,42 @@ import { billDetailMobileStyles } from '@/components/business/bill-detail-mobile
 
 interface BillBasicInfoProps {
   bill: any
+  utilityDetailsData?: UtilityBillDetailsData | null
+  onOpenContract?: (contractId: string) => void
+  onOpenRenter?: (renterId: string) => void
+}
+
+interface UtilityBillDetailsResponse {
+  success?: boolean
+  data?: UtilityBillDetailItem[]
+  error?: string
+  metadata?: {
+    isLegacy?: boolean
+  }
+}
+
+export interface UtilityBillDetailItem {
+  id: string
+  billId: string
+  meterReadingId: string
+  meterType: string
+  meterName: string
+  usage: number
+  unitPrice: number
+  amount: number
+  unit: string
+  previousReading: number | null
+  currentReading: number
+  readingDate: string
+  priceSource: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UtilityBillDetailsData {
+  items: UtilityBillDetailItem[]
+  isLegacy: boolean
+  errorMessage: string | null
 }
 
 const detailLinkClassName =
@@ -32,7 +68,12 @@ const detailLinkClassName =
  * 显示账单的核心信息，包括金额、日期、状态等
  * 支持不同类型账单的差异化展示
  */
-export function BillBasicInfo({ bill }: BillBasicInfoProps) {
+export function BillBasicInfo({
+  bill,
+  utilityDetailsData,
+  onOpenContract,
+  onOpenRenter,
+}: BillBasicInfoProps) {
   // 统一以服务端状态为准，避免与统计口径分叉
   const today = new Date()
   const dueDate = new Date(bill.dueDate)
@@ -116,9 +157,18 @@ export function BillBasicInfo({ bill }: BillBasicInfoProps) {
       <CardContent className={billDetailMobileStyles.cardContent}>
         {/* 根据账单类型显示不同内容 */}
         {bill.type === 'UTILITIES' ? (
-          <UtilitiesBillDetails bill={bill} />
+          <UtilitiesBillDetails
+            bill={bill}
+            utilityDetailsData={utilityDetailsData}
+            onOpenContract={onOpenContract}
+            onOpenRenter={onOpenRenter}
+          />
         ) : (
-          <GeneralBillDetails bill={bill} />
+          <GeneralBillDetails
+            bill={bill}
+            onOpenContract={onOpenContract}
+            onOpenRenter={onOpenRenter}
+          />
         )}
 
         {isOverdue && (
@@ -160,45 +210,114 @@ export function BillBasicInfo({ bill }: BillBasicInfoProps) {
 /**
  * 水电费账单明细组件
  */
-function UtilitiesBillDetails({ bill }: { bill: any }) {
-  const router = useRouter()
-  const [billDetails, setBillDetails] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLegacy, setIsLegacy] = useState(false)
+function UtilitiesBillDetails({
+  bill,
+  utilityDetailsData,
+  onOpenContract,
+  onOpenRenter,
+}: {
+  bill: any
+  utilityDetailsData?: UtilityBillDetailsData | null
+  onOpenContract?: (contractId: string) => void
+  onOpenRenter?: (renterId: string) => void
+}) {
+  const hasPreloadedDetails = utilityDetailsData !== undefined
+  const [billDetailsData, setBillDetailsData] = useState<UtilityBillDetailsData>({
+    items: utilityDetailsData?.items ?? [],
+    isLegacy: utilityDetailsData?.isLegacy ?? false,
+    errorMessage: utilityDetailsData?.errorMessage ?? null,
+  })
+  const [isLoading, setIsLoading] = useState(!hasPreloadedDetails)
 
   // 跳转到合同详情
   const handleContractClick = () => {
-    router.push(`/contracts/${bill.contract.id}`)
+    if (onOpenContract) {
+      onOpenContract(bill.contract.id)
+      return
+    }
+
+    pushWithHostNavigation(`/contracts/${bill.contract.id}`)
   }
 
   // 跳转到租客详情
   const handleRenterClick = () => {
-    router.push(`/renters/${bill.contract.renter.id}`)
+    if (onOpenRenter) {
+      onOpenRenter(bill.contract.renter.id)
+      return
+    }
+
+    pushWithHostNavigation(`/renters/${bill.contract.renter.id}`)
   }
 
   useEffect(() => {
-    // 获取真实的账单明细数据
+    if (!hasPreloadedDetails) {
+      return
+    }
+
+    setBillDetailsData({
+      items: utilityDetailsData?.items ?? [],
+      isLegacy: utilityDetailsData?.isLegacy ?? false,
+      errorMessage: utilityDetailsData?.errorMessage ?? null,
+    })
+    setIsLoading(false)
+  }, [hasPreloadedDetails, utilityDetailsData])
+
+  useEffect(() => {
+    if (hasPreloadedDetails) {
+      return
+    }
+
+    let isCancelled = false
+
     const fetchBillDetails = async () => {
+      setIsLoading(true)
+
       try {
         const response = await fetch(`/api/bills/${bill.id}/details`)
-        if (response.ok) {
-          const result = await response.json()
-          setBillDetails(result.data || [])
-          setIsLegacy(result.isLegacy || false)
-        } else {
-          console.error('Failed to fetch bill details')
-          setBillDetails([])
+        const result: UtilityBillDetailsResponse = await response.json()
+
+        if (isCancelled) {
+          return
         }
+
+        if (response.ok && result.success !== false) {
+          setBillDetailsData({
+            items: result.data || [],
+            isLegacy: Boolean(result.metadata?.isLegacy),
+            errorMessage: null,
+          })
+          return
+        }
+
+        setBillDetailsData({
+          items: [],
+          isLegacy: Boolean(result.metadata?.isLegacy),
+          errorMessage: result.error || '账单用量明细加载失败，请稍后重试。',
+        })
       } catch (error) {
+        if (isCancelled) {
+          return
+        }
+
         console.error('Error fetching bill details:', error)
-        setBillDetails([])
+        setBillDetailsData({
+          items: [],
+          isLegacy: false,
+          errorMessage: '账单用量明细加载失败，请稍后重试。',
+        })
       } finally {
-        setIsLoading(false)
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchBillDetails()
-  }, [bill.id])
+
+    return () => {
+      isCancelled = true
+    }
+  }, [bill.id, hasPreloadedDetails])
 
   const getMeterTypeName = (meterType: string) => {
     const typeNames = {
@@ -227,6 +346,9 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
       </div>
     )
   }
+
+  const billDetails = billDetailsData.items
+  const isLegacy = billDetailsData.isLegacy
 
   return (
     <div className={billDetailMobileStyles.contentStack}>
@@ -320,7 +442,11 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
           )}
         </div>
 
-        {billDetails.length === 0 ? (
+        {billDetailsData.errorMessage ? (
+          <div className="py-4 text-center text-sm text-red-500">
+            {billDetailsData.errorMessage}
+          </div>
+        ) : billDetails.length === 0 ? (
           <div className="py-4 text-center text-sm text-gray-500">
             暂无明细数据
           </div>
@@ -382,17 +508,34 @@ function UtilitiesBillDetails({ bill }: { bill: any }) {
 /**
  * 通用账单详情组件 (租金、押金、其他)
  */
-function GeneralBillDetails({ bill }: { bill: any }) {
-  const router = useRouter()
+function GeneralBillDetails({
+  bill,
+  onOpenContract,
+  onOpenRenter,
+}: {
+  bill: any
+  onOpenContract?: (contractId: string) => void
+  onOpenRenter?: (renterId: string) => void
+}) {
 
   // 跳转到合同详情
   const handleContractClick = () => {
-    router.push(`/contracts/${bill.contract.id}`)
+    if (onOpenContract) {
+      onOpenContract(bill.contract.id)
+      return
+    }
+
+    pushWithHostNavigation(`/contracts/${bill.contract.id}`)
   }
 
   // 跳转到租客详情
   const handleRenterClick = () => {
-    router.push(`/renters/${bill.contract.renter.id}`)
+    if (onOpenRenter) {
+      onOpenRenter(bill.contract.renter.id)
+      return
+    }
+
+    pushWithHostNavigation(`/renters/${bill.contract.renter.id}`)
   }
 
   // 生成缴费周期时间段 (模拟数据，实际应从数据库获取)

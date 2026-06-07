@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import type {
   BillFormData,
@@ -14,23 +13,31 @@ import {
   ErrorType,
   type ErrorRecord,
 } from '@/lib/error-logger'
+import {
+  backWithHostNavigation,
+  replaceWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
 import { billCreateMobileStyles } from '@/components/business/bill-create-mobile-styles'
 import { BillInfoForm } from '@/components/business/BillInfoForm'
 import { BillTypeSelector } from '@/components/business/BillTypeSelector'
 import { ContractSelector } from '@/components/business/ContractSelector'
 import { ErrorAlert } from '@/components/business/ErrorAlert'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface CreateBillPageProps {
   contracts: ContractWithDetailsForClient[]
+  navigation?: HostNavigationAdapter
 }
 
 /**
  * 创建账单页面组件
  * 提供手动创建账单的完整流程
  */
-export function CreateBillPage({ contracts }: CreateBillPageProps) {
-  const router = useRouter()
+export function CreateBillPage({
+  contracts,
+  navigation,
+}: CreateBillPageProps) {
   const [selectedContract, setSelectedContract] =
     useState<ContractWithDetailsForClient>()
   const [billType, setBillType] = useState<BillType>('OTHER')
@@ -90,9 +97,7 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
         billNumber: newBill.billNumber,
       })
 
-      // 跳转后立即刷新详情树，避免沿用写前预取快照
-      router.replace(`/bills/${newBill.id}`)
-      router.refresh()
+      replaceWithHostNavigation(`/bills/${newBill.id}`, navigation)
     } catch (error) {
       const errorRecord: ErrorRecord = {
         id: `bill_creation_${Date.now()}`,
@@ -132,12 +137,7 @@ export function CreateBillPage({ contracts }: CreateBillPageProps) {
   }
 
   const handleCancel = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back()
-      return
-    }
-
-    router.replace('/bills')
+    backWithHostNavigation('/bills', navigation)
   }
 
   return (

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
   Bed,
@@ -47,6 +46,7 @@ import {
 } from '@/components/ui/status-badge'
 import { ContractBillDueSummaryDialog } from '@/components/business/ContractBillDueSummaryDialog'
 import { contractDetailMobileStyles } from '@/components/business/contract-detail-mobile-styles'
+import { navigateWithHost, type PageHostNavigation } from '@/components/pages/page-host-navigation'
 
 interface ContractDetailFieldProps {
   label: string
@@ -78,8 +78,12 @@ interface EnhancedContractDetailProps {
   onViewPDF?: () => void
   onActivate?: () => void // 新增激活回调
   onMeterReading?: () => void // 新增抄表回调
+  onOpenRenter?: (renterId: string) => void
+  onOpenRoom?: (roomId: string) => void
+  onOpenBill?: (billId: string) => void
   contractExpiryAlertDays?: number
   className?: string
+  navigation?: PageHostNavigation
 }
 
 /**
@@ -95,13 +99,16 @@ export function EnhancedContractDetail({
   onViewPDF,
   onActivate, // 新增激活回调
   onMeterReading, // 新增抄表回调
+  onOpenRenter,
+  onOpenRoom,
+  onOpenBill,
   contractExpiryAlertDays = 30,
   className,
+  navigation,
 }: EnhancedContractDetailProps) {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'bills' | 'facilities'
   >('overview')
-  const router = useRouter()
 
   const isActive = contract.status === 'ACTIVE'
   const isExpired = contract.status === 'EXPIRED'
@@ -114,17 +121,32 @@ export function EnhancedContractDetail({
 
   // 处理租客信息卡片点击
   const handleRenterClick = () => {
-    router.push(`/renters/${contract.renter.id}`)
+    if (onOpenRenter) {
+      onOpenRenter(contract.renter.id)
+      return
+    }
+
+    navigateWithHost(navigation, `/renters/${contract.renter.id}`)
   }
 
   // 处理房间信息卡片点击
   const handleRoomClick = () => {
-    router.push(`/rooms/${contract.room.id}`)
+    if (onOpenRoom) {
+      onOpenRoom(contract.room.id)
+      return
+    }
+
+    navigateWithHost(navigation, `/rooms/${contract.room.id}`)
   }
 
   // 处理账单点击
   const handleBillClick = (billId: string) => {
-    router.push(`/bills/${billId}`)
+    if (onOpenBill) {
+      onOpenBill(billId)
+      return
+    }
+
+    navigateWithHost(navigation, `/bills/${billId}`)
   }
 
   // 房间类型文本转换

@@ -564,14 +564,18 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts'],
-        keepReason: '批量房间操作仍为旧宿主能力，未进入 phase09 删除门禁迁移范围。',
-        exitCondition:
-          '待后续阶段明确批量房间治理能力是否保留，再决定统一宿主或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/rooms.ts'],
+        domainServicePaths: [
+          'src/lib/queries.ts',
+          'src/lib/prisma.ts',
+          'src/lib/mutation-revalidation.ts',
+        ],
+        keepReason:
+          '房间批量创建已迁入 Hono 正式宿主，旧入口仅保留 compat 包装给存量页面与调用方过渡。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -649,15 +653,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'PUT', 'DELETE'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/meters.ts'],
         domainServicePaths: ['src/lib/queries.ts', 'src/lib/prisma.ts'],
         keepReason:
-          '仪表详情、配置与停用/删除仍属于旧运行线存量接口；当前阶段不迁移仪表治理入口。',
+          'phase13-03 起仪表详情、配置更新与停用/删除门禁已迁入 server/routes/meters.ts；旧 Next 入口仅保留 compat wrapper。',
         exitCondition:
-          '待后续阶段明确仪表 CRUD、停用、解绑与换表正式宿主后，再评估迁移或兼容策略。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用切换到统一 Hono 宿主后，旧 src/app/api/meters/[meterId]/route.ts compat wrapper 可移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -668,15 +672,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['PATCH'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/meters.ts'],
         domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '仪表启停状态切换仍是旧运行线能力，当前阶段不迁仪表治理接口。',
+          'phase13-03 起仪表启停状态切换已迁入 server/routes/meters.ts；旧 Next 入口仅保留 compat wrapper。',
         exitCondition:
-          '待后续阶段冻结仪表正式管理宿主与审计策略后，再评估迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用切换到统一 Hono 宿主后，旧 src/app/api/meters/[meterId]/status/route.ts compat wrapper 可移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -687,14 +691,13 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'formal-host-owned',
+        phase10Input: 'exit-evaluation',
+        formalHosts: ['server/routes/buildings.ts'],
         domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '楼栋主数据管理不在 phase09 领域服务迁移范围；旧 CRUD 继续保留。',
-        exitCondition:
-          '待后续阶段明确楼栋主数据正式宿主后，再评估迁移或保留旧入口。',
+          'phase13-03 为 AddRoomRoute / BuildingSelector 最小补齐楼栋 CRUD，server/routes/buildings.ts 已成为 `/api/buildings` 的正式宿主；旧 Next 入口仅保留旧运行线回滚价值。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
         rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
       },
     ],
@@ -706,14 +709,13 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'PUT', 'DELETE'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'formal-host-owned',
+        phase10Input: 'exit-evaluation',
+        formalHosts: ['server/routes/buildings.ts'],
         domainServicePaths: ['src/lib/queries.ts', 'src/lib/prisma.ts'],
         keepReason:
-          '楼栋详情与删除仍为旧主数据管理接口，本阶段不扩展至该 CRUD 迁移。',
-        exitCondition:
-          '待后续阶段冻结楼栋主数据正式宿主与删改门禁策略后，再决定去向。',
+          'phase13-03 为 `/add/room` 内嵌楼栋选择器最小补齐详情/编辑/删除链路，server/routes/buildings.ts 已成为 `/api/buildings/:id` 的正式宿主；旧 Next 入口仅保留旧运行线回滚价值。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
         rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
       },
     ],
@@ -724,15 +726,27 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     kind: 'reference-data',
     operations: [
       {
-        methods: ['GET', 'POST'],
+        methods: ['GET'],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/renters.ts'],
+        domainServicePaths: ['src/lib/optimized-queries.ts'],
+        keepReason:
+          'phase13-03 为合同创建 loader 最小补齐 GET /api/renters，正式列表查询已迁入统一 Hono 宿主；旧 Next 入口继续保留为 compat 参考。',
+        exitCondition:
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/renters/route.ts 的 GET compat 入口可移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
+      },
+      {
+        methods: ['POST'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts', 'src/lib/optimized-queries.ts'],
+        domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '租客列表与创建仍为旧运行线存量接口，未进入 phase09 主链服务迁移边界。',
+          '租客创建仍为旧运行线存量接口，尚未冻结统一 Hono 正式写入口与合同联动边界。',
         exitCondition:
-          '待后续阶段明确租客正式查询/写入口与合同联动边界后，再评估迁移。',
+          '待后续阶段明确租客正式写入口与相关门禁后，再评估迁移。',
         rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
       },
     ],

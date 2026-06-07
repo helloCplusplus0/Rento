@@ -1,10 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { getBillDisplayLabel } from '@/lib/bill-display'
 import { formatCurrency } from '@/lib/format'
+import {
+  pushWithHostNavigation,
+  replaceWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,6 +19,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 
 interface EditBillPageProps {
   bill: any // 简化类型，避免复杂的类型转换
+  navigation?: HostNavigationAdapter
 }
 
 interface EditBillFormData {
@@ -25,8 +30,7 @@ interface EditBillFormData {
   remarks: string
 }
 
-export function EditBillPage({ bill }: EditBillPageProps) {
-  const router = useRouter()
+export function EditBillPage({ bill, navigation }: EditBillPageProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -111,9 +115,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
 
       setSuccess('账单更新成功')
 
-      // 成功后刷新目标详情页，避免继续看到旧的 RSC 快照
-      router.replace(`/bills/${bill.id}`)
-      router.refresh()
+      replaceWithHostNavigation(`/bills/${bill.id}`, navigation)
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新账单失败')
     } finally {
@@ -122,7 +124,7 @@ export function EditBillPage({ bill }: EditBillPageProps) {
   }
 
   const handleCancel = () => {
-    router.push(`/bills/${bill.id}`)
+    pushWithHostNavigation(`/bills/${bill.id}`, navigation)
   }
 
   return (

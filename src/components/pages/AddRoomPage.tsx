@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { Building } from '@prisma/client'
 
 import { BuildingSelector } from '@/components/business/BuildingSelector'
 import { RoomBatchForm } from '@/components/business/RoomBatchForm'
 import { RoomPreviewList } from '@/components/business/RoomPreviewList'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { addRoomMobileStyles } from '@/components/pages/add-room-mobile-styles'
 
 interface AddRoomPageProps {
   initialBuildings: (Building & { totalRooms: number })[]
+  onSubmitSuccess?: () => void
 }
 
 interface RoomData {
@@ -26,8 +26,10 @@ interface RoomData {
  * 添加房间页面组件
  * 支持楼栋选择、新建楼栋和房间批量添加
  */
-export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
-  const router = useRouter()
+export function AddRoomPage({
+  initialBuildings,
+  onSubmitSuccess,
+}: AddRoomPageProps) {
   const [buildings, setBuildings] = useState(initialBuildings)
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(
     null
@@ -96,9 +98,13 @@ export function AddRoomPage({ initialBuildings }: AddRoomPageProps) {
       })
 
       if (response.ok) {
-        const result = await response.json()
-        // 跳转到房间列表页面
-        router.push('/rooms')
+        await response.json()
+
+        if (onSubmitSuccess) {
+          onSubmitSuccess()
+        } else {
+          window.location.assign('/rooms')
+        }
       } else {
         const error = await response.json()
         alert(`创建失败: ${error.error}`)

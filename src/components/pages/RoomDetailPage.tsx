@@ -1,29 +1,41 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { RoomStatus } from '@prisma/client'
 
 import type { RoomWithBuildingForClient } from '@/types/database'
 import type { MeterWithReadingsForClient } from '@/types/meter'
+import {
+  formatClientApiError,
+  readClientApiError,
+} from '@/lib/client-api-error'
 import { RoomActions } from '@/components/business/RoomActions'
 import { RoomBasicInfo } from '@/components/business/RoomBasicInfo'
 import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { RoomMeterManagement } from '@/components/business/RoomMeterManagement'
 import { RoomStatusManagement } from '@/components/business/RoomStatusManagement'
 import { TenantContractInfo } from '@/components/business/TenantContractInfo'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface RoomDetailPageProps {
   room: RoomWithBuildingForClient
+  onEdit?: (room: RoomWithBuildingForClient) => void
+  onDeleted?: () => void
+  onOpenAddContract?: (room: RoomWithBuildingForClient) => void
+  onRefresh?: () => void
 }
 
 /**
  * 房间详情页面组件
  * 显示房间的完整信息，包括基本信息、租客信息、合同信息、仪表管理等
  */
-export function RoomDetailPage({ room }: RoomDetailPageProps) {
-  const router = useRouter()
+export function RoomDetailPage({
+  room,
+  onEdit,
+  onDeleted,
+  onOpenAddContract,
+  onRefresh,
+}: RoomDetailPageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [meters, setMeters] = useState<MeterWithReadingsForClient[]>([])
   const [metersLoading, setMetersLoading] = useState(true)
@@ -70,14 +82,22 @@ export function RoomDetailPage({ room }: RoomDetailPageProps) {
         // 乐观更新：立即更新本地状态
         room.status = status
 
-        // 刷新页面数据以确保数据一致性
-        router.refresh()
+        if (onRefresh) {
+          onRefresh()
+        } else {
+          window.location.reload()
+        }
 
         // 可选：显示成功提示
         console.log(`房间状态已更新为: ${status}`)
       } else {
-        console.error('Failed to update room status')
-        // 可选：显示错误提示
+        const apiError = await readClientApiError(response, '房间状态更新失败')
+        alert(
+          formatClientApiError(apiError, {
+            defaultTitle: '房间状态更新失败',
+            includeCode: true,
+          })
+        )
       }
     } catch (error) {
       console.error('Failed to update room status:', error)
@@ -88,34 +108,27 @@ export function RoomDetailPage({ room }: RoomDetailPageProps) {
   }
 
   const handleEdit = () => {
-    // TODO: 实现编辑功能，暂时跳转到编辑页面
-    router.push(`/rooms/${room.id}/edit`)
-  }
-
-  const handleDelete = async () => {
-    // 根据房间状态进行安全检查
-    const canDelete = room.status === 'VACANT' || room.status === 'MAINTENANCE'
-
-    if (!canDelete) {
-      const statusText = room.status === 'OCCUPIED' ? '在租' : '逾期'
-      alert(
-        `无法删除${statusText}状态的房间\n\n` +
-          `房间 ${room.roomNumber} 当前状态为"${statusText}"，说明该房间绑定了租客和合同。\n\n` +
-          `请先完成以下操作：\n` +
-          `1. 终止或完结相关合同\n` +
-          `2. 结清所有账单\n` +
-          `3. 租客退出房间\n` +
-          `4. 房间状态变为"空房"或"维护中"\n\n` +
-          `然后再进行删除操作。`
-      )
+    if (onEdit) {
+      onEdit(room)
       return
     }
 
+    window.location.assign(`/rooms/${room.id}/edit`)
+  }
+
+  const handleDelete = async () => {
+    const canDelete = room.status === 'VACANT' || room.status === 'MAINTENANCE'
     const statusText = room.status === 'VACANT' ? '空房' : '维护中'
+    const currentStatusText = room.status === 'OCCUPIED' ? '在租' : '逾期'
+    const confirmationDescription = canDelete
+      ? '此操作不可恢复，将永久删除房间信息。'
+      : `房间当前状态为"${currentStatusText}"，系统会继续向服务端校验合同、账单和仪表历史门禁；若仍存在关联业务事实，将返回具体阻断原因。`
+
     if (
       !confirm(
-        `确定要删除${statusText}房间 ${room.roomNumber} 吗？\n\n` +
-          `此操作不可恢复，将永久删除房间信息。`
+        `确定要删除房间 ${room.roomNumber} 吗？\n\n` +
+          `当前展示状态：${canDelete ? statusText : currentStatusText}\n` +
+          `${confirmationDescription}`
       )
     ) {
       return
@@ -128,10 +141,19 @@ export function RoomDetailPage({ room }: RoomDetailPageProps) {
       })
 
       if (response.ok) {
-        router.push('/rooms')
+        if (onDeleted) {
+          onDeleted()
+        } else {
+          window.location.assign('/rooms')
+        }
       } else {
-        const error = await response.json()
-        alert(error.message || '删除失败')
+        const apiError = await readClientApiError(response, '删除房间失败')
+        alert(
+          formatClientApiError(apiError, {
+            defaultTitle: '删除房间失败',
+            includeCode: true,
+          })
+        )
       }
     } catch (error) {
       console.error('删除房间失败:', error)
@@ -153,6 +175,9 @@ export function RoomDetailPage({ room }: RoomDetailPageProps) {
         <RoomActions
           room={room}
           onEdit={handleEdit}
+          onAddContract={
+            onOpenAddContract ? () => onOpenAddContract(room) : undefined
+          }
           onDelete={handleDelete}
           isLoading={isLoading}
         />

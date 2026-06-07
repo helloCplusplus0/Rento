@@ -4,8 +4,12 @@ const MINIX_ROUTER_PATHS = new Set([
   '/',
   '/rooms',
   '/add',
+  '/add/room',
+  '/add/contract',
   '/contracts',
+  '/contracts/new',
   '/bills',
+  '/bills/create',
   '/settings',
   '/login',
   '/offline',
@@ -14,16 +18,21 @@ const MINIX_ROUTER_PATHS = new Set([
   '/404',
 ])
 
-const LEGACY_DOCUMENT_PATH_PATTERNS = [
-  /^\/add\//,
-  /^\/renters\//,
+const MINIX_ROUTER_PATH_PATTERNS = [
   /^\/rooms\/[^/]+$/,
+  /^\/rooms\/[^/]+\/edit$/,
   /^\/contracts\/[^/]+$/,
+  /^\/contracts\/[^/]+\/edit$/,
   /^\/contracts\/[^/]+\/renew$/,
+  /^\/contracts\/[^/]+\/checkout$/,
   /^\/bills\/[^/]+$/,
+  /^\/bills\/[^/]+\/edit$/,
+] as const
+
+const LEGACY_DOCUMENT_PATH_PATTERNS = [
+  /^\/renters(?:\/.*)?$/,
   /^\/bills\/stats$/,
-  /^\/meter-readings\/batch$/,
-  /^\/meter-readings\/history$/,
+  /^\/meter-readings(?:\/.*)?$/,
   /^\/system-health$/,
   /^\/data-consistency$/,
 ] as const
@@ -42,7 +51,12 @@ function resolvePathname(href: string) {
 }
 
 export function isMinixRouterPath(href: string) {
-  return MINIX_ROUTER_PATHS.has(resolvePathname(href))
+  const pathname = resolvePathname(href)
+
+  return (
+    MINIX_ROUTER_PATHS.has(pathname) ||
+    MINIX_ROUTER_PATH_PATTERNS.some((pattern) => pattern.test(pathname))
+  )
 }
 
 function isLegacyDocumentPath(href: string) {
@@ -80,12 +94,15 @@ function showUnsupportedPhaseBoundaryNotice(href: string) {
   const pathname = resolvePathname(href)
 
   window.alert(
-    `当前入口 ${pathname} 仍在后续阶段承接，当前 dev:minix 仅支持已迁移的一级正式页面。`
+    `当前入口 ${pathname} 仍在后续阶段承接，当前 dev:minix 仅支持已迁移的正式页面。`
   )
 }
 
-// Keep phase13-02 list routes inside React Router, but fall back to
-// document navigation for detail/create pages that still live on the legacy host.
+// Prefer the migrated phase13 routes inside React Router and only fall back to
+// document navigation for still-deferred legacy paths. At the current boundary
+// this includes renters, meter readings, governance pages, and `/bills/stats`
+// because the stats page remains a phase13 P2 route instead of a phase13-03
+// migrated screen.
 export function navigateToMinixOrDocument(
   navigate: NavigateFunction,
   href: string,

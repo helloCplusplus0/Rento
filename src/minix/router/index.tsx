@@ -16,20 +16,80 @@ import { LoginPage } from '../routes/LoginPage'
 import { NotFoundPage } from '../routes/NotFoundPage'
 import { OfflinePage } from '../routes/OfflinePage'
 import {
+  AddContractRoute,
+  AddContractRouteErrorBoundary,
+  addContractLoader,
+} from '../routes/add/AddContractRoute'
+import {
   AddHubRoute,
   AddHubRouteErrorBoundary,
   addHubLoader,
 } from '../routes/add/AddHubRoute'
+import {
+  AddRoomRoute,
+  AddRoomRouteErrorBoundary,
+  addRoomLoader,
+} from '../routes/add/AddRoomRoute'
+import {
+  BillDetailRoute,
+  BillDetailRouteErrorBoundary,
+  billDetailLoader,
+} from '../routes/bills/BillDetailRoute'
 import {
   BillListRoute,
   BillListRouteErrorBoundary,
   billListLoader,
 } from '../routes/bills/BillListRoute'
 import {
+  CreateBillRoute,
+  CreateBillRouteErrorBoundary,
+  createBillLoader,
+} from '../routes/bills/CreateBillRoute'
+import {
+  EditBillRoute,
+  EditBillRouteErrorBoundary,
+  editBillLoader,
+} from '../routes/bills/EditBillRoute'
+import {
+  ContractCheckoutRoute,
+  ContractCheckoutRouteErrorBoundary,
+  contractCheckoutLoader,
+} from '../routes/contracts/ContractCheckoutRoute'
+import {
+  ContractCreateRoute,
+  ContractCreateRouteErrorBoundary,
+  contractCreateLoader,
+} from '../routes/contracts/ContractCreateRoute'
+import {
+  ContractDetailRoute,
+  ContractDetailRouteErrorBoundary,
+  contractDetailLoader,
+} from '../routes/contracts/ContractDetailRoute'
+import {
+  ContractEditRoute,
+  ContractEditRouteErrorBoundary,
+  contractEditLoader,
+} from '../routes/contracts/ContractEditRoute'
+import {
   ContractListRoute,
   ContractListRouteErrorBoundary,
   contractListLoader,
 } from '../routes/contracts/ContractListRoute'
+import {
+  ContractRenewRoute,
+  ContractRenewRouteErrorBoundary,
+  contractRenewLoader,
+} from '../routes/contracts/ContractRenewRoute'
+import {
+  EditRoomRoute,
+  EditRoomRouteErrorBoundary,
+  editRoomLoader,
+} from '../routes/rooms/EditRoomRoute'
+import {
+  RoomDetailRoute,
+  RoomDetailRouteErrorBoundary,
+  roomDetailLoader,
+} from '../routes/rooms/RoomDetailRoute'
 import {
   RoomListRoute,
   RoomListRouteErrorBoundary,
@@ -82,10 +142,34 @@ export const router = createBrowserRouter([
         errorElement: <RoomListRouteErrorBoundary />,
       },
       {
+        path: 'rooms/:id',
+        element: <RoomDetailRoute />,
+        loader: roomDetailLoader,
+        errorElement: <RoomDetailRouteErrorBoundary />,
+      },
+      {
+        path: 'rooms/:id/edit',
+        element: <EditRoomRoute />,
+        loader: editRoomLoader,
+        errorElement: <EditRoomRouteErrorBoundary />,
+      },
+      {
         path: 'add',
         element: <AddHubRoute />,
         loader: addHubLoader,
         errorElement: <AddHubRouteErrorBoundary />,
+      },
+      {
+        path: 'add/room',
+        element: <AddRoomRoute />,
+        loader: addRoomLoader,
+        errorElement: <AddRoomRouteErrorBoundary />,
+      },
+      {
+        path: 'add/contract',
+        element: <AddContractRoute />,
+        loader: addContractLoader,
+        errorElement: <AddContractRouteErrorBoundary />,
       },
       {
         path: 'contracts',
@@ -94,10 +178,58 @@ export const router = createBrowserRouter([
         errorElement: <ContractListRouteErrorBoundary />,
       },
       {
+        path: 'contracts/new',
+        element: <ContractCreateRoute />,
+        loader: contractCreateLoader,
+        errorElement: <ContractCreateRouteErrorBoundary />,
+      },
+      {
+        path: 'contracts/:id',
+        element: <ContractDetailRoute />,
+        loader: contractDetailLoader,
+        errorElement: <ContractDetailRouteErrorBoundary />,
+      },
+      {
+        path: 'contracts/:id/edit',
+        element: <ContractEditRoute />,
+        loader: contractEditLoader,
+        errorElement: <ContractEditRouteErrorBoundary />,
+      },
+      {
+        path: 'contracts/:id/renew',
+        element: <ContractRenewRoute />,
+        loader: contractRenewLoader,
+        errorElement: <ContractRenewRouteErrorBoundary />,
+      },
+      {
+        path: 'contracts/:id/checkout',
+        element: <ContractCheckoutRoute />,
+        loader: contractCheckoutLoader,
+        errorElement: <ContractCheckoutRouteErrorBoundary />,
+      },
+      {
         path: 'bills',
         element: <BillListRoute />,
         loader: billListLoader,
         errorElement: <BillListRouteErrorBoundary />,
+      },
+      {
+        path: 'bills/create',
+        element: <CreateBillRoute />,
+        loader: createBillLoader,
+        errorElement: <CreateBillRouteErrorBoundary />,
+      },
+      {
+        path: 'bills/:id',
+        element: <BillDetailRoute />,
+        loader: billDetailLoader,
+        errorElement: <BillDetailRouteErrorBoundary />,
+      },
+      {
+        path: 'bills/:id/edit',
+        element: <EditBillRoute />,
+        loader: editBillLoader,
+        errorElement: <EditBillRouteErrorBoundary />,
       },
       {
         path: 'settings',

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   CheckCircle,
   CreditCard,
@@ -10,7 +9,15 @@ import {
   Trash2,
 } from 'lucide-react'
 
-import { BillBasicInfo } from '@/components/business/BillBasicInfo'
+import {
+  pushWithHostNavigation,
+  refreshWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
+import {
+  BillBasicInfo,
+  type UtilityBillDetailsData,
+} from '@/components/business/BillBasicInfo'
 import { ContractRenterInfo } from '@/components/business/ContractRenterInfo'
 import { billDetailMobileStyles } from '@/components/business/bill-detail-mobile-styles'
 import { PaymentConfirmDialog } from '@/components/business/PaymentConfirmDialog'
@@ -18,14 +25,23 @@ import { DetailPageTemplate } from '@/components/layout/DetailPageTemplate'
 
 interface BillDetailPageProps {
   bill: any // 简化类型，避免复杂的类型转换
+  utilityDetailsData?: UtilityBillDetailsData | null
+  navigation?: HostNavigationAdapter
+  onOpenContract?: (contractId: string) => void
+  onOpenRenter?: (renterId: string) => void
 }
 
 /**
  * 账单详情页面组件
  * 显示账单完整信息，支持状态管理和操作功能
  */
-export function BillDetailPage({ bill }: BillDetailPageProps) {
-  const router = useRouter()
+export function BillDetailPage({
+  bill,
+  utilityDetailsData,
+  navigation,
+  onOpenContract,
+  onOpenRenter,
+}: BillDetailPageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
 
@@ -47,8 +63,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
         throw new Error('Failed to update bill status')
       }
 
-      // 刷新页面数据
-      router.refresh()
+      refreshWithHostNavigation(navigation)
     } catch (error) {
       console.error('Error updating bill status:', error)
       alert('更新账单状态失败，请重试')
@@ -58,7 +73,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
   }
 
   const handleEdit = () => {
-    router.push(`/bills/${bill.id}/edit`)
+    pushWithHostNavigation(`/bills/${bill.id}/edit`, navigation)
   }
 
   const handleDelete = async () => {
@@ -77,7 +92,7 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
       }
 
       alert('账单删除成功')
-      router.push('/bills')
+      pushWithHostNavigation('/bills', navigation)
     } catch (err) {
       alert('删除失败，请重试')
     } finally {
@@ -184,7 +199,12 @@ export function BillDetailPage({ bill }: BillDetailPageProps) {
         )}
 
         {/* 基本信息 */}
-        <BillBasicInfo bill={bill} />
+        <BillBasicInfo
+          bill={bill}
+          utilityDetailsData={utilityDetailsData}
+          onOpenContract={onOpenContract}
+          onOpenRenter={onOpenRenter}
+        />
 
         {/* 合同和租客信息 - 简化布局 */}
         <ContractRenterInfo bill={bill} />

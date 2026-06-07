@@ -1,79 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import { withApiErrorHandler } from '@/lib/api-error-handler'
-import { ErrorType } from '@/lib/error-logger'
-import { buildingQueries } from '@/lib/queries'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const BUILDINGS_FORMAL_HOST = 'server/routes/buildings.ts'
+const BUILDINGS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/buildings/route.ts 可直接移除。'
 
 /**
- * 创建新楼栋
- * POST /api/buildings
+ * compat wrapper:
+ * phase13-03 起 `/api/buildings` 的正式语义统一收口到 `server/routes/buildings.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立校验、查询或写入逻辑。
  */
-async function handlePostBuildings(request: NextRequest) {
-  const body = await request.json()
-  const { name, address, description } = body
-
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return NextResponse.json({ error: '楼栋名称不能为空' }, { status: 400 })
-  }
-
-  if (name.trim().length > 100) {
-    return NextResponse.json(
-      { error: '楼栋名称不能超过100个字符' },
-      { status: 400 }
-    )
-  }
-
-  if (address && address.length > 200) {
-    return NextResponse.json(
-      { error: '楼栋地址不能超过200个字符' },
-      { status: 400 }
-    )
-  }
-
-  if (description && description.length > 500) {
-    return NextResponse.json(
-      { error: '楼栋描述不能超过500个字符' },
-      { status: 400 }
-    )
-  }
-
-  const building = await buildingQueries.create({
-    name: name.trim(),
-    address: address?.trim() || undefined,
-    description: description?.trim() || undefined,
+async function handleBuildingsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'buildings-api',
+    migrationHost: BUILDINGS_FORMAL_HOST,
+    exitCondition: BUILDINGS_EXIT_CONDITION,
   })
-
-  const buildingData = {
-    ...building,
-    totalRooms: Number(building.totalRooms),
-  }
-
-  return NextResponse.json(buildingData, { status: 201 })
 }
 
-export const POST = withApiErrorHandler(handlePostBuildings, {
-  requireAuth: true,
-  module: 'buildings-api',
-  errorType: ErrorType.VALIDATION_ERROR,
-})
-
-/**
- * 获取所有楼栋
- * GET /api/buildings
- */
-async function handleGetBuildings(_request: NextRequest) {
-  const buildings = await buildingQueries.findAll()
-
-  const buildingsData = buildings.map((building) => ({
-    ...building,
-    totalRooms: Number(building.totalRooms),
-  }))
-
-  return NextResponse.json(buildingsData)
-}
-
-export const GET = withApiErrorHandler(handleGetBuildings, {
-  requireAuth: true,
-  module: 'buildings-api',
-  errorType: ErrorType.DATABASE_ERROR,
-})
+export const GET = handleBuildingsCompatProxy
+export const POST = handleBuildingsCompatProxy

@@ -2,6 +2,11 @@ import {
   calculateDaysUntilContractExpiry,
   isContractExpiringSoon,
 } from '@/lib/contract-alert-semantics'
+import type {
+  ContractWithDetailsForClient,
+  RenterWithContractsForClient,
+  RoomWithBuildingForClient,
+} from '@/types/database'
 import type { AppSettings } from '@/hooks/useSettings'
 
 import { minixClientEnv } from '../env'
@@ -24,6 +29,11 @@ interface RoomSearchResponse {
   pagination: {
     totalPages: number
   }
+}
+
+interface RenterListResponse {
+  renters: any[]
+  totalPages: number
 }
 
 interface ContractListResponse {
@@ -67,6 +77,19 @@ export interface RoomListRouteData {
   rooms: any[]
 }
 
+export interface RoomDetailRouteData {
+  room: any
+}
+
+export interface EditRoomRouteData {
+  room: any
+  buildings: any[]
+}
+
+export interface AddRoomRouteData {
+  buildings: any[]
+}
+
 export interface ContractListRouteData {
   initialSearchQuery: string
   contracts: any[]
@@ -75,9 +98,111 @@ export interface ContractListRouteData {
   contractExpiryAlertDays: number
 }
 
+export interface ContractCreateRouteData {
+  renters: RenterWithContractsForClient[]
+  availableRooms: RoomWithBuildingForClient[]
+  preselectedRoomId?: string
+  preselectedRenterId?: string
+}
+
+export interface ContractDetailRouteData {
+  contract: ContractWithDetailsForClient
+  contractExpiryAlertDays: number
+}
+
+export interface ContractEditRouteData {
+  contract: ContractWithDetailsForClient
+}
+
+export interface ContractRenewRouteData {
+  contract: ContractWithDetailsForClient
+}
+
+export interface ContractCheckoutRouteData {
+  contract: ContractWithDetailsForClient & {
+    room: ContractWithDetailsForClient['room'] & {
+      meters: Array<{
+        id: string
+        meterNumber: string
+        displayName: string
+        meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
+        unitPrice: number
+        unit: string
+        location: string | null
+        latestReading: number | null
+      }>
+    }
+  }
+}
+
 export interface BillListRouteData {
   initialSearchQuery: string
   bills: any[]
+}
+
+export interface CreateBillRouteData {
+  contracts: ContractWithDetailsForClient[]
+}
+
+interface BillUtilityDetailApiItem {
+  id: string
+  billId: string
+  meterReadingId: string
+  meterType: string
+  meterName: string
+  usage: unknown
+  unitPrice: unknown
+  amount: unknown
+  unit: string
+  previousReading: unknown
+  currentReading: unknown
+  readingDate: string
+  priceSource: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface BillUtilityDetailsApiResponse {
+  success?: boolean
+  data?: BillUtilityDetailApiItem[]
+  error?: string
+  metadata?: {
+    source?: 'bill_details' | 'meter_reading' | 'related_readings' | 'empty'
+    isLegacy?: boolean
+  }
+}
+
+export interface BillUtilityDetailRouteItem {
+  id: string
+  billId: string
+  meterReadingId: string
+  meterType: string
+  meterName: string
+  usage: number
+  unitPrice: number
+  amount: number
+  unit: string
+  previousReading: number | null
+  currentReading: number
+  readingDate: string
+  priceSource: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BillUtilityDetailsRouteData {
+  items: BillUtilityDetailRouteItem[]
+  isLegacy: boolean
+  errorMessage: string | null
+}
+
+export interface BillDetailRouteData {
+  bill: any
+  utilityDetailsData: BillUtilityDetailsRouteData | null
+}
+
+export interface EditBillRouteData {
+  bill: any
 }
 
 export interface SettingsRouteData {
@@ -95,12 +220,238 @@ function normalizeSearchQuery(value: string | null) {
   return value?.trim() || ''
 }
 
+function normalizeOptionalId(value: string | null) {
+  const normalized = value?.trim()
+  return normalized ? normalized : undefined
+}
+
 function normalizeTotalPages(value: number | undefined) {
   if (!Number.isFinite(value) || !value || value < 1) {
     return 1
   }
 
   return Math.trunc(value)
+}
+
+function toNumberValue(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'toNumber' in value &&
+    typeof (value as { toNumber: () => number }).toNumber === 'function'
+  ) {
+    const parsed = (value as { toNumber: () => number }).toNumber()
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  return fallback
+}
+
+function toNullableNumberValue(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  return toNumberValue(value, 0)
+}
+
+function toDateValue(value: unknown): Date | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  const parsed = value instanceof Date ? value : new Date(String(value))
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}
+
+function normalizeBillForClient(bill: any) {
+  return {
+    ...bill,
+    amount: toNumberValue(bill.amount),
+    receivedAmount: toNumberValue(bill.receivedAmount),
+    pendingAmount: toNumberValue(bill.pendingAmount),
+    dueDate: toDateValue(bill.dueDate),
+    startDate: toDateValue(bill.startDate),
+    endDate: toDateValue(bill.endDate),
+    paidDate: toDateValue(bill.paidDate),
+    createdAt: toDateValue(bill.createdAt),
+    updatedAt: toDateValue(bill.updatedAt),
+  }
+}
+
+function normalizeBillUtilityDetailForClient(
+  detail: BillUtilityDetailApiItem
+): BillUtilityDetailRouteItem {
+  return {
+    id: detail.id,
+    billId: detail.billId,
+    meterReadingId: detail.meterReadingId,
+    meterType: detail.meterType,
+    meterName: detail.meterName,
+    usage: toNumberValue(detail.usage),
+    unitPrice: toNumberValue(detail.unitPrice),
+    amount: toNumberValue(detail.amount),
+    unit: detail.unit,
+    previousReading: toNullableNumberValue(detail.previousReading),
+    currentReading: toNumberValue(detail.currentReading),
+    readingDate: detail.readingDate,
+    priceSource: detail.priceSource,
+    createdAt: detail.createdAt,
+    updatedAt: detail.updatedAt,
+  }
+}
+
+function normalizeBuildingForClient(building: any) {
+  if (!building) {
+    return building
+  }
+
+  return {
+    ...building,
+    totalRooms: toNumberValue(building.totalRooms),
+    createdAt: toDateValue(building.createdAt),
+    updatedAt: toDateValue(building.updatedAt),
+  }
+}
+
+function normalizeContractSummaryForClient(contract: any) {
+  return {
+    ...contract,
+    monthlyRent: toNumberValue(contract.monthlyRent),
+    totalRent: toNumberValue(contract.totalRent),
+    deposit: toNumberValue(contract.deposit),
+    keyDeposit: toNullableNumberValue(contract.keyDeposit),
+    cleaningFee: toNullableNumberValue(contract.cleaningFee),
+    startDate: toDateValue(contract.startDate),
+    endDate: toDateValue(contract.endDate),
+    signedDate: toDateValue(contract.signedDate),
+    createdAt: toDateValue(contract.createdAt),
+    updatedAt: toDateValue(contract.updatedAt),
+    room: contract.room
+      ? normalizeRoomForClient(contract.room, { includeContracts: false })
+      : contract.room,
+    renter: contract.renter
+      ? normalizeRenterForClient(contract.renter, { includeContracts: false })
+      : contract.renter,
+    bills: (contract.bills ?? []).map((bill: any) => normalizeBillForClient(bill)),
+  }
+}
+
+function normalizeRoomForClient(
+  room: any,
+  options: { includeContracts?: boolean } = {}
+): RoomWithBuildingForClient {
+  return {
+    ...room,
+    rent: toNumberValue(room.rent),
+    area: toNullableNumberValue(room.area),
+    createdAt: toDateValue(room.createdAt),
+    updatedAt: toDateValue(room.updatedAt),
+    building: normalizeBuildingForClient(room.building),
+    contracts: options.includeContracts
+      ? (room.contracts ?? []).map((contract: any) =>
+          normalizeContractSummaryForClient(contract)
+        )
+      : room.contracts,
+  } as RoomWithBuildingForClient
+}
+
+function normalizeRenterForClient(
+  renter: any,
+  options: { includeContracts?: boolean } = {}
+): RenterWithContractsForClient {
+  return {
+    ...renter,
+    moveInDate: toDateValue(renter.moveInDate),
+    createdAt: toDateValue(renter.createdAt),
+    updatedAt: toDateValue(renter.updatedAt),
+    contracts: options.includeContracts
+      ? (renter.contracts ?? []).map((contract: any) =>
+          normalizeContractSummaryForClient(contract)
+        )
+      : renter.contracts,
+  } as RenterWithContractsForClient
+}
+
+function normalizeContractForClient(contract: any): ContractWithDetailsForClient {
+  return {
+    ...normalizeContractSummaryForClient(contract),
+    room: normalizeRoomForClient(contract.room, { includeContracts: false }),
+    renter: normalizeRenterForClient(contract.renter, {
+      includeContracts: false,
+    }),
+    bills: (contract.bills ?? []).map((bill: any) => normalizeBillForClient(bill)),
+  } as ContractWithDetailsForClient
+}
+
+function normalizeCheckoutMeter(meter: any) {
+  return {
+    id: meter.id,
+    meterNumber: meter.meterNumber,
+    displayName: meter.displayName,
+    meterType: meter.meterType,
+    unitPrice: toNumberValue(meter.unitPrice),
+    unit: meter.unit,
+    location: meter.location ?? null,
+    latestReading: toNullableNumberValue(
+      meter.latestReading ?? meter.lastReading ?? meter.readings?.[0]?.currentReading
+    ),
+  }
+}
+
+function getSafeStatusText(status: number) {
+  switch (status) {
+    case 400:
+      return 'Bad Request'
+    case 401:
+      return 'Unauthorized'
+    case 403:
+      return 'Forbidden'
+    case 404:
+      return 'Not Found'
+    case 500:
+      return 'Internal Server Error'
+    default:
+      return 'Error'
+  }
+}
+
+function createRouteDataErrorResponse(message: string, status: number) {
+  // Browser-native Response rejects non-ASCII statusText, so keep the
+  // human-readable Chinese message in the body and use a safe HTTP phrase here.
+  return new Response(message, {
+    status,
+    statusText: getSafeStatusText(status),
+  })
+}
+
+function remapRouteDataError(
+  error: unknown,
+  notFoundMessage: string,
+  fallbackMessage: string
+): never {
+  if (error instanceof Response) {
+    if (error.status === 404) {
+      throw createRouteDataErrorResponse(notFoundMessage, 404)
+    }
+
+    throw error
+  }
+
+  if (error instanceof Error) {
+    throw createRouteDataErrorResponse(error.message || fallbackMessage, 500)
+  }
+
+  throw createRouteDataErrorResponse(fallbackMessage, 500)
 }
 
 async function readJsonResponse<TData>(
@@ -110,10 +461,7 @@ async function readJsonResponse<TData>(
   try {
     return (await response.json()) as TData
   } catch {
-    throw new Response(fallbackMessage, {
-      status: response.status || 500,
-      statusText: fallbackMessage,
-    })
+    throw createRouteDataErrorResponse(fallbackMessage, response.status || 500)
   }
 }
 
@@ -142,10 +490,7 @@ async function fetchJson<TData>(
         ? String(payload.error || fallbackMessage)
         : fallbackMessage
 
-    throw new Response(detail, {
-      status: response.status,
-      statusText: fallbackMessage,
-    })
+    throw createRouteDataErrorResponse(detail, response.status)
   }
 
   return payload as TData
@@ -159,10 +504,7 @@ async function fetchApiEnvelope<TData>(
   const payload = await fetchJson<ApiEnvelope<TData>>(path, fallbackMessage, options)
 
   if (!payload.success || payload.data === undefined) {
-    throw new Response(payload.error || fallbackMessage, {
-      status: 500,
-      statusText: fallbackMessage,
-    })
+    throw createRouteDataErrorResponse(payload.error || fallbackMessage, 500)
   }
 
   return payload.data
@@ -193,6 +535,52 @@ async function fetchAllRoomPages(options: RequestOptions = {}) {
   return rooms
 }
 
+async function fetchAllVacantRoomPages(options: RequestOptions = {}) {
+  const rooms: RoomWithBuildingForClient[] = []
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages) {
+    const searchParams = new URLSearchParams({
+      page: String(page),
+      limit: String(PAGE_LIMIT),
+      statuses: 'VACANT',
+    })
+
+    const payload = await fetchJson<RoomSearchResponse>(
+      `/rooms?${searchParams.toString()}`,
+      '可用房间加载失败',
+      options
+    )
+
+    rooms.push(
+      ...payload.rooms.map((room) =>
+        normalizeRoomForClient(room, { includeContracts: true })
+      )
+    )
+    totalPages = normalizeTotalPages(payload.pagination.totalPages)
+    page += 1
+  }
+
+  return rooms
+}
+
+async function fetchRoomDetail(roomId: string, options: RequestOptions = {}) {
+  try {
+    return await fetchJson<any>(
+      `/rooms/${roomId}`,
+      '房间详情加载失败',
+      options
+    )
+  } catch (error) {
+    remapRouteDataError(error, '房间不存在或已被删除', '房间详情加载失败')
+  }
+}
+
+async function fetchBuildings(options: RequestOptions = {}) {
+  return fetchJson<any[]>('/buildings', '楼栋列表加载失败', options)
+}
+
 async function fetchAllContractPages(options: RequestOptions = {}) {
   const contracts: any[] = []
   let page = 1
@@ -211,6 +599,88 @@ async function fetchAllContractPages(options: RequestOptions = {}) {
     )
 
     contracts.push(...payload.contracts)
+    totalPages = normalizeTotalPages(payload.totalPages)
+    page += 1
+  }
+
+  return contracts
+}
+
+async function fetchAllRenterPages(options: RequestOptions = {}) {
+  const renters: RenterWithContractsForClient[] = []
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages) {
+    const searchParams = new URLSearchParams({
+      page: String(page),
+      limit: String(PAGE_LIMIT),
+    })
+
+    const payload = await fetchApiEnvelope<RenterListResponse>(
+      `/renters?${searchParams.toString()}`,
+      '租客列表加载失败',
+      options
+    )
+
+    renters.push(
+      ...payload.renters.map((renter) =>
+        normalizeRenterForClient(renter, { includeContracts: true })
+      )
+    )
+    totalPages = normalizeTotalPages(payload.totalPages)
+    page += 1
+  }
+
+  return renters
+}
+
+async function fetchContractDetail(contractId: string, options: RequestOptions = {}) {
+  try {
+    const contract = await fetchApiEnvelope<any>(
+      `/contracts/${contractId}`,
+      '合同详情加载失败',
+      options
+    )
+
+    return normalizeContractForClient(contract)
+  } catch (error) {
+    remapRouteDataError(error, '合同不存在或已被删除', '合同详情加载失败')
+  }
+}
+
+async function fetchActiveRoomMeters(roomId: string, options: RequestOptions = {}) {
+  const payload = await fetchJson<ApiEnvelope<any[]>>(
+    `/rooms/${roomId}/meters`,
+    '房间仪表加载失败',
+    options
+  )
+
+  const meters = payload.success && Array.isArray(payload.data) ? payload.data : []
+  return meters.filter((meter) => meter.isActive).map(normalizeCheckoutMeter)
+}
+
+async function fetchAllActiveContractPages(options: RequestOptions = {}) {
+  const contracts: ContractWithDetailsForClient[] = []
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages) {
+    const searchParams = new URLSearchParams({
+      page: String(page),
+      limit: String(PAGE_LIMIT),
+      status: 'ACTIVE',
+    })
+
+    const payload = await fetchApiEnvelope<ContractListResponse>(
+      `/contracts?${searchParams.toString()}`,
+      '创建账单所需合同加载失败',
+      options
+    )
+
+    contracts.push(
+      ...payload.contracts.map((contract) => normalizeContractForClient(contract))
+    )
     totalPages = normalizeTotalPages(payload.totalPages)
     page += 1
   }
@@ -248,6 +718,56 @@ async function fetchAllBillPages(
   }
 
   return bills
+}
+
+async function fetchBillDetail(billId: string, options: RequestOptions = {}) {
+  try {
+    return await fetchJson<any>(`/bills/${billId}`, '账单详情加载失败', options)
+  } catch (error) {
+    remapRouteDataError(error, '账单不存在或已被删除', '账单详情加载失败')
+  }
+}
+
+async function fetchBillUtilityDetails(
+  billId: string,
+  options: RequestOptions = {}
+): Promise<BillUtilityDetailsRouteData> {
+  const fallbackMessage = '账单用量明细加载失败，请稍后重试。'
+  try {
+    const response = await fetch(buildApiUrl(`/bills/${billId}/details`), {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+      signal: options.signal,
+    })
+
+    const payload = await readJsonResponse<BillUtilityDetailsApiResponse>(
+      response,
+      fallbackMessage
+    )
+
+    if (!response.ok || !payload.success) {
+      return {
+        items: [],
+        isLegacy: Boolean(payload.metadata?.isLegacy),
+        errorMessage: payload.error || fallbackMessage,
+      }
+    }
+
+    return {
+      items: (payload.data ?? []).map(normalizeBillUtilityDetailForClient),
+      isLegacy: Boolean(payload.metadata?.isLegacy),
+      errorMessage: null,
+    }
+  } catch {
+    return {
+      items: [],
+      isLegacy: false,
+      errorMessage: fallbackMessage,
+    }
+  }
 }
 
 function buildContractStats(
@@ -325,6 +845,46 @@ export async function loadRoomListRouteData(
   }
 }
 
+export async function loadRoomDetailRouteData(
+  roomId: string,
+  options: RequestOptions = {}
+): Promise<RoomDetailRouteData> {
+  const room = await fetchRoomDetail(roomId, options)
+
+  return {
+    room,
+  }
+}
+
+export async function loadEditRoomRouteData(
+  roomId: string,
+  options: RequestOptions = {}
+): Promise<EditRoomRouteData> {
+  try {
+    const [room, buildings] = await Promise.all([
+      fetchRoomDetail(roomId, options),
+      fetchBuildings(options),
+    ])
+
+    return {
+      room,
+      buildings,
+    }
+  } catch (error) {
+    remapRouteDataError(error, '房间不存在或已被删除', '编辑房间数据加载失败')
+  }
+}
+
+export async function loadAddRoomRouteData(
+  options: RequestOptions = {}
+): Promise<AddRoomRouteData> {
+  const buildings = await fetchBuildings(options)
+
+  return {
+    buildings,
+  }
+}
+
 export async function loadContractListRouteData(
   requestUrl: string,
   options: RequestOptions = {}
@@ -346,6 +906,79 @@ export async function loadContractListRouteData(
   }
 }
 
+export async function loadContractCreateRouteData(
+  requestUrl: string,
+  options: RequestOptions = {}
+): Promise<ContractCreateRouteData> {
+  const url = new URL(requestUrl)
+  const [renters, availableRooms] = await Promise.all([
+    fetchAllRenterPages(options),
+    fetchAllVacantRoomPages(options),
+  ])
+
+  return {
+    renters,
+    availableRooms,
+    preselectedRoomId: normalizeOptionalId(url.searchParams.get('roomId')),
+    preselectedRenterId: normalizeOptionalId(url.searchParams.get('renterId')),
+  }
+}
+
+export async function loadContractDetailRouteData(
+  contractId: string,
+  options: RequestOptions = {}
+): Promise<ContractDetailRouteData> {
+  const [contract, settings] = await Promise.all([
+    fetchContractDetail(contractId, options),
+    fetchApiEnvelope<Partial<AppSettings>>('/settings', '设置加载失败', options),
+  ])
+
+  return {
+    contract,
+    contractExpiryAlertDays: Number(settings.contractExpiryAlertDays) || 30,
+  }
+}
+
+export async function loadContractEditRouteData(
+  contractId: string,
+  options: RequestOptions = {}
+): Promise<ContractEditRouteData> {
+  const contract = await fetchContractDetail(contractId, options)
+
+  return {
+    contract,
+  }
+}
+
+export async function loadContractRenewRouteData(
+  contractId: string,
+  options: RequestOptions = {}
+): Promise<ContractRenewRouteData> {
+  const contract = await fetchContractDetail(contractId, options)
+
+  return {
+    contract,
+  }
+}
+
+export async function loadContractCheckoutRouteData(
+  contractId: string,
+  options: RequestOptions = {}
+): Promise<ContractCheckoutRouteData> {
+  const contract = await fetchContractDetail(contractId, options)
+  const activeRoomMeters = await fetchActiveRoomMeters(contract.roomId, options)
+
+  return {
+    contract: {
+      ...contract,
+      room: {
+        ...contract.room,
+        meters: activeRoomMeters,
+      },
+    } as ContractCheckoutRouteData['contract'],
+  }
+}
+
 export async function loadBillListRouteData(
   requestUrl: string,
   options: RequestOptions = {}
@@ -357,6 +990,43 @@ export async function loadBillListRouteData(
   return {
     initialSearchQuery,
     bills,
+  }
+}
+
+export async function loadCreateBillRouteData(
+  options: RequestOptions = {}
+): Promise<CreateBillRouteData> {
+  const contracts = await fetchAllActiveContractPages(options)
+
+  return {
+    contracts,
+  }
+}
+
+export async function loadBillDetailRouteData(
+  billId: string,
+  options: RequestOptions = {}
+): Promise<BillDetailRouteData> {
+  const bill = await fetchBillDetail(billId, options)
+  const utilityDetailsData =
+    bill.type === 'UTILITIES'
+      ? await fetchBillUtilityDetails(billId, options)
+      : null
+
+  return {
+    bill,
+    utilityDetailsData,
+  }
+}
+
+export async function loadEditBillRouteData(
+  billId: string,
+  options: RequestOptions = {}
+): Promise<EditBillRouteData> {
+  const bill = await fetchBillDetail(billId, options)
+
+  return {
+    bill,
   }
 }
 
