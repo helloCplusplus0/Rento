@@ -12,6 +12,7 @@ import { createMeterRoutes } from './meters'
 import { createMeterReadingRoutes } from './meter-readings'
 import { createRenterRoutes } from './renters'
 import { createRoomRoutes } from './rooms'
+import { createUtilityReadingRoutes } from './utility-readings'
 
 export function createDomainRoutes(env: MinixServerEnv) {
   const domainRoutes = new Hono<AuthAppEnv>()
@@ -30,6 +31,7 @@ export function createDomainRoutes(env: MinixServerEnv) {
   domainRoutes.route('/meter-readings', createMeterReadingRoutes(env))
   domainRoutes.route('/renters', createRenterRoutes(env))
   domainRoutes.route('/rooms', createRoomRoutes(env))
+  domainRoutes.route('/utility-readings', createUtilityReadingRoutes(env))
 
   return domainRoutes
 }

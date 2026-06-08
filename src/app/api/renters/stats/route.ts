@@ -1,18 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import { getRenterStatsPageClosureData } from '@/lib/page-closure-compat/renters'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const RENTER_STATS_FORMAL_HOST = 'server/routes/renters.ts'
+const RENTER_STATS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/renters/stats/route.ts 可直接移除。'
 
 /**
- * phase13-04 page-closure compat:
- * stats 查询继续锚定 shared compat helper，避免把 server/Hono runtime
- * 误判为 `/api/renters/stats` 的正式宿主切流。
+ * compat wrapper:
+ * phase14-06 起 `/api/renters/stats` 的统计读取统一收口到 `server/routes/renters.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护 shared compat helper。
  */
-export async function GET(_request: NextRequest) {
-  try {
-    const stats = await getRenterStatsPageClosureData()
-    return Response.json(stats)
-  } catch (error) {
-    console.error('Failed to fetch renter stats:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
-  }
+async function handleRenterStatsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'renter-stats-api',
+    migrationHost: RENTER_STATS_FORMAL_HOST,
+    exitCondition: RENTER_STATS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'renters stats 读取已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
+  })
 }
+
+export const GET = handleRenterStatsCompatProxy

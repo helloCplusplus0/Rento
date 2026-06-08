@@ -426,16 +426,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
-        bridgeHosts: ['server/routes/meter-readings.ts'],
+        formalHosts: ['server/routes/meter-readings.ts'],
         domainServicePaths: [
-          'src/lib/page-closure-compat/meter-readings.ts',
+          'server/lib/meter-readings-route-service.ts',
           'src/lib/queries.ts',
         ],
         keepReason:
-          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared meter-reading page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
+          'phase14-06 起抄表历史读取已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/meter-readings/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
       {
@@ -496,16 +495,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
-        bridgeHosts: ['server/routes/meter-readings.ts'],
+        formalHosts: ['server/routes/meter-readings.ts'],
         domainServicePaths: [
-          'src/lib/page-closure-compat/meter-readings.ts',
+          'server/lib/meter-readings-route-service.ts',
           'src/lib/reading-status-sync.ts',
         ],
         keepReason:
-          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared meter-reading page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
+          'phase14-06 起抄表状态巡检已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/meter-readings/status-check/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
@@ -519,16 +517,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['POST'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
-        bridgeHosts: ['server/routes/meter-readings.ts'],
+        formalHosts: ['server/routes/meter-readings.ts'],
         domainServicePaths: [
-          'src/lib/page-closure-compat/meter-readings.ts',
+          'server/lib/meter-readings-route-service.ts',
           'src/lib/reading-status-sync.ts',
         ],
         keepReason:
-          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared meter-reading page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
+          'phase14-06 起抄表状态修复已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/meter-readings/repair-status/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
@@ -542,12 +539,12 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET', 'POST'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
+        formalHosts: ['server/routes/utility-readings.ts'],
         domainServicePaths: ['src/lib/domain/meters/index.ts'],
         keepReason:
-          '该接口已退化为 legacy utility compat 包装，复用 meters 共享领域服务承接历史水电账单生成与追溯。',
+          'phase14-06 起 utility 历史兼容读写已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '统一 Hono 宿主具备替代的 utility compat/读路径，且前端与脚本不再调用旧 utility-readings。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/utility-readings/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
@@ -752,17 +749,16 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET', 'POST'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
-        bridgeHosts: ['server/routes/renters.ts'],
+        formalHosts: ['server/routes/renters.ts'],
         domainServicePaths: [
-          'src/lib/page-closure-compat/renters.ts',
+          'server/lib/renters-route-service.ts',
           'src/lib/optimized-queries.ts',
           'src/lib/queries.ts',
         ],
         keepReason:
-          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared renter page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
+          'phase14-06 起 renters 列表与创建已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/renters/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
@@ -776,16 +772,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET', 'PUT', 'DELETE'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
-        bridgeHosts: ['server/routes/renters.ts'],
+        formalHosts: ['server/routes/renters.ts'],
         domainServicePaths: [
-          'src/lib/page-closure-compat/renters.ts',
+          'server/lib/renters-route-service.ts',
           'src/lib/queries.ts',
         ],
         keepReason:
-          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared renter page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
+          'phase14-06 起 renters 详情/编辑/删除已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/renters/[id]/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
@@ -799,16 +794,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: [],
-        bridgeHosts: ['server/routes/renters.ts'],
+        formalHosts: ['server/routes/renters.ts'],
         domainServicePaths: [
-          'src/lib/page-closure-compat/renters.ts',
+          'server/lib/renters-route-service.ts',
           'src/lib/queries.ts',
         ],
         keepReason:
-          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared renter page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
+          'phase14-06 起 renters stats 已切到统一 Hono 宿主；旧 Next 入口仅保留 in-process compat proxy 与回滚基线。',
         exitCondition:
-          '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/renters/stats/route.ts` compat proxy 可直接移除。',
         rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
@@ -820,15 +814,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'POST', 'DELETE'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/settings.ts'],
         domainServicePaths: ['src/lib/global-settings.ts'],
         keepReason:
-          '全局设置属于治理接口，本任务明确不迁治理接口；保留旧宿主避免扩大 phase09 范围。',
+          'phase14-06 已把设置页首屏与基础治理读写统一切到 server/routes/settings.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续治理阶段明确设置正式宿主、权限边界与审计策略后，再评估迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono settings 宿主后，旧 src/app/api/settings* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -839,15 +833,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/settings.ts'],
         domainServicePaths: ['src/lib/global-settings.ts'],
         keepReason:
-          'settings/init 为治理/初始化辅助入口，本任务明确不迁治理接口。',
+          'phase14-06 已把 settings 初始化动作统一切到 server/routes/settings.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续治理阶段明确初始化脚本或管理宿主后，再决定脚本化、保留或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono settings 宿主后，旧 src/app/api/settings* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -913,17 +907,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: ['server/routes/dashboard.ts'],
-        domainServicePaths: [
-          'src/lib/dashboard-queries.ts',
-          'src/lib/page-closure-compat/dashboard.ts',
-        ],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 统计查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待 phase10 以后统一处理 dashboard 查询宿主与数据聚合层时，再评估去向。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -934,18 +926,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: ['server/routes/dashboard.ts'],
-        domainServicePaths: [
-          'src/lib/contract-alert-semantics.ts',
-          'src/lib/page-closure-compat/dashboard.ts',
-          'src/lib/prisma.ts',
-        ],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 合同告警查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续阶段统一处理 dashboard 告警查询宿主时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -956,19 +945,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: ['server/routes/dashboard.ts'],
-        domainServicePaths: [
-          'src/lib/contract-alert-semantics.ts',
-          'src/lib/global-settings.ts',
-          'src/lib/page-closure-compat/dashboard.ts',
-          'src/lib/prisma.ts',
-        ],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 待入住合同查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -979,19 +964,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: ['server/routes/dashboard.ts'],
-        domainServicePaths: [
-          'src/lib/contract-alert-semantics.ts',
-          'src/lib/global-settings.ts',
-          'src/lib/page-closure-compat/dashboard.ts',
-          'src/lib/prisma.ts',
-        ],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 离店提醒查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -1002,17 +983,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: ['server/routes/dashboard.ts'],
-        domainServicePaths: [
-          'src/lib/page-closure-compat/dashboard.ts',
-          'src/lib/prisma.ts',
-        ],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 逾期付款查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -1023,14 +1002,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 退租未结查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -1041,14 +1021,15 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: ['src/lib/dashboard-formal-host.ts'],
+        keepReason:
+          'phase14-06 已把 dashboard 空房提醒查询统一切到 server/routes/dashboard.ts；旧 Next 入口仅保留 compat 代理与回滚基线。',
         exitCondition:
-          '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },

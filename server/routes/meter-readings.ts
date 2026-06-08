@@ -4,11 +4,11 @@ import {
   meterReadingDomainService,
 } from '@/lib/domain/meters'
 import {
-  getMeterReadingsPageClosureData,
-  getMeterReadingStatusCheckPageClosureData,
+  getMeterReadingStatusCheck,
+  listMeterReadings,
   logMeterReadingRepairFailure,
-  repairMeterReadingStatusPageClosureData,
-} from '@/lib/page-closure-compat/meter-readings'
+  repairMeterReadingStatus,
+} from '../lib/meter-readings-route-service'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -39,9 +39,9 @@ const LEGACY_COMPAT = {
     'src/app/api/meters/[meterId]/status/route.ts',
   ] as const,
   reason:
-    'phase09-04 已冻结抄表写入/详情主链；phase13-04 额外补的 history/status/repair 仅作为 page-closure compat bridge，由 shared helper 同时供 Next 与 Hono 复用。',
+    'phase14-06 起 history/status/repair 已收口到 `server/routes/meter-readings.ts` 与正式宿主侧服务；旧 Next 入口仅保留 compat proxy 与回滚基线。',
   exitCondition:
-    '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 history/status/repair compat helper 与旧入口退出。',
+    '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/meter-readings*` compat proxy 可直接移除。',
 } as const
 
 function parseMeterReadingHistoryQuery(url: string) {
@@ -84,9 +84,9 @@ function appendMeterReadingsFallback(
     return jsonApiError(
       c,
       notImplementedError(
-          'phase09-04 仅冻结抄表写入、详情、相关账单追溯与禁删语义；phase13-04 额外补的 history/status/repair 只用于 Minix page-closure bridge，正式 drain 仍留给 phase14。',
+        'phase14-06 已冻结 `server/routes/meter-readings.ts` 为抄表 history/status/repair 的正式宿主；未命中的子路径继续保留 compat/rollback-only。',
         {
-          phase: 'phase09-04',
+          phase: 'phase14-06',
           routeKey: 'meter-readings',
           domainServiceHost: 'src/lib/domain/meters',
           migrationState: 'partial-migrated',
@@ -110,7 +110,7 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
   routeApp.use('*', requireAuth())
 
   routeApp.get('/', async (c) => {
-    const response = await getMeterReadingsPageClosureData(
+    const response = await listMeterReadings(
       parseMeterReadingHistoryQuery(c.req.url)
     )
 
@@ -190,7 +190,7 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
     try {
       console.log('[状态检查API] 开始执行状态一致性检查')
 
-      const result = await getMeterReadingStatusCheckPageClosureData()
+      const result = await getMeterReadingStatusCheck()
 
       console.log(`[状态检查API] 完成 - ${result.message}`)
 
@@ -213,7 +213,7 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
     try {
       console.log('[状态修复API] 开始执行状态修复操作')
 
-      const result = await repairMeterReadingStatusPageClosureData()
+      const result = await repairMeterReadingStatus()
 
       console.log(`[状态修复API] 完成 - ${result.message}`)
 
@@ -238,14 +238,59 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
     try {
       const result = await meterReadingDomainService.getMeterReadingDetail(readingId)
 
-      return jsonSuccess(c, {
-        data: {
-          ...result,
-          compatBoundary: LEGACY_COMPAT,
-        },
-        message: '抄表详情获取成功',
-        env,
+      return c.json({
+        success: true,
+        data: result.reading,
+        recordTypeSemantics: result.recordTypeSemantics,
+        deleteGuard: result.deleteGuard,
+        compatMode: true,
+        migrationHost: 'server/routes/meter-readings.ts',
+        timestamp: new Date().toISOString(),
+        runtime: env.runtimeName,
       })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'MeterReading not found') {
+        return jsonApiError(c, notFoundError('抄表记录不存在'), { env })
+      }
+
+      throw error
+    }
+  })
+
+  routeApp.put('/:id', async (c) => {
+    const readingId = c.req.param('id')
+
+    try {
+      const detail = await meterReadingDomainService.getMeterReadingDetail(readingId)
+
+      return c.json(
+        {
+          success: false,
+          code: 'METER_READING_UPDATE_DISABLED',
+          error:
+            'phase09-04 起旧抄表更新入口已禁用，请改走正式宿主或专用修正流程',
+          details: {
+            readingId,
+            recordTypeSemantics: detail.recordTypeSemantics,
+            deleteGuard: detail.deleteGuard,
+            compatBoundary: {
+              currentState: 'compat-wrapper',
+              targetStrategy: 'disabled',
+              migrationHost: 'server/routes/meter-readings.ts',
+              domainServiceHost: 'src/lib/domain/meters',
+              reason:
+                '避免旧 Next 宿主继续保留第二套抄表修改语义，禁用语义统一由正式 Hono 宿主承接。',
+              exitCondition:
+                '当正式修正/冲正流程冻结并且前端与所有存量调用切到统一 Hono 宿主后，旧 src/app/api/meter-readings/[id]/route.ts 可直接移除。',
+            },
+          },
+          compatMode: true,
+          migrationHost: 'server/routes/meter-readings.ts',
+          timestamp: new Date().toISOString(),
+          runtime: env.runtimeName,
+        },
+        409
+      )
     } catch (error) {
       if (error instanceof Error && error.message === 'MeterReading not found') {
         return jsonApiError(c, notFoundError('抄表记录不存在'), { env })
@@ -288,13 +333,18 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
           readingId
         )
 
-      return jsonApiError(
-        c,
-        validationError('当前阶段不支持删除抄表记录', {
-          ...deleteGuard,
-          compatBoundary: LEGACY_COMPAT,
-        }),
-        { env }
+      return c.json(
+        {
+          success: false,
+          code: deleteGuard.errorCode,
+          error: '当前阶段不支持删除抄表记录',
+          details: deleteGuard,
+          compatMode: true,
+          migrationHost: 'server/routes/meter-readings.ts',
+          timestamp: new Date().toISOString(),
+          runtime: env.runtimeName,
+        },
+        409
       )
     } catch (error) {
       if (error instanceof Error && error.message === 'MeterReading not found') {

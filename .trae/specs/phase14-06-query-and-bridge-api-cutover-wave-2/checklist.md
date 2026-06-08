@@ -1,0 +1,10 @@
+- [x] dashboard / settings / renters / meter-readings / utility 的页面主消费路径已不再依赖 retained-legacy query host 或 shared compat helper 作为主真相
+- [x] `server/routes/dashboard.ts`、`server/routes/settings.ts`、`server/routes/renters.ts`、`server/routes/meter-readings.ts` 已成为单一正式宿主或明确的最终 compat 宿主，旧 Next 入口不再承担正式业务职责
+- [x] `src/lib/page-closure-compat/dashboard.ts`、`renters.ts`、`meter-readings.ts` 仅保留明确的过渡、回滚或治理型延后职责，不再承担页面默认主查询来源
+- [x] `server/lib/legacy-route-inventory.ts` 已同步反映 wave-2 cutover 后的正式分类、保留原因、退出条件与回滚条件
+- [x] 首页、设置页、租客页、抄表页与 utility 相关页面的 API/query 调用方向与页面表现一致
+- [x] 历史抄表、关联账单追溯、utility 兼容尾项与治理型设置语义未被破坏
+- [x] 若新旧路线可完美切换，则相关业务逻辑已 `100%` 高保真还原旧 `Rento`；若运行路线无法完美切换，则已证明实现以旧 `Rento` 业务逻辑为原型完成最小且可验证的适配
+- [x] dashboard、meter-readings、utility 不再保留“页面已迁移但正式 API 仍在旧 Next”的主路径事实
+- [x] 已补至少一组覆盖首页 / 设置 / 租客 / 抄表 / utility 的 smoke 或人工验证路径
+- [x] 本波次未越界到页面 UI 重做、utility 历史业务重写、`phase16` cutover 或 legacy 资产提前删除

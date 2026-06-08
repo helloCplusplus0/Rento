@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
-import { renterQueries } from '@/lib/queries'
 import { RenterListPage } from '@/components/pages/RenterListPage'
+import { loadLegacyRentersPageData } from '../../../server/lib/legacy-next-page-data'
 
 // 禁用静态生成，强制使用服务端渲染
 export const dynamic = 'force-dynamic'
@@ -13,35 +13,9 @@ export const metadata: Metadata = {
 
 export default async function RentersPage() {
   try {
-    // 获取租客数据和统计信息
-    const [renters, stats] = await Promise.all([
-      renterQueries.findAll(),
-      renterQueries.getRenterStats(),
-    ])
+    const { renters, stats } = await loadLegacyRentersPageData()
 
-    // 转换数据类型
-    const rentersData = renters.map((renter) => ({
-      ...renter,
-      contracts: renter.contracts.map((contract) => ({
-        ...contract,
-        monthlyRent: Number(contract.monthlyRent),
-        totalRent: Number(contract.totalRent),
-        deposit: Number(contract.deposit),
-        keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
-        cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
-        room: {
-          ...contract.room,
-          rent: Number(contract.room.rent),
-          area: contract.room.area ? Number(contract.room.area) : null,
-          building: {
-            ...contract.room.building,
-            totalRooms: Number(contract.room.building.totalRooms),
-          },
-        },
-      })),
-    }))
-
-    return <RenterListPage initialRenters={rentersData} initialStats={stats} />
+    return <RenterListPage initialRenters={renters} initialStats={stats} />
   } catch (error) {
     console.error('Failed to load renters:', error)
     return (

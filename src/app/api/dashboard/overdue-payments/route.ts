@@ -1,85 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { ErrorType } from '@/lib/error-logger'
-import { prisma } from '@/lib/prisma'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const DASHBOARD_FORMAL_HOST = 'server/routes/dashboard.ts'
+const DASHBOARD_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。'
 
 /**
- * 获取30天内逾期付款信息
+ * compat wrapper:
+ * phase14-06 起 `/api/dashboard/*` 的正式查询统一收口到 `server/routes/dashboard.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立 dashboard 查询实现。
  */
-async function handleGetOverduePayments(_request: NextRequest) {
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-  const bills = await prisma.bill.findMany({
-    where: {
-      status: { in: ['PENDING', 'OVERDUE'] },
-      dueDate: {
-        lt: new Date(),
-        gte: thirtyDaysAgo,
-      },
-      pendingAmount: {
-        gt: 0,
-      },
+async function handleDashboardOverduePaymentsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'dashboard-overdue-payments-api',
+    migrationHost: DASHBOARD_FORMAL_HOST,
+    exitCondition: DASHBOARD_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'dashboard 逾期付款查询已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
     },
-    include: {
-      contract: {
-        include: {
-          renter: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-          room: {
-            include: {
-              building: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    orderBy: {
-      dueDate: 'asc',
-    },
-  })
-
-  // 转换数据类型
-  const billsData = bills.map((bill) => ({
-    ...bill,
-    amount: Number(bill.amount),
-    receivedAmount: Number(bill.receivedAmount),
-    pendingAmount: Number(bill.pendingAmount),
-    contract: {
-      ...bill.contract,
-      monthlyRent: Number(bill.contract.monthlyRent),
-      totalRent: Number(bill.contract.totalRent),
-      deposit: Number(bill.contract.deposit),
-      room: {
-        ...bill.contract.room,
-        rent: Number(bill.contract.room.rent),
-        area: bill.contract.room.area ? Number(bill.contract.room.area) : null,
-      },
-    },
-  }))
-
-  return createSuccessResponse({
-    bills: billsData,
-    total: bills.length,
   })
 }
 
-export const GET = withApiErrorHandler(handleGetOverduePayments, {
-  requireAuth: true,
-  module: 'overdue-payments-api',
-  errorType: ErrorType.DATABASE_ERROR,
-})
+export const GET = handleDashboardOverduePaymentsCompatProxy

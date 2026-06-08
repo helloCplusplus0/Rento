@@ -1,108 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { ErrorType } from '@/lib/error-logger'
-import { prisma } from '@/lib/prisma'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const DASHBOARD_FORMAL_HOST = 'server/routes/dashboard.ts'
+const DASHBOARD_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。'
 
 /**
- * 获取退租未结信息
+ * compat wrapper:
+ * phase14-06 起 `/api/dashboard/*` 的正式查询统一收口到 `server/routes/dashboard.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立 dashboard 查询实现。
  */
-async function handleGetUnpaidRent(_request: NextRequest) {
-  // 查找已到期但仍有未结算账单的合同
-  const contracts = await prisma.contract.findMany({
-    where: {
-      status: { in: ['EXPIRED', 'TERMINATED'] },
-      bills: {
-        some: {
-          status: { in: ['PENDING', 'OVERDUE'] },
-          pendingAmount: {
-            gt: 0,
-          },
-        },
-      },
+async function handleDashboardUnpaidRentCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'dashboard-unpaid-rent-api',
+    migrationHost: DASHBOARD_FORMAL_HOST,
+    exitCondition: DASHBOARD_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'dashboard 退租未结查询已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
     },
-    include: {
-      renter: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
-      },
-      room: {
-        include: {
-          building: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-      bills: {
-        where: {
-          status: { in: ['PENDING', 'OVERDUE'] },
-          pendingAmount: {
-            gt: 0,
-          },
-        },
-        select: {
-          id: true,
-          billNumber: true,
-          amount: true,
-          receivedAmount: true,
-          pendingAmount: true,
-          dueDate: true,
-          status: true,
-          type: true,
-        },
-      },
-    },
-    orderBy: {
-      endDate: 'desc',
-    },
-  })
-
-  // 转换数据类型并计算待结算金额
-  const contractsData = contracts.map((contract) => {
-    const pendingAmount = contract.bills.reduce(
-      (sum, bill) => sum + Number(bill.pendingAmount),
-      0
-    )
-
-    return {
-      ...contract,
-      monthlyRent: Number(contract.monthlyRent),
-      totalRent: Number(contract.totalRent),
-      deposit: Number(contract.deposit),
-      keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
-      cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
-      pendingAmount,
-      room: {
-        ...contract.room,
-        rent: Number(contract.room.rent),
-        area: contract.room.area ? Number(contract.room.area) : null,
-      },
-      bills: contract.bills.map((bill) => ({
-        ...bill,
-        amount: Number(bill.amount),
-        receivedAmount: Number(bill.receivedAmount),
-        pendingAmount: Number(bill.pendingAmount),
-      })),
-    }
-  })
-
-  return createSuccessResponse({
-    contracts: contractsData,
-    total: contracts.length,
   })
 }
 
-export const GET = withApiErrorHandler(handleGetUnpaidRent, {
-  requireAuth: true,
-  module: 'unpaid-rent-api',
-  errorType: ErrorType.DATABASE_ERROR,
-})
+export const GET = handleDashboardUnpaidRentCompatProxy

@@ -1,40 +1,26 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import { globalSettings } from '@/lib/global-settings'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const SETTINGS_FORMAL_HOST = 'server/routes/settings.ts'
+const SETTINGS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono settings 宿主后，旧 src/app/api/settings* 路由可直接移除。'
 
 /**
- * 设置初始化API
- * POST /api/settings/init - 初始化默认设置
+ * compat wrapper:
+ * phase14-06 起 `/api/settings/init` 的正式初始化语义统一收口到 `server/routes/settings.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立初始化逻辑。
  */
-
-export async function POST() {
-  try {
-    console.log('[设置初始化] 开始初始化默认设置')
-
-    await globalSettings.initializeDefaultSettings()
-
-    await revalidateMutationPaths({
-      scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
-    })
-
-    // 返回初始化后的设置
-    const settings = await globalSettings.getAllSettings()
-
-    return NextResponse.json({
-      success: true,
-      data: settings,
-      message: '默认设置初始化完成',
-    })
-  } catch (error) {
-    console.error('[设置初始化] 初始化失败:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to initialize settings',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
-  }
+async function handleSettingsInitCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'settings-init-api',
+    migrationHost: SETTINGS_FORMAL_HOST,
+    exitCondition: SETTINGS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'settings 初始化已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
+  })
 }
+
+export const POST = handleSettingsInitCompatProxy

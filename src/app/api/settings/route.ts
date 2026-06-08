@@ -1,93 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  parseRequestBody,
-  validateRequired,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { ErrorType } from '@/lib/error-logger'
-import { globalSettings } from '@/lib/global-settings'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const SETTINGS_FORMAL_HOST = 'server/routes/settings.ts'
+const SETTINGS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono settings 宿主后，旧 src/app/api/settings* 路由可直接移除。'
 
 /**
- * 全局设置API
- * GET /api/settings - 获取所有设置
- * POST /api/settings - 更新设置
- * DELETE /api/settings - 重置设置
+ * compat wrapper:
+ * phase14-06 起 `/api/settings` 的正式读写统一收口到 `server/routes/settings.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护第二套 settings 逻辑。
  */
-
-/**
- * 获取所有设置
- */
-async function handleGetSettings() {
-  console.log('[设置API] 获取所有设置')
-
-  const settings = await globalSettings.getAllSettings()
-
-  return createSuccessResponse(settings)
-}
-
-export const GET = withApiErrorHandler(handleGetSettings, {
-  requireAuth: true,
-  module: 'settings-api',
-  errorType: ErrorType.SYSTEM_ERROR,
-})
-
-/**
- * 更新设置
- */
-async function handlePostSettings(request: NextRequest) {
-  const body = await parseRequestBody(request)
-  const { settings: newSettings } = body
-
-  if (!newSettings || typeof newSettings !== 'object') {
-    throw new Error('无效的设置数据')
-  }
-
-  console.log('[设置API] 更新设置:', Object.keys(newSettings))
-
-  await globalSettings.updateSettings(newSettings)
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+async function handleSettingsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'settings-api',
+    migrationHost: SETTINGS_FORMAL_HOST,
+    exitCondition: SETTINGS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'settings 首屏与基础治理读写已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
   })
-
-  // 返回更新后的所有设置
-  const updatedSettings = await globalSettings.getAllSettings()
-
-  return createSuccessResponse(
-    updatedSettings,
-    `成功更新 ${Object.keys(newSettings).length} 个设置`
-  )
 }
 
-export const POST = withApiErrorHandler(handlePostSettings, {
-  requireAuth: true,
-  module: 'settings-api',
-  errorType: ErrorType.SYSTEM_ERROR,
-})
-
-/**
- * 重置设置为默认值
- */
-async function handleDeleteSettings() {
-  console.log('[设置API] 重置设置为默认值')
-
-  await globalSettings.resetToDefaults()
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
-  })
-
-  // 返回重置后的设置
-  const defaultSettings = await globalSettings.getAllSettings()
-
-  return createSuccessResponse(defaultSettings, '设置已重置为默认值')
-}
-
-export const DELETE = withApiErrorHandler(handleDeleteSettings, {
-  requireAuth: true,
-  module: 'settings-api',
-  errorType: ErrorType.SYSTEM_ERROR,
-})
+export const GET = handleSettingsCompatProxy
+export const POST = handleSettingsCompatProxy
+export const DELETE = handleSettingsCompatProxy

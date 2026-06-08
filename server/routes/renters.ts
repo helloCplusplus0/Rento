@@ -1,12 +1,12 @@
+import type { RenterMutationPayload } from '../lib/renters-route-service'
 import {
-  createRenterPageClosureData,
-  deleteRenterPageClosureData,
-  getRenterDetailPageClosureData,
-  getRenterStatsPageClosureData,
-  getRentersPageClosureData,
-  type RenterMutationPayload,
-  updateRenterPageClosureData,
-} from '@/lib/page-closure-compat/renters'
+  createRenter,
+  deleteRenter,
+  getRenterDetail,
+  getRenterStats,
+  listRenters,
+  updateRenter,
+} from '../lib/renters-route-service'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import { notImplementedError } from '../lib/api-errors'
@@ -24,9 +24,9 @@ const LEGACY_COMPAT = {
     'src/app/api/renters/stats/route.ts',
   ] as const,
   reason:
-    'phase13-04 页面闭环期间，Hono 与 Next 入口共同复用 shared page-closure compat helper；这不等于 `/api/renters*` 已完成 phase14 正式 cutover。',
+    'phase14-06 起 renters 正式查询/写入语义统一收口到 `server/routes/renters.ts`；旧 Next 入口仅保留 compat proxy 与回滚基线。',
   exitCondition:
-    '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 shared compat helper 与旧入口退出。',
+    '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 `src/app/api/renters*` compat proxy 可直接移除。',
 } as const
 
 const SORT_FIELDS = new Set(['name', 'phone', 'moveInDate', 'createdAt'] as const)
@@ -70,9 +70,9 @@ function appendRentersFallback(
     return jsonApiError(
       c,
       notImplementedError(
-          'phase13-04 仅为 Minix 页面闭环补 page-closure bridge；`/api/renters*` 的正式 drain 仍留给 phase14 与最终 cutover 审核。',
+        'phase14-06 已冻结 `server/routes/renters.ts` 为 renters 正式宿主；未命中的子路径继续保留为 compat/rollback-only。',
         {
-            phase: 'phase13-04',
+          phase: 'phase14-06',
           routeKey: 'renters',
           migrationState: 'compat-wrapper',
           compatBoundary: LEGACY_COMPAT,
@@ -88,8 +88,6 @@ export function createRenterRoutes(env: MinixServerEnv) {
 
   routeApp.use('*', requireAuth())
 
-  // Minix page-closure bridge: keep Hono runtime usable for phase13 pages
-  // without declaring `/api/renters*` formal ownership ahead of phase14.
   routeApp.get('/', async (c) => {
     const url = new URL(c.req.url)
     const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10))
@@ -108,7 +106,7 @@ export function createRenterRoutes(env: MinixServerEnv) {
     const sortField = normalizeSortField(url.searchParams.get('sortField'))
     const sortOrder = normalizeSortOrder(url.searchParams.get('sortOrder'))
 
-    const result = await getRentersPageClosureData({
+    const result = await listRenters({
       page,
       limit,
       search,
@@ -126,7 +124,7 @@ export function createRenterRoutes(env: MinixServerEnv) {
   })
 
   routeApp.get('/stats', async (c) => {
-    const stats = await getRenterStatsPageClosureData()
+    const stats = await getRenterStats()
     return c.json(stats)
   })
 
@@ -136,7 +134,7 @@ export function createRenterRoutes(env: MinixServerEnv) {
         maxBytes: env.requestGovernance.maxRequestSize,
       })) ?? {}
 
-    const result = await createRenterPageClosureData(body, {
+    const result = await createRenter(body, {
       executionRuntime: 'hono-runtime',
       runtimeName: env.runtimeName,
     })
@@ -155,7 +153,7 @@ export function createRenterRoutes(env: MinixServerEnv) {
 
   routeApp.get('/:id', async (c) => {
     const renterId = c.req.param('id')
-    const renter = await getRenterDetailPageClosureData(renterId)
+    const renter = await getRenterDetail(renterId)
 
     if (!renter) {
       return c.json({ error: 'Renter not found' }, 404)
@@ -171,7 +169,7 @@ export function createRenterRoutes(env: MinixServerEnv) {
         maxBytes: env.requestGovernance.maxRequestSize,
       })) ?? {}
 
-    const result = await updateRenterPageClosureData(renterId, body, {
+    const result = await updateRenter(renterId, body, {
       executionRuntime: 'hono-runtime',
       runtimeName: env.runtimeName,
     })
@@ -185,7 +183,7 @@ export function createRenterRoutes(env: MinixServerEnv) {
 
   routeApp.delete('/:id', async (c) => {
     const renterId = c.req.param('id')
-    const result = await deleteRenterPageClosureData(renterId, {
+    const result = await deleteRenter(renterId, {
       executionRuntime: 'hono-runtime',
       runtimeName: env.runtimeName,
     })

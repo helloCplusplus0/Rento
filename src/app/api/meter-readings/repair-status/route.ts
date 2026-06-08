@@ -1,32 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import {
-  logMeterReadingRepairFailure,
-  repairMeterReadingStatusPageClosureData,
-} from '@/lib/page-closure-compat/meter-readings'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const METER_READING_REPAIR_FORMAL_HOST = 'server/routes/meter-readings.ts'
+const METER_READING_REPAIR_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/meter-readings/repair-status/route.ts 可直接移除。'
 
 /**
- * phase13-04 page-closure compat:
- * POST /api/meter-readings/repair-status
- *
- * Next 与 Hono 共用 shared compat helper，保持抄表状态修复仍属于
- * 页面闭环桥接，不提前声明正式 API cutover。
+ * compat wrapper:
+ * phase14-06 起 `/api/meter-readings/repair-status` 的状态修复统一收口到 `server/routes/meter-readings.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再直接复用 shared helper。
  */
-export async function POST(_request: NextRequest) {
-  try {
-    console.log('[状态修复API] 开始执行状态修复操作')
-    const result = await repairMeterReadingStatusPageClosureData()
-    console.log(`[状态修复API] 完成 - ${result.message}`)
-    return Response.json(result)
-  } catch (error) {
-    await logMeterReadingRepairFailure(error)
-    return Response.json(
-      {
-        success: false,
-        error: 'Status repair failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
-  }
+async function handleMeterReadingRepairCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'meter-reading-repair-api',
+    migrationHost: METER_READING_REPAIR_FORMAL_HOST,
+    exitCondition: METER_READING_REPAIR_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'meter-readings 状态修复已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
+  })
 }
+
+export const POST = handleMeterReadingRepairCompatProxy

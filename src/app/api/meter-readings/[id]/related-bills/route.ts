@@ -1,43 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import { meterReadingDomainService } from '@/lib/domain/meters'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const METER_READING_RELATED_BILLS_FORMAL_HOST = 'server/routes/meter-readings.ts'
+const METER_READING_RELATED_BILLS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/meter-readings/[id]/related-bills/route.ts 可直接移除。'
 
 /**
- * 获取抄表记录关联账单API
- * GET /api/meter-readings/[id]/related-bills
- *
  * compat wrapper:
- * phase09-04 起 related-bills 追溯、metadata/BillDetail 命中规则统一收口到 src/lib/domain/meters。
+ * phase14-06 起 `/api/meter-readings/:id/related-bills` 的正式读取统一收口到
+ * `server/routes/meter-readings.ts`。旧 Next 入口仅保留为薄 compat proxy。
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-    const traceResult =
-      await meterReadingDomainService.getRelatedBillsForMeterReading(id)
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...traceResult,
-      },
-      compatMode: true,
-      migrationHost: 'src/lib/domain/meters',
-    })
-  } catch (error) {
-    if (error instanceof Error && error.message === 'MeterReading not found') {
-      return NextResponse.json(
-        { success: false, error: '抄表记录不存在' },
-        { status: 404 }
-      )
-    }
-
-    console.error('获取抄表记录关联账单失败:', error)
-    return NextResponse.json(
-      { success: false, error: '获取关联账单失败' },
-      { status: 500 }
-    )
-  }
+async function handleMeterReadingRelatedBillsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'meter-reading-related-bills-api',
+    migrationHost: METER_READING_RELATED_BILLS_FORMAL_HOST,
+    exitCondition: METER_READING_RELATED_BILLS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason:
+        'meter-readings related-bills 已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
+  })
 }
+
+export const GET = handleMeterReadingRelatedBillsCompatProxy

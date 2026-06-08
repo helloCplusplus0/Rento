@@ -1,89 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import {
-  calculateDaysUntilContractExpiry,
-  EXPIRED_CONTRACT_ALERT_TITLE,
-} from '@/lib/contract-alert-semantics'
-import { ErrorType } from '@/lib/error-logger'
-import { prisma } from '@/lib/prisma'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const DASHBOARD_FORMAL_HOST = 'server/routes/dashboard.ts'
+const DASHBOARD_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono dashboard 宿主后，旧 src/app/api/dashboard/* 路由可直接移除。'
 
 /**
- * 获取合同到期提醒数据
+ * compat wrapper:
+ * phase14-06 起 `/api/dashboard/*` 的正式查询统一收口到 `server/routes/dashboard.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立 dashboard 查询实现。
  */
-async function handleGetContractAlerts(_request: NextRequest) {
-  const today = new Date()
-
-  // 查询已到期但未处理的合同
-  const expiredContracts = await prisma.contract.findMany({
-    where: {
-      status: 'ACTIVE',
-      endDate: {
-        lt: today,
-      },
-    },
-    include: {
-      renter: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
-      },
-      room: {
-        include: {
-          building: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: {
-      endDate: 'desc',
-    },
-  })
-
-  // 转换数据类型并计算逾期天数
-  const alertsData = expiredContracts.map((contract) => {
-    const daysUntilExpiry = calculateDaysUntilContractExpiry(
-      contract.endDate,
-      today
-    )
-
-    return {
-      id: contract.id,
-      contractId: contract.id,
-      contractNumber: contract.contractNumber,
-      renterName: contract.renter.name,
-      roomInfo: `${contract.room.building.name} - ${contract.room.roomNumber}`,
-      endDate: contract.endDate,
-      daysUntilExpiry,
-      monthlyRent: Number(contract.monthlyRent),
-      alertLevel: 'danger' as const,
-    }
-  })
-
-  return createSuccessResponse({
-    alerts: alertsData,
-    total: alertsData.length,
-    title: EXPIRED_CONTRACT_ALERT_TITLE,
-    summary: {
-      total: alertsData.length,
-      warning: 0,
-      danger: alertsData.length,
-      expired: alertsData.length,
+async function handleDashboardContractAlertsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'dashboard-contract-alerts-api',
+    migrationHost: DASHBOARD_FORMAL_HOST,
+    exitCondition: DASHBOARD_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'dashboard 合同提醒查询已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
     },
   })
 }
 
-export const GET = withApiErrorHandler(handleGetContractAlerts, {
-  requireAuth: true,
-  module: 'contract-alerts-api',
-  errorType: ErrorType.DATABASE_ERROR,
-})
+export const GET = handleDashboardContractAlertsCompatProxy

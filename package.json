@@ -29,7 +29,8 @@
     "smoke:phase09:new-contract": "tsx scripts/phase09-05-main-flow-smoke.ts new-contract",
     "smoke:phase09:renew": "tsx scripts/phase09-05-main-flow-smoke.ts renew",
     "smoke:phase09:checkout": "tsx scripts/phase09-05-main-flow-smoke.ts checkout",
-    "smoke:phase09:meter-reading": "tsx scripts/phase09-05-main-flow-smoke.ts meter-reading"
+    "smoke:phase09:meter-reading": "tsx scripts/phase09-05-main-flow-smoke.ts meter-reading",
+    "smoke:phase14:wave2": "tsx scripts/phase14-06-query-cutover-smoke.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

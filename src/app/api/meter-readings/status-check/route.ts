@@ -1,29 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import { getMeterReadingStatusCheckPageClosureData } from '@/lib/page-closure-compat/meter-readings'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const METER_READING_STATUS_CHECK_FORMAL_HOST = 'server/routes/meter-readings.ts'
+const METER_READING_STATUS_CHECK_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/meter-readings/status-check/route.ts 可直接移除。'
 
 /**
- * phase13-04 page-closure compat:
- * GET /api/meter-readings/status-check
- *
- * Next 与 Hono 共用 shared compat helper，保持抄表历史页状态巡检
- * 仍处于页面闭环桥接范围，而不是提前声明正式 API cutover。
+ * compat wrapper:
+ * phase14-06 起 `/api/meter-readings/status-check` 的状态巡检统一收口到 `server/routes/meter-readings.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再直接复用 shared helper。
  */
-export async function GET(_request: NextRequest) {
-  try {
-    console.log('[状态检查API] 开始执行状态一致性检查')
-    const result = await getMeterReadingStatusCheckPageClosureData()
-    console.log(`[状态检查API] 完成 - ${result.message}`)
-    return Response.json(result)
-  } catch (error) {
-    console.error('[状态检查API] 执行失败:', error)
-    return Response.json(
-      {
-        success: false,
-        error: 'Status check failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
-  }
+async function handleMeterReadingStatusCheckCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'meter-reading-status-check-api',
+    migrationHost: METER_READING_STATUS_CHECK_FORMAL_HOST,
+    exitCondition: METER_READING_STATUS_CHECK_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'meter-readings 状态巡检已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
+  })
 }
+
+export const GET = handleMeterReadingStatusCheckCompatProxy

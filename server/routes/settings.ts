@@ -13,8 +13,8 @@ interface UpdateSettingsRequestBody {
 }
 
 /**
- * phase13-02 当前页面首屏仍依赖旧 settings 读模型；
- * 在正式 settings 领域宿主完成前，先以最小读写兼容承接设置页首屏与基础治理动作。
+ * phase14-06 起 settings 页面默认读写统一收口到 Hono 宿主。
+ * 旧 Next settings 路由仅保留 compat/rollback 职责，不再承担正式页面主职责。
  */
 export function createSettingsRoutes(env: MinixServerEnv) {
   const routeApp = new Hono<AuthAppEnv>()

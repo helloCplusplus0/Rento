@@ -1,88 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  parsePaginationParams,
-  parseQueryParams,
-  parseRequestBody,
-  validateRequired,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { ErrorType } from '@/lib/error-logger'
-import {
-  createRenterPageClosureData,
-  getRentersPageClosureData,
-} from '@/lib/page-closure-compat/renters'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const RENTERS_FORMAL_HOST = 'server/routes/renters.ts'
+const RENTERS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/renters/route.ts 可直接移除。'
 
 /**
- * phase13-04 page-closure compat:
- * Next 与 Hono 共同复用 shared compat helper，保持租客页面闭环期间
- * 只有一套 API 语义，而不是把 server/routes 视为 phase14 正式 cutover。
+ * compat wrapper:
+ * phase14-06 起 `/api/renters` 的列表与创建语义统一收口到 `server/routes/renters.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护第二套查询、校验或写入逻辑。
  */
-async function handleGetRenters(request: NextRequest) {
-  const queryParams = parseQueryParams(request)
-  const { page, limit } = parsePaginationParams(request)
-  const {
-    search,
-    contractStatus,
-    hasActiveContract,
-    buildingId,
-    sortField = 'name',
-    sortOrder = 'asc',
-  } = queryParams
-
-  const data = await getRentersPageClosureData({
-    page,
-    limit,
-    search: (search as string) || undefined,
-    contractStatus: (contractStatus as string) || undefined,
-    hasActiveContract:
-      hasActiveContract === true
-        ? true
-        : hasActiveContract === false
-          ? false
-          : undefined,
-    buildingId: (buildingId as string) || undefined,
-    sortField: sortField as 'name' | 'phone' | 'moveInDate' | 'createdAt',
-    sortOrder: sortOrder as 'asc' | 'desc',
-  })
-
-  return createSuccessResponse(data)
-}
-
-export const GET = withApiErrorHandler(handleGetRenters, {
-  requireAuth: true,
-  module: 'renters-api',
-  errorType: ErrorType.DATABASE_ERROR,
-})
-
-async function handlePostRenters(request: NextRequest) {
-  const data = await parseRequestBody(request)
-  validateRequired(data, ['name', 'phone'])
-
-  const result = await createRenterPageClosureData(data)
-  if ('error' in result) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: result.error,
-      },
-      { status: result.status }
-    )
-  }
-
-  return NextResponse.json(
-    {
-      success: true,
-      data: result.data,
-      message: result.message,
+async function handleRentersCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'renters-api',
+    migrationHost: RENTERS_FORMAL_HOST,
+    exitCondition: RENTERS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-06',
+      compatReason: 'renters 主链已完成统一 Hono 宿主 cutover，旧 Next 路由仅保留兼容代理。',
     },
-    { status: result.status }
-  )
+  })
 }
 
-export const POST = withApiErrorHandler(handlePostRenters, {
-  requireAuth: true,
-  module: 'renters-api',
-  errorType: ErrorType.VALIDATION_ERROR,
-})
+export const GET = handleRentersCompatProxy
+export const POST = handleRentersCompatProxy
