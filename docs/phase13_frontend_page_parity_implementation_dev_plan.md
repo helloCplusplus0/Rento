@@ -6,10 +6,10 @@
   - [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)
   - [phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)
 - `phase13-01 ~ phase13-04` 的主要 route module、loader 与错误边界已经落位到 `src/minix`。
-- `phase13-05` 已完成“全量页面审计、验收矩阵、浏览器基线与 `phase14` 交接”的文档收口，并把残余问题收缩到首页 `/` 与 `/bills/stats`。
-- `phase13-06` 已完成首页 `/` 的高保真复验、parity gap 收口与最小修复；`phase13-07` 当前已补齐 `/bills/stats` 的正式迁移承接位，后续重点转为验证与 `phase14` 交接。
+- `phase13-05` 已完成最终复核：正式业务页面 `25/25` 已迁移，页面 parity 验收矩阵、浏览器基线与 `phase14` 页面-API 交接已形成单一真相源。
+- `phase13-06` 与 `phase13-07` 已分别完成首页 `/` 与 `/bills/stats` 的尾项收口；当前 `phase13` 已不再保留正式业务页面迁移阻断项。
 - 补充约束：`phase13` 任一页面迁移子任务都必须以旧 `Rento` 源代码为直接原型；除已批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，是验收通过的硬门槛之一。
-- 补充判断：当前正式业务页面已不再主要卡在 placeholder 替换，而是卡在“是否完成高保真验收”与“已迁移页面的 retained-legacy API/query 交接是否单一可解释”。
+- 补充判断：当前正式业务页面迁移已完成；后续默认重点应切换到 `phase14` 的 retained-legacy API/query drain 规划，而不是继续新增页面迁移子任务。
 
 ## 一、文档定位
 本文档用于把 `phase13-frontend-page-parity-implementation` 拆分为顺序执行的实施子任务，确保仓库先明确“先迁哪些页面、如何拆宿主绑定、如何承接页面级数据边界、如何验收”，再进入逐个页面切片实施。
@@ -38,13 +38,13 @@
 ## 二点五、当前实施状态快照
 | 子任务 | 当前状态 | 当前结论 |
 | --- | --- | --- |
-| `phase13-01-dashboard-and-shell-real-page-landing` | 已落位，待高保真复验 | 首页已由 `HomePage` 承接真实工作台壳，但仍需按旧首页原型完成浏览器对照 |
-| `phase13-02-primary-list-routes-parity` | 已完成实现，待统一验收 | `/rooms`、`/add`、`/contracts`、`/bills`、`/settings` 已不再是 placeholder |
-| `phase13-03-detail-create-edit-flow-routes-parity` | 已完成实现，待统一验收 | 房源/合同/账单详情、编辑、新建与流程动作页已具备正式 route module |
-| `phase13-04-renters-and-meter-reading-routes-parity` | 已完成实现，待统一验收 | 租客与抄表页面已进入新宿主；compat bridge 退出留给 `phase14` |
+| `phase13-01-dashboard-and-shell-real-page-landing` | 已完成 | 首页已由 `HomePage` 承接真实工作台壳，并完成后续高保真复验输入准备 |
+| `phase13-02-primary-list-routes-parity` | 已完成 | `/rooms`、`/add`、`/contracts`、`/bills`、`/settings` 已不再是 placeholder，并纳入最终页面验收口径 |
+| `phase13-03-detail-create-edit-flow-routes-parity` | 已完成 | 房源/合同/账单详情、编辑、新建与流程动作页已具备正式 route module，并作为 `phase14` 的直接页面输入 |
+| `phase13-04-renters-and-meter-reading-routes-parity` | 已完成 | 租客与抄表页面已进入新宿主；compat bridge 的退出顺序留给 `phase14` |
 | `phase13-05-page-parity-acceptance-baseline-closure` | 已完成 | 已完成全量页面清单、迁移状态、验收矩阵、浏览器基线与 `phase14` 交接说明收口 |
 | `phase13-06-dashboard-parity-closure` | 已完成 | 已完成首页浏览器复验、支持页入口 fallback 修复与“通过保真验收”收口 |
-| `phase13-07-bill-stats-route-parity` | 已完成实现，待验证 | 已为 `/bills/stats` 补齐 `BillStatsRoute`、loader/error 边界与最小 bridge 说明；`phase14` API/query drain 仍未启动 |
+| `phase13-07-bill-stats-route-parity` | 已完成 | 已为 `/bills/stats` 补齐 `BillStatsRoute`、loader/error 边界、浏览器复验与最小 bridge 说明；`phase14` API/query drain 仍未启动 |
 
 ## 三、任务拆分建议
 ## phase13-01-dashboard-and-shell-real-page-landing
@@ -242,17 +242,18 @@
 - `phase13` 仅文档轮次最小验证要求
 
 ### 当前事实基线
-- 当前 `phase12` 已冻结页面映射、优先级与页面-API 联动；`phase13-01 ~ phase13-04` 已把 `24/25` 个正式业务页面挂入新宿主。
+- 当前 `phase12` 已冻结页面映射、优先级与页面-API 联动；`phase13-01 ~ phase13-07` 已把 `25/25` 个正式业务页面挂入新宿主，并完成当前轮页面尾项收口。
 - 当前 `phase13-05` 已完成：
   - 全量正式业务页面审计
-  - 未迁移 / 部分迁移清单
+  - 最终迁移状态清单
   - 页面 parity 验收矩阵
   - 人工浏览器基线
   - 页面与 retained-legacy API/query 的 `phase14` 交接说明
-- 当前留给后续子任务继续实施的阻断项是：
-  - `/` 仍需高保真验收结论
-  - `/bills/stats` 仍是未迁移页面
-- `phase14` 需要以 `phase13` 的真实页面 parity 结果作为 retained-legacy API/query 清退的直接输入。
+- 当前最终结论是：
+  - 首页 `/` 已通过高保真验收
+  - `/bills/stats` 已完成正式迁移与浏览器复验
+  - 正式业务页面 `25/25` 已迁移，且不再存在阻断 `phase13` 完成判定的未迁移页面
+- `phase14` 需要直接继承本子任务冻结的页面 parity 结果、浏览器基线与页面-API/query 交接表，作为 retained-legacy API/query 清退顺序的直接输入。
 
 ### 参考来源
 - `docs/phase12_*`

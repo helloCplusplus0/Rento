@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。当前默认工作流已进入 `phase13-frontend-page-parity-implementation` 的阶段文档审核阶段，继续以 `plan.md`、`docs/phase12_*` 与后续 `docs/phase13_*` 承接 `phase12 ~ phase16` 的完整路线图、前后依赖、DoD、退出条件与文档轮次最小验证要求。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。`phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁移，`phase13-05` 已完成最终复核，`phase13-06` 与 `phase13-07` 已收口首页 `/` 与 `/bills/stats` 尾项；`phase14-api-query-parity-and-legacy-route-drain` 已完成当前轮阶段文档产出并进入审核阶段，当前默认工作流应以 `docs/phase14_*` 为单一真相源，等待审核后再进入 `/spec`。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase12 ~ phase16` 的当前轮重点必须建立在 `phase10` 已冻结的 `Prisma + PostgreSQL` 长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断，以及 `phase11` 已冻结的正式部署主线、发布门禁与 legacy 回滚基线之上，不反向改写这些结论。
 
@@ -25,6 +25,7 @@
 - 新功能或新承载层优先复用既有页面模式和组件表达，避免出现另一套设计系统。
 - 若需要调整交互，应优先把问题写进阶段文档和计划，再实施最小改动。
 - 当进入 `phase12 ~ phase16` 时，必须把旧 `Rento` 页面信息结构、导航节奏、表单交互和组件表达继续视为默认原型参考；除非存在明确技术障碍，不得把新宿主迁移重写成另一套 UI 方案。
+- 任何迁移操作都必须以旧 `Rento` 源代码为直接原型；除阶段文档中已显式批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，必须作为验收通过条件之一。
 
 ## 5. 目录治理规则
 - 根目录只保留当前有效入口：运行配置、环境模板、项目总览和顶层治理文档。
@@ -52,13 +53,16 @@
 - 进入 `phase11-deployment-cutover-and-cutline-closure` 后，必须先冻结正式部署主线、服务端预构建产物链、环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件，再进入该阶段任一 `/spec`。
 - 进入 `phase12-frontend-parity-and-shell-cutover` 后，必须先冻结旧 `src/app` 页面到 `src/minix` 的映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径与 `phase12 ~ phase16` 的完整路线图，再进入该阶段任一 `/spec`。
 - 进入 `phase13-frontend-page-parity-implementation` 后，必须先冻结 P0/P1 页面切片顺序、route module 组织方式、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界与人工浏览器验收基线，再进入该阶段任一 `/spec`。
+- 进入 `phase14-api-query-parity-and-legacy-route-drain` 后，必须先冻结 retained-legacy / compat-wrapper / formal-host-owned 的 route inventory 分类、dashboard / settings query host 边界、rooms / buildings / meters / contracts / bills / renters / meter-readings 的 route drain 顺序、`phase10` 查询/事务继承边界与 `phase13` 页面-API/query 交接，再进入该阶段任一 `/spec`。
+- 进入 `phase13-frontend-page-parity-implementation` 后，任一页面子任务在标记“验收通过”前，必须额外完成“旧 `Rento` 原型 vs `Rento-miniX` 当前实现”的逐项对照；若仍存在说明性文案、开发态卡片、占位交互、重复入口或首页/列表/详情/表单信息结构漂移，则不得视为通过。
 - 任一已批准 `spec` 的子任务在实施完成后，必须额外指定独立子代理执行审核验收；只有在子代理审核明确通过后，才允许把该子任务标记完成，并继续提交与推送远程仓库。
 - `docs/fix/` 与已完成的 `docs/phase01~phase05_*` 默认保留为上游参考与历史结论，不再自动等同于当前默认工作流。
 - 归档文档默认只读，不再作为当前实现依据。
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已推进到 `phase13-frontend-page-parity-implementation` 的阶段文档审核阶段；后续实施必须继续建立在 `docs/phase12_*` 与 `plan.md` 已补齐的 `phase12 ~ phase16` 共同边界之上，并以新增的 `docs/phase13_*` 承接真实前端页面迁移实施的子任务顺序、页面切片边界与验收基线。
+- 当前默认工作流已完成 `phase13-frontend-page-parity-implementation` 的当前轮实施与收口；后续进入 `phase14` 前，必须继续建立在 `docs/phase12_*`、`docs/phase13_*` 与 `plan.md` 已补齐的 `phase12 ~ phase16` 共同边界之上，并直接继承页面切片结论、验收基线与页面-API/query 交接表。
+- 当前默认工作流下，任何页面迁移都不得以“真实页面壳已落位”替代“高保真迁移已完成”；若新宿主页面与旧 `Rento` 页面源代码相比仍存在显著结构漂移，只能视为中间实现结果，不得提前标记为验收通过。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。
 - `phase08` 审核通过的最低前提，至少包括：统一 API 宿主、认证门禁、中间件链、错误处理、环境变量约束与最小安全边界均已冻结并通过审核。
@@ -67,6 +71,8 @@
 - `phase11` 审核通过的最低前提，至少包括：正式部署主线、服务端预构建产物链、正式环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件均已冻结并通过审核。
 - `phase12` 审核通过的最低前提，至少包括：旧页面映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径与 `phase12 ~ phase16` 完整路线图均已冻结并通过审核。
 - `phase13` 审核通过的最低前提，至少包括：P0/P1 正式页面实施范围、route module 承接结构、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界、浏览器验收基线与 `phase14` 页面-API 依赖交接均已冻结并通过审核。
+- `phase14` 审核通过的最低前提，至少包括：retained-legacy / compat-wrapper / formal-host-owned route inventory 分类、正式宿主清单、dashboard / settings query host 边界、分域 route drain 顺序、compat 保留条件、旧 Next API 退出前提与最小文档验证要求均已冻结并通过审核。
+- `phase13` 任一已实施页面子任务的最低验收前提，除上述门槛外，还必须证明新页面继续以旧 `Rento` 源代码为原型并达到接近 `100%` 的页面保真度；若仅完成壳层落位、说明页替换、局部模块复用或最小状态边界承接，不得单独视为完成迁移。
 - 原地重构默认优先最小边界、分阶段推进，不允许一次性把 UI、框架、ORM 与部署主线一起大爆炸式改写。
 - 当前主动开发 remote 默认只保留 `origin -> Rento-miniX`；`Rento-legacy` 仅作为 GitHub 侧只读备份参考，不作为并行推送目标、默认上游或第二真相源。
 - 旧容器化运行线相关文档、脚本与部署资产只承担“当前存量运行线参考 + 回滚基线”职责；在新部署主线冻结前，不得继续扩写成 `Rento-miniX` 的未来正式主路径。
@@ -100,6 +106,8 @@
 - `phase12` 当前轮最低文档验证要求固定为：`docs/phase12_*` 互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核；进入新增 `phase13-frontend-page-parity-implementation` 与后续页面/API/PWA/cutover 实施前，不以“路线图已规划”为理由跳过页面映射表、UI 保真边界、完整路线图、前后依赖、DoD 与退出条件审核。
 - `phase13` 期间允许把首页、房源、合同、账单、租客、抄表、设置等 P0/P1 正式页面真实迁入 `src/minix`，并收口页面壳、页面装配层、route-level 数据边界、宿主绑定拆分与页面级验收基线，但不得在该阶段直接切 retained-legacy API/query、PWA runtime 或 legacy cutover。
 - `phase13` 当前轮最低文档验证要求固定为：`docs/phase13_*` 互链复核、被引用 `src/minix/*`/`src/components/*`/旧 `src/app/**/page.tsx` 路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*`、`docs/phase13_*` 状态一致性复核；在用户批准前，不得以“进入 phase13”为由直接跳过 `/plan` 文档审核进入 `/spec` 或实现。
+- `phase14` 期间允许把旧 `src/app/api/*` 的 retained-legacy 正式职责、compat-wrapper 保留边界与 formal-host-owned 退出前提收口到 `docs/phase14_*`、`server/lib/legacy-route-inventory.ts` 与 `server/routes/*` 的单一解释上，但不得在该阶段反向重开页面迁移、PWA runtime 或 `phase16` cutover/legacy-exit 职责。
+- `phase14` 当前轮最低文档验证要求固定为：`docs/phase14_*` 互链复核、被引用 `server/*`、`src/app/api/*`、`src/lib/queries*`、`src/lib/page-closure-compat/*` 与 `server/lib/legacy-route-inventory.ts` 路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase13_*`、`docs/phase14_*` 状态一致性复核；在用户批准前，不得以“进入 phase14”为由直接跳过 `/plan` 文档审核进入 `/spec` 或实现。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
   - 是否影响历史数据

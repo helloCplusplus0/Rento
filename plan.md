@@ -1,11 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase13-frontend-page-parity-implementation`
-- 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，且 `phase11` 已冻结正式部署主线、回滚基线与发布门禁的前提下，基于 `phase12` 已冻结的页面事实表、页面映射、五层复用矩阵、UI 保真边界与页面-API 联动，为真实前端页面迁移实施产出单一可审核的阶段文档。
-- 当前执行方式：`phase12` 已完成 `phase12-05` 路线图一致性收口；当前轮已进入 `phase13-frontend-page-parity-implementation` 的真实页面迁移实施与文档收口尾段，继续把正式页面真实迁移实施从后续 API/PWA/cutover 阶段中解耦出来。
-- 当前下一步：继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图为阶段真相源；`phase13-06-dashboard-parity-closure` 已完成首页 `/` 的高保真验收与最小修复，当前轮优先推进 `phase13-07-bill-stats-route-parity`，收口 `/bills/stats` 的正式迁移承接位。
-- 当前阶段说明：`phase10` 已完成并继续作为后续阶段的数据访问主线上游输入保留；`phase11` 已完成并继续作为正式部署主线、发布门禁与 legacy 回滚基线的稳定上游输入保留；当前默认重点已从 `phase12` 的冻结阶段切换为“`phase13` 真实页面迁移实施尾段 + 阶段尾项收口”。
+- 当前默认工作流：`phase14-api-query-parity-and-legacy-route-drain`
+- 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，且 `phase11` 已冻结正式部署主线、回滚基线与发布门禁的前提下，基于 `phase12` 与 `phase13` 已冻结的页面事实、页面 parity 结果、浏览器基线与页面-API 交接，为 retained-legacy API/query drain 产出单一可审核的 `phase14` 阶段文档。
+- 当前执行方式：`phase12` 已完成 `phase12-05` 路线图一致性收口；`phase13-frontend-page-parity-implementation` 已完成当前轮真实页面迁移、最终复核与上游产物收口，后续阶段重点切换到 retained-legacy API/query drain 规划。
+- 当前下一步：继续以 [phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md)、[phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图为阶段真相源；当前阶段文档已产出，下一步应等待用户审核，未经批准不得进入 `phase14` 任一 `/spec` 或实现。
+- 当前阶段说明：`phase10` 已完成并继续作为后续阶段的数据访问主线上游输入保留；`phase11` 已完成并继续作为正式部署主线、发布门禁与 legacy 回滚基线的稳定上游输入保留；`phase13` 已完成当前轮真实页面迁移与阶段尾项收口；`phase14` 当前轮已完成阶段文档产出，默认重点应切换为“以 `docs/phase14_*` 为单一真相源，等待审核后再进入 `/spec`”。
 
 ## 阶段顺序
 
@@ -221,11 +221,11 @@
   - 页面迁移继续保持旧 UI 原型、导航节奏、表单交互与主链业务语义不失真
   - 不把 API/query parity、PWA parity 或 cutover 职责混写进本阶段
 - 当前结论：
-  - 已完成 `phase13-05-page-parity-acceptance-baseline-closure` 当前轮文档收口
-  - `phase13-06-dashboard-parity-closure` 已完成首页 `/` 的高保真验收与状态收口，`phase13-07-bill-stats-route-parity` 继续作为本阶段剩余尾项
-  - 在 `/bills/stats` 仍为“未迁移”的前提下，`phase13` 不得视为整体完成
+  - 已完成 `phase13-05-page-parity-acceptance-baseline-closure` 最终复核与文档收口
+  - `phase13-06-dashboard-parity-closure` 与 `phase13-07-bill-stats-route-parity` 已完成首页 `/` 与 `/bills/stats` 的尾项收口
+  - 正式业务页面 `25/25` 已迁移并完成当前轮页面 parity 验收基线收口，`phase13` 可以视为当前轮整体完成
   - 依赖 `phase12` 已冻结的页面事实表、页面映射、复用矩阵、UI 保真边界与实施优先顺序
-  - 后续子任务仍按 `docs/phase13_*` 中的顺序逐个进入 `/spec`、实现与验收
+  - 后续默认不再新增 `phase13` 页面迁移子任务；下一步应进入 `phase14` `/plan`
 
 ### phase14-api-query-parity-and-legacy-route-drain
 - 目标：清空旧 `src/app/api/*` 中仍承担正式业务职责的 retained-legacy 路由，把正式 API / query 承接位继续收口到 Hono 宿主与已冻结的数据访问主线之上。
@@ -239,8 +239,9 @@
   - 不因宿主迁移破坏主链语义、历史数据保留与删除门禁
   - retained-legacy 路由具备可执行的清零路径
 - 当前结论：
-  - 尚未开始
-  - 依赖 `phase12` 的页面-API 关系冻结结果与 `phase13` 的真实页面 parity 实施结果
+  - 已完成当前轮 `/plan` 文档产出
+  - `docs/phase14_*` 已冻结 retained-legacy / compat-wrapper / formal-host-owned 分类、正式宿主清单、route drain 顺序、`phase10` 查询/事务继承边界与 `phase13` 页面-API/query 交接
+  - 当前等待用户审核；未经批准，不得直接进入 `phase14` 任一 `/spec` 或实现
 
 ### phase15-minix-pwa-and-runtime-parity
 - 目标：把 PWA 能力从旧 Next 宿主迁移到 `Vite + Hono` 新主线，使纯 `Rento-miniX` 具备与当前受控 Web App 等价的安装、更新、离线兜底与发布口径。
@@ -283,9 +284,9 @@
 
 ## 当前阶段结论
 - 当前仓库具备继续原地重构的业务骨架，不建议从零重写。
-- 当前最优策略已从“以 `phase12` 为当前默认入口并完成路线图重分层”推进到“以 `phase13` 为当前默认入口，补齐真实前端页面迁移实施阶段文档，并在审核通过后再进入 `/spec`”。
+- 当前最优策略已从“以 `phase13` 为当前默认入口收口真实前端页面迁移”推进到“以 `phase14` 为当前默认入口，先完成 retained-legacy API/query drain 的 `/plan` 文档冻结，再进入后续 `/spec`”。
 - 当前正式数据访问主线继续固定为 `Prisma + PostgreSQL`；Prisma 替换不属于当前默认路线图，只作为后续条件成熟时的独立议题评估。
-- 当前默认推进方向：先完成本轮 `phase12` 路线图重分层审核，再按 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 的顺序逐段实施；在 `phase16` cutover 审核完成前，不直接删除 legacy 资产，也不把旧 UI 设计语言重新打开为可自由重做事项。
+- 当前默认推进方向：`phase13` 已完成当前轮收口，后续按 `phase14 -> phase15 -> phase16` 的顺序逐段推进；在 `phase16` cutover 审核完成前，不直接删除 legacy 资产，也不把旧 UI 设计语言重新打开为可自由重做事项。
 
 ## 阶段执行工作流
 - 当推进方向不明确时，先执行 `/plan`，在 `.trae/documents/` 下生成阶段推进计划文档，作为本轮阶段判断承接位。

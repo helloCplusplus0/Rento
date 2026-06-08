@@ -7,7 +7,7 @@
   - [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)
   - [phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)
 - `phase13-01 ~ phase13-04` 的 route module、loader 与页面壳已在 `src/minix` 落地；`phase13-05` 已完成迁移审计与验收基线收口。
-- `phase13-06` 已完成首页 `/` 的高保真收口；`phase13-07` 已补齐 `/bills/stats` 的正式 route module 承接位，后续重点转为浏览器复验与 `phase14` 交接。
+- `phase13-06` 与 `phase13-07` 已完成首页 `/` 与 `/bills/stats` 的尾项收口；当前 `phase13` 已形成可直接交给 `phase14` 的页面 parity 上游输入。
 - 当前轮不执行 `phase14 ~ phase16` 的实现职责。
 
 ## 一、文档目的
@@ -134,7 +134,6 @@
 
 ### 6.2 延后范围
 - P2
-  - `/bills/stats`
   - `/profile`
   - `/notifications`
 - P3
@@ -160,7 +159,7 @@
 - 当前正式业务页面已不存在 document fallback；`/system-health` 与 `/data-consistency` 属于治理延后项，不计入正式业务页面迁移统计。
 - 设置页打开治理辅助入口时仍会触发 `openDocumentPath()`，但这不改变 `/settings` 主页面已迁移的判定。
 - 首页中的 `/profile`、`/notifications` 支持页入口继续保持 P2 延后口径，但必须走受控 fallback / 阶段提示，不得在新宿主中直接落入未迁移路由死链。
-- `phase13-05` 之后，`/bills/stats` 已由 `phase13-07` 推进到“已迁移，待浏览器复验”的状态；其 retained-legacy stats API/query drain 继续留给 `phase14`。
+- `phase13-05` 最终复核后，`/bills/stats` 已由 `phase13-07` 收口为“已迁移并完成浏览器复验”；其 retained-legacy stats API/query drain 继续留给 `phase14`。
 
 ## 七、UI 与数据访问共享口径
 ### 7.1 UI 共享口径
@@ -209,10 +208,10 @@
 ## 九、与后续阶段的共享边界
 ### 9.1 对 `phase14` 的共享输出
 - 真实页面 parity 页面清单
-- 页面迁移状态审计与未迁移清单
+- 页面迁移状态审计与“正式业务页面已无未迁移项”的最终结论
 - 页面级验收矩阵
 - 页面与 retained-legacy API 的最新依赖关系
-- 仍阻塞 retained-legacy API 清退的页面清单
+- 仍阻塞 retained-legacy API 清退的页面 / API 依赖清单
 
 ### 9.2 对 `phase15` 的共享输出
 - 已真实落位的页面壳与正式入口清单

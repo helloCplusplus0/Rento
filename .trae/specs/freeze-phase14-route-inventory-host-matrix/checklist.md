@@ -1,0 +1,9 @@
+- [x] `phase14-01` 的 spec 明确限定为 route inventory 分类、host matrix、页面影响面与 drain 优先级冻结任务，没有越界到 API 切流实现
+- [x] `server/lib/legacy-route-inventory.ts`、`server/routes/domain.ts`、`server/routes/*.ts`、`src/app/api/**/route.ts`、`src/lib/page-closure-compat/*` 已全部纳入盘点范围
+- [x] `formal-host-owned`、`compat-wrapper`、`retained-legacy` 三类分类在 `phase14` 中具备单一解释
+- [x] 已明确“已有 Hono 路由但仍不算正式宿主”的统一判定规则
+- [x] 每个业务域都具备“当前分类 + 当前正式宿主 + bridge 边界 + 页面影响面 + drain 优先级”矩阵
+- [x] 矩阵覆盖 dashboard、settings、rooms、buildings、meters、contracts、checkout、bills、renters、meter-readings、utility 与 governance
+- [x] `phase13` 页面 parity / 页面-API/query 交接表已作为直接上游输入被复用，而不是被重新审计
+- [x] 治理/辅助接口没有被误包装成“正式业务 API 已完成切流”
+- [x] 本子任务输出可直接作为 `phase14-02-dashboard-and-settings-query-host-closure` 的上游输入
