@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { OPEN_BILL_STATUSES, toBillAmount } from '@/lib/bill-semantics'
+import type { EnhancedDashboardStats } from '@/types/dashboard'
 
 /**
  * phase10-03 查询层定位：
@@ -11,46 +12,6 @@ export const dashboardQueriesLayerPosition = {
   canonicalReadScopes: ['dashboard-summary-stats'],
   notCanonicalFor: ['contracts', 'bills', 'rooms', 'meter-readings'],
 } as const
-
-/**
- * 增强的仪表板统计数据接口
- */
-export interface EnhancedDashboardStats {
-  // 基础统计
-  pendingReceivables: number
-  pendingPayables: number
-
-  // 收款统计
-  todayReceivables: {
-    count: number
-    amount: number
-  }
-  monthlyReceivables: {
-    count: number
-    amount: number
-  }
-
-  // 付款统计
-  todayPayables: {
-    count: number
-    amount: number
-  }
-  monthlyPayables: {
-    count: number
-    amount: number
-  }
-
-  // 趋势数据
-  trends: {
-    receivablesChange: number // 相比上月变化百分比
-    payablesChange: number
-  }
-
-  // 元数据
-  lastUpdated: Date
-  isLoading: boolean
-  error?: string
-}
 
 /**
  * 获取今日统计数据

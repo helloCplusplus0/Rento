@@ -1,8 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-
-import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
+import type { EnhancedDashboardStats } from '@/types/dashboard'
 
 function normalizeStatisticsError(error: unknown) {
   if (!(error instanceof Error)) {

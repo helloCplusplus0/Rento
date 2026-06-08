@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 
 import { dashboardMobileStyles } from '@/components/business/dashboard-mobile-styles'
-import { EnhancedDashboardStats } from '@/lib/dashboard-queries'
+import type { EnhancedDashboardStats } from '@/types/dashboard'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
