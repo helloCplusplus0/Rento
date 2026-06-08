@@ -1,0 +1,12 @@
+- [x] `phase14-03` 的 spec 明确限定为 rooms/buildings/meters 宿主解释、删除门禁、引用数据边界与 D2 drain 顺序冻结任务，没有越界到 API 切流实现
+- [x] `server/routes/rooms.ts`、`server/routes/buildings.ts`、`server/routes/meters.ts`、`src/app/api/rooms/**/route.ts`、`src/app/api/buildings/**/route.ts`、`src/app/api/meters/**/route.ts`、`server/lib/legacy-route-inventory.ts`、`src/lib/domain/delete-guards/index.ts` 已全部纳入盘点范围
+- [x] rooms 域 `/api/rooms*` 的 retained-legacy / compat 边界具备单一解释
+- [x] buildings 域 `/api/buildings*` 的 formal-host-owned 身份具备单一解释
+- [x] meters 域 `/api/meters*` 与 `/api/rooms/:id/meters` 的职责边界具备单一解释
+- [x] 已明确楼栋引用数据与房源主链读写边界，不把楼栋 formal 宿主误写成房间主链已切流
+- [x] 已明确 D2 退出顺序固定为 `buildings -> meters -> rooms`，不会在后续 `/spec` 中被改写或弱化
+- [x] 已明确房间删除门禁、房态修改与房间挂表不会被误归类为普通引用数据读写
+- [x] 已明确仪表作为独立资产的正式宿主与房间绑定 retained-legacy 的区分，并保持历史保留约束
+- [x] 已明确“仅空楼栋可删”与“当前数据模型仍不提供结构化解绑”，并把两者作为 D2 验收边界的一部分
+- [x] `phase14-01` 的 host matrix 字段集已被直接复用，没有扩写第二套 D2 专用矩阵字段
+- [x] 本子任务输出可直接作为 `phase14-04-contracts-and-checkout-api-drain` 的上游输入

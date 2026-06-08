@@ -1,0 +1,11 @@
+- [x] rooms / contracts / checkout / bills 的页面主消费路径已真实切到统一 Hono 宿主
+- [x] 旧 `src/app/api/rooms*`、`src/app/api/contracts*`、`src/app/api/bills*` 的对应主链路径已降级为 `compat-wrapper`、`rollback-only` 或明确退出候选
+- [x] `server/lib/legacy-route-inventory.ts` 已同步反映迁移后的正式分类、保留原因、退出条件与回滚条件
+- [x] `/api/contracts/:contractId/checkout` 与 `/api/contracts/*` 的挂载优先级仍正确，且页面与脚本调用方向一致
+- [x] `/api/bills/stats`、`/api/bills/:id` 与账单明细读取不再停留在 page-to-legacy bridge
+- [x] 房间删除门禁、合同锚点、退租结算与账单金额/状态/明细语义未被弱化
+- [x] 已补至少一组覆盖 `rooms -> contract -> checkout -> bill` 的主链 smoke 或人工验证路径
+- [x] 本波次未越界到页面 UI 重做、governance、PWA parity 或 `phase16` cutover
+- [x] `revalidateMutationPaths()` 已按当前运行拓扑显式区分 `next-route-handler` 与 `hono-runtime`，独立 Hono runtime 不再默认依赖 `next/cache`
+- [x] contracts / checkout / bills 的账单缓存失效链与 compat 成功响应契约已按旧 `Rento` 语义重新适配，不再因新路线切流产生高保真偏差
+- [x] 已完成修复后的独立子代理终审，确认当前审查范围内无剩余阻断 `100%` 高保真还原的偏离项

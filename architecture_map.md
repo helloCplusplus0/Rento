@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；`phase13-frontend-page-parity-implementation` 已完成当前轮页面迁移与最终复核，正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项均已收口；`phase14-api-query-parity-and-legacy-route-drain` 已完成当前轮阶段文档产出，当前默认工作流已进入阶段文档审核状态，未经批准不得直接进入 `/spec` 或实现。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；`phase13-frontend-page-parity-implementation` 已完成当前轮页面迁移与最终复核，正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项均已收口；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-03` 前置冻结层与当前轮纠偏 `/plan`，当前默认工作流已进入“等待审核后再进入真实实现层”的阶段文档审核状态，未经批准不得直接进入实现层 `/spec` 或实现。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -229,6 +229,7 @@
 ### 规划中的 API / query parity 承接层
 - `phase14` 规划中的 API / query parity 继续收口到根级 `server/` 与 `src/lib/domain/*`、`src/lib/queries.ts` 等既有正式数据访问承接位。
 - 该层的职责是清空旧 `src/app/api/*` 中仍承担正式业务职责的 retained-legacy 路由，而不是重新打开 ORM 替换议题。
+- 该层当前已完成 `phase14-01 ~ phase14-03` 前置冻结层，用于统一 route inventory、query host、页面影响面与 drain 顺序；后续 `phase14-04 ~ phase14-07` 必须承接真实 API/query drain 实施，前置冻结层不得单独视为整个 `phase14` 已完成。
 - 当前正式数据访问主线继续固定为：
   - `Prisma + PostgreSQL`
   - `src/lib/prisma.ts`
@@ -424,4 +425,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步已从 `phase14` 的 `/plan` 准备推进到阶段文档审核：后续继续以 `docs/phase12_*`、`docs/phase13_*`、新增的 `docs/phase14_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase14` 专门承接 retained-legacy API/query drain 规划，当前已完成阶段文档产出，在进入 `/spec`、页面/API/PWA/cutover 实施前，legacy 资产继续保留为回滚基线。
+- 当前默认下一步已从 `phase14` 的 `/plan` 准备推进到纠偏后的阶段文档审核：后续继续以 `docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`phase14` 纠偏 `/plan` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase14` 专门承接 retained-legacy API/query drain，当前已完成前置冻结层与阶段结构纠偏，在进入真实实现层 `/spec`、页面/API/PWA/cutover 后续实施前，legacy 资产继续保留为回滚基线。

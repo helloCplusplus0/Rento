@@ -1,66 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  parseRequestBody,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { contractLifecycleService } from '@/lib/domain/contracts'
-import { ErrorType } from '@/lib/error-logger'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const CONTRACT_ACTIVATE_FORMAL_HOST = 'server/routes/contracts.ts'
+const CONTRACT_ACTIVATE_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/activate/route.ts 可直接移除。'
 
 /**
- * 合同激活API
- * POST /api/contracts/activate - 激活到期的PENDING合同
- * POST /api/contracts/activate - 手动激活指定合同 (带contractId参数)
- *
  * compat wrapper:
- * phase09-02 起正式业务真相下沉到 src/lib/domain/contracts，
- * 当前 Next 入口仅保留请求/响应兼容层，避免继续维护第二套激活逻辑。
+ * phase14-05 起 `/api/contracts/activate` 的正式生命周期语义统一收口到 `server/routes/contracts.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立激活逻辑。
  */
-
-async function handleActivateContracts(
-  request: NextRequest
-): Promise<NextResponse> {
-  const body = await parseRequestBody(request)
-
-  // 如果提供了contractId，执行手动激活
-  if (body.contractId) {
-    const result = await contractLifecycleService.manualActivateContract(
-      body.contractId
-    )
-
-    if (result.success) {
-      await revalidateMutationPaths({
-        scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
-        detailPaths: [`/contracts/${body.contractId}`],
-      })
-
-      return createSuccessResponse({
-        message: result.message,
-        contractId: body.contractId,
-      })
-    } else {
-      return NextResponse.json({ error: result.message }, { status: 400 })
-    }
-  }
-
-  // 否则执行批量激活
-  const result = await contractLifecycleService.activatePendingContracts()
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
-  })
-
-  return createSuccessResponse({
-    message: `激活任务完成，成功激活 ${result.activated} 个合同`,
-    activated: result.activated,
-    errors: result.errors,
+async function handleContractActivateCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'contract-activate-api',
+    migrationHost: CONTRACT_ACTIVATE_FORMAL_HOST,
+    exitCondition: CONTRACT_ACTIVATE_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-05',
+      compatReason: '合同激活已由统一 Hono 宿主承担正式职责，旧 Next 路由仅保留兼容代理。',
+    },
   })
 }
 
-export const POST = withApiErrorHandler(handleActivateContracts, {
-  requireAuth: true,
-  module: 'contracts-activate-api',
-  errorType: ErrorType.SYSTEM_ERROR,
-})
+export const POST = handleContractActivateCompatProxy

@@ -1,75 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  parseRequestBody,
-  validateRequired,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { getOptionalSession } from '@/lib/auth/guard'
-import { contractDomainService } from '@/lib/domain/contracts'
-import { ErrorType } from '@/lib/error-logger'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const CONTRACT_CHECKOUT_FORMAL_HOST = 'server/routes/checkout.ts'
+const CONTRACT_CHECKOUT_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/[id]/checkout/route.ts 可直接移除。'
 
 /**
  * compat wrapper:
- * phase09-05 起退租结算的正式事务编排迁入 src/lib/domain/contracts，
- * 当前旧 Next 入口只负责请求适配、会话透传与页面缓存失效。
- * 退出条件：前端与调用方全部切到统一 Hono 宿主后移除。
+ * phase14-05 起 `/api/contracts/:id/checkout` 的正式退租结算事务统一收口到 `server/routes/checkout.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立结算编排、会话透传或缓存失效逻辑。
  */
-async function handleCheckoutCompat(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id: contractId } = await params
-  const body = await parseRequestBody(request)
-
-  validateRequired(body, ['checkoutDate', 'checkoutReason'])
-  if (!Array.isArray(body.settlementItems) || body.settlementItems.length === 0) {
-    throw new Error('缺少正式结算明细，请刷新页面后重试')
-  }
-
-  const session = await getOptionalSession(request)
-  const result = await contractDomainService.checkoutContract({
-    contractId,
-    checkoutDate: body.checkoutDate,
-    checkoutReason: body.checkoutReason,
-    damageAssessment: body.damageAssessment,
-    finalMeterReadings: body.finalMeterReadings,
-    remarks: body.remarks,
-    settlementItems: body.settlementItems,
-    operator: session?.username ?? '管理员',
-  })
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters', 'meters'],
-    detailPaths: [
-      `/contracts/${contractId}`,
-      `/rooms/${result.contract.roomId}`,
-      `/renters/${result.contract.renterId}`,
-    ],
-  })
-
-  return createSuccessResponse(
-    {
-      contractId,
-      contract: result.contract,
-      settlement: result.settlement,
-      meterProcessing: result.meterProcessing,
-      settlementBillId: result.settlementBillId,
-      oldBills: result.oldBills,
-      factSnapshot: result.factSnapshot,
-      consistency: result.consistency,
-      compatMode: true,
-      migrationHost: 'src/lib/domain/contracts',
+async function handleContractCheckoutCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'checkout-contract-api',
+    migrationHost: CONTRACT_CHECKOUT_FORMAL_HOST,
+    exitCondition: CONTRACT_CHECKOUT_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-05',
+      compatReason: 'checkout 主链已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理与回滚基线。',
     },
-    '退租成功'
-  )
+  })
 }
 
-export const POST = withApiErrorHandler(handleCheckoutCompat, {
-  requireAuth: true,
-  module: 'checkout-contract-api',
-  errorType: ErrorType.VALIDATION_ERROR,
-  enableFallback: true,
-})
+export const POST = handleContractCheckoutCompatProxy

@@ -129,34 +129,43 @@ export const CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX: readonly ContractMainFlowDes
     key: 'NEW_SIGN_CONTRACT',
     label: '新签合同出账',
     canonicalWriteHost:
-      'src/app/api/contracts/route.ts -> src/lib/domain/billing|src/lib/domain/meters',
+      'server/routes/contracts.ts -> prisma.$transaction|generateBillsOnContractSigned|createInitialBaselineReadingsForContractTx',
     canonicalQueryHosts: [
-      '合同列表分页 -> src/lib/optimized-queries.ts',
-      '合同详情/SSR 回查 -> src/lib/queries.ts',
+      '合同列表分页 -> server/routes/contracts.ts -> src/lib/optimized-queries.ts',
+      '合同详情/SSR 回查 -> server/routes/contracts.ts -> src/lib/queries.ts',
       '提醒窗口配置 -> src/lib/global-settings.ts',
     ],
-    compatWrappers: ['src/app/api/contracts/[id]/generate-bills/route.ts'],
+    compatWrappers: [
+      'src/app/api/contracts/route.ts',
+      'src/app/api/contracts/[id]/generate-bills/route.ts',
+    ],
   },
   {
     key: 'RENEW_CONTRACT',
     label: '续租与补账单',
-    canonicalWriteHost: 'src/lib/domain/contracts',
+    canonicalWriteHost: 'server/routes/contracts.ts -> src/lib/domain/contracts',
     canonicalQueryHosts: [
-      '合同详情 -> src/lib/queries.ts',
-      '旧详情宿主 -> src/app/api/contracts/[id]/route.ts',
+      '合同详情 -> server/routes/contracts.ts -> src/lib/queries.ts',
+      '续租响应事实快照 -> server/routes/contracts.ts -> src/lib/domain/contracts',
     ],
-    compatWrappers: ['src/app/api/contracts/[id]/renew/route.ts'],
+    compatWrappers: [
+      'src/app/api/contracts/[id]/route.ts',
+      'src/app/api/contracts/[id]/renew/route.ts',
+    ],
   },
   {
     key: 'CHECKOUT_SETTLEMENT',
     label: '退租结算',
-    canonicalWriteHost: 'src/lib/domain/contracts',
+    canonicalWriteHost: 'server/routes/checkout.ts -> src/lib/domain/contracts',
     canonicalQueryHosts: [
-      '合同详情 -> src/lib/queries.ts',
-      '旧详情宿主 -> src/app/api/contracts/[id]/route.ts',
-      '终抄详情/related bills -> src/lib/domain/meters',
+      '合同详情 -> server/routes/contracts.ts -> src/lib/queries.ts',
+      '退租结算响应事实快照 -> server/routes/checkout.ts -> src/lib/domain/contracts',
+      '终抄详情/related bills -> server/routes/meter-readings.ts -> src/lib/domain/meters',
     ],
-    compatWrappers: ['src/app/api/contracts/[id]/checkout/route.ts'],
+    compatWrappers: [
+      'src/app/api/contracts/[id]/route.ts',
+      'src/app/api/contracts/[id]/checkout/route.ts',
+    ],
   },
   {
     key: 'METER_READING_BILLING',

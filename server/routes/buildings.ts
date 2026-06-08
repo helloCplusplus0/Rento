@@ -103,6 +103,8 @@ export function createBuildingRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms'],
       extraTargets: [{ path: '/add/room' }],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(transformBuilding(building), 201)
@@ -140,6 +142,8 @@ export function createBuildingRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms'],
       extraTargets: [{ path: '/add/room' }],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(transformBuilding(updatedBuilding))
@@ -175,6 +179,8 @@ export function createBuildingRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms'],
       extraTargets: [{ path: '/add/room' }],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json({

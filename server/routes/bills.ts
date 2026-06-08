@@ -5,10 +5,11 @@ import {
   isBillDeleteGuardBlockedError,
   isBillingDomainValidationError,
 } from '@/lib/domain/billing'
-import { billQueryCache } from '@/lib/bill-cache'
+import { billQueryCache, invalidateBillCaches } from '@/lib/bill-cache'
 import { optimizedBillQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import { billQueries, contractQueries } from '@/lib/queries'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -39,7 +40,7 @@ const LEGACY_COMPAT = {
     'src/app/api/contracts/[id]/generate-bills/route.ts',
   ] as const,
   reason:
-    'phase09-03 起由 server/routes/bills.ts 与 src/lib/domain/billing 承接账单金额/状态语义、基础支付周期出账和账单删除门禁；旧 Next 入口仅保留 compat wrapper。',
+    'phase14-05 起统一 /api runtime 已由 server/routes/bills.ts 承担账单列表、统计、详情、草稿更新、收款状态与删除门禁等正式职责；旧 Next 入口仅保留 compat proxy、回滚基线，以及 utility-details / repair-details 等残余 retained-legacy 尾项。',
   exitCondition:
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/bills/* 与基础生成入口 compat wrapper 可移除。',
 } as const
@@ -78,6 +79,23 @@ interface BillDetailResponse {
       status: string
     }
   }
+}
+
+async function revalidateBillMutationPaths(options: {
+  billId?: string
+  contractId?: string | null
+  runtimeName: string
+}) {
+  await invalidateBillCaches(options.billId)
+  await revalidateMutationPaths({
+    scopes: ['dashboard', 'bills', 'contracts', 'renters', 'rooms'],
+    detailPaths: [
+      options.billId ? `/bills/${options.billId}` : undefined,
+      options.contractId ? `/contracts/${options.contractId}` : undefined,
+    ],
+    executionRuntime: 'hono-runtime',
+    runtimeName: options.runtimeName,
+  })
 }
 
 function toClientBill(bill: any) {
@@ -162,12 +180,12 @@ function appendBillsFallback(routeApp: Hono<AuthAppEnv>, env: MinixServerEnv) {
     return jsonApiError(
       c,
       notImplementedError(
-        'phase09-03 仅迁入账单更新、状态语义查询与账单删除门禁；其余账务入口仍由 compat wrapper 或后续子任务承接。',
+        'phase14-05 起账单主链正式入口已统一收口到 Hono 宿主；当前 fallback 仅用于拦截尚未迁入的 utility-details、repair-details 等 retained-legacy / governance 尾项，避免继续输出旧的“部分迁移”状态。',
         {
-          phase: 'phase09-03',
+          phase: 'phase14-05',
           routeKey: 'bills',
           domainServiceHost: 'src/lib/domain',
-          migrationState: 'partial-migrated',
+          migrationState: 'formal-host-owned-with-retained-legacy-tail',
           compatBoundary: LEGACY_COMPAT,
           modules: [billingDomainBoundary].map((moduleBoundary) => ({
             name: moduleBoundary.name,
@@ -289,6 +307,12 @@ export function createBillRoutes(env: MinixServerEnv) {
         billData.remarks || `${billData.type || 'OTHER'}账单 - 手动创建`,
     })
 
+    await revalidateBillMutationPaths({
+      billId: newBill.id,
+      contractId: newBill.contractId,
+      runtimeName: env.runtimeName,
+    })
+
     return c.json(toClientBill(newBill))
   })
 
@@ -306,9 +330,9 @@ export function createBillRoutes(env: MinixServerEnv) {
       range: range || undefined,
     })
 
-    // phase13-07 keeps `/api/bills/stats` on retained-legacy semantics.
-    // The unified Hono host only provides a static bridge here so the route is
-    // no longer swallowed by the dynamic `/:id` handler before phase14 drain.
+    // phase14-05 promotes `/api/bills/stats` to the unified Hono formal host.
+    // The old Next.js route now acts only as a compat proxy, while this handler
+    // remains the single runtime entry to avoid being swallowed by `/:id`.
     const statsData = await advancedBillStats.getDetailedStats({
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
@@ -583,13 +607,18 @@ export function createBillRoutes(env: MinixServerEnv) {
     try {
       const bill = await billingDomainService.updatePendingBillDraft(billId, body)
 
-      return jsonSuccess(c, {
-        data: {
-          bill,
-          compatBoundary: LEGACY_COMPAT,
-        },
-        message: '账单草稿更新成功',
-        env,
+      await revalidateBillMutationPaths({
+        billId,
+        contractId: bill.contractId,
+        runtimeName: env.runtimeName,
+      })
+
+      return c.json({
+        success: true,
+        message: 'Bill updated successfully via compat wrapper',
+        data: bill,
+        compatMode: true,
+        migrationHost: 'src/lib/domain/billing',
       })
     } catch (error) {
       if (error instanceof Error && error.message === 'Bill not found') {
@@ -637,13 +666,16 @@ export function createBillRoutes(env: MinixServerEnv) {
     try {
       const bill = await billingDomainService.updateBillCollectionStatus(billId, body)
 
-      return jsonSuccess(c, {
-        data: {
-          bill,
-          compatBoundary: LEGACY_COMPAT,
-        },
-        message: '账单收款状态更新成功',
-        env,
+      await revalidateBillMutationPaths({
+        billId,
+        contractId: bill.contractId,
+        runtimeName: env.runtimeName,
+      })
+
+      return c.json({
+        ...bill,
+        compatMode: true,
+        migrationHost: 'src/lib/domain/billing',
       })
     } catch (error) {
       if (error instanceof Error && error.message === 'Bill not found') {
@@ -704,13 +736,16 @@ export function createBillRoutes(env: MinixServerEnv) {
     try {
       const result = await billingDomainService.deletePendingBillWithoutHistory(billId)
 
-      return jsonSuccess(c, {
-        data: {
-          ...result,
-          compatBoundary: LEGACY_COMPAT,
-        },
-        message: result.message,
-        env,
+      await revalidateBillMutationPaths({
+        billId,
+        contractId: result.contractId ?? null,
+        runtimeName: env.runtimeName,
+      })
+
+      return c.json({
+        ...result,
+        compatMode: true,
+        migrationHost: 'src/lib/domain/billing',
       })
     } catch (error) {
       if (error instanceof Error && error.message === 'Bill not found') {

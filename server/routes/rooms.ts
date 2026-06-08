@@ -521,6 +521,8 @@ export function createRoomRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms'],
       detailPaths: [`/rooms/${newRoom.id}`],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(transformedRoom, 201)
@@ -658,6 +660,8 @@ export function createRoomRoutes(env: MinixServerEnv) {
 
       await revalidateMutationPaths({
         scopes: ['dashboard', 'rooms'],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
       })
 
       return c.json(
@@ -802,6 +806,8 @@ export function createRoomRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms', 'contracts'],
       detailPaths: [`/rooms/${roomId}`],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(roomData)
@@ -827,6 +833,8 @@ export function createRoomRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms', 'contracts'],
       detailPaths: [`/rooms/${roomId}`],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(roomData)
@@ -899,6 +907,8 @@ export function createRoomRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
       detailPaths: [`/rooms/${roomId}`],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(meterData, 201)
@@ -955,11 +965,14 @@ export function createRoomRoutes(env: MinixServerEnv) {
     try {
       const result = await deleteRoomWithoutRelatedHistory(roomId)
 
-      return jsonSuccess(c, {
-        data: result,
-        message: result.message,
-        env,
+      await revalidateMutationPaths({
+        scopes: ['dashboard', 'rooms', 'contracts'],
+        detailPaths: [`/rooms/${roomId}`],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
       })
+
+      return c.json(result)
     } catch (error) {
       if (error instanceof Error && error.message === 'Room not found') {
         return jsonApiError(c, notFoundError('Room not found'), { env })

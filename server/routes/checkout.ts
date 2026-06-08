@@ -8,6 +8,8 @@ import {
   contractDomainService,
   isContractDomainValidationError,
 } from '@/lib/domain/contracts'
+import { invalidateBillCaches } from '@/lib/bill-cache'
+import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -17,7 +19,6 @@ import {
 } from '../lib/api-errors'
 import {
   jsonApiError,
-  jsonSuccess,
   readJsonBody,
 } from '../lib/api-responses'
 import type { MinixServerEnv } from '../lib/env'
@@ -139,13 +140,34 @@ export function createCheckoutRoutes(env: MinixServerEnv) {
         operator: session?.username ?? '管理员',
       })
 
-      return jsonSuccess(c, {
+      await invalidateBillCaches(result.settlementBillId)
+      await revalidateMutationPaths({
+        scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters', 'meters'],
+        detailPaths: [
+          `/contracts/${contractId}`,
+          `/rooms/${result.contract.roomId}`,
+          `/renters/${result.contract.renterId}`,
+        ],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
+      })
+
+      return c.json({
+        success: true,
         data: {
-          ...result,
-          compatBoundary: LEGACY_COMPAT,
+          contractId,
+          contract: result.contract,
+          settlement: result.settlement,
+          meterProcessing: result.meterProcessing,
+          settlementBillId: result.settlementBillId,
+          oldBills: result.oldBills,
+          factSnapshot: result.factSnapshot,
+          consistency: result.consistency,
+          compatMode: true,
+          migrationHost: 'src/lib/domain/contracts',
         },
         message: '退租成功',
-        env,
+        timestamp: new Date().toISOString(),
       })
     } catch (error) {
       if (error instanceof Error && error.message === 'Contract not found') {

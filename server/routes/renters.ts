@@ -136,7 +136,10 @@ export function createRenterRoutes(env: MinixServerEnv) {
         maxBytes: env.requestGovernance.maxRequestSize,
       })) ?? {}
 
-    const result = await createRenterPageClosureData(body)
+    const result = await createRenterPageClosureData(body, {
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
+    })
 
     if ('error' in result) {
       return c.json({ error: result.error }, result.status)
@@ -168,7 +171,10 @@ export function createRenterRoutes(env: MinixServerEnv) {
         maxBytes: env.requestGovernance.maxRequestSize,
       })) ?? {}
 
-    const result = await updateRenterPageClosureData(renterId, body)
+    const result = await updateRenterPageClosureData(renterId, body, {
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
+    })
 
     if ('error' in result) {
       return c.json({ error: result.error }, result.status)
@@ -179,7 +185,10 @@ export function createRenterRoutes(env: MinixServerEnv) {
 
   routeApp.delete('/:id', async (c) => {
     const renterId = c.req.param('id')
-    const result = await deleteRenterPageClosureData(renterId)
+    const result = await deleteRenterPageClosureData(renterId, {
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
+    })
 
     if ('error' in result) {
       return c.json({ error: result.error }, result.status)

@@ -1,4 +1,7 @@
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import {
+  revalidateMutationPaths,
+  type MutationRevalidationRuntime,
+} from '@/lib/mutation-revalidation'
 import { optimizedRenterQueries } from '@/lib/optimized-queries'
 import { renterQueries } from '@/lib/queries'
 
@@ -14,6 +17,11 @@ export interface RenterMutationPayload {
   moveInDate?: string | null
   tenantCount?: number
   remarks?: string
+}
+
+interface RenterMutationRuntimeOptions {
+  executionRuntime?: MutationRevalidationRuntime
+  runtimeName?: string
 }
 
 export interface RentersPageClosureQuery {
@@ -156,7 +164,10 @@ export async function getRenterDetailPageClosureData(renterId: string) {
   return serializeRenterDetail(renter)
 }
 
-export async function createRenterPageClosureData(payload: RenterMutationPayload) {
+export async function createRenterPageClosureData(
+  payload: RenterMutationPayload,
+  runtimeOptions: RenterMutationRuntimeOptions = {}
+) {
   if (!payload.name?.trim() || !payload.phone?.trim()) {
     return {
       error: '缺少必填字段: name, phone',
@@ -183,6 +194,8 @@ export async function createRenterPageClosureData(payload: RenterMutationPayload
   await revalidateMutationPaths({
     scopes: ['dashboard', 'renters'],
     detailPaths: [`/renters/${renter.id}`],
+    executionRuntime: runtimeOptions.executionRuntime,
+    runtimeName: runtimeOptions.runtimeName,
   })
 
   return {
@@ -194,7 +207,8 @@ export async function createRenterPageClosureData(payload: RenterMutationPayload
 
 export async function updateRenterPageClosureData(
   renterId: string,
-  payload: RenterMutationPayload
+  payload: RenterMutationPayload,
+  runtimeOptions: RenterMutationRuntimeOptions = {}
 ) {
   const existingRenter = await renterQueries.findById(renterId)
   if (!existingRenter) {
@@ -225,6 +239,8 @@ export async function updateRenterPageClosureData(
   await revalidateMutationPaths({
     scopes: ['dashboard', 'renters', 'contracts', 'bills'],
     detailPaths: [`/renters/${renterId}`],
+    executionRuntime: runtimeOptions.executionRuntime,
+    runtimeName: runtimeOptions.runtimeName,
   })
 
   return {
@@ -233,7 +249,10 @@ export async function updateRenterPageClosureData(
   } as const
 }
 
-export async function deleteRenterPageClosureData(renterId: string) {
+export async function deleteRenterPageClosureData(
+  renterId: string,
+  runtimeOptions: RenterMutationRuntimeOptions = {}
+) {
   const existingRenter = await renterQueries.findById(renterId)
   if (!existingRenter) {
     return {
@@ -256,6 +275,8 @@ export async function deleteRenterPageClosureData(renterId: string) {
   await revalidateMutationPaths({
     scopes: ['dashboard', 'renters', 'contracts', 'bills'],
     detailPaths: [`/renters/${renterId}`],
+    executionRuntime: runtimeOptions.executionRuntime,
+    runtimeName: runtimeOptions.runtimeName,
   })
 
   return {

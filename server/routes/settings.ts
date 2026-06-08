@@ -43,6 +43,8 @@ export function createSettingsRoutes(env: MinixServerEnv) {
     await globalSettings.updateSettings(settings)
     await revalidateMutationPaths({
       scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return jsonSuccess(c, {
@@ -56,6 +58,8 @@ export function createSettingsRoutes(env: MinixServerEnv) {
     await globalSettings.resetToDefaults()
     await revalidateMutationPaths({
       scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return jsonSuccess(c, {
@@ -69,6 +73,8 @@ export function createSettingsRoutes(env: MinixServerEnv) {
     await globalSettings.initializeDefaultSettings()
     await revalidateMutationPaths({
       scopes: ['dashboard', 'settings', 'contracts', 'bills', 'meters'],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return jsonSuccess(c, {

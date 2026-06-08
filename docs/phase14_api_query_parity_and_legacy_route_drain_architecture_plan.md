@@ -7,7 +7,8 @@
 - 当前文档用于冻结 `phase14-api-query-parity-and-legacy-route-drain` 的实施架构，不替代：
   - [phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)
   - [phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md)
-- 当前轮不执行 `phase14` 的任何 API/query 切流实现，不删除旧 `src/app/api/*` 路由，不提前进入 `phase15` PWA parity 或 `phase16` cutover/legacy-exit。
+  - [phase14_execution_layer_correction_plan.md](file:///home/dell/Projects/Rento/.trae/documents/phase14_execution_layer_correction_plan.md)
+- 本次纠偏 `/plan` 不执行新的 `phase14` API/query 切流实现，不删除旧 `src/app/api/*` 路由，不提前进入 `phase15` PWA parity 或 `phase16` cutover/legacy-exit；但这不再等于“`phase14` 只做冻结”，当前应统一按“`phase14-01 ~ phase14-04` 只构成冻结与实施输入层，`phase14-05 ~ phase14-07` 才承担完成整阶段 API 迁移的真实实施与收口”解释。
 
 ## 一、文档目标
 本文档用于回答以下问题，并把答案冻结成后续 `phase14-*` `/spec` 的单一依据：
@@ -16,6 +17,15 @@
 - 正式业务 API/query 在 `server/routes/*`、共享领域服务与查询层中的长期承接位应如何解释
 - `phase13` 已迁页面对应的 retained-legacy API/query 应按什么顺序 drain，才能避免页面 parity 与 API parity 解释继续分裂
 - 在不反向改写 `phase10` 查询分层、事务边界与 `phase11` 部署主线的前提下，如何给后续 `/spec` 提供可执行的 route inventory 退出顺序
+
+## 一点五、纠偏后的阶段分层
+- `phase14-01 ~ phase14-04`：冻结与实施输入层
+  - 作用是统一 route inventory 分类、dashboard/settings query host、rooms/buildings/meters 边界，以及 contracts/checkout 的 D3 宿主解释、页面影响与 route priority
+  - 已完成，但只能作为真实迁移波次的上游输入，不能单独视为 `phase14` 阶段完成
+- `phase14-05 ~ phase14-07`：真实实施与阶段收口层
+  - 作用是用两个真实迁移波次完成全部正式业务 API cutover，再统一完成旧 Next API 的迁移完成判定、compat 保留边界与回滚基线收口
+  - 未完成前，不得把整个 `phase14` 标记为“已完成”
+- 因此，本文件的冻结职责只覆盖“输入层已形成单一解释”，不覆盖“整阶段真实迁移已完成”的验收判断。
 
 ## 二、继承输入
 ### 2.1 冻结自 `phase10` 的数据访问输入
@@ -109,7 +119,7 @@
 | `bridgeHosts` | 当前仍只承担 page-closure bridge、compat bridge 或静态路由兜底的承接位 | `server/lib/legacy-route-inventory.ts`、`server/routes/*.ts` |
 | `domainServicePaths` | 当前仍支撑该域正式语义、legacy 查询或 compat helper 的共享服务/查询落点 | `server/lib/legacy-route-inventory.ts` |
 | `pageImpact` | 直接受该域 retained-legacy API/query 影响的 `phase13` 已迁页面 | `docs/phase13_*` |
-| `drainPriority` | 后续 `phase14-02 ~ phase14-07` 进入 `/spec` 的固定先后顺序输入 | `docs/phase14_*` |
+| `drainPriority` | 后续 `phase14-02 ~ phase14-07` 进入 `/spec` 与迁移波次编排的固定先后顺序输入 | `docs/phase14_*` |
 | `freezeConclusion` | 对“当前正式宿主 / 当前 bridge / 当前 compat / 当前 retained-legacy”的单一解释 | 本文档当前轮冻结结论 |
 
 ### 3.2.2 “已有 Hono 路由但仍不算正式宿主”的统一判定
@@ -144,6 +154,50 @@
   - `/api/validation`、`/api/data-consistency`、健康辅助与 repair/status-check 等接口继续按 governance 延后范围解释
 - 以上 D1 结论已冻结为 `phase14-03` 及后续业务域 drain 的直接上游输入，不再重复改写 dashboard/settings 宿主身份
 
+### 3.2.4 `phase14-03` 冻结的 rooms / buildings / meters D2 结论
+- D2 的固定顺序继续冻结为：
+  - 先冻结 rooms 主链读写、局部 compat 与删除门禁解释
+  - 再冻结 buildings 作为引用数据的 formal-host-owned 身份与删除条件
+  - 再冻结 meters 作为独立资产的 compat-wrapper 身份与房间挂表 retained-legacy 边界
+  - 最后统一 `/rooms*`、`/add/room`、`/add/contract`、`/meter-readings/*` 的页面影响与退出顺序
+- rooms：
+  - `/api/rooms` 的 `GET`、`POST`、`PATCH` 继续按 retained-legacy 解释；列表、单体创建与批量状态更新当前仍由旧宿主承担正式职责
+  - `/api/rooms/batch` 已具备 `server/routes/rooms.ts` formal host，旧 Next 入口只保留 compat-wrapper
+  - `/api/rooms/:id` 的 `GET`、`PUT` 继续按 retained-legacy 解释，但 `DELETE` 已迁入 `server/routes/rooms.ts` + `src/lib/domain/delete-guards/index.ts`，旧入口只保留 compat-wrapper
+  - `/api/rooms/:id/status` 与 `/api/rooms/:id/meters` 当前仍是 retained-legacy；即使 Hono 已有对应承接位，也不足以把整域提前判定为 formal-host-owned
+  - 删除门禁必须继续锚定 `performRoomDeleteSafetyCheck()`、`deleteRoomWithoutRelatedHistory()` 与 `performRoomBuildingReassignmentSafetyCheck()`：`OCCUPIED` / `OVERDUE` 房态、未结束合同、未结账单、已绑定仪表、抄表历史与账单明细都会阻断删除或换楼栋
+- buildings：
+  - `/api/buildings` 与 `/api/buildings/:id` 已冻结为 formal-host-owned；`server/routes/buildings.ts` 是单一正式宿主
+  - 楼栋继续只按房源引用数据解释，不得把楼栋 formal 宿主误写成房间主链已切流
+  - 楼栋删除条件继续保持“仅空楼栋可删”；存在任意房间时必须阻断删除，旧 Next 入口仅保留回滚价值
+- meters：
+  - `/api/meters/:meterId` 与 `/api/meters/:meterId/status` 继续按 compat-wrapper 解释；`server/routes/meters.ts` 已承接详情、更新、启停与删除门禁，旧 Next 入口只保留 compat wrapper
+  - `/api/rooms/:id/meters` 仍属于 rooms retained-legacy 边界；房间挂表列表/新增不能因为 `server/routes/meters.ts` 存在就被误判为已经切流
+  - 仪表删除必须继续区分“独立资产”与“历史事实”：存在抄表、账单或账单明细时只允许停用并保留历史；仅无历史的误加仪表才允许硬删除；当前数据模型仍不提供结构化解绑
+- D2 的退出顺序固定为：
+  - 第一步：仅把 `/api/buildings*` 视为可进入 exit-evaluation 的 formal-host-owned 旧入口
+  - 第二步：保留 `/api/meters/:meterId*` compat wrapper，待前端与存量调用统一切到 Hono 后再退出
+  - 第三步：保留 rooms 的 `/api/rooms`、`/api/rooms/:id`、`/api/rooms/:id/status`、`/api/rooms/:id/meters` 为 retained-legacy 主链，最后再结合 `phase14-05` 的主链迁移波次与 `phase14-06` 的残余桥接迁移统一评估
+- 上述 D2 结论已冻结为 `phase14-04` 及后续业务域 drain 的直接上游输入，不再重复改写 rooms/buildings/meters 的宿主身份
+
+### 3.2.5 `phase14-04` 同步后的 contracts / checkout D3 结论
+- D3 的固定顺序继续冻结为：
+  - 先冻结 contracts 域 retained-legacy 读路径与 compat-wrapper 写路径的单一解释
+  - 再冻结 checkout 子域的正式写入口、旧 Next compat-wrapper 与共享领域服务边界
+  - 再冻结 `server/routes/domain.ts` 中 `'/contracts/:contractId/checkout'` 先于 `'/contracts'` 挂接的路由优先级解释
+  - 最后统一 `/contracts*`、`/contracts/:id`、续租、退租、补账单与 `/add/contract` 的页面影响，并继续复用 `phase13` 页面交接与 `phase09-05` 共享领域服务结论
+- contracts：
+  - `GET/POST /api/contracts` 与 `GET/PUT /api/contracts/:id` 继续按 retained-legacy drain 解释；统一 `/api` runtime 的当前对外请求宿主已是 `server/routes/contracts.ts`，但列表、新签创建、详情与编辑仍复用 legacy 查询/写路径，旧 `src/app/api/contracts*` 保留为镜像实现与回滚基线
+  - `POST /api/contracts/activate`、`POST /api/contracts/:id/renew`、`POST /api/contracts/:id/generate-bills` 与 `DELETE /api/contracts/:id` 已冻结为 compat-wrapper；正式语义已锚定 `server/routes/contracts.ts`，并继续复用 `src/lib/domain/contracts/index.ts` 与 `src/lib/domain/delete-guards/index.ts`
+  - 合同仍是租务主链事实锚点；补账单、续租、删除门禁与账务/抄表/BillDetail 历史保留约束继续有效，不得被误写成普通 CRUD 切流
+- checkout：
+  - `POST /api/contracts/:contractId/checkout` 当前已冻结为“formal write host + legacy compat-wrapper”双层解释：正式事务编排位于 `server/routes/checkout.ts` + `src/lib/domain/contracts/index.ts`，旧 `src/app/api/contracts/[id]/checkout/route.ts` 只保留会话透传、兼容包装与回滚基线价值
+  - `server/routes/domain.ts` 中 `domainRoutes.route('/contracts/:contractId/checkout', createCheckoutRoutes(env))` 必须先于 `domainRoutes.route('/contracts', createContractRoutes(env))` 挂接；该顺序既符合当前代码事实，也符合 Hono “先组装子路由、再挂父应用，且按注册顺序匹配”的路由组织原则
+- D3 的统一冻结结论为：
+  - contracts 域当前仍是“读路径 retained-legacy + 生命周期/删除/补账单 compat-wrapper”并存状态
+  - checkout 子域当前已具备独立 formal write host，但旧 Next 入口仍保留 compat-wrapper 与回滚职责
+  - `phase13` 的合同详情、编辑、续租、退租页面交接与 `phase09-05` 的 checkout / renew / generate-bills 共享领域服务结论继续作为 D3 直接输入，不重新回到页面迁移审计或业务规则重写
+
 ### 3.3 Hono 宿主与 retained-legacy 的主要错位点
 - `dashboard`：
   - `server/routes/dashboard.ts` 已可承接 `/api/dashboard/stats`、`/api/dashboard/vacant-rooms`、`/api/dashboard/leaving-tenants`、`/api/dashboard/upcoming-contracts`、`/api/dashboard/contract-alerts`
@@ -156,8 +210,11 @@
   - `server/routes/bills.ts` 已承接列表、创建、详情、状态更新、删除与 `/stats`
   - 但 inventory 仍显示 `/api/bills`、`/api/bills/:id` 的部分 GET、`/api/bills/:id/details`、`/api/bills/:id/utility-details` 与 `/api/bills/stats` 仍存在 retained-legacy / bridge 角色
 - `contracts`：
-  - `server/routes/contracts.ts` 已承接列表、创建、详情、编辑、激活、续租、补账单、删除
-  - 但 inventory 仍显示旧 `src/app/api/contracts*` 中 GET/PUT 与兼容删除/续租/checkout 混杂并存，说明需要拆清“正式宿主已冻结”与“旧入口仍在承接页面流量”的差异
+  - `server/routes/contracts.ts` 已具备列表、创建、详情、编辑、激活、续租、补账单与删除门禁承接位
+  - inventory 当前应统一解释为：`GET/POST /api/contracts` 与 `GET/PUT /api/contracts/:id` 仍是 retained-legacy drain，但 `formalHosts` 已指向 `server/routes/contracts.ts`；这代表统一 Hono 请求宿主已暴露，同名旧 Next 文件只保留镜像实现与回滚基线，而不是 contracts 主域已完成 formal-host-owned 切流
+- `checkout`：
+  - `server/routes/checkout.ts` 已承接 `POST /api/contracts/:contractId/checkout` 的正式事务编排
+  - 但旧 `src/app/api/contracts/[id]/checkout/route.ts` 仍保留 compat-wrapper、会话透传与回滚职责，且必须继续与 contracts 主域分开解释
 - `rooms / buildings / meters`：
   - `server/routes/rooms.ts`、`buildings.ts`、`meters.ts` 已具备较完整 Hono 承接位
   - 但旧 `/api/rooms*` 仍保留大量 retained-legacy 查询与局部 compat 包装
@@ -199,11 +256,11 @@
 | Auth / Health | `/api/auth/*`、`/api/health` | `formal-host-owned` | `server/routes/auth.ts`、`server/routes/health.ts` 已冻结为正式宿主 | `/login`、运行时健康检查 | 不纳入主线 drain | 保持已完成态，只保留退出评估与回滚基线 |
 | Dashboard | `/api/dashboard/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/overdue-payments`、`/unpaid-rent`、`/vacant-rooms` | `retained-legacy` | `server/routes/dashboard.ts` 当前只可解释为 page-closure bridge；当前仅覆盖 `/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/vacant-rooms` 首页首屏桥接，`/overdue-payments` 与 `/unpaid-rent` 继续留在 retained-legacy | `/` | D1 | dashboard 域当前正式 query host 仍是旧 `src/app/api/dashboard/**/route.ts` + `src/lib/dashboard-queries.ts` / `src/lib/page-closure-compat/dashboard.ts` 组合，Hono bridge 不构成正式查询切流完成 |
 | Settings | `/api/settings`、`/api/settings/init` | `retained-legacy` | `server/app.ts` 已挂 `server/routes/settings.ts`，但当前 Hono 仅能解释为最小治理兼容宿主；核心治理语义继续锚定 `src/lib/global-settings.ts` | `/settings` | D1 | settings 继续按治理型 retained-legacy 解释；`server/routes/settings.ts` 只承接设置页首屏读写、重置与初始化，不等于正式业务 API 已切流 |
-| Rooms | `/api/rooms`、`/api/rooms/batch`、`/api/rooms/:id`、`/api/rooms/:id/status`、`/api/rooms/:id/meters` | `retained-legacy` 为主 | `server/routes/rooms.ts` 仅对批量创建与删除门禁相关路径具备 formal/compat 承接；列表、详情、编辑、房态修改、房间挂表仍无正式宿主冻结 | `/rooms`、`/rooms/:id`、`/rooms/:id/edit`、`/add/room`、`/add/contract` | D2 | 房源域必须按“读路径 retained、局部写路径 compat”解释，不能把 `rooms.ts` 的存在误判成整域已切流 |
-| Buildings | `/api/buildings`、`/api/buildings/:id` | `formal-host-owned` | `server/routes/buildings.ts` 已冻结为正式宿主；旧 Next 入口仅保留回滚价值 | `/rooms`、`/add/room` | D2 | 楼栋域已可按 formal-host-owned 解释，但其退出仍受房源引用数据回滚基线约束 |
-| Meters | `/api/meters/:meterId`、`/api/meters/:meterId/status`，以及与 `/api/rooms/:id/meters` 的联动边界 | `compat-wrapper` 为主 | `server/routes/meters.ts` 已承接仪表详情、更新、状态切换与受控删除；但房间挂表仍留在 `/api/rooms/:id/meters` retained-legacy | `/rooms`、`/rooms/:id`、`/add/room`、`/meter-readings/*` | D2 | 仪表域不能脱离房间挂表链路单独宣布完成，需把“独立资产正式宿主”与“房间绑定 retained-legacy”同时写清 |
-| Contracts | `/api/contracts`、`/api/contracts/:id`、`/activate`、`/:id/generate-bills`、`/:id/renew` | `retained-legacy + compat-wrapper` | `server/routes/contracts.ts` 已承接激活、续租、补账单、删除等正式语义；合同列表、详情、编辑读写仍由旧宿主承担 | `/contracts`、`/contracts/new`、`/contracts/:id`、`/contracts/:id/edit`、`/contracts/:id/renew`、`/add/contract` | D3 | 合同域必须拆成“读路径 retained-legacy + 生命周期/删除/补账单 compat”双层解释 |
-| Checkout | `/api/contracts/:id/checkout` | `compat-wrapper` | `server/routes/checkout.ts` 已是退租结算正式事务宿主；旧 Next 入口仅保留 compat 包装 | `/contracts/:id/checkout` | D3 | checkout 已具备明确 formal host，但仍与 contracts 主域一起验收，避免退租结算与合同主链分裂 |
+| Rooms | `/api/rooms`、`/api/rooms/batch`、`/api/rooms/:id`、`/api/rooms/:id/status`、`/api/rooms/:id/meters` | `retained-legacy` 为主 | `server/routes/rooms.ts` 已具备列表、创建、批量创建、详情、编辑、单体状态更新、挂表与删除门禁承接位；但 inventory 只把 `/api/rooms/batch` 与 `DELETE /api/rooms/:id` 冻结为 formal/compat，其余读写仍由旧 Next 入口承担正式职责 | `/rooms`、`/rooms/:id`、`/rooms/:id/edit`、`/add/room`、`/add/contract` | D2 | 房源域必须按“主链读写 retained-legacy + 批量创建/删除门禁 compat”解释；`OCCUPIED` / `OVERDUE`、合同、账单、仪表、抄表与账单明细门禁继续由共享 delete-guards 决定 |
+| Buildings | `/api/buildings`、`/api/buildings/:id` | `formal-host-owned` | `server/routes/buildings.ts` 已冻结为正式宿主；旧 Next 入口仅保留回滚价值；楼栋删除继续要求 `roomCount === 0` | `/rooms`、`/rooms/:id/edit`、`/add/room` | D2 | 楼栋域已可按 formal-host-owned 解释，但它仍只是房源引用数据 formal 宿主，退出评估必须服从房源页面与回滚基线 |
+| Meters | `/api/meters/:meterId`、`/api/meters/:meterId/status`，以及与 `/api/rooms/:id/meters` 的联动边界 | `compat-wrapper` 为主 | `server/routes/meters.ts` 已承接仪表详情、更新、状态切换与受控删除；旧 Next 入口只保留 compat wrapper；房间挂表仍留在 `/api/rooms/:id/meters` retained-legacy | `/rooms`、`/rooms/:id`、`/add/room`、`/meter-readings/*` | D2 | 仪表域必须同时写清“独立资产 formal/compat”与“房间绑定 retained-legacy”；有历史事实时只能停用保留，无历史时才可硬删除 |
+| Contracts | `/api/contracts`、`/api/contracts/:id`、`/api/contracts/activate`、`/api/contracts/:id/generate-bills`、`/api/contracts/:id/renew`、`DELETE /api/contracts/:id` | `retained-legacy drain + compat-wrapper` | 统一 `/api` runtime 的当前对外请求宿主已是 `server/routes/contracts.ts`；但 `GET/POST /api/contracts` 与 `GET/PUT /api/contracts/:id` 仍复用 legacy 查询/写路径，旧 `src/app/api/contracts*` 仅保留镜像实现与回滚基线；激活、续租、补账单与删除门禁继续按 compat-wrapper 冻结 | `/contracts`、`/contracts/new`、`/contracts/:id`、`/contracts/:id/edit`、`/contracts/:id/renew`、`/add/contract` | D3 | 合同域必须固定为“统一 Hono 请求宿主已暴露，但主链 GET/POST/PUT 仍在 retained-legacy drain；生命周期/删除/补账单为 compat-wrapper”；不得因此误判整域已切流 |
+| Checkout | `/api/contracts/:id/checkout`（旧 Next inventory） / `/api/contracts/:contractId/checkout`（当前 Hono 宿主） | `compat-wrapper` | `server/routes/checkout.ts` + `src/lib/domain/contracts/index.ts` 已冻结为退租结算正式事务宿主；旧 Next 入口仅保留 compat-wrapper、会话透传与回滚能力 | `/contracts/:id/checkout`、`/contracts/:id` | D3 | checkout 已具备独立 formal write host；inventory 中的 `:id` 与 Hono 宿主中的 `:contractId` 仅是参数命名差异，不代表两套不同业务路径，但仍需与 contracts 主域一起校验页面影响、route priority 与 compat 退出前提 |
 | Bills | `/api/bills`、`/api/bills/:id`、`/api/bills/:id/status`、`/api/bills/:id/details`、`/api/bills/:id/utility-details`、`/api/bills/stats` | `retained-legacy + compat-wrapper` | `server/routes/bills.ts` 已承接创建、状态更新、删除与静态 `/stats` bridge；列表、详情读取、明细、utility details 仍由 legacy 查询承接 | `/bills`、`/bills/:id`、`/bills/:id/edit`、`/bills/stats`、`/contracts/:id` | D4 | 账单域需明确把 `/stats` 视为 retained-legacy page-to-legacy bridge，而非已完成正式统计宿主切流 |
 | Renters | `/api/renters`、`/api/renters/:id`、`/api/renters/stats` | `compat-wrapper` | inventory 的 `formalHosts` 为空，`bridgeHosts` 明确指向 `server/routes/renters.ts`；当前 Hono 与旧 Next 共同复用 `src/lib/page-closure-compat/renters.ts` | `/renters`、`/renters/new`、`/renters/:id`、`/renters/:id/edit`、`/add/contract` | D5 | renters 域当前只能解释为 bridge/compat 双入口，不能提前视为正式 Hono 宿主已冻结 |
 | Meter Readings | `/api/meter-readings`、`/api/meter-readings/:id`、`/api/meter-readings/:id/related-bills`、`/api/meter-readings/status-check`、`/api/meter-readings/repair-status` | `compat-wrapper` | `POST /api/meter-readings` 与详情/关联账单已具备 Hono formal/compat 承接，但列表/history、status-check、repair-status 仍通过 `server/routes/meter-readings.ts` + shared helper 维持 bridge | `/meter-readings/batch`、`/meter-readings/history`、`/bills/:id` | D5 | 抄表域必须按“写入与详情较接近正式宿主、history/status/repair 仍是 bridge”解释，避免误删历史兼容链路 |
@@ -215,11 +272,12 @@
 | --- | --- | --- |
 | `/` | Dashboard | 首页已完成页面 parity，但首页数据仍依赖 dashboard retained-legacy query host 与 Hono page-closure bridge 组合 |
 | `/settings` | Settings、Governance | 设置主页已迁移；settings API 仍属治理型 retained-legacy，`server/routes/settings.ts` 仅作最小治理兼容宿主，治理辅助入口继续延后 |
-| `/rooms*`、`/add/room` | Rooms、Buildings、Meters | 房源页面已迁移，但列表/详情/房态/挂表仍跨 retained-legacy、formal-host-owned 与 compat-wrapper 三类 |
-| `/contracts*`、`/add/contract` | Contracts、Checkout、Rooms、Renters | 合同与退租页面已迁移，但合同读路径 retained-legacy 与 checkout formal host 仍需分开解释 |
+| `/rooms*`、`/add/room` | Rooms、Buildings、Meters | 房源页面已迁移，但列表/详情/编辑/房态/挂表仍跨 retained-legacy、formal-host-owned 与 compat-wrapper 三类；D2 已冻结“rooms 主链 retained、buildings 引用数据 formal、meters 独立资产 compat”的单一解释 |
+| `/add/contract` | Rooms、Buildings、Meters、Contracts | 快捷签约入口仍直接消费空房与引用数据；D2 输出必须先保证房间主链、楼栋选择与仪表资产边界稳定，后续 D3 才能收口合同读写宿主 |
+| `/contracts*` | Contracts、Checkout、Rooms、Renters | 合同与退租页面已迁移；D3 已冻结“合同读路径 retained-legacy、生命周期写路径 compat-wrapper、checkout 独立 formal write host”的单一解释，并继续复用 `phase13` 页面交接与 `phase09-05` 共享领域服务结论 |
 | `/bills*`、`/bills/stats` | Bills、Dashboard | 账单页已迁移，但 `/api/bills/stats` 仍是 page-to-legacy bridge，账单详情/明细仍依赖旧查询路径 |
 | `/renters*` | Renters | 租客页面已迁移，但仍直接受 shared compat helper + Hono bridge 双入口影响 |
-| `/meter-readings/*` | Meter Readings、Utility、Meters | 抄表页面已迁移，但 history/status/repair 与 utility compat 仍未形成单一正式宿主 |
+| `/meter-readings/*` | Meter Readings、Utility、Meters | 抄表页面已迁移，但房间挂表仍依赖 rooms retained-legacy，仪表详情/启停/删除门禁只在独立资产侧进入 compat-wrapper；history/status/repair 与 utility compat 仍未形成单一正式宿主 |
 
 ## 五、route drain 架构
 ### 5.1 drain 总原则
@@ -233,27 +291,32 @@
 
 ### 5.2 推荐顺序
 ```text
-先统一 route inventory 分类与 host matrix
+先完成 `phase14-01 ~ phase14-04` 的冻结与实施输入
   ->
-先处理 dashboard / settings 的 query host 解释
+执行真实迁移波次一：rooms / contracts / checkout / bills 主链 cutover
   ->
-再处理 rooms / buildings / meters
+执行真实迁移波次二：dashboard / settings / renters / meter-readings / utility 与残余 bridge/compat cutover
   ->
-再处理 contracts / checkout
-  ->
-再处理 bills / bill-stats
-  ->
-再处理 renters / meter-readings / utility-readings
-  ->
-最后收口旧 Next API 的退出前提与 legacy baseline
+最后收口旧 Next API 的迁移完成判定、compat 保留边界与 legacy baseline
 ```
 
 ### 5.3 为什么这样排序
-- dashboard / settings 是首页和设置页的直接上游，不先解释，后续页面/API 边界会继续分裂。
-- rooms / buildings / meters 与房源、仪表和删除门禁高度耦合，且包含三类分类并存，是最容易误删历史语义的区域。
-- contracts / bills 是主链业务锚点，必须建立在前面引用数据和 bridge 解释稳定后再处理。
-- renters / meter-readings 当前桥接痕迹最重，适合在前述主域解释稳定后整体处理。
-- legacy exit baseline 必须最后收口，避免在 formal-host-owned / compat-wrapper / retained-legacy 的解释尚未稳定时提前谈删除。
+- `phase14-01 ~ phase14-04` 已足够提供单一解释，后续不再新增冻结型子任务。
+- rooms / contracts / checkout / bills 是同一条核心业务主链，必须在同一迁移波次里一起完成真实 cutover，避免页面调用继续被 retained-legacy 牵制。
+- dashboard / settings / renters / meter-readings / utility 当前的主要问题是 query host、shared compat helper 与 bridge 尾项，这更适合作为第二个迁移波次整体清理。
+- legacy exit baseline 必须最后收口，避免在真实迁移尚未完成时过早讨论“旧文件能不能删”。
+
+### 5.4 D2 退出顺序冻结结果
+- `buildings` 旧 Next 路径最先进入 exit-evaluation：formal host 已冻结，但仍需保留旧运行线回滚基线，直到房源引用页面与发布回滚条件允许退出。
+- `meters` 的 `/api/meters/:meterId*` 次序在 `buildings` 之后：正式承接位已存在，但旧入口仍承担 compat wrapper，需等统一 Hono 调用方向稳定后再退出。
+- `rooms` 的 `/api/rooms`、`/api/rooms/:id`、`/api/rooms/:id/status`、`/api/rooms/:id/meters` 最后处理：它们仍承担页面直接消费的 retained-legacy 主链职责，必须等 D3 ~ D5 交接稳定后再评估 drain。
+- `DELETE /api/rooms/:id` 与 `/api/rooms/batch` 虽已有 compat/formal 承接，但仍跟随 rooms 主域整体退出，不单独提前宣布 D2 已完成切流。
+
+### 5.5 D3 退出顺序冻结结果
+- `GET/POST /api/contracts` 与 `GET/PUT /api/contracts/:id` 继续作为 contracts 域最后一批 retained-legacy 主链读写路径保留；当前虽然已由 `server/routes/contracts.ts` 对外暴露同名入口，但必须等正式 query/write drain、页面调用方向与旧 Next 镜像退出条件统一后再评估收口。
+- `POST /api/contracts/activate`、`POST /api/contracts/:id/renew`、`POST /api/contracts/:id/generate-bills` 与 `DELETE /api/contracts/:id` 当前继续保留 compat-wrapper；它们虽已具备 Hono + shared domain service 正式语义，但仍需等待前端与存量调用全部切到统一 Hono 宿主后再退出旧入口。
+- `POST /api/contracts/:id/checkout`（旧 Next inventory）/ `POST /api/contracts/:contractId/checkout`（当前 Hono 宿主）当前统一解释为“正式事务编排已在 Hono，旧 Next 入口只保留 compat-wrapper”；checkout 旧入口的退出评估必须同时满足“前端与脚本调用统一走 `server/routes/checkout.ts`”以及“`server/routes/domain.ts` 的 checkout 优先挂接顺序继续成立”。
+- D3 的退出判断必须继续继承 `phase13` 页面-API/query 交接与 `phase09-05` 共享领域服务结论，不得把 query parity、页面 parity 与合同业务规则改写混成同一类任务。
 
 ## 六、查询与事务继承边界
 ### 6.1 查询继承边界
@@ -283,11 +346,12 @@
   - 退出前提是否包含事务边界统一
 
 ## 七、不在范围内
-- 不实现任何 `phase14` API/query drain 代码
+- 本次纠偏 `/plan` 不实现新的 `phase14` API/query drain 代码
 - 不删除旧 `src/app/api/*` 文件
 - 不重写 `src/lib/queries.ts`、`src/lib/optimized-queries.ts`、`src/lib/dashboard-queries.ts`
 - 不重开页面迁移、PWA parity 或 `phase16` cutover
 - 不把治理接口、修复脚本、健康辅助接口包装成 `phase14` 的正式业务 API 完成项
+- 不把“本次文档冻结完成”误写成“整个 `phase14` 已完成”；真实迁移完成判断留给 `phase14-05 ~ phase14-07` 的实现与验收结果
 
 ## 八、验证要求
 - 确认 `docs/phase14_*` 三份文档互链完整
@@ -301,11 +365,11 @@
 - 确认治理接口、PWA、cutover 与 legacy 资产删除未被写成 `phase14` 完成条件
 
 ## 九、阶段结论
-`phase14-api-query-parity-and-legacy-route-drain` 在当前轮的架构价值不在于“马上删掉全部旧 API”，而在于：
+`phase14-api-query-parity-and-legacy-route-drain` 在当前轮纠偏后的架构价值不在于“马上删掉全部旧 API”，而在于：
 
 ```text
 先把 route inventory 的分类、正式宿主、bridge 边界和 drain 顺序冻结成单一真相，
-再让后续 /spec 按业务域逐步清空 retained-legacy 正式业务 API，
+再用两个真实迁移波次清空 retained-legacy 正式业务 API，
 并保持 phase10 的查询/事务边界与 phase13 的页面 parity 输出持续可复用。
 ```
 
@@ -314,3 +378,4 @@
 - 不让 retained-legacy / compat-wrapper / formal-host-owned 继续在不同文档中各说各话
 - 不让页面 parity 和 API parity 再次脱节
 - 不让 `phase15` PWA parity 或 `phase16` cutover 提前闯入本阶段
+- 不让 `phase14-01 ~ phase14-04` 的冻结与实施输入层再次被误判为整个 `phase14` 已完成

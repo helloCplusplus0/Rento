@@ -1,58 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
-import type { RoomStatus } from '@prisma/client'
+import { NextRequest } from 'next/server'
 
-import { withApiErrorHandler } from '@/lib/api-error-handler'
-import { ErrorType } from '@/lib/error-logger'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
-import { roomQueries } from '@/lib/queries'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const ROOM_STATUS_FORMAL_HOST = 'server/routes/rooms.ts'
+const ROOM_STATUS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/rooms/[id]/status/route.ts 可直接移除。'
 
 /**
- * 更新房间状态API
- * PATCH /api/rooms/[id]/status
+ * compat wrapper:
+ * phase14-05 起 `/api/rooms/:id/status` 的正式房态更新统一收口到 `server/routes/rooms.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立房态更新逻辑。
  */
-async function handlePatchRoomStatus(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { status } = await request.json()
-
-  const validStatuses: RoomStatus[] = [
-    'VACANT',
-    'OCCUPIED',
-    'OVERDUE',
-    'MAINTENANCE',
-  ]
-  if (!validStatuses.includes(status)) {
-    return NextResponse.json({ error: 'Invalid room status' }, { status: 400 })
-  }
-
-  const updatedRoom = await roomQueries.update(id, { status })
-
-  if (!updatedRoom) {
-    return NextResponse.json({ error: 'Room not found' }, { status: 404 })
-  }
-
-  const roomData = {
-    ...updatedRoom,
-    rent: Number(updatedRoom.rent),
-    area: updatedRoom.area ? Number(updatedRoom.area) : null,
-    building: {
-      ...updatedRoom.building,
-      totalRooms: Number(updatedRoom.building.totalRooms),
+async function handleRoomStatusCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'room-status-api',
+    migrationHost: ROOM_STATUS_FORMAL_HOST,
+    exitCondition: ROOM_STATUS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-05',
+      compatReason: 'rooms 房态更新已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
     },
-  }
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'rooms', 'contracts'],
-    detailPaths: [`/rooms/${id}`],
   })
-
-  return NextResponse.json(roomData)
 }
 
-export const PATCH = withApiErrorHandler(handlePatchRoomStatus, {
-  requireAuth: true,
-  module: 'room-status-api',
-  errorType: ErrorType.VALIDATION_ERROR,
-})
+export const PATCH = handleRoomStatusCompatProxy

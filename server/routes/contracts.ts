@@ -18,6 +18,7 @@ import { globalSettings } from '@/lib/global-settings'
 import { optimizedContractQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import { contractQueries, renterQueries, roomQueries } from '@/lib/queries'
+import { invalidateBillCaches } from '@/lib/bill-cache'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 import type { AuthAppEnv } from '../lib/auth-context'
@@ -46,7 +47,7 @@ const LEGACY_COMPAT = {
     'src/app/api/contracts/[id]/generate-bills/route.ts',
   ] as const,
   reason:
-    'phase13-03 当前轮起由 server/routes/contracts.ts 与 src/lib/domain/contracts|delete-guards 承接合同列表、新签创建、详情、更新、激活、续租、补账单与删除门禁；旧 Next 入口仅保留 compat wrapper。',
+    'phase14-05 当前统一 /api runtime 已由 server/routes/contracts.ts 承担 contracts 主链正式职责；激活、列表、创建、详情、编辑、续租、补账单与删除门禁均由该宿主对外暴露，旧 Next 入口已降级为 compat proxy 与回滚基线。',
   exitCondition:
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/* compat wrapper 可移除。',
 } as const
@@ -171,9 +172,9 @@ function appendContractsFallback(
     return jsonApiError(
       c,
       notImplementedError(
-        '合同列表、新签创建、详情、更新、激活、续租、补账单与合同删除门禁已迁入统一 Hono 宿主；其余合同入口仍由 compat wrapper 或后续子任务承接。',
+        '统一 /api runtime 已挂出 contracts 主链正式入口；旧 Next 入口已降级为 compat proxy，未覆盖的合同子路径继续由 compat wrapper 或后续子任务承接。',
         {
-          phase: 'phase13-03',
+          phase: 'phase14-05',
           routeKey: 'contracts',
           domainServiceHost: 'src/lib/domain',
           migrationState: 'partial-migrated',
@@ -396,8 +397,12 @@ export function createContractRoutes(env: MinixServerEnv) {
 
     let billGenerationPromise: Promise<unknown> | null = null
     if (shouldGenerateBills) {
-      billGenerationPromise = generateBillsOnContractSigned(createdContract.id)
+      billGenerationPromise = generateBillsOnContractSigned(createdContract.id, {
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
+      })
         .then(async (generatedBills) => {
+          await invalidateBillCaches()
           await revalidateMutationPaths({
             scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
             detailPaths: [
@@ -405,6 +410,8 @@ export function createContractRoutes(env: MinixServerEnv) {
               `/rooms/${body.roomId}`,
               `/renters/${body.renterId}`,
             ],
+            executionRuntime: 'hono-runtime',
+            runtimeName: env.runtimeName,
           })
 
           return generatedBills
@@ -428,6 +435,8 @@ export function createContractRoutes(env: MinixServerEnv) {
         `/rooms/${body.roomId}`,
         `/renters/${body.renterId}`,
       ],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     let bills: any[] = []
@@ -582,6 +591,8 @@ export function createContractRoutes(env: MinixServerEnv) {
       await revalidateMutationPaths({
         scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
         detailPaths: [`/contracts/${contractId}`],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
       })
 
       return jsonSuccess(c, {
@@ -650,6 +661,8 @@ export function createContractRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
       detailPaths: [`/contracts/${contractId}`],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return jsonSuccess(c, {
@@ -705,16 +718,31 @@ export function createContractRoutes(env: MinixServerEnv) {
         remarks: body.remarks,
       })
 
-      return jsonSuccess(c, {
+      await invalidateBillCaches()
+      await revalidateMutationPaths({
+        scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+        detailPaths: [
+          `/contracts/${originalContractId}`,
+          `/contracts/${result.newContract.id}`,
+          `/rooms/${result.newContract.roomId}`,
+          `/renters/${result.newContract.renterId}`,
+        ],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
+      })
+
+      return c.json({
+        success: true,
         data: {
           ...result,
-          compatBoundary: LEGACY_COMPAT,
+          compatMode: true,
+          migrationHost: 'src/lib/domain/contracts',
         },
         message:
           result.billGeneration.success
             ? '续租成功'
             : '续租成功，补账单生成需人工复核',
-        env,
+        timestamp: new Date().toISOString(),
       })
     } catch (error) {
       if (error instanceof Error && error.message === 'Contract not found') {
@@ -745,16 +773,23 @@ export function createContractRoutes(env: MinixServerEnv) {
         mode: 'auto',
       })
 
-      return jsonSuccess(c, {
-        data: {
-          ...result,
-          compatBoundary: LEGACY_COMPAT,
-        },
+      await invalidateBillCaches()
+      await revalidateMutationPaths({
+        scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
+        detailPaths: [`/contracts/${contractId}`],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
+      })
+
+      return c.json({
+        success: true,
         message:
           result.generationMode === 'GENERATE_BASE'
-            ? `成功为合同生成 ${result.generatedBills.length} 个基础账单`
-            : `成功补齐 ${result.generatedBills.length} 个缺失租金账单`,
-        env,
+            ? `成功为合同 ${contractId} 生成 ${result.generatedBills.length} 个基础账单`
+            : `成功为合同 ${contractId} 补齐 ${result.generatedBills.length} 个缺失租金账单`,
+        compatMode: true,
+        migrationHost: 'src/lib/domain/contracts',
+        ...result,
       })
     } catch (error) {
       if (error instanceof Error && error.message === 'Contract not found') {

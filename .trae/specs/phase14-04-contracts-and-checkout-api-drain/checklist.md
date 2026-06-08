@@ -1,0 +1,10 @@
+- [x] `phase14-04` 的 spec 明确限定为合同读路径、写路径、compat-wrapper、checkout 子域与挂载优先级的冻结任务，没有越界到 API 切流实现
+- [x] `server/routes/contracts.ts`、`server/routes/checkout.ts`、`server/routes/domain.ts`、`src/app/api/contracts/**/route.ts`、`src/lib/domain/contracts/index.ts`、`src/lib/domain/delete-guards/index.ts`、`server/lib/legacy-route-inventory.ts` 已全部纳入盘点范围
+- [x] 已明确 `GET/POST /api/contracts` 与 `GET/PUT /api/contracts/:id` 当前仍属于 retained-legacy drain，但统一 `/api` runtime 的当前对外请求宿主已是 `server/routes/contracts.ts`
+- [x] 已明确 `POST /api/contracts/activate`、`POST /api/contracts/:id/renew`、`POST /api/contracts/:id/generate-bills` 与 `DELETE /api/contracts/:id` 当前由 `server/routes/contracts.ts` 承接为 compat-wrapper
+- [x] 已明确 `POST /api/contracts/:contractId/checkout` 当前由 `server/routes/checkout.ts` + `src/lib/domain/contracts/index.ts` 承接正式写入口，旧 Next 入口只保留 compat-wrapper 与回滚价值
+- [x] 已明确 `server/routes/domain.ts` 中 checkout 子路径必须先于 `/contracts` 骨架挂接，不会被更宽泛的 contracts 路由提前吞掉
+- [x] 已明确合同锚点、账单/抄表/BillDetail 历史保留与删除门禁约束未被放宽
+- [x] 已明确 `phase13` 的合同详情/编辑/续租/退租页面交接与 `phase09` 共享领域服务结论被直接复用，没有重新混写成页面迁移任务
+- [x] 已明确 contracts 域当前仍是“统一 Hono 请求宿主已暴露，但 `GET/POST/PUT` 仍属 retained-legacy drain + 局部写路径 compat-wrapper + checkout 独立子域 formal write host”的并存状态，不会被误判为整域已切流完成
+- [x] 本子任务输出可直接作为 `phase14` 实现层处理 contracts / checkout drain 的上游输入

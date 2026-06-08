@@ -1,156 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
 import { withApiErrorHandler } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
-import { optimizedRoomQueries } from '@/lib/optimized-queries'
-import { roomQueries } from '@/lib/queries'
-import {
-  formatBatchUpdateResponse,
-  formatRoomSearchResponse,
-  parseRoomQueryParams,
-  transformRoomDecimalFields,
-} from '@/lib/room-utils'
-import {
-  roomValidationRules,
-  validateBusinessRules,
-  validateRoomData,
-} from '@/lib/validation'
+
+const ROOMS_FORMAL_HOST = 'server/routes/rooms.ts'
+const ROOMS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/rooms/route.ts 的 GET/POST 可直接移除；批量状态更新待后续独立收口。'
 
 /**
- * 获取房间列表API（支持搜索筛选）
- * GET /api/rooms
+ * compat wrapper:
+ * phase14-05 起 `/api/rooms` 的正式列表与创建语义统一收口到 `server/routes/rooms.ts`。
+ * 旧 Next 入口的 GET/POST 仅保留为薄 compat wrapper，不再维护第二套查询或创建逻辑。
+ * `PATCH /api/rooms` 的批量状态更新暂未进入本波次 cutover，仍保留旧实现。
  */
-async function handleGetRooms(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-
-  // 检查是否需要包含仪表信息
-  const includeMeters = searchParams.get('includeMeters') === 'true'
-
-  if (includeMeters) {
-    const now = new Date()
-    const rooms = await optimizedRoomQueries.findWithMeters()
-
-    const roomsWithMeters = rooms.map((room) => {
-      const activeContract =
-        room.contracts.find(
-          (contract: any) =>
-            contract.status === 'ACTIVE' &&
-            now >= new Date(contract.startDate) &&
-            now <= new Date(contract.endDate)
-        ) || null
-
-      const metersData = room.meters.map((meter: any) => ({
-        id: meter.id,
-        displayName: meter.displayName,
-        meterType: meter.meterType,
-        unitPrice: Number(meter.unitPrice),
-        unit: meter.unit,
-        location: meter.location,
-        isActive: meter.isActive,
-        lastReading:
-          meter.readings.length > 0
-            ? Number(meter.readings[0].currentReading)
-            : 0,
-        lastReadingDate:
-          meter.readings.length > 0 ? meter.readings[0].readingDate : null,
-        contractId: activeContract?.id || null,
-        contractNumber: activeContract?.contractNumber || null,
-        renterName: activeContract?.renter?.name || null,
-        contractStatus: activeContract?.status || null,
-      }))
-
-      return {
-        ...room,
-        rent: Number(room.rent),
-        area: room.area ? Number(room.area) : null,
-        building: {
-          ...room.building,
-          totalRooms: Number(room.building.totalRooms),
-        },
-        meters: metersData,
-        activeContract: activeContract
-          ? {
-              id: activeContract.id,
-              contractNumber: activeContract.contractNumber,
-              renter: activeContract.renter,
-              startDate: activeContract.startDate,
-              endDate: activeContract.endDate,
-              status: activeContract.status,
-            }
-          : null,
-      }
-    })
-
-    return NextResponse.json(roomsWithMeters)
-  }
-
-  const params = parseRoomQueryParams(searchParams)
-  const result = await roomQueries.searchRooms(params)
-
-  const response = formatRoomSearchResponse({
-    rooms: result.rooms,
-    total: result.pagination.total,
-    page: result.pagination.page,
-    limit: result.pagination.limit,
-    aggregations: result.aggregations,
+async function handleRoomsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'rooms-api',
+    migrationHost: ROOMS_FORMAL_HOST,
+    exitCondition: ROOMS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-05',
+      compatReason: 'rooms 列表与创建主链已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
   })
-
-  return NextResponse.json(response)
 }
 
-export const GET = withApiErrorHandler(handleGetRooms, {
-  requireAuth: true,
-  module: 'rooms-api',
-  errorType: ErrorType.DATABASE_ERROR,
-})
+export const GET = handleRoomsCompatProxy
+export const POST = handleRoomsCompatProxy
 
 /**
- * 创建房间API
- * POST /api/rooms
- */
-async function handlePostRooms(request: NextRequest) {
-  const validationRequest = request.clone() as NextRequest
-  const validationError = await validateRoomData(roomValidationRules)(
-    validationRequest
-  )
-  if (validationError) {
-    return NextResponse.json(await validationError.json(), {
-      status: validationError.status,
-    })
-  }
-
-  const roomData = await request.json()
-
-  const businessError = await validateBusinessRules()(request, roomData)
-  if (businessError) {
-    return NextResponse.json(await businessError.json(), {
-      status: businessError.status,
-    })
-  }
-
-  const newRoom = await roomQueries.create(roomData)
-  const transformedRoom = transformRoomDecimalFields(newRoom)
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'rooms'],
-    detailPaths: [`/rooms/${newRoom.id}`],
-  })
-
-  return NextResponse.json(transformedRoom, { status: 201 })
-}
-
-export const POST = withApiErrorHandler(handlePostRooms, {
-  requireAuth: true,
-  module: 'rooms-api',
-  errorType: ErrorType.VALIDATION_ERROR,
-})
-
-/**
- * 批量更新房间状态API
- * PATCH /api/rooms
+ * rollback-only:
+ * `/api/rooms` 的批量状态更新尚未迁入 `server/routes/rooms.ts`，因此继续保留旧实现作为本波次之外的存量入口。
  */
 async function handlePatchRooms(request: NextRequest) {
+  const { roomQueries } = await import('@/lib/queries')
+  const { formatBatchUpdateResponse } = await import('@/lib/room-utils')
+  const { revalidateMutationPaths } = await import('@/lib/mutation-revalidation')
+
   const body = await request.json()
   const { roomIds, status, operator } = body
 
@@ -179,7 +66,11 @@ async function handlePatchRooms(request: NextRequest) {
     scopes: ['dashboard', 'rooms', 'contracts'],
   })
 
-  return NextResponse.json(response)
+  return NextResponse.json({
+    ...response,
+    rollbackOnly: true,
+    migrationHost: 'src/app/api/rooms/route.ts',
+  })
 }
 
 export const PATCH = withApiErrorHandler(handlePatchRooms, {

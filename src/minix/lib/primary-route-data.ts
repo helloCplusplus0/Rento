@@ -1230,8 +1230,8 @@ async function fetchBillStatsRouteData(
     searchParams.set('range', initialRange.preset)
   }
 
-  // phase13-07 keeps the page parity bridge narrow: the minix route consumes the
-  // retained-legacy stats API for now, and phase14 owns the future drain/cutover.
+  // phase14-05 keeps the page parity bridge narrow while promoting stats reads to
+  // the unified Hono host; the minix route now consumes the formal host directly.
   const payload = await fetchJson<unknown>(
     `/bills/stats?${searchParams.toString()}`,
     '账单统计加载失败',

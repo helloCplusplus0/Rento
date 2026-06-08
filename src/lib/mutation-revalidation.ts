@@ -1,5 +1,3 @@
-import { revalidatePath } from 'next/cache'
-
 import { ErrorLogger, ErrorSeverity, ErrorType } from './error-logger'
 
 type RevalidateTarget = {
@@ -15,6 +13,10 @@ type MutationScope =
   | 'renters'
   | 'meters'
   | 'settings'
+
+export type MutationRevalidationRuntime =
+  | 'next-route-handler'
+  | 'hono-runtime'
 
 const SCOPE_TARGETS: Record<MutationScope, RevalidateTarget[]> = {
   dashboard: [{ path: '/' }],
@@ -53,6 +55,8 @@ interface RevalidateMutationPathsOptions {
   scopes: MutationScope[]
   detailPaths?: Array<string | undefined | null>
   extraTargets?: RevalidateTarget[]
+  executionRuntime?: MutationRevalidationRuntime
+  runtimeName?: string
 }
 
 function dedupeTargets(targets: RevalidateTarget[]): RevalidateTarget[] {
@@ -81,13 +85,21 @@ function dedupeTargets(targets: RevalidateTarget[]): RevalidateTarget[] {
 }
 
 /**
- * 统一收口写操作后的 App Router 路径失效。
- * Route Handler 中采用 best-effort 模式，避免缓存刷新异常覆盖真实写入结果。
+ * 统一收口写操作后的路径鲜度处理。
+ * 当前运行拓扑同时存在：
+ * 1. 仍可直接调用 Next Route Handler 的 legacy/compat 路径
+ * 2. 已承接正式职责的独立 Hono runtime
+ *
+ * 因此这里不能再默认假设所有调用都运行在 Next App Router 上下文里。
+ * 对独立 Hono runtime，只记录目标路径并跳过 `next/cache`，由调用方自行负责
+ * 该 runtime 下可生效的鲜度策略（例如域缓存失效、直接读正式宿主等）。
  */
 export async function revalidateMutationPaths({
   scopes,
   detailPaths = [],
   extraTargets = [],
+  executionRuntime = 'next-route-handler',
+  runtimeName,
 }: RevalidateMutationPathsOptions): Promise<void> {
   const logger = ErrorLogger.getInstance()
   const scopeTargets = scopes.flatMap((scope) => SCOPE_TARGETS[scope] ?? [])
@@ -100,15 +112,32 @@ export async function revalidateMutationPaths({
     ...extraTargets,
   ])
 
+  if (executionRuntime === 'hono-runtime') {
+    logger.logInfo('Mutation paths marked stale for standalone Hono runtime', {
+      module: 'mutation-revalidation',
+      scopes,
+      targets,
+      executionRuntime,
+      runtimeName,
+      strategy:
+        'skip-next-cache-revalidate-and-delegate-to-runtime-specific-freshness',
+    })
+    return
+  }
+
   try {
+    const { revalidatePath } = await import('next/cache')
+
     for (const target of targets) {
       revalidatePath(target.path, target.type)
     }
 
-    logger.logInfo('Mutation paths revalidated', {
+    logger.logInfo('Mutation paths revalidated through Next App Router', {
       module: 'mutation-revalidation',
       scopes,
       targets,
+      executionRuntime,
+      runtimeName,
     })
   } catch (error) {
     await logger.logError(
@@ -119,6 +148,8 @@ export async function revalidateMutationPaths({
         module: 'mutation-revalidation',
         scopes,
         targets,
+        executionRuntime,
+        runtimeName,
       },
       error instanceof Error ? error : undefined
     )

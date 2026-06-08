@@ -1,54 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import { contractDomainService } from '@/lib/domain/contracts'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const CONTRACT_GENERATE_BILLS_FORMAL_HOST = 'server/routes/contracts.ts'
+const CONTRACT_GENERATE_BILLS_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/[id]/generate-bills/route.ts 可直接移除。'
 
 /**
  * compat wrapper:
- * phase09-05 起合同补账单关联编排迁入 src/lib/domain/contracts，
- * 当前旧 Next 入口只负责请求适配与缓存失效。
- * 退出条件：前端与调用方全部切到统一 Hono 宿主后移除。
+ * phase14-05 起 `/api/contracts/:id/generate-bills` 的正式补账单语义统一收口到 `server/routes/contracts.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立补账单编排。
  */
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-
-    if (!id) {
-      return Response.json({ error: '合同ID不能为空' }, { status: 400 })
-    }
-
-    const result = await contractDomainService.generateContractBills(id, {
-      mode: 'auto',
-    })
-
-    await revalidateMutationPaths({
-      scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
-      detailPaths: [`/contracts/${id}`],
-    })
-
-    return Response.json({
-      success: true,
-      message:
-        result.generationMode === 'GENERATE_BASE'
-          ? `成功为合同 ${id} 生成 ${result.generatedBills.length} 个基础账单`
-          : `成功为合同 ${id} 补齐 ${result.generatedBills.length} 个缺失租金账单`,
-      compatMode: true,
-      migrationHost: 'src/lib/domain/contracts',
-      ...result,
-    })
-  } catch (error) {
-    console.error('合同补账单失败:', error)
-
-    return Response.json(
-      {
-        success: false,
-        error: '合同补账单失败',
-        details: error instanceof Error ? error.message : '未知错误',
-      },
-      { status: 500 }
-    )
-  }
+async function handleContractGenerateBillsCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'contract-generate-bills-api',
+    migrationHost: CONTRACT_GENERATE_BILLS_FORMAL_HOST,
+    exitCondition: CONTRACT_GENERATE_BILLS_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-05',
+      compatReason: '合同补账单主链已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
+    },
+  })
 }
+
+export const POST = handleContractGenerateBillsCompatProxy

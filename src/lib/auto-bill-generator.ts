@@ -13,7 +13,10 @@ import {
   withErrorLogging,
 } from '@/lib/error-logger'
 import { fallbackManager } from '@/lib/fallback-manager'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import {
+  revalidateMutationPaths,
+  type MutationRevalidationRuntime,
+} from '@/lib/mutation-revalidation'
 import { prisma } from '@/lib/prisma'
 import { getSettings } from '@/hooks/useSettings'
 
@@ -36,6 +39,11 @@ export enum BillTriggerType {
   UTILITY_READING = 'UTILITY_READING', // 水电抄表触发
   CONTRACT_RENEWAL = 'CONTRACT_RENEWAL', // 合同续签触发
   MANUAL_CREATE = 'MANUAL_CREATE', // 手动创建
+}
+
+interface BillGenerationRuntimeOptions {
+  executionRuntime?: MutationRevalidationRuntime
+  runtimeName?: string
 }
 
 /**
@@ -73,7 +81,10 @@ export interface BillGenerationContext {
  *    - 年付：生成合同期内所有年度的租金账单
  * 3. 其他费用 - 卫生费、钥匙押金等一次性费用
  */
-export async function generateBillsOnContractSigned(contractId: string) {
+export async function generateBillsOnContractSigned(
+  contractId: string,
+  runtimeOptions: BillGenerationRuntimeOptions = {}
+) {
   const logger = ErrorLogger.getInstance()
   const startTime = Date.now()
 
@@ -122,6 +133,8 @@ export async function generateBillsOnContractSigned(contractId: string) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
       detailPaths: [`/contracts/${contractId}`],
+      executionRuntime: runtimeOptions.executionRuntime,
+      runtimeName: runtimeOptions.runtimeName,
     })
 
     return bills

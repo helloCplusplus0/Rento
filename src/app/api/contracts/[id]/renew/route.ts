@@ -1,83 +1,26 @@
 import { NextRequest } from 'next/server'
 
-import {
-  createSuccessResponse,
-  parseRequestBody,
-  validateRequired,
-  withApiErrorHandler,
-} from '@/lib/api-error-handler'
-import { contractDomainService } from '@/lib/domain/contracts'
-import { ErrorType } from '@/lib/error-logger'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
+import { proxyToFormalHost } from '@/app/api/_shared/formal-host-proxy'
+
+const CONTRACT_RENEW_FORMAL_HOST = 'server/routes/contracts.ts'
+const CONTRACT_RENEW_EXIT_CONDITION =
+  '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/contracts/[id]/renew/route.ts 可直接移除。'
 
 /**
  * compat wrapper:
- * phase09-05 起续租与补账单关联编排迁入 src/lib/domain/contracts，
- * 当前旧 Next 入口只负责请求适配与缓存失效。
- * 退出条件：前端与调用方全部切到统一 Hono 宿主后移除。
+ * phase14-05 起 `/api/contracts/:id/renew` 的正式续租事务统一收口到 `server/routes/contracts.ts`。
+ * 旧 Next 入口仅保留为薄 compat wrapper，不再维护独立续租编排。
  */
-async function handleRenewContractCompat(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id: originalContractId } = await params
-  const body = await parseRequestBody(request)
-
-  const {
-    newStartDate,
-    newEndDate,
-    newMonthlyRent,
-    newDeposit,
-    newKeyDeposit,
-    newCleaningFee,
-    paymentMethod,
-    paymentTiming,
-    signedBy,
-    signedDate,
-    remarks,
-  } = body
-
-  // 基础字段验证
-  validateRequired(body, ['newStartDate', 'newEndDate', 'newMonthlyRent'])
-
-  const result = await contractDomainService.renewContract({
-    originalContractId,
-    newStartDate,
-    newEndDate,
-    newMonthlyRent,
-    newDeposit,
-    newKeyDeposit,
-    newCleaningFee,
-    paymentMethod,
-    paymentTiming,
-    signedBy,
-    signedDate,
-    remarks,
-  })
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'contracts', 'bills', 'rooms', 'renters'],
-    detailPaths: [
-      `/contracts/${originalContractId}`,
-      `/contracts/${result.newContract.id}`,
-      `/rooms/${result.newContract.roomId}`,
-      `/renters/${result.newContract.renterId}`,
-    ],
-  })
-
-  return createSuccessResponse(
-    {
-      ...result,
-      compatMode: true,
-      migrationHost: 'src/lib/domain/contracts',
+async function handleContractRenewCompatProxy(request: NextRequest) {
+  return proxyToFormalHost(request, {
+    routeLabel: 'contract-renew-api',
+    migrationHost: CONTRACT_RENEW_FORMAL_HOST,
+    exitCondition: CONTRACT_RENEW_EXIT_CONDITION,
+    compatMetadata: {
+      closurePhase: 'phase14-05',
+      compatReason: '续租主链已切到统一 Hono 宿主，旧 Next 路由仅保留兼容代理。',
     },
-    result.billGeneration.success ? '续租成功' : '续租成功，补账单生成需人工复核'
-  )
+  })
 }
 
-export const POST = withApiErrorHandler(handleRenewContractCompat, {
-  requireAuth: true,
-  module: 'renew-contract-api',
-  errorType: ErrorType.VALIDATION_ERROR,
-  enableFallback: true,
-})
+export const POST = handleContractRenewCompatProxy

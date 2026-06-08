@@ -177,19 +177,18 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/contracts.ts'],
         domainServicePaths: [
           'src/lib/queries.ts',
           'src/lib/optimized-queries.ts',
           'src/lib/domain/meters/index.ts',
         ],
         keepReason:
-          '合同列表与新签合同写入口仍由旧 Next.js 路由承接；phase09-06 不扩张到该存量 CRUD 迁移。',
-        exitCondition:
-          '待 phase10/后续阶段冻结合同正式查询与新签写入口后，再评估迁出或拆分到统一 Hono 宿主。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起 contracts 列表与创建已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -200,15 +199,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'PUT'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/contracts.ts'],
         domainServicePaths: ['src/lib/queries.ts', 'src/lib/prisma.ts'],
         keepReason:
-          '合同详情查询与签约信息更新仍由旧 Next.js 路由承接；尚未冻结对应 Hono 正式宿主。',
-        exitCondition:
-          '待 phase10 明确合同详情查询与编辑正式宿主后，再评估退出或保留只读参考路径。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起 contracts 详情与编辑已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
       {
         methods: ['DELETE'],
@@ -284,15 +282,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/bills.ts'],
         domainServicePaths: ['src/lib/queries.ts', 'src/lib/optimized-queries.ts'],
         keepReason:
-          '账单列表与手动创建账单仍属旧运行线存量 CRUD；phase09-06 不迁移这部分正式宿主。',
-        exitCondition:
-          '待 phase10 明确账单查询/手工创建宿主与数据访问层收口方案后，再评估迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起账单列表与手动创建已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -303,14 +300,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/bills.ts'],
         domainServicePaths: ['src/lib/queries.ts'],
-        keepReason: '账单详情读取仍由旧查询路径承接，尚未冻结新的 Hono 查询宿主。',
-        exitCondition:
-          '待 phase10 冻结账单详情正式查询宿主与读取模型后，再评估退出或只读兼容。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+        keepReason:
+          'phase14-05 起账单详情读取已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
       {
         methods: ['PATCH', 'DELETE'],
@@ -350,15 +347,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/bills.ts'],
         domainServicePaths: ['src/lib/prisma.ts', 'src/lib/bill-cache.ts'],
         keepReason:
-          '账单明细读取仍包含 BillDetail / legacy meterReading 兼容拼装逻辑，尚未迁入统一查询宿主。',
-        exitCondition:
-          '待 phase10 冻结账单明细查询与 legacy 明细兼容策略后，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起账单明细读取已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -387,20 +383,18 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/bills.ts'],
         bridgeHosts: [
           'src/minix/lib/primary-route-data.ts',
           'src/minix/routes/bills/BillStatsRoute.tsx',
-          'server/routes/bills.ts',
         ],
         domainServicePaths: ['src/lib/bill-stats.ts', 'src/lib/bill-cache.ts'],
         keepReason:
-          'phase13-07 已把 `/bills/stats` 页面正式迁入 `src/minix`；当前统一 `/api/bills/stats` 仍通过 retained-legacy bridge 承接旧统计查询与缓存语义，并由 `server/routes/bills.ts` 提供静态桥接以避免被 `/:id` 动态路由吞掉。',
-        exitCondition:
-          '待 phase14 收口账单 stats API/query drain、明确正式统计读取宿主后，再移除该 page-to-legacy bridge。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起 `/api/bills/stats` 正式统计读取已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -564,15 +558,26 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     kind: 'domain-mainline',
     operations: [
       {
-        methods: ['GET', 'POST', 'PATCH'],
+        methods: ['GET', 'POST'],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/rooms.ts'],
+        domainServicePaths: ['src/lib/queries.ts', 'src/lib/optimized-queries.ts'],
+        keepReason:
+          'phase14-05 起房间列表与创建已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
+      },
+      {
+        methods: ['PATCH'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts', 'src/lib/optimized-queries.ts'],
+        domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '房间列表、创建与批量状态更新仍由旧运行线承接；phase09-02 只迁房间删除门禁，不扩展 CRUD 迁移。',
+          '房间批量状态更新仍未迁入统一 Hono 宿主；旧 Next.js 路由继续作为 rollback-only 存量入口保留。',
         exitCondition:
-          '待 phase10 冻结房间正式查询/写入口与引用页面迁移顺序后，再评估退出路径。',
+          '待后续波次明确 `/api/rooms` 批量状态更新的正式宿主与房态联动边界后，再评估退出。',
         rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
       },
     ],
@@ -606,14 +611,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'PUT'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/rooms.ts'],
         domainServicePaths: ['src/lib/queries.ts', 'src/lib/prisma.ts'],
-        keepReason: '房间详情与编辑仍由旧宿主承接；尚未冻结对应 Hono 正式查询/写入口。',
-        exitCondition:
-          '待 phase10 确定房间详情与编辑正式宿主后，再评估退出或转只读参考。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+        keepReason:
+          'phase14-05 起房间详情与编辑已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
       {
         methods: ['DELETE'],
@@ -635,15 +640,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['PATCH'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/rooms.ts'],
         domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '房间单体状态修改仍由旧运行线承接，未纳入 phase09-02 的删除门禁迁移边界。',
-        exitCondition:
-          '待后续阶段明确房态正式写入口与合同/退租联动边界后，再评估迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起房间单体状态更新已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -654,15 +658,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET', 'POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/rooms.ts'],
         domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '房间仪表列表与新增仍由旧宿主承接；仪表管理并未在 phase09-04 被整体迁入统一 Hono 宿主。',
-        exitCondition:
-          '待 phase10/后续阶段冻结仪表正式 CRUD 边界、解绑策略与房间联动后，再决定去向。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-05 起房间仪表列表与新增已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },

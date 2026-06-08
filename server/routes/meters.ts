@@ -222,6 +222,8 @@ export function createMeterRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
       detailPaths: updatedMeter.roomId ? [`/rooms/${updatedMeter.roomId}`] : [],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(transformMeter(updatedMeter as unknown as MeterWithReadings))
@@ -278,6 +280,8 @@ export function createMeterRoutes(env: MinixServerEnv) {
       await revalidateMutationPaths({
         scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
         detailPaths: [`/rooms/${existingMeter.roomId}`],
+        executionRuntime: 'hono-runtime',
+        runtimeName: env.runtimeName,
       })
 
       return c.json({
@@ -308,6 +312,8 @@ export function createMeterRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
       detailPaths: [`/rooms/${existingMeter.roomId}`],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json({
@@ -345,6 +351,8 @@ export function createMeterRoutes(env: MinixServerEnv) {
     await revalidateMutationPaths({
       scopes: ['dashboard', 'rooms', 'meters', 'contracts'],
       detailPaths: updatedMeter.roomId ? [`/rooms/${updatedMeter.roomId}`] : [],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
     })
 
     return c.json(transformMeter(updatedMeter as unknown as MeterWithReadings))

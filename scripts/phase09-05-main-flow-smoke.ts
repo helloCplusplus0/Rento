@@ -1,17 +1,26 @@
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
 import {
   CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX,
   type ContractMainFlowKey,
 } from '@/lib/domain/contracts'
+import {
+  flattenLegacyRouteInventory,
+  type LegacyRouteCategory,
+  type LegacyRouteMethod,
+} from '../server/lib/legacy-route-inventory'
 
-type SmokeFlowKey =
+type SmokeFlowCliKey =
   | 'new-contract'
   | 'renew'
   | 'checkout'
   | 'meter-reading'
-  | 'all'
+
+type SmokeFlowKey = SmokeFlowCliKey | 'all'
 
 interface SmokeFlowDefinition {
-  cliKey: Exclude<SmokeFlowKey, 'all'>
+  cliKey: SmokeFlowCliKey
   matrixKey: ContractMainFlowKey
   title: string
   endpoint: string
@@ -21,8 +30,29 @@ interface SmokeFlowDefinition {
   preconditions: string[]
 }
 
+interface MatrixExpectation {
+  key: ContractMainFlowKey
+  canonicalWriteIncludes: string[]
+  canonicalQueryHosts: string[]
+  compatWrappers: string[]
+}
+
+interface InventoryExpectation {
+  routePath: string
+  method: LegacyRouteMethod
+  category: LegacyRouteCategory
+  formalHost: string
+}
+
+interface AssertionResult {
+  label: string
+  passed: boolean
+  details: string[]
+}
+
 const BASE_URL = process.env.SMOKE_BASE_URL || 'http://localhost:3000/api'
 const COOKIE_PLACEHOLDER = process.env.SMOKE_COOKIE || 'session=<replace-me>'
+const WORKSPACE_ROOT = process.cwd()
 
 const flowDefinitions: SmokeFlowDefinition[] = [
   {
@@ -76,7 +106,7 @@ const flowDefinitions: SmokeFlowDefinition[] = [
     ],
     expectedFacts: [
       '原合同变为 EXPIRED 且标记为已续租',
-      '新合同由 src/lib/domain/contracts 统一创建并返回事实快照',
+      '新合同由统一 Hono 宿主与共享领域服务编排并返回事实快照',
       '缺失账单按统一补账单编排生成或修复',
     ],
   },
@@ -148,6 +178,131 @@ const flowDefinitions: SmokeFlowDefinition[] = [
   },
 ]
 
+const matrixExpectations: readonly MatrixExpectation[] = [
+  {
+    key: 'NEW_SIGN_CONTRACT',
+    canonicalWriteIncludes: ['server/routes/contracts.ts', 'generateBillsOnContractSigned'],
+    canonicalQueryHosts: [
+      '合同列表分页 -> server/routes/contracts.ts -> src/lib/optimized-queries.ts',
+      '合同详情/SSR 回查 -> server/routes/contracts.ts -> src/lib/queries.ts',
+      '提醒窗口配置 -> src/lib/global-settings.ts',
+    ],
+    compatWrappers: [
+      'src/app/api/contracts/route.ts',
+      'src/app/api/contracts/[id]/generate-bills/route.ts',
+    ],
+  },
+  {
+    key: 'RENEW_CONTRACT',
+    canonicalWriteIncludes: ['server/routes/contracts.ts', 'src/lib/domain/contracts'],
+    canonicalQueryHosts: [
+      '合同详情 -> server/routes/contracts.ts -> src/lib/queries.ts',
+      '续租响应事实快照 -> server/routes/contracts.ts -> src/lib/domain/contracts',
+    ],
+    compatWrappers: [
+      'src/app/api/contracts/[id]/route.ts',
+      'src/app/api/contracts/[id]/renew/route.ts',
+    ],
+  },
+  {
+    key: 'CHECKOUT_SETTLEMENT',
+    canonicalWriteIncludes: ['server/routes/checkout.ts', 'src/lib/domain/contracts'],
+    canonicalQueryHosts: [
+      '合同详情 -> server/routes/contracts.ts -> src/lib/queries.ts',
+      '退租结算响应事实快照 -> server/routes/checkout.ts -> src/lib/domain/contracts',
+      '终抄详情/related bills -> server/routes/meter-readings.ts -> src/lib/domain/meters',
+    ],
+    compatWrappers: [
+      'src/app/api/contracts/[id]/route.ts',
+      'src/app/api/contracts/[id]/checkout/route.ts',
+    ],
+  },
+  {
+    key: 'METER_READING_BILLING',
+    canonicalWriteIncludes: ['src/lib/domain/meters'],
+    canonicalQueryHosts: [
+      '抄表详情 -> src/lib/domain/meters',
+      'related bills compat 宿主 -> src/app/api/meter-readings/[id]/related-bills/route.ts',
+    ],
+    compatWrappers: ['src/app/api/meter-readings/route.ts'],
+  },
+] as const
+
+const inventoryExpectations: readonly InventoryExpectation[] = [
+  {
+    routePath: '/api/rooms',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/rooms.ts',
+  },
+  {
+    routePath: '/api/rooms',
+    method: 'POST',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/rooms.ts',
+  },
+  {
+    routePath: '/api/rooms/:id',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/rooms.ts',
+  },
+  {
+    routePath: '/api/contracts',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/contracts.ts',
+  },
+  {
+    routePath: '/api/contracts',
+    method: 'POST',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/contracts.ts',
+  },
+  {
+    routePath: '/api/contracts/:id/renew',
+    method: 'POST',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/contracts.ts',
+  },
+  {
+    routePath: '/api/contracts/:id/checkout',
+    method: 'POST',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/checkout.ts',
+  },
+  {
+    routePath: '/api/bills',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/bills.ts',
+  },
+  {
+    routePath: '/api/bills',
+    method: 'POST',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/bills.ts',
+  },
+  {
+    routePath: '/api/bills/:id',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/bills.ts',
+  },
+  {
+    routePath: '/api/bills/:id/details',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/bills.ts',
+  },
+  {
+    routePath: '/api/bills/stats',
+    method: 'GET',
+    category: 'compat-wrapper',
+    formalHost: 'server/routes/bills.ts',
+  },
+] as const
+
 function buildCurlCommand(definition: SmokeFlowDefinition) {
   const targetUrl = `${BASE_URL}${definition.endpoint}`
   const payload = JSON.stringify(definition.payload, null, 2)
@@ -161,14 +316,18 @@ function buildCurlCommand(definition: SmokeFlowDefinition) {
   ].join(' \\\n')
 }
 
-function printDefinition(definition: SmokeFlowDefinition) {
-  const matrix = CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX.find(
-    (item) => item.key === definition.matrixKey
-  )
+function getMatrixByKey(key: ContractMainFlowKey) {
+  const matrix = CONTRACT_MAIN_FLOW_CONSISTENCY_MATRIX.find((item) => item.key === key)
 
   if (!matrix) {
-    throw new Error(`未找到主链矩阵定义: ${definition.matrixKey}`)
+    throw new Error(`未找到主链矩阵定义: ${key}`)
   }
+
+  return matrix
+}
+
+function printDefinition(definition: SmokeFlowDefinition) {
+  const matrix = getMatrixByKey(definition.matrixKey)
 
   console.log(`\n=== ${definition.title} ===`)
   console.log(`主链键: ${definition.matrixKey}`)
@@ -189,11 +348,169 @@ function printDefinition(definition: SmokeFlowDefinition) {
   console.log(buildCurlCommand(definition))
 }
 
-function main() {
+function createAssertionResult(
+  label: string,
+  passed: boolean,
+  details: string[]
+): AssertionResult {
+  return { label, passed, details }
+}
+
+function assertMatrixExpectation(expectation: MatrixExpectation): AssertionResult {
+  const matrix = getMatrixByKey(expectation.key)
+  const details: string[] = []
+  let passed = true
+
+  for (const fragment of expectation.canonicalWriteIncludes) {
+    const matched = matrix.canonicalWriteHost.includes(fragment)
+    details.push(
+      `${matched ? 'PASS' : 'FAIL'} canonicalWriteHost 包含 "${fragment}" -> ${matrix.canonicalWriteHost}`
+    )
+    passed &&= matched
+  }
+
+  for (const expectedHost of expectation.canonicalQueryHosts) {
+    const matched = matrix.canonicalQueryHosts.includes(expectedHost)
+    details.push(
+      `${matched ? 'PASS' : 'FAIL'} canonicalQueryHosts 包含 "${expectedHost}"`
+    )
+    passed &&= matched
+  }
+
+  for (const compatWrapper of expectation.compatWrappers) {
+    const matched = matrix.compatWrappers.includes(compatWrapper)
+    details.push(`${matched ? 'PASS' : 'FAIL'} compatWrappers 包含 "${compatWrapper}"`)
+    passed &&= matched
+  }
+
+  return createAssertionResult(`主链矩阵 ${expectation.key}`, passed, details)
+}
+
+function assertInventoryExpectation(expectation: InventoryExpectation): AssertionResult {
+  const operation = flattenLegacyRouteInventory().find(
+    (item) =>
+      item.routePath === expectation.routePath &&
+      item.methods.includes(expectation.method)
+  )
+
+  if (!operation) {
+    return createAssertionResult(
+      `route inventory ${expectation.method} ${expectation.routePath}`,
+      false,
+      ['FAIL 未找到对应 inventory 条目']
+    )
+  }
+
+  const categoryMatched = operation.category === expectation.category
+  const formalHostMatched = operation.formalHosts.includes(expectation.formalHost)
+  const details = [
+    `${categoryMatched ? 'PASS' : 'FAIL'} category = ${operation.category}`,
+    `${formalHostMatched ? 'PASS' : 'FAIL'} formalHosts = ${operation.formalHosts.join(' | ') || '<empty>'}`,
+  ]
+
+  return createAssertionResult(
+    `route inventory ${expectation.method} ${expectation.routePath}`,
+    categoryMatched && formalHostMatched,
+    details
+  )
+}
+
+async function assertBillsFallbackFile(): Promise<AssertionResult> {
+  const filePath = path.join(WORKSPACE_ROOT, 'server/routes/bills.ts')
+  const content = await readFile(filePath, 'utf8')
+  const checks = [
+    {
+      label: '使用 phase14-05 作为当前 fallback 阶段说明',
+      matched: content.includes("phase: 'phase14-05'"),
+    },
+    {
+      label: 'fallback migrationState 已升级为 formal-host-owned-with-retained-legacy-tail',
+      matched: content.includes(
+        "migrationState: 'formal-host-owned-with-retained-legacy-tail'"
+      ),
+    },
+    {
+      label: 'LEGACY_COMPAT.reason 已说明 bills 正式职责归属 Hono',
+      matched: content.includes(
+        'phase14-05 起统一 /api runtime 已由 server/routes/bills.ts 承担账单列表、统计、详情、草稿更新、收款状态与删除门禁等正式职责'
+      ),
+    },
+    {
+      label: 'fallback 文案不再输出旧的 phase09-03 partial-migrated 状态',
+      matched:
+        !content.includes("phase: 'phase09-03'") &&
+        !content.includes("migrationState: 'partial-migrated'"),
+    },
+  ]
+
+  return createAssertionResult(
+    'bills fallback 说明',
+    checks.every((item) => item.matched),
+    checks.map((item) => `${item.matched ? 'PASS' : 'FAIL'} ${item.label}`)
+  )
+}
+
+function printAssertionResult(result: AssertionResult) {
+  const prefix = result.passed ? '[PASS]' : '[FAIL]'
+  console.log(`${prefix} ${result.label}`)
+  for (const detail of result.details) {
+    console.log(`  - ${detail}`)
+  }
+}
+
+async function runAcceptanceAudit(targetKeys?: SmokeFlowCliKey[]) {
+  const selectedDefinitions = targetKeys
+    ? flowDefinitions.filter((item) => targetKeys.includes(item.cliKey))
+    : flowDefinitions
+  const selectedMatrixKeys = new Set(selectedDefinitions.map((item) => item.matrixKey))
+  const results: AssertionResult[] = []
+
+  for (const expectation of matrixExpectations) {
+    if (!selectedMatrixKeys.has(expectation.key)) {
+      continue
+    }
+    results.push(assertMatrixExpectation(expectation))
+  }
+
+  for (const expectation of inventoryExpectations) {
+    const shouldInclude =
+      !targetKeys ||
+      ['/api/rooms', '/api/rooms/:id', '/api/contracts', '/api/contracts/:id/renew', '/api/contracts/:id/checkout', '/api/bills', '/api/bills/:id', '/api/bills/:id/details', '/api/bills/stats'].includes(
+        expectation.routePath
+      )
+
+    if (shouldInclude) {
+      results.push(assertInventoryExpectation(expectation))
+    }
+  }
+
+  if (!targetKeys || targetKeys.some((item) => ['new-contract', 'renew', 'checkout'].includes(item))) {
+    results.push(await assertBillsFallbackFile())
+  }
+
+  console.log('\n=== phase09-05 主链 smoke 断言 ===')
+  results.forEach(printAssertionResult)
+
+  const passedCount = results.filter((item) => item.passed).length
+  const failedResults = results.filter((item) => !item.passed)
+  console.log(
+    `\n断言汇总: ${passedCount}/${results.length} 通过，${failedResults.length} 失败`
+  )
+
+  if (failedResults.length > 0) {
+    throw new Error(
+      `phase09-05 主链 smoke 断言失败：${failedResults
+        .map((item) => item.label)
+        .join('；')}`
+    )
+  }
+}
+
+async function main() {
   const cliKey = (process.argv[2] as SmokeFlowKey | undefined) || 'all'
 
   if (cliKey === 'all') {
-    flowDefinitions.forEach(printDefinition)
+    await runAcceptanceAudit()
     return
   }
 
@@ -210,7 +527,8 @@ function main() {
     )
   }
 
+  await runAcceptanceAudit([definition.cliKey])
   printDefinition(definition)
 }
 
-main()
+void main()
