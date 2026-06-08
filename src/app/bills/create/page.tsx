@@ -46,11 +46,21 @@ export default async function CreateBillRoute() {
         })) || [],
     }))
 
-    return <CreateBillPage contracts={contractsData} />
+    return (
+      <CreateBillPage
+        contracts={contractsData}
+        showErrorDetails={process.env.NODE_ENV === 'development'}
+      />
+    )
   } catch (error) {
     console.error('获取合同数据失败:', error)
 
     // 错误情况下传递空数组
-    return <CreateBillPage contracts={[]} />
+    return (
+      <CreateBillPage
+        contracts={[]}
+        showErrorDetails={process.env.NODE_ENV === 'development'}
+      />
+    )
   }
 }

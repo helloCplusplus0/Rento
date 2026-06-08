@@ -11,6 +11,7 @@ import { billCreateMobileStyles } from '@/components/business/bill-create-mobile
 import { PageContainer } from '@/components/layout/PageContainer'
 import { CreateBillPage } from '@/components/pages/CreateBillPage'
 
+import { minixClientEnv } from '../../env'
 import {
   loadCreateBillRouteData,
   type CreateBillRouteData,
@@ -58,6 +59,7 @@ function CreateBillRouteContent({ data }: { data: CreateBillRouteData }) {
   return (
     <CreateBillPage
       contracts={data.contracts}
+      showErrorDetails={minixClientEnv.isDevelopment}
       navigation={{
         push: (href) => navigate(href),
         replace: (href) => navigate(href, { replace: true }),

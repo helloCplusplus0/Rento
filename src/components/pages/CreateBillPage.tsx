@@ -28,6 +28,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 interface CreateBillPageProps {
   contracts: ContractWithDetailsForClient[]
   navigation?: HostNavigationAdapter
+  showErrorDetails?: boolean
 }
 
 /**
@@ -37,6 +38,7 @@ interface CreateBillPageProps {
 export function CreateBillPage({
   contracts,
   navigation,
+  showErrorDetails = false,
 }: CreateBillPageProps) {
   const [selectedContract, setSelectedContract] =
     useState<ContractWithDetailsForClient>()
@@ -149,7 +151,7 @@ export function CreateBillPage({
             error={error}
             onRetry={handleRetry}
             onDismiss={handleDismissError}
-            showDetails={process.env.NODE_ENV === 'development'}
+            showDetails={showErrorDetails}
           />
         )}
 

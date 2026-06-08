@@ -7,6 +7,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { SettingsPage } from '@/components/pages/SettingsPage'
 import { Card, CardContent } from '@/components/ui/card'
 
+import { minixClientEnv } from '../../env'
 import {
   loadSettingsRouteData,
   type SettingsRouteData,
@@ -60,7 +61,7 @@ function SettingsRouteContent({ data }: { data: SettingsRouteData }) {
   return (
     <SettingsPage
       initialSettings={data.settings}
-      appVersion={import.meta.env.VITE_APP_VERSION || '未配置版本号'}
+      appVersion={minixClientEnv.appVersion}
       onOpenUtilityPage={(path) => openDocumentPath(path, '_blank')}
     />
   )
