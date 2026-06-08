@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。`phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁移，`phase13-05` 已完成最终复核，`phase13-06` 与 `phase13-07` 已收口首页 `/` 与 `/bills/stats` 尾项；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-03` 前置冻结层与当前轮纠偏 `/plan`，当前默认工作流应以 `docs/phase14_*` 与 `phase14` 纠偏 `/plan` 为单一真相源，等待审核后再进入实现层 `/spec`。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。`phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁移，`phase13-05` 已完成最终复核，`phase13-06` 与 `phase13-07` 已收口首页 `/` 与 `/bills/stats` 尾项；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口：正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口；`phase15` 与 `phase16` 只允许继承上述页面/API 迁移结果与回滚边界，不得再回写正式业务 API 迁移职责。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase12 ~ phase16` 的当前轮重点必须建立在 `phase10` 已冻结的 `Prisma + PostgreSQL` 长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断，以及 `phase11` 已冻结的正式部署主线、发布门禁与 legacy 回滚基线之上，不反向改写这些结论。
 
@@ -53,8 +53,8 @@
 - 进入 `phase11-deployment-cutover-and-cutline-closure` 后，必须先冻结正式部署主线、服务端预构建产物链、环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件，再进入该阶段任一 `/spec`。
 - 进入 `phase12-frontend-parity-and-shell-cutover` 后，必须先冻结旧 `src/app` 页面到 `src/minix` 的映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径与 `phase12 ~ phase16` 的完整路线图，再进入该阶段任一 `/spec`。
 - 进入 `phase13-frontend-page-parity-implementation` 后，必须先冻结 P0/P1 页面切片顺序、route module 组织方式、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界与人工浏览器验收基线，再进入该阶段任一 `/spec`。
-- 进入 `phase14-api-query-parity-and-legacy-route-drain` 后，必须先冻结 retained-legacy / compat-wrapper / formal-host-owned 的 route inventory 分类、dashboard / settings query host 边界、rooms / buildings / meters / contracts / bills / renters / meter-readings 的 route drain 顺序、`phase10` 查询/事务继承边界与 `phase13` 页面-API/query 交接，再进入该阶段任一 `/spec`。
-- `phase14` 的阶段完成不得只以 `phase14-01 ~ phase14-03` 的冻结文档视为通过；在前置冻结层之后，必须继续完成真实 API/query drain 实施，并把对应验收结果回写到 `docs/phase14_*` 与根级真相源。
+- 进入 `phase14-api-query-parity-and-legacy-route-drain` 后，必须先冻结 retained-legacy / compat-wrapper / formal-host-owned 的 route inventory 分类、dashboard / settings query host 边界、rooms / buildings / meters / contracts / bills / renters / meter-readings 的 route drain 顺序、`phase10` 查询/事务继承边界与 `phase13` 页面-API/query 交接，再进入该阶段任一 `/spec`；`phase14` 当前轮完成后，必须同步回写“正式业务 retained-legacy 主职责已清零、旧入口仅保留 compat/formal/rollback 边界”的单一结论。
+- `phase14` 的阶段完成不得只以 `phase14-01 ~ phase14-04` 的冻结与实施输入层文档视为通过；在该输入层之后，必须继续完成 `phase14-05 ~ phase14-07` 的真实 API/query drain 实施，并把对应验收结果回写到 `docs/phase14_*` 与根级真相源，且不得把任何正式业务 API 迁移债务继续留给 `phase15` 或 `phase16`。
 - 进入 `phase13-frontend-page-parity-implementation` 后，任一页面子任务在标记“验收通过”前，必须额外完成“旧 `Rento` 原型 vs `Rento-miniX` 当前实现”的逐项对照；若仍存在说明性文案、开发态卡片、占位交互、重复入口或首页/列表/详情/表单信息结构漂移，则不得视为通过。
 - 任一已批准 `spec` 的子任务在实施完成后，必须额外指定独立子代理执行审核验收；只有在子代理审核明确通过后，才允许把该子任务标记完成，并继续提交与推送远程仓库。
 - `docs/fix/` 与已完成的 `docs/phase01~phase05_*` 默认保留为上游参考与历史结论，不再自动等同于当前默认工作流。
@@ -73,7 +73,7 @@
 - `phase12` 审核通过的最低前提，至少包括：旧页面映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径与 `phase12 ~ phase16` 完整路线图均已冻结并通过审核。
 - `phase13` 审核通过的最低前提，至少包括：P0/P1 正式页面实施范围、route module 承接结构、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界、浏览器验收基线与 `phase14` 页面-API 依赖交接均已冻结并通过审核。
 - `phase14` 审核通过的最低前提，至少包括：retained-legacy / compat-wrapper / formal-host-owned route inventory 分类、正式宿主清单、dashboard / settings query host 边界、分域 route drain 顺序、compat 保留条件、旧 Next API 退出前提与最小文档验证要求均已冻结并通过审核。
-- `phase14` 阶段完成的最低前提，除审核通过的前置冻结层外，还至少包括：`phase14-04 ~ phase14-07` 已完成真实 API/query drain 实施与独立验收，且不得再存在“只有冻结文档、没有真实迁移结果”却把整个阶段标记完成的情况。
+- `phase14` 阶段完成的最低前提，除审核通过的冻结与实施输入层外，还至少包括：`phase14-05 ~ phase14-07` 已完成真实 API/query drain 实施、route inventory 审计与独立验收，旧 `src/app/api/*` 中不再存在承担正式业务主职责的 retained-legacy 路由，且不得把任何正式业务 API 迁移债务留给 `phase15` 或 `phase16`。
 - `phase13` 任一已实施页面子任务的最低验收前提，除上述门槛外，还必须证明新页面继续以旧 `Rento` 源代码为原型并达到接近 `100%` 的页面保真度；若仅完成壳层落位、说明页替换、局部模块复用或最小状态边界承接，不得单独视为完成迁移。
 - 原地重构默认优先最小边界、分阶段推进，不允许一次性把 UI、框架、ORM 与部署主线一起大爆炸式改写。
 - 当前主动开发 remote 默认只保留 `origin -> Rento-miniX`；`Rento-legacy` 仅作为 GitHub 侧只读备份参考，不作为并行推送目标、默认上游或第二真相源。
@@ -108,7 +108,7 @@
 - `phase12` 当前轮最低文档验证要求固定为：`docs/phase12_*` 互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核；进入新增 `phase13-frontend-page-parity-implementation` 与后续页面/API/PWA/cutover 实施前，不以“路线图已规划”为理由跳过页面映射表、UI 保真边界、完整路线图、前后依赖、DoD 与退出条件审核。
 - `phase13` 期间允许把首页、房源、合同、账单、租客、抄表、设置等 P0/P1 正式页面真实迁入 `src/minix`，并收口页面壳、页面装配层、route-level 数据边界、宿主绑定拆分与页面级验收基线，但不得在该阶段直接切 retained-legacy API/query、PWA runtime 或 legacy cutover。
 - `phase13` 当前轮最低文档验证要求固定为：`docs/phase13_*` 互链复核、被引用 `src/minix/*`/`src/components/*`/旧 `src/app/**/page.tsx` 路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*`、`docs/phase13_*` 状态一致性复核；在用户批准前，不得以“进入 phase13”为由直接跳过 `/plan` 文档审核进入 `/spec` 或实现。
-- `phase14` 期间允许把旧 `src/app/api/*` 的 retained-legacy 正式职责、compat-wrapper 保留边界与 formal-host-owned 退出前提收口到 `docs/phase14_*`、`server/lib/legacy-route-inventory.ts` 与 `server/routes/*` 的单一解释上，并在审核通过后继续进入真实 API/query drain 实施，但不得在该阶段反向重开页面迁移、PWA runtime 或 `phase16` cutover/legacy-exit 职责。
+- `phase14` 期间允许把旧 `src/app/api/*` 的 retained-legacy 正式职责、compat-wrapper 保留边界与 formal-host-owned 退出前提收口到 `docs/phase14_*`、`server/lib/legacy-route-inventory.ts` 与 `server/routes/*` 的单一解释上，并在审核通过后继续进入真实 API/query drain 实施；当前该阶段完成后，正式业务 retained-legacy 主职责必须清零，剩余 retained-legacy 仅限治理/辅助接口，不得在该阶段反向重开页面迁移、PWA runtime 或 `phase16` cutover/legacy-exit 职责。
 - `phase14` 当前轮最低文档验证要求固定为：`docs/phase14_*` 互链复核、被引用 `server/*`、`src/app/api/*`、`src/lib/queries*`、`src/lib/page-closure-compat/*` 与 `server/lib/legacy-route-inventory.ts` 路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase13_*`、`docs/phase14_*` 状态一致性复核；在用户批准前，不得以“进入 phase14”为由直接跳过纠偏 `/plan` 文档审核进入实现层 `/spec` 或实现。
 - 对显著影响运行边界的路由、脚本、环境变量，必须有注释或文档解释其用途。
 - 任何涉及合同、账单、支付周期、仪表、抄表主链的重构，必须在实施前明确：
@@ -129,4 +129,4 @@
 - 最小鉴权门禁已落地，但角色控制、最小审计与公网发布所需的完整安全边界仍未全部完成。
 - 旧容器化部署链仍能支撑存量运行线，但不应被误读为 `Rento-miniX` 的未来正式部署主线；其退出仍依赖 `phase11-04` 已冻结的保留条件、退出条件与回滚记录收口。
 - 新主线运行时虽已完成 `build:minix` 前端 `dist/` 与服务端 `build/minix-server/` 预构建产物链收口，且 `phase11-05` 已冻结文档最小验证要求与部署/回滚演练记录要求，但正式部署演练执行、legacy 基线退出审计与最终 cutline 验证仍需在后续审核与演练中继续完成。
-- 旧 `src/app` 页面、旧 `src/app/api/*` retained-legacy 路由与旧 Next PWA 宿主仍未完成纯新主线 parity；这些差距已被提升为 `phase12 ~ phase16` 的默认上游问题，不再继续混写到 `phase11` 的部署收口职责中。
+- 旧 `src/app` 页面与旧 Next PWA 宿主仍未完成纯新主线 parity；旧 `src/app/api/*` 中承担正式业务主职责的 retained-legacy 路由已在 `phase14` 清零，剩余治理/辅助 retained-legacy 与旧 Next PWA 宿主一起作为 `phase15 ~ phase16` 的继承输入，不再继续混写到 `phase11` 的部署收口职责中。

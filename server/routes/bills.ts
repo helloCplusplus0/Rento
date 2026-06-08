@@ -40,7 +40,7 @@ const LEGACY_COMPAT = {
     'src/app/api/contracts/[id]/generate-bills/route.ts',
   ] as const,
   reason:
-    'phase14-05 起统一 /api runtime 已由 server/routes/bills.ts 承担账单列表、统计、详情、草稿更新、收款状态与删除门禁等正式职责；旧 Next 入口仅保留 compat proxy、回滚基线，以及 utility-details / repair-details 等残余 retained-legacy 尾项。',
+    'phase14-05 起统一 /api runtime 已由 server/routes/bills.ts 承担账单列表、统计、详情、草稿更新、收款状态、删除门禁与 utility-details 读取等正式职责；旧 Next 入口仅保留 compat proxy、回滚基线，以及 repair-details 等治理尾项。',
   exitCondition:
     '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/bills/* 与基础生成入口 compat wrapper 可移除。',
 } as const
@@ -78,6 +78,203 @@ interface BillDetailResponse {
       amount: number
       status: string
     }
+  }
+}
+
+type UtilityBreakdownItem = {
+  meterReadingId?: string
+  meterId?: string
+  meterType?: string
+  meterName?: string
+  usage?: number
+  unitPrice?: number
+  amount?: number
+  unit?: string
+  readingDate?: string
+}
+
+type UtilitySummaryItem = {
+  meterType: string
+  meterName: string
+  usage: number
+  unitPrice: number
+  amount: number
+  unit: string
+}
+
+type UtilityDetailsMetadata = {
+  meterReadingIds?: string[]
+  breakdown?: UtilityBreakdownItem[] | Record<string, any> | null
+}
+
+function parseBillMetadata(metadata: string | null) {
+  if (!metadata) {
+    return null
+  }
+
+  try {
+    return JSON.parse(metadata) as Record<string, any>
+  } catch {
+    return null
+  }
+}
+
+function normalizeMeterType(rawType: unknown) {
+  if (typeof rawType !== 'string') {
+    return 'UNKNOWN'
+  }
+
+  return rawType.toUpperCase()
+}
+
+function normalizeLegacyUtilityEntry(
+  key: 'electricity' | 'water' | 'gas',
+  value: Record<string, unknown> | null
+): UtilitySummaryItem | null {
+  if (!value) {
+    return null
+  }
+
+  const usage = Number(value.usage || 0)
+  if (usage <= 0) {
+    return null
+  }
+
+  const legacyConfig = {
+    electricity: {
+      meterType: 'ELECTRICITY',
+      meterName: '电表',
+      unit: '度',
+    },
+    water: {
+      meterType: 'WATER',
+      meterName: '水表',
+      unit: '吨',
+    },
+    gas: {
+      meterType: 'GAS',
+      meterName: '燃气表',
+      unit: '立方米',
+    },
+  } as const
+
+  const config = legacyConfig[key]
+
+  return {
+    meterType: config.meterType,
+    meterName: config.meterName,
+    usage,
+    unitPrice: Number(value.unitPrice || 0),
+    amount: Number(value.amount || 0),
+    unit: typeof value.unit === 'string' ? value.unit : config.unit,
+  }
+}
+
+function normalizeUtilityBreakdownItems(
+  utilityDetails: UtilityDetailsMetadata | null
+): UtilitySummaryItem[] {
+  const breakdown = utilityDetails?.breakdown
+
+  if (Array.isArray(breakdown)) {
+    return breakdown
+      .map((item) => {
+        const usage = Number(item?.usage || 0)
+        if (usage <= 0) {
+          return null
+        }
+
+        const meterType = normalizeMeterType(item?.meterType)
+        const fallbackNames: Record<string, string> = {
+          ELECTRICITY: '电表',
+          COLD_WATER: '冷水表',
+          HOT_WATER: '热水表',
+          WATER: '水表',
+          GAS: '燃气表',
+          UNKNOWN: '仪表',
+        }
+        const fallbackUnits: Record<string, string> = {
+          ELECTRICITY: '度',
+          COLD_WATER: '吨',
+          HOT_WATER: '吨',
+          WATER: '吨',
+          GAS: '立方米',
+          UNKNOWN: '',
+        }
+
+        return {
+          meterType,
+          meterName:
+            typeof item?.meterName === 'string' && item.meterName.trim().length > 0
+              ? item.meterName
+              : fallbackNames[meterType] || fallbackNames.UNKNOWN,
+          usage,
+          unitPrice: Number(item?.unitPrice || 0),
+          amount: Number(item?.amount || 0),
+          unit:
+            typeof item?.unit === 'string'
+              ? item.unit
+              : fallbackUnits[meterType] || '',
+        } satisfies UtilitySummaryItem
+      })
+      .filter((item): item is UtilitySummaryItem => item !== null)
+  }
+
+  if (breakdown && typeof breakdown === 'object') {
+    return (
+      [
+        normalizeLegacyUtilityEntry(
+          'electricity',
+          (breakdown as Record<string, Record<string, unknown> | null>).electricity ??
+            null
+        ),
+        normalizeLegacyUtilityEntry(
+          'water',
+          (breakdown as Record<string, Record<string, unknown> | null>).water ?? null
+        ),
+        normalizeLegacyUtilityEntry(
+          'gas',
+          (breakdown as Record<string, Record<string, unknown> | null>).gas ?? null
+        ),
+      ].filter((item): item is UtilitySummaryItem => item !== null)
+    )
+  }
+
+  return []
+}
+
+function buildUtilitySummary(items: UtilitySummaryItem[], billAmount: number) {
+  const totalElectricityUsage = items
+    .filter((item) => item.meterType === 'ELECTRICITY')
+    .reduce((sum, item) => sum + item.usage, 0)
+  const totalWaterUsage = items
+    .filter((item) =>
+      ['WATER', 'COLD_WATER', 'HOT_WATER'].includes(item.meterType)
+    )
+    .reduce((sum, item) => sum + item.usage, 0)
+  const totalGasUsage = items
+    .filter((item) => item.meterType === 'GAS')
+    .reduce((sum, item) => sum + item.usage, 0)
+  const totalElectricityCost = items
+    .filter((item) => item.meterType === 'ELECTRICITY')
+    .reduce((sum, item) => sum + item.amount, 0)
+  const totalWaterCost = items
+    .filter((item) =>
+      ['WATER', 'COLD_WATER', 'HOT_WATER'].includes(item.meterType)
+    )
+    .reduce((sum, item) => sum + item.amount, 0)
+  const totalGasCost = items
+    .filter((item) => item.meterType === 'GAS')
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  return {
+    totalElectricityUsage,
+    totalWaterUsage,
+    totalGasUsage,
+    totalElectricityCost,
+    totalWaterCost,
+    totalGasCost,
+    grandTotal: billAmount,
+    breakdown: items,
   }
 }
 
@@ -180,7 +377,7 @@ function appendBillsFallback(routeApp: Hono<AuthAppEnv>, env: MinixServerEnv) {
     return jsonApiError(
       c,
       notImplementedError(
-        'phase14-05 起账单主链正式入口已统一收口到 Hono 宿主；当前 fallback 仅用于拦截尚未迁入的 utility-details、repair-details 等 retained-legacy / governance 尾项，避免继续输出旧的“部分迁移”状态。',
+        'phase14-05 起账单主链正式入口已统一收口到 Hono 宿主；当前 fallback 仅用于拦截 repair-details 等治理尾项，避免继续输出旧的“部分迁移”状态。',
         {
           phase: 'phase14-05',
           routeKey: 'bills',
@@ -362,6 +559,83 @@ export function createBillRoutes(env: MinixServerEnv) {
         ])
       ),
     })
+  })
+
+  routeApp.get('/:id/utility-details', async (c) => {
+    try {
+      const billId = c.req.param('id')
+      const bill = await billQueries.findById(billId)
+
+      if (!bill) {
+        return c.json({ success: false, error: '账单不存在' }, 404)
+      }
+
+      if (bill.type !== 'UTILITIES') {
+        return c.json({ success: false, error: '不是水电费账单' }, 400)
+      }
+
+      const metadata = parseBillMetadata(bill.metadata)
+      const utilityDetails = (metadata?.utilityDetails ?? null) as UtilityDetailsMetadata | null
+      const meterReadingIds = Array.isArray(utilityDetails?.meterReadingIds)
+        ? utilityDetails.meterReadingIds
+        : []
+      const normalizedBreakdown = normalizeUtilityBreakdownItems(utilityDetails)
+
+      const meterReadings =
+        meterReadingIds.length > 0
+          ? (
+              await Promise.all(
+                meterReadingIds.map((readingId) =>
+                  prisma.meterReading.findUnique({
+                    where: { id: readingId },
+                  })
+                )
+              )
+            ).filter((reading): reading is NonNullable<typeof reading> => reading !== null)
+          : []
+
+      const relatedBills = await billQueries.findByContract(bill.contractId)
+      const samePeriodBills = relatedBills
+        .filter((relatedBill) => relatedBill.id !== bill.id && relatedBill.period === bill.period)
+        .map((relatedBill) => ({
+          ...relatedBill,
+          amount: Number(relatedBill.amount),
+          receivedAmount: Number(relatedBill.receivedAmount),
+          pendingAmount: Number(relatedBill.pendingAmount),
+        }))
+
+      const billData = {
+        ...bill,
+        amount: Number(bill.amount),
+        receivedAmount: Number(bill.receivedAmount),
+        pendingAmount: Number(bill.pendingAmount),
+        utilityDetails,
+      }
+
+      const meterReadingsData = meterReadings.map((reading) => ({
+        ...reading,
+        previousReading:
+          reading.previousReading !== null ? Number(reading.previousReading) : null,
+        currentReading: Number(reading.currentReading),
+        usage: Number(reading.usage),
+        unitPrice: Number(reading.unitPrice),
+        amount: Number(reading.amount),
+      }))
+
+      return c.json({
+        success: true,
+        data: {
+          bill: billData,
+          meterReadings: meterReadingsData,
+          breakdown: normalizedBreakdown,
+          summary: buildUtilitySummary(normalizedBreakdown, Number(bill.amount)),
+          relatedBills: samePeriodBills,
+        },
+      })
+    } catch (error) {
+      console.error('获取水电费账单详情失败:', error)
+      return c.json({ success: false, error: '获取账单详情失败' }, 500)
+    }
   })
 
   routeApp.get('/:id/details', async (c) => {

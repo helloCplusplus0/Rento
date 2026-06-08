@@ -10,6 +10,7 @@
 - 当前 `server/routes/*` 与 `server/lib/legacy-route-inventory.ts` 已具备较完整承接基础；但结合 `phase14-04` 的实际执行结果，当前必须进一步明确：`phase14-01 ~ phase14-04` 只构成冻结与实施输入，真正用于完成整阶段 API 迁移的交付必须由后续 `phase14-05 ~ phase14-07` 负责吸收并收口。
 - 补充约束：`phase14` 任一子任务都必须继续以旧 `src/app/api/*` 为直接参考基线，以 inventory 分类、shared compat helper 与共享领域服务现状为真实输入，而不是脱离现有代码重新设计一套 API 版图。
 - 补充判断：当前真正的阻断已经不是“有没有 Hono 路由”，而是“哪些 Hono 路由已算正式宿主、哪些只是 bridge、哪些旧 Next API 仍在承担正式职责”。
+- `2026-06` 收口补记：当前代码与 `server/lib/legacy-route-inventory.ts` 已完成 `phase14-05 ~ phase14-07` 的全部收口。旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；正式业务旧入口已统一降级为 `formal-host-owned` 或 `compat-wrapper`，剩余 retained-legacy 仅限治理/辅助接口。`phase15` 与 `phase16` 只继承本阶段结果，不再承担正式业务 API 迁移职责。
 
 ## 一、文档定位
 本文档用于把 `phase14-api-query-parity-and-legacy-route-drain` 拆分为顺序执行的实施子任务，确保仓库先完成前置冻结层，再进入真实实现层，避免再次出现“阶段定义是实施，但执行结果只有冻结文档”的偏差。
@@ -41,9 +42,9 @@
 | `phase14-02-dashboard-and-settings-query-host-closure` | 已完成（前置冻结层） | 已冻结 dashboard retained-legacy query host、Hono page-closure bridge、settings 治理型 retained-legacy 身份、页面影响与 D1 顺序 |
 | `phase14-03-rooms-buildings-meters-api-drain` | 已完成（前置冻结层） | 已冻结 D2 宿主解释、删除门禁、页面影响与退出顺序，可作为 `phase14-04` 的直接上游输入 |
 | `phase14-04-contracts-and-checkout-api-drain` | 已完成（D3 冻结同步，不计入真实迁移完成数） | 已基于 D1/D2 上游输入同步 contracts / checkout 的 D3 宿主解释、route priority、页面影响与复用边界；其真实 API/query drain 必须并入 `phase14-05 ~ phase14-07` 的实现波次收口 |
-| `phase14-05-core-business-api-cutover-wave-1` | 待开始（真实迁移波次一） | 需真实推进 rooms / contracts / checkout / bills 的主链 API cutover，把页面主消费路径切到统一 Hono 宿主，并把旧 Next 入口降级为 compat/rollback-only |
-| `phase14-06-query-and-bridge-api-cutover-wave-2` | 待开始（真实迁移波次二） | 需真实推进 dashboard / settings / renters / meter-readings / utility 及残余 bridge/compat 路径的 query host 与 shared helper cutover |
-| `phase14-07-legacy-next-api-drain-completion-and-exit-baseline` | 待开始（阶段收口） | 需在前两波真实迁移完成后，证明 `phase14` 已清空正式业务 retained-legacy API，并统一旧 Next API 的 compat 保留、退出判定、inventory 与回滚基线 |
+| `phase14-05-core-business-api-cutover-wave-1` | 已完成（真实迁移波次一） | rooms / contracts / checkout / bills 主链已切到统一 Hono 宿主；旧 Next 入口已降级为 compat/rollback-only，仅 `/api/rooms` 的 `PATCH` 批量状态更新继续保留 retained-legacy 主职责 |
+| `phase14-06-query-and-bridge-api-cutover-wave-2` | 已完成（真实迁移波次二） | dashboard / settings / renters / meter-readings / utility 已完成 query host 与 shared helper cutover；旧 Next 入口以 compat proxy 为主，业务 retained-legacy 尾项收敛到 `/api/bills/:id/utility-details` |
+| `phase14-07-legacy-next-api-drain-completion-and-exit-baseline` | 已完成（阶段审计与收口） | route inventory 已完成最终审计，`/api/rooms` 的 `PATCH` 与 `/api/bills/:id/utility-details` 已降级为 compat proxy；正式业务 retained-legacy 主职责已清零，compat 保留边界、退出判定、回滚基线与顶层真相源已同步完成 |
 
 ## 二点七五、纠偏后的阶段分层
 - `phase14-01 ~ phase14-04` 只构成冻结与实施输入层：
@@ -56,6 +57,7 @@
 - `phase14` 阶段完成条件固定为：
   - 冻结与实施输入层已完成
   - `phase14-05 ~ phase14-07` 已完成全部业务主链 API 迁移与收口
+  - 旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由
   - 两者都通过独立审核验收
 
 ## 三、任务拆分建议
@@ -457,7 +459,7 @@
 - 必要时 `README.md`
 
 ### 当前事实基线
-- `phase14-05 ~ phase14-06` 完成后，正式业务 API 应已完成真实迁移，但旧 `src/app/api/*` 文件仍会为了回滚、compat 或审计而局部保留。
+- `phase14-05 ~ phase14-07` 完成后，正式业务 API 已完成真实迁移，但旧 `src/app/api/*` 文件仍会为了回滚、compat 或审计而局部保留。
 - `phase14` 的阶段完成标准不是“文件删空”，而是“旧 Next API 不再承担正式业务主职责”。
 - legacy 资产在 `phase16` 审核通过前仍必须保留回滚职责，但这种保留必须是显式 compat/rollback-only，而不是隐式继续承载正式流量。
 
@@ -524,4 +526,5 @@ phase14-07-legacy-next-api-drain-completion-and-exit-baseline
 - 页面 parity 与 API parity 的输入脱节
 - 先删旧路由、后补解释
 - 治理接口、PWA 与 cutover 职责提前闯入 `phase14`
-- `phase14-01 ~ phase14-03` 被误判为整个 `phase14` 已完成
+- `phase14-01 ~ phase14-04` 被误判为整个 `phase14` 的当前运行时状态
+- 已完成的 `phase14` 结果没有被顶层真相源明确写成“正式业务 retained-legacy 主职责已清零、后续阶段仅继承结果”

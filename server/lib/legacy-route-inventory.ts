@@ -365,14 +365,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
-        keepReason: '聚合账单 utility details 仍为旧读取宿主，未进入 phase09 正式迁移范围。',
-        exitCondition:
-          '待 phase10 明确 UTILITIES 账单详情查询宿主与读取模型后，再决定去向。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/bills.ts'],
+        domainServicePaths: ['src/lib/queries.ts', 'src/lib/prisma.ts'],
+        keepReason:
+          'phase14-07 起账单 utility details 读取已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -567,15 +567,14 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
       },
       {
         methods: ['PATCH'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
-        formalHosts: [],
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
+        formalHosts: ['server/routes/rooms.ts'],
         domainServicePaths: ['src/lib/queries.ts'],
         keepReason:
-          '房间批量状态更新仍未迁入统一 Hono 宿主；旧 Next.js 路由继续作为 rollback-only 存量入口保留。',
-        exitCondition:
-          '待后续波次明确 `/api/rooms` 批量状态更新的正式宿主与房态联动边界后，再评估退出。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          'phase14-07 起房间批量状态更新已切到统一 Hono 宿主；旧 Next.js 路由仅保留 in-process compat proxy 与回滚基线。',
+        exitCondition: UNIFIED_HONO_EXIT_CONDITION,
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },

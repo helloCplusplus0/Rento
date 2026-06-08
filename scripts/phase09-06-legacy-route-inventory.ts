@@ -14,7 +14,14 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '..')
 const legacyApiRoot = path.join(projectRoot, 'src', 'app', 'api')
+const DASHBOARD_FORMAL_HOST_PATH = 'src/lib/dashboard-formal-host.ts'
 const DASHBOARD_ROUTE_DEPENDENCY_IMPORT_MAP = new Map([
+  ['@/lib/dashboard-queries', 'src/lib/dashboard-queries.ts'],
+  ['@/lib/global-settings', 'src/lib/global-settings.ts'],
+  ['@/lib/prisma', 'src/lib/prisma.ts'],
+])
+const DASHBOARD_FORMAL_HOST_DEPENDENCY_IMPORT_MAP = new Map([
+  ['@/lib/contract-alert-semantics', 'src/lib/contract-alert-semantics.ts'],
   ['@/lib/dashboard-queries', 'src/lib/dashboard-queries.ts'],
   ['@/lib/global-settings', 'src/lib/global-settings.ts'],
   ['@/lib/prisma', 'src/lib/prisma.ts'],
@@ -110,7 +117,7 @@ async function main() {
   printHeader('校验通过')
   console.log('- 清单已覆盖全部 src/app/api 旧路由文件')
   console.log('- formalHosts、bridgeHosts 与 domainServicePaths 引用均可解析')
-  console.log('- /api/dashboard/* 的直接查询依赖映射与真实导入保持一致')
+  console.log('- /api/dashboard/* compat proxy 与 dashboard-formal-host 受控依赖范围保持一致')
   console.log('- phase10 输入分桶已可直接复核与复用')
 }
 
@@ -175,7 +182,7 @@ async function fileExists(targetPath: string) {
 }
 
 async function validateDashboardRouteDependencyMappings() {
-  const problems: string[] = []
+  const problems = await validateDashboardFormalHostDependencyScope()
   const dashboardEntries = PHASE09_06_LEGACY_ROUTE_INVENTORY.filter((entry) =>
     entry.routePath.startsWith('/api/dashboard/')
   )
@@ -189,6 +196,23 @@ async function validateDashboardRouteDependencyMappings() {
       const declaredDependencies = Array.from(
         new Set(operation.domainServicePaths)
       ).sort()
+
+      if (declaredDependencies.includes(DASHBOARD_FORMAL_HOST_PATH)) {
+        if (!areStringArraysEqual(declaredDependencies, [DASHBOARD_FORMAL_HOST_PATH])) {
+          problems.push(
+            `dashboard formal host 声明应收口为单一受控边界: ${entry.routePath} -> ${declaredDependencies.join(', ')}`
+          )
+        }
+
+        if (actualDependencies.length > 0) {
+          problems.push(
+            `dashboard compat route 不应继续直接依赖 legacy 查询实现: ${entry.routePath} -> 实际[${actualDependencies.join(', ')}]`
+          )
+        }
+
+        continue
+      }
+
       const unsupportedDeclaredDependencies = declaredDependencies.filter(
         (dependency) => !DASHBOARD_ROUTE_TRACKED_DEPENDENCIES.has(dependency)
       )
@@ -213,15 +237,46 @@ async function validateDashboardRouteDependencyMappings() {
   return problems
 }
 
-async function collectTrackedDashboardRouteDependencies(filePath: string) {
-  const absolutePath = path.join(projectRoot, ...filePath.split('/'))
-  const fileContent = await fs.readFile(absolutePath, 'utf8')
-  const trackedDependencies = new Set<string>()
-  const importPattern =
-    /from\s+['"](@\/lib\/dashboard-queries|@\/lib\/global-settings|@\/lib\/prisma)['"]/g
+async function validateDashboardFormalHostDependencyScope() {
+  const importSpecifiers = await collectImportSpecifiers(DASHBOARD_FORMAL_HOST_PATH)
+  const workspaceLibImports = Array.from(
+    new Set(importSpecifiers.filter((specifier) => specifier.startsWith('@/lib/')))
+  ).sort()
+  const problems: string[] = []
+  const unsupportedImports = workspaceLibImports.filter(
+    (specifier) => !DASHBOARD_FORMAL_HOST_DEPENDENCY_IMPORT_MAP.has(specifier)
+  )
 
-  for (const match of fileContent.matchAll(importPattern)) {
-    const projectPath = DASHBOARD_ROUTE_DEPENDENCY_IMPORT_MAP.get(match[1])
+  if (unsupportedImports.length > 0) {
+    problems.push(
+      `dashboard-formal-host.ts 直接依赖超出受控范围: ${unsupportedImports.join(', ')}`
+    )
+  }
+
+  const controlledDependencies = workspaceLibImports
+    .map((specifier) => DASHBOARD_FORMAL_HOST_DEPENDENCY_IMPORT_MAP.get(specifier))
+    .filter((dependency): dependency is string => Boolean(dependency))
+
+  if (controlledDependencies.length === 0) {
+    problems.push('dashboard-formal-host.ts 未解析到任何受控直接依赖')
+  }
+
+  return problems
+}
+
+async function collectTrackedDashboardRouteDependencies(filePath: string) {
+  return collectTrackedImports(filePath, DASHBOARD_ROUTE_DEPENDENCY_IMPORT_MAP)
+}
+
+async function collectTrackedImports(
+  filePath: string,
+  dependencyImportMap: Map<string, string>
+) {
+  const importSpecifiers = await collectImportSpecifiers(filePath)
+  const trackedDependencies = new Set<string>()
+
+  for (const importSpecifier of importSpecifiers) {
+    const projectPath = dependencyImportMap.get(importSpecifier)
 
     if (projectPath) {
       trackedDependencies.add(projectPath)
@@ -229,6 +284,19 @@ async function collectTrackedDashboardRouteDependencies(filePath: string) {
   }
 
   return Array.from(trackedDependencies).sort()
+}
+
+async function collectImportSpecifiers(filePath: string) {
+  const absolutePath = path.join(projectRoot, ...filePath.split('/'))
+  const fileContent = await fs.readFile(absolutePath, 'utf8')
+  const importSpecifiers = new Set<string>()
+  const importPattern = /from\s+['"]([^'"]+)['"]/g
+
+  for (const match of fileContent.matchAll(importPattern)) {
+    importSpecifiers.add(match[1])
+  }
+
+  return Array.from(importSpecifiers).sort()
 }
 
 function areStringArraysEqual(left: string[], right: string[]) {

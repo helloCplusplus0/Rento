@@ -1,0 +1,9 @@
+- [x] `server/lib/legacy-route-inventory.ts` 中除 governance / 明确保留 compat / rollback-only 之外，不再存在承担正式业务主职责的 retained-legacy API
+- [x] 每个仍保留的旧 Next API 都具备单一可解释的保留原因、退出条件与回滚条件
+- [x] `docs/phase14_*`、`plan.md` 与顶层真相源已明确写清 `phase14` 阶段内 API 迁移已完成，而不是只完成冻结
+- [x] `phase14-01~06` 是否已完成 `Rento -> Rento-miniX` 所有 API 层 `100%` 高保真迁移，已有明确、可追溯、与代码事实一致的结论
+- [x] `phase15` 与 `phase16` 只继承 API 迁移结果、PWA parity / cutover 输入，不再承担任何正式业务 API 迁移职责
+- [x] 任何 route exit 判断都保留明确回滚条件，未把 `phase16` 的 cutover / legacy-exit 职责提前写成当前子任务完成条件
+- [x] 已完成至少一轮覆盖 dashboard / rooms / contracts / checkout / bills / renters / meter-readings 的 route inventory 审计与主链 smoke
+- [x] 顶层真相源、`docs/phase14_*` 与 `legacy-route-inventory.ts` 的阶段状态一致
+- [x] 本波次未直接删除 legacy 资产、未提前执行 cutover，也未越界替代 `phase16` 的最终退出审核

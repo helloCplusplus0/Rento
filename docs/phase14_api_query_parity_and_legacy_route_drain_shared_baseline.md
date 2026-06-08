@@ -8,7 +8,8 @@
   - [phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md)
   - [phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)
   - [phase14_execution_layer_correction_plan.md](file:///home/dell/Projects/Rento/.trae/documents/phase14_execution_layer_correction_plan.md)
-- 本次纠偏 `/plan` 不执行新的 `phase14` API/query 切流实现，不删除旧 `src/app/api/*`，不进入 `phase15 ~ phase16` 的实现职责；但这不再等于“`phase14` 只做冻结”，当前应统一按“`phase14-01 ~ phase14-04` 只构成冻结与实施输入层，`phase14-05 ~ phase14-07` 才承担整阶段 API 迁移完成责任”解释。
+- `phase14-07` 已完成 route inventory 审计、保留边界复核、回滚基线冻结与顶层真相源同步；本文件现同时承接冻结输入层与整阶段完成态的共享边界说明。
+- `2026-06` 收口补记：当前代码与 `server/lib/legacy-route-inventory.ts` 已吸收 `phase14-05 ~ phase14-07` 的全部收口结果。旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；正式业务旧入口已统一降级为 `formal-host-owned` 或 `compat-wrapper`，剩余 retained-legacy 仅限治理/辅助接口。本文中仍描述“待切流”的业务域，应按冻结输入层的历史语义阅读，不再直接等同当前运行时状态。
 
 ## 一、文档目的
 本文档用于冻结 `phase14-api-query-parity-and-legacy-route-drain` 的共享判断标准，避免后续子任务从页面影响、旧路由、Hono 子宿主、query helper 或 compat bridge 不同视角出发，重新产出互相冲突的解释。
@@ -34,6 +35,7 @@
   - 页面到 retained-legacy API/query 的交接表
 - 当前正式数据访问主线继续固定为 `Prisma + PostgreSQL`
 - 当前正式 API 宿主继续固定为 `server/` 下的 Hono 子路由树
+- `phase14` 已完成正式业务 API/query parity 收口；`phase15` 与 `phase16` 只继承其正式宿主清单、compat 保留条件、退出前提与回滚基线
 
 ## 三、共享判断标准
 - 默认优先以 `server/lib/legacy-route-inventory.ts` 作为旧 API 分类真相源，而不是在 `phase14` 中另建第二套路由清单。
@@ -59,6 +61,7 @@
 - `server/routes/meters.ts`
 - `server/routes/renters.ts`
 - `server/routes/meter-readings.ts`
+- `server/routes/utility-readings.ts`
 - `src/app/api/**/route.ts`
 
 ### 4.2 查询与事务输入
@@ -242,8 +245,8 @@
 
 ### 6.3 当前阶段含义
 - `phase14` 的“完成”不等于旧 `src/app/api/*` 已全部删除。
-- `phase14` 的当前轮纠偏目标是先把冻结与实施输入层和真实迁移/收口层拆开，并把分类、顺序、宿主解释与退出条件固定为后续真实迁移波次的单一上游输入。
-- `phase14` 的阶段完成不得只以冻结分类、顺序、宿主解释与退出条件视为通过；必须继续完成真实 API/query drain 实施。
+- `phase14` 的当前轮已完成纠偏、真实迁移与阶段收口，并把分类、顺序、宿主解释与退出条件固定为后续阶段的单一上游输入。
+- `phase14` 的阶段完成已同时满足：冻结与实施输入层完成、真实 API/query drain 完成、route inventory 审计完成，且旧 `src/app/api/*` 中不再存在承担正式业务主职责的 retained-legacy 路由。
 
 ## 七、页面影响共享口径
 ### 7.1 页面仍是 `phase14` 的直接输入
@@ -312,11 +315,13 @@
 - 正式 API/query 宿主清单
 - route inventory 分类与 drain 顺序
 - compat 保留原因与退出条件
+- `phase15` 只继承上述输出推进 PWA parity，不再承担任何正式业务 API 迁移职责
 
 ### 9.2 对 `phase16` 的共享输出
 - 旧 Next API 可删除前提
 - legacy 回滚基线与 route exit 条件
 - 正式宿主、compat-wrapper 与 retained-legacy 的最终分类记录
+- `phase16` 只继承上述输出推进最终验收、cutover 与 legacy 退出，不再承担任何正式业务 API 迁移职责
 
 ## 十、允许路线
 - 允许继续复用 `server/lib/legacy-route-inventory.ts` 作为 route inventory 真相源
@@ -350,12 +355,12 @@
 - 至少确认当前文档轮次不会把 `phase15` PWA parity 或 `phase16` cutover/legacy-exit 写成本轮完成条件
 
 ## 十三、阶段结论
-`phase14-api-query-parity-and-legacy-route-drain` 的共享基线价值不在于“立刻清零所有旧 API”，而在于：
+`phase14-api-query-parity-and-legacy-route-drain` 的共享基线价值不在于“立刻删空所有旧 API 文件”，而在于：
 
 ```text
 先把 route inventory、query host、compat 边界和 route drain 的判断标准冻结，
-再让后续 /spec 和实现建立在单一 API 真相之上，
-并为最终 legacy 退出保留可验证、可回滚、可审计的前置记录。
+再完成真实 API/query drain 与最终审计，
+并为后续 PWA parity、最终验收与 legacy 退出保留可验证、可回滚、可审计的前置记录。
 ```
 
 这能确保：
@@ -363,4 +368,5 @@
 - 不让已有 Hono 宿主与仍存旧 Next API 的过渡状态继续混写
 - 不让页面 parity 输出在 `phase14` 中丢失
 - 不让后续 `phase15`、`phase16` 继承一套无法审计的 API 退出基线
-- 不让 `phase14-01 ~ phase14-04` 的冻结与输入结果再次被误读为整个 `phase14` 已完成
+- 不让 `phase14-01 ~ phase14-04` 的冻结与输入结果再次被误读为整个 `phase14` 的当前运行时状态
+- 不让“旧 `src/app/api/*` 文件仍存在”被误读为“正式业务 retained-legacy 主职责仍未清零”

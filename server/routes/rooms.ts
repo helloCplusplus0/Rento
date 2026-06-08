@@ -16,6 +16,7 @@ import { optimizedRoomQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import { buildingQueries, meterQueries, roomQueries } from '@/lib/queries'
 import {
+  formatBatchUpdateResponse,
   formatRoomSearchResponse,
   parseRoomQueryParams,
   transformRoomDecimalFields,
@@ -682,6 +683,39 @@ export function createRoomRoutes(env: MinixServerEnv) {
 
       throw error
     }
+  })
+
+  routeApp.patch('/', async (c) => {
+    const body =
+      (await readCompatJsonBody<{
+        roomIds?: string[]
+        status?: RoomStatus
+        operator?: string
+      }>(c, env)) ?? {}
+    const { roomIds, status, operator } = body
+
+    if (!Array.isArray(roomIds) || roomIds.length === 0) {
+      return c.json({ error: 'Room IDs must be a non-empty array' }, 400)
+    }
+
+    if (!status || !VALID_ROOM_STATUSES.includes(status)) {
+      return c.json({ error: 'Invalid room status' }, 400)
+    }
+
+    if (roomIds.length > 100) {
+      return c.json({ error: 'Cannot update more than 100 rooms at once' }, 400)
+    }
+
+    const result = await roomQueries.batchUpdateStatus(roomIds, status, operator)
+    const response = formatBatchUpdateResponse(result)
+
+    await revalidateMutationPaths({
+      scopes: ['dashboard', 'rooms', 'contracts'],
+      executionRuntime: 'hono-runtime',
+      runtimeName: env.runtimeName,
+    })
+
+    return c.json(response)
   })
 
   routeApp.get('/:id', async (c) => {
