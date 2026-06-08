@@ -1,13 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+import {
+  backWithHostNavigation,
+  pushWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
 
 import { RenterForm } from '@/components/business/RenterForm'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
-export function RenterCreatePage() {
-  const router = useRouter()
+interface RenterCreatePageProps {
+  navigation?: HostNavigationAdapter
+}
+
+export function RenterCreatePage({ navigation }: RenterCreatePageProps) {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (data: any) => {
@@ -26,7 +34,7 @@ export function RenterCreatePage() {
         // API返回格式: { success: true, data: renter, message: '租客创建成功' }
         const newRenter = result.data
         if (newRenter && newRenter.id) {
-          router.push(`/renters/${newRenter.id}`)
+          pushWithHostNavigation(`/renters/${newRenter.id}`, navigation)
         } else {
           console.error('API返回的租客数据格式错误:', result)
           alert('创建成功，但跳转失败，请手动刷新页面')
@@ -44,7 +52,7 @@ export function RenterCreatePage() {
   }
 
   const handleCancel = () => {
-    router.back()
+    backWithHostNavigation('/renters', navigation)
   }
 
   return (

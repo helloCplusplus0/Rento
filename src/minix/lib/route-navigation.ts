@@ -1,5 +1,7 @@
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom'
 
+import { minixClientEnv } from '../env'
+
 const MINIX_ROUTER_PATHS = new Set([
   '/',
   '/rooms',
@@ -10,6 +12,10 @@ const MINIX_ROUTER_PATHS = new Set([
   '/contracts/new',
   '/bills',
   '/bills/create',
+  '/renters',
+  '/renters/new',
+  '/meter-readings/batch',
+  '/meter-readings/history',
   '/settings',
   '/login',
   '/offline',
@@ -27,20 +33,17 @@ const MINIX_ROUTER_PATH_PATTERNS = [
   /^\/contracts\/[^/]+\/checkout$/,
   /^\/bills\/[^/]+$/,
   /^\/bills\/[^/]+\/edit$/,
+  /^\/renters\/[^/]+$/,
+  /^\/renters\/[^/]+\/edit$/,
 ] as const
 
 const LEGACY_DOCUMENT_PATH_PATTERNS = [
-  /^\/renters(?:\/.*)?$/,
   /^\/bills\/stats$/,
-  /^\/meter-readings(?:\/.*)?$/,
   /^\/system-health$/,
   /^\/data-consistency$/,
 ] as const
 
-const legacyAppOrigin =
-  typeof import.meta !== 'undefined'
-    ? import.meta.env.VITE_LEGACY_APP_ORIGIN?.trim() || ''
-    : ''
+const legacyAppOrigin = minixClientEnv.legacyAppOrigin
 
 function resolvePathname(href: string) {
   if (typeof window === 'undefined') {
@@ -99,10 +102,10 @@ function showUnsupportedPhaseBoundaryNotice(href: string) {
 }
 
 // Prefer the migrated phase13 routes inside React Router and only fall back to
-// document navigation for still-deferred legacy paths. At the current boundary
-// this includes renters, meter readings, governance pages, and `/bills/stats`
-// because the stats page remains a phase13 P2 route instead of a phase13-03
-// migrated screen.
+// document navigation for genuinely deferred legacy pages. After phase13-04,
+// `/renters/**` and `/meter-readings/**` are owned by the minix router; the
+// remaining document fallback is intentionally limited to `/bills/stats` and
+// the ops-governance pages until their dedicated follow-up tasks land.
 export function navigateToMinixOrDocument(
   navigate: NavigateFunction,
   href: string,

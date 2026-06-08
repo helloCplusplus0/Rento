@@ -1,9 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { AlertTriangle, CheckCircle, Save } from 'lucide-react'
 
+import type { BatchMeterReadingRoom } from '@/minix/lib/primary-route-data'
+import {
+  pushWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
 import { MeterTypeIcon } from '@/components/business/MeterTypeIcon'
 import { useSettings } from '@/hooks/useSettings'
 import { validateMeterReadingInput } from '@/lib/meter-utils'
@@ -11,41 +15,10 @@ import { batchMeterReadingMobileStyles } from '@/components/pages/batch-meter-re
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
-// 临时类型定义，后续会从实际API获取
-interface Room {
-  id: string
-  roomNumber: string
-  building: {
-    name: string
-  }
-  meters: Meter[]
-  activeContract?: {
-    id: string
-    contractNumber: string
-    renter: any
-    startDate: string
-    endDate: string
-    status: string
-  } | null
-}
-
-interface Meter {
-  id: string
-  displayName: string
-  meterNumber?: string
-  meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
-  unitPrice: number
-  unit: string
-  isActive: boolean
-  lastReading?: number
-  lastReadingDate?: Date
-  contractId?: string | null // 关联的合同ID
-  contractNumber?: string | null // 合同编号
-  renterName?: string | null // 租客姓名
-  contractStatus?: string | null // 合同状态
-}
+type Room = BatchMeterReadingRoom
+type Meter = Room['meters'][number]
 
 interface MeterReading {
   meterId: string
@@ -56,16 +29,23 @@ interface MeterReading {
   remarks?: string
 }
 
+interface BatchMeterReadingPageProps {
+  initialRooms?: Room[]
+  navigation?: HostNavigationAdapter
+}
+
 /**
  * 批量抄表页面组件
  * 支持多房间多仪表的批量录入
  */
-export function BatchMeterReadingPage() {
-  const router = useRouter()
+export function BatchMeterReadingPage({
+  initialRooms,
+  navigation,
+}: BatchMeterReadingPageProps = {}) {
   const { settings } = useSettings()
-  const [rooms, setRooms] = useState<Room[]>([])
+  const [rooms, setRooms] = useState<Room[]>(() => initialRooms ?? [])
   const [readings, setReadings] = useState<Record<string, MeterReading>>({})
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(initialRooms === undefined)
   const [submitting, setSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -119,8 +99,14 @@ export function BatchMeterReadingPage() {
 
   // 加载房间和仪表数据
   useEffect(() => {
-    loadRoomsWithMeters()
-  }, [])
+    if (initialRooms !== undefined) {
+      setRooms(initialRooms)
+      setLoading(false)
+      return
+    }
+
+    void loadRoomsWithMeters()
+  }, [initialRooms])
 
   const loadRoomsWithMeters = async () => {
     try {
@@ -293,7 +279,7 @@ export function BatchMeterReadingPage() {
 
         // 延迟跳转，让用户看到提示
         setTimeout(() => {
-          router.push('/meter-readings/history')
+          navigateToHistory()
         }, 1000)
       } else {
         throw new Error(result.error || '提交失败')
@@ -316,6 +302,10 @@ export function BatchMeterReadingPage() {
     : aggregationMode === 'AGGREGATED'
       ? '同一房间的多个仪表将生成一个聚合账单，便于统一管理。'
       : '每个仪表将生成独立账单，便于逐表追踪费用。'
+
+  const navigateToHistory = () => {
+    pushWithHostNavigation('/meter-readings/history', navigation)
+  }
 
   if (loading) {
     return (

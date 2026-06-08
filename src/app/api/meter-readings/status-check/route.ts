@@ -1,84 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
-import {
-  getReadingStatusStats,
-  validateReadingBillConsistency,
-} from '@/lib/reading-status-sync'
+import { getMeterReadingStatusCheckPageClosureData } from '@/lib/page-closure-compat/meter-readings'
 
 /**
- * 抄表状态一致性检查API
+ * phase13-04 page-closure compat:
  * GET /api/meter-readings/status-check
+ *
+ * Next 与 Hono 共用 shared compat helper，保持抄表历史页状态巡检
+ * 仍处于页面闭环桥接范围，而不是提前声明正式 API cutover。
  */
-export async function GET() {
+export async function GET(_request: NextRequest) {
   try {
     console.log('[状态检查API] 开始执行状态一致性检查')
-
-    // 执行一致性验证
-    const validation = await validateReadingBillConsistency()
-
-    // 获取状态统计信息
-    const stats = await getReadingStatusStats()
-
-    const result = {
-      success: true,
-      data: {
-        isConsistent: validation.totalInconsistencies === 0,
-        inconsistencies: validation.totalInconsistencies,
-        details: {
-          orphanedReadings: validation.orphanedReadings.length,
-          inconsistentReadings: validation.inconsistentReadings.length,
-        },
-        orphanedReadings: validation.orphanedReadings.map((reading) => ({
-          id: reading.id,
-          meterName: reading.meter.displayName,
-          meterType: reading.meter.meterType,
-          status: reading.status,
-          isBilled: reading.isBilled,
-          contractId: reading.contractId,
-          roomInfo: reading.contract
-            ? {
-                roomNumber: reading.contract.room.roomNumber,
-                buildingName: reading.contract.room.building.name,
-                renterName: reading.contract.renter.name,
-              }
-            : null,
-          createdAt: reading.createdAt,
-          updatedAt: reading.updatedAt,
-        })),
-        inconsistentReadings: validation.inconsistentReadings.map(
-          (reading) => ({
-            id: reading.id,
-            meterName: reading.meter.displayName,
-            meterType: reading.meter.meterType,
-            status: reading.status,
-            isBilled: reading.isBilled,
-            billDetailsCount: reading.billDetails.length,
-            contractId: reading.contractId,
-            roomInfo: reading.contract
-              ? {
-                  roomNumber: reading.contract.room.roomNumber,
-                  buildingName: reading.contract.room.building.name,
-                  renterName: reading.contract.renter.name,
-                }
-              : null,
-            createdAt: reading.createdAt,
-            updatedAt: reading.updatedAt,
-          })
-        ),
-        statistics: stats,
-      },
-      message:
-        validation.totalInconsistencies === 0
-          ? '所有抄表记录状态一致'
-          : `发现 ${validation.totalInconsistencies} 个状态不一致的记录`,
-    }
-
+    const result = await getMeterReadingStatusCheckPageClosureData()
     console.log(`[状态检查API] 完成 - ${result.message}`)
-
-    return NextResponse.json(result)
+    return Response.json(result)
   } catch (error) {
     console.error('[状态检查API] 执行失败:', error)
-    return NextResponse.json(
+    return Response.json(
       {
         success: false,
         error: 'Status check failed',

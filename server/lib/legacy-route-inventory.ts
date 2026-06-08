@@ -23,6 +23,7 @@ export interface LegacyRouteOperation {
   category: LegacyRouteCategory
   phase10Input: Phase10InputBucket
   formalHosts: readonly string[]
+  bridgeHosts?: readonly string[]
   domainServicePaths: readonly string[]
   keepReason: string
   exitCondition: string
@@ -423,15 +424,19 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts'],
+        bridgeHosts: ['server/routes/meter-readings.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/meter-readings.ts',
+          'src/lib/queries.ts',
+        ],
         keepReason:
-          '抄表列表查询仍由旧 Next.js 查询宿主承接；phase09-04 仅迁入正式写入口与详情/关联账单追溯。',
+          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared meter-reading page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
         exitCondition:
-          '待 phase10 冻结抄表查询宿主、分页模型与过滤语义后，再评估迁移或保留只读参考。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
       {
         methods: ['POST'],
@@ -489,14 +494,19 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        bridgeHosts: ['server/routes/meter-readings.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/meter-readings.ts',
+          'src/lib/reading-status-sync.ts',
+        ],
+        keepReason:
+          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared meter-reading page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
         exitCondition:
-          '待后续阶段统一治理抄表状态巡检与辅助入口时，再评估迁移或归档。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -507,15 +517,19 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
+        bridgeHosts: ['server/routes/meter-readings.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/meter-readings.ts',
+          'src/lib/reading-status-sync.ts',
+        ],
         keepReason:
-          '抄表 repair-status 为治理/修复辅助入口，本阶段明确不迁治理接口。',
+          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared meter-reading page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
         exitCondition:
-          '待后续治理阶段明确 repair-status 归属后，再决定脚本化、归档或迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -723,50 +737,47 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
   {
     filePath: 'src/app/api/renters/route.ts',
     routePath: '/api/renters',
-    kind: 'reference-data',
+    kind: 'domain-mainline',
     operations: [
       {
-        methods: ['GET'],
+        methods: ['GET', 'POST'],
         category: 'compat-wrapper',
         phase10Input: 'keep-compat',
-        formalHosts: ['server/routes/renters.ts'],
-        domainServicePaths: ['src/lib/optimized-queries.ts'],
-        keepReason:
-          'phase13-03 为合同创建 loader 最小补齐 GET /api/renters，正式列表查询已迁入统一 Hono 宿主；旧 Next 入口继续保留为 compat 参考。',
-        exitCondition:
-          '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/renters/route.ts 的 GET compat 入口可移除。',
-        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
-      },
-      {
-        methods: ['POST'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts'],
+        bridgeHosts: ['server/routes/renters.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/renters.ts',
+          'src/lib/optimized-queries.ts',
+          'src/lib/queries.ts',
+        ],
         keepReason:
-          '租客创建仍为旧运行线存量接口，尚未冻结统一 Hono 正式写入口与合同联动边界。',
+          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared renter page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
         exitCondition:
-          '待后续阶段明确租客正式写入口与相关门禁后，再评估迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
   {
     filePath: 'src/app/api/renters/[id]/route.ts',
     routePath: '/api/renters/:id',
-    kind: 'reference-data',
+    kind: 'domain-mainline',
     operations: [
       {
         methods: ['GET', 'PUT', 'DELETE'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts'],
+        bridgeHosts: ['server/routes/renters.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/renters.ts',
+          'src/lib/queries.ts',
+        ],
         keepReason:
-          '租客详情与删改仍为旧运行线接口，尚未冻结统一 Hono 正式宿主。',
+          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared renter page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
         exitCondition:
-          '待后续阶段明确租客正式宿主、删除门禁与合同关联规则后，再评估迁移。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },
@@ -777,14 +788,19 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
     operations: [
       {
         methods: ['GET'],
-        category: 'retained-legacy',
-        phase10Input: 'defer-unmigrated',
+        category: 'compat-wrapper',
+        phase10Input: 'keep-compat',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts'],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        bridgeHosts: ['server/routes/renters.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/renters.ts',
+          'src/lib/queries.ts',
+        ],
+        keepReason:
+          'phase13-04 页面闭环期间，旧 Next 入口与 Hono runtime bridge 共同复用 shared renter page-closure compat helper；该双入口 bridge 尚未进入 phase14 正式 cutover。',
         exitCondition:
-          '待 phase10 以后统一处理租客统计与仪表板查询宿主时，再决定去向。',
-        rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
+          '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 compat wrapper 退出。',
+        rollbackCondition: KEEP_COMPAT_ROLLBACK_CONDITION,
       },
     ],
   },

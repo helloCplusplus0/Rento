@@ -485,6 +485,7 @@ export const optimizedContractQueries = {
 
     // 基础筛选条件
     if (status) where.status = status
+    // renterId must remain an exact contract FK filter, independent from fuzzy search.
     if (renterId) where.renterId = renterId
     if (buildingId) where.room = { buildingId }
 

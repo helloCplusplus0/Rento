@@ -34,6 +34,7 @@ async function handleGetContracts(request: NextRequest) {
     search: searchQuery = '',
     status,
     buildingId,
+    renterId,
     isExpiringSoon,
   } = queryParams
 
@@ -55,6 +56,8 @@ async function handleGetContracts(request: NextRequest) {
         : {}),
       ...(searchQuery ? { search: searchQuery as string } : {}),
       ...(buildingId ? { buildingId: buildingId as string } : {}),
+      // Keep renterId on the exact contract.renterId path; do not merge it into fuzzy search.
+      ...(renterId ? { renterId: renterId as string } : {}),
       ...(expiringDays ? { expiringDays } : {}),
     }
   )

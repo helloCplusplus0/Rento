@@ -3,6 +3,12 @@ import {
   isMeterReadingDomainValidationError,
   meterReadingDomainService,
 } from '@/lib/domain/meters'
+import {
+  getMeterReadingsPageClosureData,
+  getMeterReadingStatusCheckPageClosureData,
+  logMeterReadingRepairFailure,
+  repairMeterReadingStatusPageClosureData,
+} from '@/lib/page-closure-compat/meter-readings'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import {
@@ -33,10 +39,42 @@ const LEGACY_COMPAT = {
     'src/app/api/meters/[meterId]/status/route.ts',
   ] as const,
   reason:
-    'phase09-04 起由 server/routes/meter-readings.ts 与 src/lib/domain/meters 承接抄表写入、详情、相关账单追溯、终抄语义与禁删规则；旧 Next 入口仅保留 compat wrapper。',
+    'phase09-04 已冻结抄表写入/详情主链；phase13-04 额外补的 history/status/repair 仅作为 page-closure compat bridge，由 shared helper 同时供 Next 与 Hono 复用。',
   exitCondition:
-    '当前端与所有存量调用均切换到统一 Hono 宿主后，旧 src/app/api/meter-readings/* 与 src/app/api/utility-readings/route.ts compat wrapper 可移除。',
+    '待 phase13 页面闭环、phase14 `/api/meter-readings*` drain 与最终 cutover 审核完成后，再评估 history/status/repair compat helper 与旧入口退出。',
 } as const
+
+function parseMeterReadingHistoryQuery(url: string) {
+  const searchParams = new URL(url).searchParams
+  const hasExplicitPagination =
+    searchParams.has('page') || searchParams.has('limit')
+  const page = hasExplicitPagination
+    ? Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10))
+    : undefined
+  const limit = hasExplicitPagination
+    ? Math.min(
+        100,
+        Math.max(1, Number.parseInt(searchParams.get('limit') || '20', 10))
+      )
+    : undefined
+
+  return {
+    page,
+    limit,
+    meterId: searchParams.get('meterId') || undefined,
+    contractId: searchParams.get('contractId') || undefined,
+    roomId: searchParams.get('roomId') || undefined,
+    recordType: searchParams.get('recordType') || undefined,
+    startDate: searchParams.get('startDate') || undefined,
+    endDate: searchParams.get('endDate') || undefined,
+    status: searchParams.get('status') || undefined,
+    meterType: searchParams.get('meterType') || undefined,
+    search: searchParams.get('search') || undefined,
+    operator: searchParams.get('operator') || undefined,
+    dateRange: searchParams.get('dateRange') || undefined,
+  }
+}
+
 
 function appendMeterReadingsFallback(
   routeApp: Hono<AuthAppEnv>,
@@ -46,7 +84,7 @@ function appendMeterReadingsFallback(
     return jsonApiError(
       c,
       notImplementedError(
-        'phase09-04 仅迁入抄表写入、详情、相关账单追溯与禁删语义；其余抄表治理/辅助接口仍由 compat wrapper 或后续子任务承接。',
+          'phase09-04 仅冻结抄表写入、详情、相关账单追溯与禁删语义；phase13-04 额外补的 history/status/repair 只用于 Minix page-closure bridge，正式 drain 仍留给 phase14。',
         {
           phase: 'phase09-04',
           routeKey: 'meter-readings',
@@ -70,6 +108,14 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
   const routeApp = new Hono<AuthAppEnv>()
 
   routeApp.use('*', requireAuth())
+
+  routeApp.get('/', async (c) => {
+    const response = await getMeterReadingsPageClosureData(
+      parseMeterReadingHistoryQuery(c.req.url)
+    )
+
+    return c.json(response)
+  })
 
   routeApp.post('/', async (c) => {
     const body = (await readJsonBody<{
@@ -137,6 +183,52 @@ export function createMeterReadingRoutes(env: MinixServerEnv) {
       }
 
       throw error
+    }
+  })
+
+  routeApp.get('/status-check', async (c) => {
+    try {
+      console.log('[状态检查API] 开始执行状态一致性检查')
+
+      const result = await getMeterReadingStatusCheckPageClosureData()
+
+      console.log(`[状态检查API] 完成 - ${result.message}`)
+
+      return c.json(result)
+    } catch (error) {
+      console.error('[状态检查API] 执行失败:', error)
+
+      return c.json(
+        {
+          success: false,
+          error: 'Status check failed',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500
+      )
+    }
+  })
+
+  routeApp.post('/repair-status', async (c) => {
+    try {
+      console.log('[状态修复API] 开始执行状态修复操作')
+
+      const result = await repairMeterReadingStatusPageClosureData()
+
+      console.log(`[状态修复API] 完成 - ${result.message}`)
+
+      return c.json(result)
+    } catch (error) {
+      await logMeterReadingRepairFailure(error)
+
+      return c.json(
+        {
+          success: false,
+          error: 'Status repair failed',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500
+      )
     }
   })
 

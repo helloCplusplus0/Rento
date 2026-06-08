@@ -2,6 +2,12 @@ import {
   calculateDaysUntilContractExpiry,
   isContractExpiringSoon,
 } from '@/lib/contract-alert-semantics'
+import {
+  DEFAULT_METER_READING_HISTORY_FILTERS,
+  type MeterReadingHistoryFilters,
+  type MeterReadingHistoryRecord,
+  type MeterReadingRecordType,
+} from '@/lib/meter-reading-history'
 import type {
   ContractWithDetailsForClient,
   RenterWithContractsForClient,
@@ -88,6 +94,29 @@ export interface EditRoomRouteData {
 
 export interface AddRoomRouteData {
   buildings: any[]
+}
+
+export interface RenterListStats {
+  totalCount: number
+  activeCount: number
+  inactiveCount: number
+  newThisMonth: number
+}
+
+export interface RenterListRouteData {
+  initialSearchQuery: string
+  renters: RenterWithContractsForClient[]
+  stats: RenterListStats
+}
+
+export interface RenterDetailRouteData {
+  renter: RenterWithContractsForClient
+}
+
+export type RenterCreateRouteData = null
+
+export interface RenterEditRouteData {
+  renter: RenterWithContractsForClient
 }
 
 export interface ContractListRouteData {
@@ -209,6 +238,48 @@ export interface SettingsRouteData {
   settings: Partial<AppSettings>
 }
 
+export interface BatchMeterReadingMeter {
+  id: string
+  displayName: string
+  meterNumber?: string
+  meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
+  unitPrice: number
+  unit: string
+  isActive: boolean
+  lastReading?: number
+  lastReadingDate?: string | null
+  contractId?: string | null
+  contractNumber?: string | null
+  renterName?: string | null
+  contractStatus?: string | null
+}
+
+export interface BatchMeterReadingRoom {
+  id: string
+  roomNumber: string
+  building: {
+    name: string
+  }
+  meters: BatchMeterReadingMeter[]
+  activeContract?: {
+    id: string
+    contractNumber: string
+    renter: unknown
+    startDate: string
+    endDate: string
+    status: string
+  } | null
+}
+
+export interface MeterReadingBatchRouteData {
+  rooms: BatchMeterReadingRoom[]
+}
+
+export interface MeterReadingHistoryRouteData {
+  readings: MeterReadingHistoryRecord[]
+  initialFilters: MeterReadingHistoryFilters
+}
+
 function buildApiUrl(path: string) {
   const basePath = minixClientEnv.apiBaseUrl.replace(/\/+$/, '')
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -218,6 +289,11 @@ function buildApiUrl(path: string) {
 
 function normalizeSearchQuery(value: string | null) {
   return value?.trim() || ''
+}
+
+function normalizeSelectFilterValue(value: string | null) {
+  const normalized = value?.trim()
+  return normalized ? normalized : 'all'
 }
 
 function normalizeOptionalId(value: string | null) {
@@ -382,6 +458,10 @@ function normalizeRenterForClient(
   } as RenterWithContractsForClient
 }
 
+function isAbortLikeError(error: unknown) {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
 function normalizeContractForClient(contract: any): ContractWithDetailsForClient {
   return {
     ...normalizeContractSummaryForClient(contract),
@@ -406,6 +486,151 @@ function normalizeCheckoutMeter(meter: any) {
       meter.latestReading ?? meter.lastReading ?? meter.readings?.[0]?.currentReading
     ),
   }
+}
+
+function normalizeBatchMeterReadingMeter(
+  meter: any
+): BatchMeterReadingMeter {
+  return {
+    id: meter.id,
+    displayName: meter.displayName,
+    meterNumber: meter.meterNumber ?? undefined,
+    meterType: meter.meterType,
+    unitPrice: toNumberValue(meter.unitPrice),
+    unit: meter.unit,
+    isActive: Boolean(meter.isActive),
+    lastReading: toNumberValue(meter.lastReading),
+    lastReadingDate: meter.lastReadingDate
+      ? new Date(meter.lastReadingDate).toISOString()
+      : null,
+    contractId: meter.contractId ?? null,
+    contractNumber: meter.contractNumber ?? null,
+    renterName: meter.renterName ?? null,
+    contractStatus: meter.contractStatus ?? null,
+  }
+}
+
+function normalizeBatchMeterReadingRoom(room: any): BatchMeterReadingRoom {
+  return {
+    id: room.id,
+    roomNumber: room.roomNumber,
+    building: {
+      name: room.building?.name ?? '',
+    },
+    // 批量抄表默认只承接激活中的仪表，保持旧页面展示与提交语义一致。
+    meters: (room.meters ?? [])
+      .map((meter: any) => normalizeBatchMeterReadingMeter(meter))
+      .filter((meter: BatchMeterReadingMeter) => meter.isActive),
+    activeContract: room.activeContract
+      ? {
+          id: room.activeContract.id,
+          contractNumber: room.activeContract.contractNumber,
+          renter: room.activeContract.renter,
+          startDate: room.activeContract.startDate,
+          endDate: room.activeContract.endDate,
+          status: room.activeContract.status,
+        }
+      : null,
+  }
+}
+
+function normalizeMeterReadingHistoryRecord(
+  reading: any
+): MeterReadingHistoryRecord {
+  return {
+    ...reading,
+    previousReading: toNullableNumberValue(reading.previousReading),
+    currentReading: toNumberValue(reading.currentReading),
+    usage: toNumberValue(reading.usage),
+    unitPrice: toNumberValue(reading.unitPrice),
+    amount: toNumberValue(reading.amount),
+    readingDate: reading.readingDate,
+    period: reading.period ?? undefined,
+    operator: reading.operator ?? undefined,
+    remarks: reading.remarks ?? undefined,
+    recordType: reading.recordType ?? null,
+    isBilled: Boolean(reading.isBilled),
+    createdAt: reading.createdAt,
+    updatedAt: reading.updatedAt,
+    meter: reading.meter
+      ? {
+          ...reading.meter,
+          meterNumber: reading.meter.meterNumber ?? undefined,
+          room: reading.meter.room
+            ? {
+                ...reading.meter.room,
+                building: reading.meter.room.building
+                  ? {
+                      name: reading.meter.room.building.name,
+                    }
+                  : undefined,
+              }
+            : undefined,
+        }
+      : undefined,
+    contract: reading.contract
+      ? {
+          renter: reading.contract.renter
+            ? {
+                name: reading.contract.renter.name,
+              }
+            : undefined,
+        }
+      : undefined,
+  }
+}
+
+function normalizeMeterReadingHistoryFilters(
+  requestUrl: string
+): MeterReadingHistoryFilters {
+  const url = new URL(requestUrl)
+  const recordType = url.searchParams.get('recordType')
+
+  return {
+    search: normalizeSearchQuery(url.searchParams.get('search')),
+    meterType: normalizeSelectFilterValue(url.searchParams.get('meterType')),
+    status: normalizeSelectFilterValue(url.searchParams.get('status')),
+    dateRange: normalizeSelectFilterValue(url.searchParams.get('dateRange')),
+    operator: normalizeSearchQuery(url.searchParams.get('operator')),
+    recordType:
+      recordType === 'INITIAL_BASELINE' ||
+      recordType === 'REGULAR_READING' ||
+      recordType === 'CHECKOUT_FINAL'
+        ? recordType
+        : 'all',
+  }
+}
+
+function buildMeterReadingHistorySearchParams(
+  filters: MeterReadingHistoryFilters
+) {
+  const searchParams = new URLSearchParams()
+
+  if (filters.search) {
+    searchParams.set('search', filters.search)
+  }
+
+  if (filters.meterType !== 'all') {
+    searchParams.set('meterType', filters.meterType)
+  }
+
+  if (filters.status !== 'all') {
+    searchParams.set('status', filters.status)
+  }
+
+  if (filters.dateRange !== 'all') {
+    searchParams.set('dateRange', filters.dateRange)
+  }
+
+  if (filters.operator) {
+    searchParams.set('operator', filters.operator)
+  }
+
+  if (filters.recordType !== 'all') {
+    searchParams.set('recordType', filters.recordType)
+  }
+
+  return searchParams
 }
 
 function getSafeStatusText(status: number) {
@@ -581,7 +806,10 @@ async function fetchBuildings(options: RequestOptions = {}) {
   return fetchJson<any[]>('/buildings', '楼栋列表加载失败', options)
 }
 
-async function fetchAllContractPages(options: RequestOptions = {}) {
+async function fetchAllContractPages(
+  filters: { renterId?: string } = {},
+  options: RequestOptions = {}
+) {
   const contracts: any[] = []
   let page = 1
   let totalPages = 1
@@ -591,6 +819,10 @@ async function fetchAllContractPages(options: RequestOptions = {}) {
       page: String(page),
       limit: String(PAGE_LIMIT),
     })
+
+    if (filters.renterId) {
+      searchParams.set('renterId', filters.renterId)
+    }
 
     const payload = await fetchApiEnvelope<ContractListResponse>(
       `/contracts?${searchParams.toString()}`,
@@ -633,6 +865,48 @@ async function fetchAllRenterPages(options: RequestOptions = {}) {
   }
 
   return renters
+}
+
+async function fetchRenterStats(options: RequestOptions = {}) {
+  return fetchJson<RenterListStats>('/renters/stats', '租客统计加载失败', options)
+}
+
+function buildRenterListStats(
+  renters: RenterWithContractsForClient[]
+): RenterListStats {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  const activeCount = renters.filter((renter) =>
+    (renter.contracts ?? []).some((contract) => contract.status === 'ACTIVE')
+  ).length
+
+  return {
+    totalCount: renters.length,
+    activeCount,
+    inactiveCount: renters.length - activeCount,
+    newThisMonth: renters.filter((renter) => {
+      const createdAt = toDateValue(renter.createdAt)
+      return Boolean(createdAt && createdAt >= startOfMonth)
+    }).length,
+  }
+}
+
+async function fetchRenterDetail(
+  renterId: string,
+  options: RequestOptions = {}
+): Promise<RenterWithContractsForClient> {
+  try {
+    const renter = await fetchJson<any>(
+      `/renters/${renterId}`,
+      '租客详情加载失败',
+      options
+    )
+
+    return normalizeRenterForClient(renter, { includeContracts: true })
+  } catch (error) {
+    remapRouteDataError(error, '租客不存在或已被删除', '租客详情加载失败')
+  }
 }
 
 async function fetchContractDetail(contractId: string, options: RequestOptions = {}) {
@@ -718,6 +992,39 @@ async function fetchAllBillPages(
   }
 
   return bills
+}
+
+async function fetchBatchMeterReadingRooms(
+  options: RequestOptions = {}
+): Promise<BatchMeterReadingRoom[]> {
+  const rooms = await fetchJson<any[]>(
+    '/rooms?includeMeters=true',
+    '批量抄表房间数据加载失败',
+    options
+  )
+
+  return rooms
+    .map((room) => normalizeBatchMeterReadingRoom(room))
+    .filter((room) => room.meters.length > 0)
+}
+
+async function fetchMeterReadingHistory(
+  filters: MeterReadingHistoryFilters,
+  options: RequestOptions = {}
+): Promise<MeterReadingHistoryRecord[]> {
+  const searchParams = buildMeterReadingHistorySearchParams(filters)
+  const path = searchParams.size
+    ? `/meter-readings?${searchParams.toString()}`
+    : '/meter-readings'
+  const payload = await fetchJson<{ data?: any[] }>(
+    path,
+    '抄表历史加载失败',
+    options
+  )
+
+  return Array.isArray(payload.data)
+    ? payload.data.map((reading) => normalizeMeterReadingHistoryRecord(reading))
+    : []
 }
 
 async function fetchBillDetail(billId: string, options: RequestOptions = {}) {
@@ -885,14 +1192,73 @@ export async function loadAddRoomRouteData(
   }
 }
 
+export async function loadRenterListRouteData(
+  requestUrl: string,
+  options: RequestOptions = {}
+): Promise<RenterListRouteData> {
+  const url = new URL(requestUrl)
+  const initialSearchQuery = normalizeSearchQuery(url.searchParams.get('search'))
+  const rentersPromise = fetchAllRenterPages(options)
+  const statsPromise = fetchRenterStats(options).catch((error) => {
+    if (isAbortLikeError(error)) {
+      throw error
+    }
+
+    // phase13-04 safe fallback: keep the renter list route usable when the
+    // legacy-only stats endpoint is temporarily unavailable.
+    return null
+  })
+  const renters = await rentersPromise
+  const stats = (await statsPromise) ?? buildRenterListStats(renters)
+
+  return {
+    initialSearchQuery,
+    renters,
+    stats,
+  }
+}
+
+export async function loadRenterDetailRouteData(
+  renterId: string,
+  options: RequestOptions = {}
+): Promise<RenterDetailRouteData> {
+  const renter = await fetchRenterDetail(renterId, options)
+
+  return {
+    renter,
+  }
+}
+
+export async function loadRenterCreateRouteData(
+  _options: RequestOptions = {}
+): Promise<RenterCreateRouteData> {
+  return null
+}
+
+export async function loadRenterEditRouteData(
+  renterId: string,
+  options: RequestOptions = {}
+): Promise<RenterEditRouteData> {
+  try {
+    const renter = await fetchRenterDetail(renterId, options)
+
+    return {
+      renter,
+    }
+  } catch (error) {
+    remapRouteDataError(error, '租客不存在或已被删除', '编辑租客数据加载失败')
+  }
+}
+
 export async function loadContractListRouteData(
   requestUrl: string,
   options: RequestOptions = {}
 ): Promise<ContractListRouteData> {
   const url = new URL(requestUrl)
   const initialSearchQuery = normalizeSearchQuery(url.searchParams.get('search'))
+  const renterId = normalizeOptionalId(url.searchParams.get('renterId'))
   const [contracts, settings] = await Promise.all([
-    fetchAllContractPages(options),
+    fetchAllContractPages({ renterId }, options),
     fetchApiEnvelope<Partial<AppSettings>>('/settings', '设置加载失败', options),
   ])
   const contractExpiryAlertDays = Number(settings.contractExpiryAlertDays) || 30
@@ -1041,5 +1407,28 @@ export async function loadSettingsRouteData(
 
   return {
     settings,
+  }
+}
+
+export async function loadMeterReadingBatchRouteData(
+  options: RequestOptions = {}
+): Promise<MeterReadingBatchRouteData> {
+  const rooms = await fetchBatchMeterReadingRooms(options)
+
+  return {
+    rooms,
+  }
+}
+
+export async function loadMeterReadingHistoryRouteData(
+  requestUrl: string,
+  options: RequestOptions = {}
+): Promise<MeterReadingHistoryRouteData> {
+  const initialFilters = normalizeMeterReadingHistoryFilters(requestUrl)
+  const readings = await fetchMeterReadingHistory(initialFilters, options)
+
+  return {
+    readings,
+    initialFilters,
   }
 }

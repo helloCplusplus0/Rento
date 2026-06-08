@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 import {
   createSuccessResponse,
@@ -9,13 +9,15 @@ import {
   withApiErrorHandler,
 } from '@/lib/api-error-handler'
 import { ErrorType } from '@/lib/error-logger'
-import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
-import { optimizedRenterQueries } from '@/lib/optimized-queries'
-import { renterQueries } from '@/lib/queries'
+import {
+  createRenterPageClosureData,
+  getRentersPageClosureData,
+} from '@/lib/page-closure-compat/renters'
 
 /**
- * 获取租客列表API（支持搜索筛选）
- * GET /api/renters
+ * phase13-04 page-closure compat:
+ * Next 与 Hono 共同复用 shared compat helper，保持租客页面闭环期间
+ * 只有一套 API 语义，而不是把 server/routes 视为 phase14 正式 cutover。
  */
 async function handleGetRenters(request: NextRequest) {
   const queryParams = parseQueryParams(request)
@@ -29,46 +31,23 @@ async function handleGetRenters(request: NextRequest) {
     sortOrder = 'asc',
   } = queryParams
 
-  const result = await optimizedRenterQueries.findWithPagination(
-    { page, limit },
-    {
-      search: (search as string) || undefined,
-      contractStatus: (contractStatus as any) || undefined,
-      hasActiveContract:
-        hasActiveContract === true
-          ? true
-          : hasActiveContract === false
-            ? false
-            : undefined,
-      buildingId: (buildingId as string) || undefined,
-    },
-    {
-      field: sortField as 'name' | 'phone' | 'moveInDate' | 'createdAt',
-      order: sortOrder as 'asc' | 'desc',
-    }
-  )
-
-  const rentersData = result.data.map((renter) => ({
-    ...renter,
-    contracts: renter.contracts.map((contract: any) => ({
-      ...contract,
-      monthlyRent: Number(contract.monthlyRent),
-      totalRent: Number(contract.totalRent),
-      deposit: Number(contract.deposit),
-      keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
-      cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
-    })),
-  }))
-
-  return createSuccessResponse({
-    renters: rentersData,
-    total: result.total,
-    page: result.page,
-    limit: result.limit,
-    totalPages: result.totalPages,
-    hasNext: result.hasNext,
-    hasPrev: result.hasPrev,
+  const data = await getRentersPageClosureData({
+    page,
+    limit,
+    search: (search as string) || undefined,
+    contractStatus: (contractStatus as string) || undefined,
+    hasActiveContract:
+      hasActiveContract === true
+        ? true
+        : hasActiveContract === false
+          ? false
+          : undefined,
+    buildingId: (buildingId as string) || undefined,
+    sortField: sortField as 'name' | 'phone' | 'moveInDate' | 'createdAt',
+    sortOrder: sortOrder as 'asc' | 'desc',
   })
+
+  return createSuccessResponse(data)
 }
 
 export const GET = withApiErrorHandler(handleGetRenters, {
@@ -77,36 +56,29 @@ export const GET = withApiErrorHandler(handleGetRenters, {
   errorType: ErrorType.DATABASE_ERROR,
 })
 
-/**
- * 创建租客API
- * POST /api/renters
- */
 async function handlePostRenters(request: NextRequest) {
   const data = await parseRequestBody(request)
-
-  // 基础字段验证
   validateRequired(data, ['name', 'phone'])
 
-  // 检查手机号是否已存在
-  const existingRenter = await renterQueries.findByPhone(data.phone)
-  if (existingRenter) {
-    throw new Error('手机号已存在')
+  const result = await createRenterPageClosureData(data)
+  if ('error' in result) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: result.error,
+      },
+      { status: result.status }
+    )
   }
 
-  // 处理日期字段
-  const renterData = {
-    ...data,
-    moveInDate: data.moveInDate ? new Date(data.moveInDate) : undefined,
-  }
-
-  const renter = await renterQueries.create(renterData)
-
-  await revalidateMutationPaths({
-    scopes: ['dashboard', 'renters'],
-    detailPaths: [`/renters/${renter.id}`],
-  })
-
-  return createSuccessResponse(renter, '租客创建成功')
+  return NextResponse.json(
+    {
+      success: true,
+      data: result.data,
+      message: result.message,
+    },
+    { status: result.status }
+  )
 }
 
 export const POST = withApiErrorHandler(handlePostRenters, {

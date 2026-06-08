@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 interface RenterActionsProps {
   renter: any
   onEdit: () => void
+  onAddContract?: () => void
+  onViewContracts?: () => void
   onDelete: () => void
   isLoading?: boolean
 }
@@ -19,6 +21,8 @@ interface RenterActionsProps {
 export function RenterActions({
   renter,
   onEdit,
+  onAddContract,
+  onViewContracts,
   onDelete,
   isLoading,
 }: RenterActionsProps) {
@@ -27,11 +31,21 @@ export function RenterActions({
   )
 
   const handleAddContract = () => {
+    if (onAddContract) {
+      onAddContract()
+      return
+    }
+
     // 跳转到添加合同页面，并预选当前租客
     window.location.href = `/add/contract?renterId=${renter.id}`
   }
 
   const handleViewContracts = () => {
+    if (onViewContracts) {
+      onViewContracts()
+      return
+    }
+
     // 跳转到合同列表页面，筛选当前租客的合同
     window.location.href = `/contracts?renterId=${renter.id}`
   }

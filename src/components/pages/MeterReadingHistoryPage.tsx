@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   Calendar,
@@ -12,6 +12,12 @@ import {
   Wrench,
 } from 'lucide-react'
 
+import {
+  DEFAULT_METER_READING_HISTORY_FILTERS,
+  type MeterReadingHistoryFilters,
+  type MeterReadingHistoryRecord,
+  type MeterReadingRecordType,
+} from '@/lib/meter-reading-history'
 import { MeterTypeIcon } from '@/components/business/MeterTypeIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,13 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { meterReadingHistoryMobileStyles } from '@/components/pages/meter-reading-history-mobile-styles'
-
-type MeterReadingRecordType =
-  | 'INITIAL_BASELINE'
-  | 'REGULAR_READING'
-  | 'CHECKOUT_FINAL'
 
 const RECORD_TYPE_BADGE_CONFIG = {
   INITIAL_BASELINE: {
@@ -92,49 +93,8 @@ function resolveRecordTypeBadgeConfig(reading: Pick<
   }
 }
 
-interface MeterReadingHistory {
-  id: string
-  meterId: string
-  meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
-  previousReading: number
-  currentReading: number
-  usage: number
-  unitPrice: number
-  amount: number
-  readingDate: string
-  period?: string
-  status: 'PENDING' | 'CONFIRMED' | 'BILLED' | 'CANCELLED'
-  operator?: string
-  remarks?: string
-  recordType?: MeterReadingRecordType | string | null
-  isBilled: boolean
-  createdAt: string
-  // 关联数据
-  meter?: {
-    displayName: string
-    meterNumber?: string
-    room?: {
-      roomNumber: string
-      building?: {
-        name: string
-      }
-    }
-  }
-  contract?: {
-    renter?: {
-      name: string
-    }
-  }
-}
-
-interface FilterOptions {
-  search: string
-  meterType: string
-  status: string
-  dateRange: string
-  operator?: string
-  recordType: 'all' | MeterReadingRecordType
-}
+type MeterReadingHistory = MeterReadingHistoryRecord
+type FilterOptions = MeterReadingHistoryFilters
 
 interface StatusCheckResult {
   success: boolean
@@ -197,44 +157,63 @@ interface RepairResult {
  * 抄表历史页面组件
  * 提供抄表历史查询、筛选和管理功能
  */
-export function MeterReadingHistoryPage() {
-  const [readings, setReadings] = useState<MeterReadingHistory[]>([])
-  const [loading, setLoading] = useState(true)
+interface MeterReadingHistoryPageProps {
+  initialReadings?: MeterReadingHistory[]
+  initialFilters?: FilterOptions
+}
+
+function buildFilterRequestKey(filters: FilterOptions) {
+  return JSON.stringify(filters)
+}
+
+export function MeterReadingHistoryPage({
+  initialReadings,
+  initialFilters = DEFAULT_METER_READING_HISTORY_FILTERS,
+}: MeterReadingHistoryPageProps = {}) {
+  const [readings, setReadings] = useState<MeterReadingHistory[]>(
+    () => initialReadings ?? []
+  )
+  const [loading, setLoading] = useState(initialReadings === undefined)
   const [checking, setChecking] = useState(false)
   const [repairing, setRepairing] = useState(false)
   const [checkResult, setCheckResult] = useState<StatusCheckResult | null>(null)
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null)
-  const [filters, setFilters] = useState<FilterOptions>({
-    search: '',
-    meterType: 'all',
-    status: 'all',
-    dateRange: 'all',
-    operator: '',
-    recordType: 'all', // 新增：默认显示所有记录
-  })
+  const [filters, setFilters] = useState<FilterOptions>(initialFilters)
+  const initialRequestKeyRef = useRef(
+    initialReadings === undefined
+      ? null
+      : buildFilterRequestKey(initialFilters)
+  )
 
   // 加载抄表历史数据
   useEffect(() => {
-    loadReadingHistory()
+    const requestKey = buildFilterRequestKey(filters)
+
+    if (initialRequestKeyRef.current === requestKey) {
+      initialRequestKeyRef.current = null
+      return
+    }
+
+    void loadReadingHistory(filters)
   }, [filters])
 
-  const loadReadingHistory = async () => {
+  const loadReadingHistory = async (nextFilters: FilterOptions) => {
     try {
       setLoading(true)
       // 实际API调用 - 获取抄表历史记录
       const queryParams = new URLSearchParams()
-      if (filters.search) queryParams.append('search', filters.search)
+      if (nextFilters.search) queryParams.append('search', nextFilters.search)
       // 只有当值不是"all"时才添加到查询参数
-      if (filters.meterType && filters.meterType !== 'all')
-        queryParams.append('meterType', filters.meterType)
-      if (filters.status && filters.status !== 'all')
-        queryParams.append('status', filters.status)
-      if (filters.dateRange && filters.dateRange !== 'all')
-        queryParams.append('dateRange', filters.dateRange)
-      if (filters.operator && filters.operator !== 'all')
-        queryParams.append('operator', filters.operator)
-      if (filters.recordType && filters.recordType !== 'all') {
-        queryParams.append('recordType', filters.recordType)
+      if (nextFilters.meterType && nextFilters.meterType !== 'all')
+        queryParams.append('meterType', nextFilters.meterType)
+      if (nextFilters.status && nextFilters.status !== 'all')
+        queryParams.append('status', nextFilters.status)
+      if (nextFilters.dateRange && nextFilters.dateRange !== 'all')
+        queryParams.append('dateRange', nextFilters.dateRange)
+      if (nextFilters.operator && nextFilters.operator !== 'all')
+        queryParams.append('operator', nextFilters.operator)
+      if (nextFilters.recordType && nextFilters.recordType !== 'all') {
+        queryParams.append('recordType', nextFilters.recordType)
       }
 
       const response = await fetch(

@@ -1,24 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+import {
+  pushWithHostNavigation,
+  replaceWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
+import type { RenterWithContractsForClient } from '@/types/database'
 
 import { renterDetailMobileStyles } from '@/components/business/renter-detail-mobile-styles'
 import { RenterActions } from '@/components/business/RenterActions'
 import { RenterBasicInfo } from '@/components/business/RenterBasicInfo'
 import { RenterContractHistory } from '@/components/business/RenterContractHistory'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface RenterDetailPageProps {
-  renter: any
+  renter: RenterWithContractsForClient
+  navigation?: HostNavigationAdapter
+  onEdit?: (renter: RenterWithContractsForClient) => void
+  onDeleted?: () => void
+  onOpenContract?: (contractId: string) => void
+  onOpenAddContract?: (renter: RenterWithContractsForClient) => void
+  onOpenContracts?: (renter: RenterWithContractsForClient) => void
 }
 
-export function RenterDetailPage({ renter }: RenterDetailPageProps) {
-  const router = useRouter()
+export function RenterDetailPage({
+  renter,
+  navigation,
+  onEdit,
+  onDeleted,
+  onOpenContract,
+  onOpenAddContract,
+  onOpenContracts,
+}: RenterDetailPageProps) {
   const [loading, setLoading] = useState(false)
 
   const handleEdit = () => {
-    router.push(`/renters/${renter.id}/edit`)
+    if (onEdit) {
+      onEdit(renter)
+      return
+    }
+
+    pushWithHostNavigation(`/renters/${renter.id}/edit`, navigation)
   }
 
   const handleDelete = async () => {
@@ -33,10 +57,14 @@ export function RenterDetailPage({ renter }: RenterDetailPageProps) {
       })
 
       if (response.ok) {
-        router.push('/renters')
+        if (onDeleted) {
+          onDeleted()
+        } else {
+          replaceWithHostNavigation('/renters', navigation)
+        }
       } else {
         const error = await response.json()
-        alert(error.message || '删除失败')
+        alert(error.error || error.message || '删除失败')
       }
     } catch (error) {
       console.error('删除租客失败:', error)
@@ -46,8 +74,13 @@ export function RenterDetailPage({ renter }: RenterDetailPageProps) {
     }
   }
 
-  const handleContractClick = (contract: any) => {
-    router.push(`/contracts/${contract.id}`)
+  const handleContractClick = (contract: { id: string }) => {
+    if (onOpenContract) {
+      onOpenContract(contract.id)
+      return
+    }
+
+    pushWithHostNavigation(`/contracts/${contract.id}`, navigation)
   }
 
   return (
@@ -57,6 +90,12 @@ export function RenterDetailPage({ renter }: RenterDetailPageProps) {
         <RenterActions
           renter={renter}
           onEdit={handleEdit}
+          onAddContract={
+            onOpenAddContract ? () => onOpenAddContract(renter) : undefined
+          }
+          onViewContracts={
+            onOpenContracts ? () => onOpenContracts(renter) : undefined
+          }
           onDelete={handleDelete}
           isLoading={loading}
         />

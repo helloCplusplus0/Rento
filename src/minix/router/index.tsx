@@ -81,10 +81,40 @@ import {
   contractRenewLoader,
 } from '../routes/contracts/ContractRenewRoute'
 import {
+  MeterReadingBatchRoute,
+  MeterReadingBatchRouteErrorBoundary,
+  meterReadingBatchLoader,
+} from '../routes/meter-readings/MeterReadingBatchRoute'
+import {
+  MeterReadingHistoryRoute,
+  MeterReadingHistoryRouteErrorBoundary,
+  meterReadingHistoryLoader,
+} from '../routes/meter-readings/MeterReadingHistoryRoute'
+import {
   EditRoomRoute,
   EditRoomRouteErrorBoundary,
   editRoomLoader,
 } from '../routes/rooms/EditRoomRoute'
+import {
+  RenterCreateRoute,
+  RenterCreateRouteErrorBoundary,
+  renterCreateLoader,
+} from '../routes/renters/RenterCreateRoute'
+import {
+  RenterDetailRoute,
+  RenterDetailRouteErrorBoundary,
+  renterDetailLoader,
+} from '../routes/renters/RenterDetailRoute'
+import {
+  RenterEditRoute,
+  RenterEditRouteErrorBoundary,
+  renterEditLoader,
+} from '../routes/renters/RenterEditRoute'
+import {
+  RenterListRoute,
+  RenterListRouteErrorBoundary,
+  renterListLoader,
+} from '../routes/renters/RenterListRoute'
 import {
   RoomDetailRoute,
   RoomDetailRouteErrorBoundary,
@@ -230,6 +260,42 @@ export const router = createBrowserRouter([
         element: <EditBillRoute />,
         loader: editBillLoader,
         errorElement: <EditBillRouteErrorBoundary />,
+      },
+      {
+        path: 'renters',
+        element: <RenterListRoute />,
+        loader: renterListLoader,
+        errorElement: <RenterListRouteErrorBoundary />,
+      },
+      {
+        path: 'renters/new',
+        element: <RenterCreateRoute />,
+        loader: renterCreateLoader,
+        errorElement: <RenterCreateRouteErrorBoundary />,
+      },
+      {
+        path: 'renters/:id',
+        element: <RenterDetailRoute />,
+        loader: renterDetailLoader,
+        errorElement: <RenterDetailRouteErrorBoundary />,
+      },
+      {
+        path: 'renters/:id/edit',
+        element: <RenterEditRoute />,
+        loader: renterEditLoader,
+        errorElement: <RenterEditRouteErrorBoundary />,
+      },
+      {
+        path: 'meter-readings/batch',
+        element: <MeterReadingBatchRoute />,
+        loader: meterReadingBatchLoader,
+        errorElement: <MeterReadingBatchRouteErrorBoundary />,
+      },
+      {
+        path: 'meter-readings/history',
+        element: <MeterReadingHistoryRoute />,
+        loader: meterReadingHistoryLoader,
+        errorElement: <MeterReadingHistoryRouteErrorBoundary />,
       },
       {
         path: 'settings',

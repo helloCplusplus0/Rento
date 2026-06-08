@@ -208,6 +208,7 @@ export function createContractRoutes(env: MinixServerEnv) {
     const search = url.searchParams.get('search')?.trim() || undefined
     const status = url.searchParams.get('status')?.trim() || undefined
     const buildingId = url.searchParams.get('buildingId')?.trim() || undefined
+    const renterId = url.searchParams.get('renterId')?.trim() || undefined
     const isExpiringSoon = url.searchParams.get('isExpiringSoon') === 'true'
     const shouldFilterExpiringSoon =
       status === 'expiring_soon' || isExpiringSoon
@@ -228,6 +229,8 @@ export function createContractRoutes(env: MinixServerEnv) {
           : {}),
         ...(search ? { search } : {}),
         ...(buildingId ? { buildingId } : {}),
+        // Keep renterId on the exact contract.renterId path; do not merge it into fuzzy search.
+        ...(renterId ? { renterId } : {}),
         ...(expiringDays ? { expiringDays } : {}),
       }
     )

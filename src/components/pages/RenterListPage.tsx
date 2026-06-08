@@ -1,31 +1,45 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+
+import {
+  pushWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
+import type { RenterWithContractsForClient } from '@/types/database'
 
 import { renterListMobileStyles } from '@/components/business/renter-list-mobile-styles'
 import { RenterGrid } from '@/components/business/RenterGrid'
 import { RenterSearchBar } from '@/components/business/RenterSearchBar'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface RenterListPageProps {
-  initialRenters: any[]
+  initialRenters: RenterWithContractsForClient[]
+  initialSearchQuery?: string
   initialStats: {
     totalCount: number
     activeCount: number
     inactiveCount: number
     newThisMonth: number
   }
+  navigation?: HostNavigationAdapter
+  onOpenRenter?: (renter: RenterWithContractsForClient) => void
 }
 
 export function RenterListPage({
   initialRenters,
+  initialSearchQuery = '',
   initialStats,
+  navigation,
+  onOpenRenter,
 }: RenterListPageProps) {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [renterFilter, setRenterFilter] = useState<string | null>(null)
   const loading = false
+
+  useEffect(() => {
+    setSearchQuery(initialSearchQuery)
+  }, [initialSearchQuery])
 
   // 筛选租客数据
   const filteredRenters = useMemo(() => {
@@ -77,8 +91,13 @@ export function RenterListPage({
   )
 
   // 处理租客点击
-  const handleRenterClick = (renter: any) => {
-    router.push(`/renters/${renter.id}`)
+  const handleRenterClick = (renter: RenterWithContractsForClient) => {
+    if (onOpenRenter) {
+      onOpenRenter(renter)
+      return
+    }
+
+    pushWithHostNavigation(`/renters/${renter.id}`, navigation)
   }
 
   return (

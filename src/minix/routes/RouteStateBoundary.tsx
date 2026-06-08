@@ -17,6 +17,13 @@ interface RouteStateErrorPanelProps {
   retryLabel?: string
 }
 
+interface RouteStateNotFoundPanelProps {
+  title: string
+  message: string
+  backTo: string
+  backLabel: string
+}
+
 interface RouteErrorBoundaryProps {
   title: string
   fallbackMessage: string
@@ -31,6 +38,10 @@ export function normalizeRouteErrorMessage(
     return error.data?.toString() || error.statusText || fallbackMessage
   }
 
+  if (error instanceof Response) {
+    return error.statusText || fallbackMessage
+  }
+
   if (error instanceof Error && error.message) {
     return error.message
   }
@@ -40,6 +51,14 @@ export function normalizeRouteErrorMessage(
   }
 
   return fallbackMessage
+}
+
+export function isRouteNotFoundError(error: unknown) {
+  if (isRouteErrorResponse(error)) {
+    return error.status === 404
+  }
+
+  return error instanceof Response && error.status === 404
 }
 
 export function RouteStateErrorPanel({
@@ -78,6 +97,41 @@ export function RouteStateErrorPanel({
               )}
             />
             {retryLabel}
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">返回工作台</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </PageContainer>
+  )
+}
+
+export function RouteStateNotFoundPanel({
+  title,
+  message,
+  backTo,
+  backLabel,
+}: RouteStateNotFoundPanelProps) {
+  return (
+    <PageContainer title={title} showBackButton>
+      <Card className="border-amber-200 bg-amber-50/70">
+        <CardHeader className="px-4 py-4 sm:px-6">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-amber-100 p-2 text-amber-700">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <CardTitle className="text-base text-amber-950 sm:text-lg">
+                {title}不存在
+              </CardTitle>
+              <p className="text-sm leading-6 text-amber-800">{message}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3 px-4 pb-4 sm:px-6">
+          <Button asChild>
+            <Link to={backTo}>{backLabel}</Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/">返回工作台</Link>

@@ -1,17 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+import type { RenterWithContractsForClient } from '@/types/database'
+import {
+  backWithHostNavigation,
+  replaceWithHostNavigation,
+  type HostNavigationAdapter,
+} from '@/lib/host-navigation'
 
 import { RenterForm } from '@/components/business/RenterForm'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface RenterEditPageProps {
-  renter: any
+  renter: RenterWithContractsForClient
+  navigation?: HostNavigationAdapter
 }
 
-export function RenterEditPage({ renter }: RenterEditPageProps) {
-  const router = useRouter()
+export function RenterEditPage({ renter, navigation }: RenterEditPageProps) {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (data: any) => {
@@ -26,7 +32,7 @@ export function RenterEditPage({ renter }: RenterEditPageProps) {
       })
 
       if (response.ok) {
-        router.push(`/renters/${renter.id}`)
+        replaceWithHostNavigation(`/renters/${renter.id}`, navigation)
       } else {
         const error = await response.json()
         alert(error.error || '更新失败')
@@ -40,7 +46,7 @@ export function RenterEditPage({ renter }: RenterEditPageProps) {
   }
 
   const handleCancel = () => {
-    router.back()
+    backWithHostNavigation(`/renters/${renter.id}`, navigation)
   }
 
   return (

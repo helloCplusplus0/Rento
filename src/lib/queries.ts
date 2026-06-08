@@ -1365,7 +1365,7 @@ export const meterQueries = {
 // 抄表记录相关查询
 export const meterReadingQueries = {
   // 查找仪表的抄表记录
-  findByMeter: (meterId: string, limit = 50) =>
+  findByMeter: (meterId: string, limit?: number, offset = 0) =>
     prisma.meterReading.findMany({
       where: { meterId },
       include: {
@@ -1378,7 +1378,13 @@ export const meterReadingQueries = {
         bills: true,
       },
       orderBy: { readingDate: 'desc' },
-      take: limit,
+      skip: offset,
+      ...(limit ? { take: limit } : {}),
+    }),
+
+  countByMeter: (meterId: string) =>
+    prisma.meterReading.count({
+      where: { meterId },
     }),
 
   // 按正式抄表的业务周期查重，兼容历史 period 为空时按同月 readingDate 回退判重
@@ -1437,22 +1443,26 @@ export const meterReadingQueries = {
   findAll: (
     options: {
       limit?: number
+      offset?: number
       status?: string
       meterType?: string
       recordType?: MeterReadingRecordType | string
       search?: string
       operator?: string
+      roomId?: string
       startDate?: string
       endDate?: string
     } = {}
   ) => {
     const {
-      limit = 50,
+      limit,
+      offset = 0,
       status,
       meterType,
       recordType,
       search,
       operator,
+      roomId,
       startDate,
       endDate,
     } = options
@@ -1469,6 +1479,13 @@ export const meterReadingQueries = {
     if (meterType && meterType !== 'all') {
       where.meter = {
         meterType: meterType,
+      }
+    }
+
+    if (roomId) {
+      where.meter = {
+        ...(where.meter ?? {}),
+        roomId,
       }
     }
 
@@ -1533,12 +1550,96 @@ export const meterReadingQueries = {
         bills: true,
       },
       orderBy: { readingDate: 'desc' },
-      take: limit,
+      skip: offset,
+      ...(limit ? { take: limit } : {}),
     })
   },
 
+  countAll: (
+    options: {
+      status?: string
+      meterType?: string
+      recordType?: MeterReadingRecordType | string
+      search?: string
+      operator?: string
+      roomId?: string
+      startDate?: string
+      endDate?: string
+    } = {}
+  ) => {
+    const { status, meterType, recordType, search, operator, roomId, startDate, endDate } =
+      options
+
+    const where: any = {}
+
+    if (status && status !== 'all') {
+      where.status = status
+    }
+
+    if (meterType && meterType !== 'all') {
+      where.meter = {
+        meterType,
+      }
+    }
+
+    if (roomId) {
+      where.meter = {
+        ...(where.meter ?? {}),
+        roomId,
+      }
+    }
+
+    if (recordType && recordType !== 'all') {
+      where.recordType = recordType
+    }
+
+    if (operator && operator !== 'all') {
+      where.operator = operator
+    }
+
+    if (search) {
+      where.OR = [
+        {
+          meter: {
+            room: {
+              roomNumber: {
+                contains: search,
+              },
+            },
+          },
+        },
+        {
+          contract: {
+            renter: {
+              name: {
+                contains: search,
+              },
+            },
+          },
+        },
+        {
+          remarks: {
+            contains: search,
+          },
+        },
+      ]
+    }
+
+    if (startDate || endDate) {
+      where.readingDate = {}
+      if (startDate) {
+        where.readingDate.gte = new Date(startDate)
+      }
+      if (endDate) {
+        where.readingDate.lte = new Date(endDate)
+      }
+    }
+
+    return prisma.meterReading.count({ where })
+  },
+
   // 查找合同的抄表记录
-  findByContract: (contractId: string) =>
+  findByContract: (contractId: string, limit?: number, offset = 0) =>
     prisma.meterReading.findMany({
       where: { contractId },
       include: {
@@ -1546,6 +1647,13 @@ export const meterReadingQueries = {
         bills: true,
       },
       orderBy: { readingDate: 'desc' },
+      skip: offset,
+      ...(limit ? { take: limit } : {}),
+    }),
+
+  countByContract: (contractId: string) =>
+    prisma.meterReading.count({
+      where: { contractId },
     }),
 
   // 根据ID查找抄表记录

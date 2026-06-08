@@ -1,14 +1,22 @@
-import { optimizedRenterQueries } from '@/lib/optimized-queries'
+import {
+  createRenterPageClosureData,
+  deleteRenterPageClosureData,
+  getRenterDetailPageClosureData,
+  getRenterStatsPageClosureData,
+  getRentersPageClosureData,
+  type RenterMutationPayload,
+  updateRenterPageClosureData,
+} from '@/lib/page-closure-compat/renters'
 
 import type { AuthAppEnv } from '../lib/auth-context'
 import { notImplementedError } from '../lib/api-errors'
-import { jsonApiError, jsonSuccess } from '../lib/api-responses'
+import { jsonApiError, jsonSuccess, readJsonBody } from '../lib/api-responses'
 import type { MinixServerEnv } from '../lib/env'
 import { requireAuth } from '../middleware/require-auth'
 import { Hono } from 'hono'
 
 const LEGACY_COMPAT = {
-  currentState: 'partial-migrated',
+  currentState: 'compat-wrapper',
   targetStrategy: 'compat-wrapper',
   legacyPaths: [
     'src/app/api/renters/route.ts',
@@ -16,9 +24,9 @@ const LEGACY_COMPAT = {
     'src/app/api/renters/stats/route.ts',
   ] as const,
   reason:
-    'phase13-03 当前轮仅为合同创建 loader 最小补齐 GET /api/renters；租客创建、详情、删改与统计仍保留旧 Next 入口。',
+    'phase13-04 页面闭环期间，Hono 与 Next 入口共同复用 shared page-closure compat helper；这不等于 `/api/renters*` 已完成 phase14 正式 cutover。',
   exitCondition:
-    '待后续阶段冻结租客正式查询/写入宿主与统计承接位后，再评估移除旧 src/app/api/renters* 入口。',
+    '待 phase13 页面闭环、phase14 `/api/renters*` drain 与最终 cutover 审核完成后，再评估 shared compat helper 与旧入口退出。',
 } as const
 
 const SORT_FIELDS = new Set(['name', 'phone', 'moveInDate', 'createdAt'] as const)
@@ -54,15 +62,6 @@ function normalizeBooleanQuery(value: string | null) {
   return undefined
 }
 
-function toClientRenter(renter: any) {
-  return {
-    ...renter,
-    contracts: renter.contracts.map((contract: any) => ({
-      ...contract,
-    })),
-  }
-}
-
 function appendRentersFallback(
   routeApp: Hono<AuthAppEnv>,
   env: MinixServerEnv
@@ -71,11 +70,11 @@ function appendRentersFallback(
     return jsonApiError(
       c,
       notImplementedError(
-        '当前仅为合同创建页补齐 GET /api/renters；租客创建、详情、删改与统计仍由旧入口或后续子任务承接。',
+          'phase13-04 仅为 Minix 页面闭环补 page-closure bridge；`/api/renters*` 的正式 drain 仍留给 phase14 与最终 cutover 审核。',
         {
-          phase: 'phase13-03',
+            phase: 'phase13-04',
           routeKey: 'renters',
-          migrationState: 'partial-migrated',
+          migrationState: 'compat-wrapper',
           compatBoundary: LEGACY_COMPAT,
         }
       ),
@@ -89,6 +88,8 @@ export function createRenterRoutes(env: MinixServerEnv) {
 
   routeApp.use('*', requireAuth())
 
+  // Minix page-closure bridge: keep Hono runtime usable for phase13 pages
+  // without declaring `/api/renters*` formal ownership ahead of phase14.
   routeApp.get('/', async (c) => {
     const url = new URL(c.req.url)
     const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10))
@@ -107,32 +108,84 @@ export function createRenterRoutes(env: MinixServerEnv) {
     const sortField = normalizeSortField(url.searchParams.get('sortField'))
     const sortOrder = normalizeSortOrder(url.searchParams.get('sortOrder'))
 
-    const result = await optimizedRenterQueries.findWithPagination(
-      { page, limit },
-      {
-        search,
-        contractStatus: contractStatus as any,
-        hasActiveContract,
-        buildingId,
-      },
-      {
-        field: sortField,
-        order: sortOrder,
-      }
-    )
+    const result = await getRentersPageClosureData({
+      page,
+      limit,
+      search,
+      contractStatus,
+      hasActiveContract,
+      buildingId,
+      sortField,
+      sortOrder,
+    })
 
     return jsonSuccess(c, {
-      data: {
-        renters: result.data.map(toClientRenter),
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        totalPages: result.totalPages,
-        hasNext: result.hasNext,
-        hasPrev: result.hasPrev,
-      },
+      data: result,
       env,
     })
+  })
+
+  routeApp.get('/stats', async (c) => {
+    const stats = await getRenterStatsPageClosureData()
+    return c.json(stats)
+  })
+
+  routeApp.post('/', async (c) => {
+    const body =
+      (await readJsonBody<RenterMutationPayload>(c, {
+        maxBytes: env.requestGovernance.maxRequestSize,
+      })) ?? {}
+
+    const result = await createRenterPageClosureData(body)
+
+    if ('error' in result) {
+      return c.json({ error: result.error }, result.status)
+    }
+
+    return jsonSuccess(c, {
+      data: result.data,
+      message: result.message,
+      status: result.status,
+      env,
+    })
+  })
+
+  routeApp.get('/:id', async (c) => {
+    const renterId = c.req.param('id')
+    const renter = await getRenterDetailPageClosureData(renterId)
+
+    if (!renter) {
+      return c.json({ error: 'Renter not found' }, 404)
+    }
+
+    return c.json(renter)
+  })
+
+  routeApp.put('/:id', async (c) => {
+    const renterId = c.req.param('id')
+    const body =
+      (await readJsonBody<RenterMutationPayload>(c, {
+        maxBytes: env.requestGovernance.maxRequestSize,
+      })) ?? {}
+
+    const result = await updateRenterPageClosureData(renterId, body)
+
+    if ('error' in result) {
+      return c.json({ error: result.error }, result.status)
+    }
+
+    return c.json(result.data)
+  })
+
+  routeApp.delete('/:id', async (c) => {
+    const renterId = c.req.param('id')
+    const result = await deleteRenterPageClosureData(renterId)
+
+    if ('error' in result) {
+      return c.json({ error: result.error }, result.status)
+    }
+
+    return c.json(result.data)
   })
 
   appendRentersFallback(routeApp, env)

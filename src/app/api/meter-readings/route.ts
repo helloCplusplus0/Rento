@@ -14,131 +14,45 @@ import {
   meterReadingDomainService,
 } from '@/lib/domain/meters'
 import { ErrorType } from '@/lib/error-logger'
-import { meterReadingQueries } from '@/lib/queries'
+import { getMeterReadingsPageClosureData } from '@/lib/page-closure-compat/meter-readings'
 
 /**
- * 获取抄表记录列表
+ * phase13-04 page-closure compat:
  * GET /api/meter-readings
+ *
+ * Next 与 Hono 共同复用 shared compat helper，避免把 `server/routes/meter-readings.ts`
+ * 误判为抄表历史列表已进入 phase14 正式 cutover。
  */
 async function handleGetMeterReadings(request: NextRequest) {
   const queryParams = parseQueryParams(request)
-  const { page, limit, offset } = parsePaginationParams(request)
+  const searchParams = new URL(request.url).searchParams
+  const hasExplicitPagination =
+    searchParams.has('page') || searchParams.has('limit')
+  const { page, limit } = hasExplicitPagination
+    ? parsePaginationParams(request)
+    : { page: undefined, limit: undefined }
+  const data = await getMeterReadingsPageClosureData({
+    page,
+    limit,
+    meterId: (queryParams.meterId as string) || undefined,
+    contractId: (queryParams.contractId as string) || undefined,
+    roomId: (queryParams.roomId as string) || undefined,
+    recordType: (queryParams.recordType as string) || undefined,
+    startDate: (queryParams.startDate as string) || undefined,
+    endDate: (queryParams.endDate as string) || undefined,
+    status: (queryParams.status as string) || undefined,
+    meterType: (queryParams.meterType as string) || undefined,
+    search: (queryParams.search as string) || undefined,
+    operator: (queryParams.operator as string) || undefined,
+    dateRange: (queryParams.dateRange as string) || undefined,
+  })
 
-  // 解析查询参数
-  const {
-    meterId,
-    contractId,
-    roomId,
-    recordType,
-    startDate,
-    endDate,
-    status,
-    meterType,
-    search,
-    operator,
-    dateRange,
-  } = queryParams
-
-  let readings: any[]
-
-  if (meterId) {
-    // 按仪表查询
-    readings = await meterReadingQueries.findByMeter(meterId as string, limit)
-  } else if (contractId) {
-    // 按合同查询
-    readings = await meterReadingQueries.findByContract(contractId as string)
-  } else {
-    // 处理时间范围筛选
-    let actualStartDate: string | undefined
-    let actualEndDate: string | undefined
-
-    if (dateRange && dateRange !== 'all') {
-      const now = new Date()
-      switch (dateRange) {
-        case 'today':
-          actualStartDate = now.toISOString().split('T')[0]
-          actualEndDate = actualStartDate
-          break
-        case 'week':
-          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-          actualStartDate = weekAgo.toISOString().split('T')[0]
-          actualEndDate = now.toISOString().split('T')[0]
-          break
-        case 'month':
-          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-          actualStartDate = monthAgo.toISOString().split('T')[0]
-          actualEndDate = now.toISOString().split('T')[0]
-          break
-      }
-    } else {
-      actualStartDate = startDate as string
-      actualEndDate = endDate as string
-    }
-
-    // 构建查询条件
-    const filters = {
-      startDate: actualStartDate,
-      endDate: actualEndDate,
-      status: status as string,
-      meterType: meterType as string,
-      recordType: recordType as string,
-      search: search as string,
-      operator: operator as string,
-      roomId: roomId as string,
-    }
-
-    readings = await meterReadingQueries.findAll(filters)
-  }
-
-  // 转换数据类型
-  const readingsData = readings.map((reading: any) => ({
-    ...reading,
-    previousReading: reading.previousReading
-      ? Number(reading.previousReading)
-      : null,
-    currentReading: Number(reading.currentReading),
-    usage: Number(reading.usage),
-    unitPrice: Number(reading.unitPrice),
-    amount: Number(reading.amount),
-    // 确保日期字段正确转换为ISO字符串
-    readingDate: reading.readingDate
-      ? new Date(reading.readingDate).toISOString()
-      : null,
-    createdAt: reading.createdAt
-      ? new Date(reading.createdAt).toISOString()
-      : null,
-    updatedAt: reading.updatedAt
-      ? new Date(reading.updatedAt).toISOString()
-      : null,
-    meter: reading.meter
-      ? {
-          ...reading.meter,
-          unitPrice: Number(reading.meter.unitPrice),
-          room: reading.meter.room
-            ? {
-                ...reading.meter.room,
-                rent: Number(reading.meter.room.rent),
-                area: reading.meter.room.area
-                  ? Number(reading.meter.room.area)
-                  : null,
-                building: reading.meter.room.building
-                  ? {
-                      ...reading.meter.room.building,
-                      totalRooms: Number(
-                        reading.meter.room.building.totalRooms
-                      ),
-                    }
-                  : undefined,
-              }
-            : undefined,
-        }
-      : undefined,
-  }))
-
-  // 获取总数用于分页
-  const total = readingsData.length
-
-  return createPaginatedResponse(readingsData, total, page, limit)
+  return createPaginatedResponse(
+    data.data,
+    data.pagination.total,
+    data.pagination.page,
+    data.pagination.limit
+  )
 }
 
 export const GET = withApiErrorHandler(handleGetMeterReadings, {

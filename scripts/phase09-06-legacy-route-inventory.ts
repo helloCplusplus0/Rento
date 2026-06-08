@@ -43,6 +43,9 @@ async function main() {
   const unresolvedFormalHosts = await resolveMissingProjectPaths(
     flattenedOperations.flatMap((item) => item.formalHosts)
   )
+  const unresolvedBridgeHosts = await resolveMissingProjectPaths(
+    flattenedOperations.flatMap((item) => item.bridgeHosts ?? [])
+  )
   const unresolvedDomainServices = await resolveMissingProjectPaths(
     flattenedOperations.flatMap((item) => item.domainServicePaths)
   )
@@ -89,6 +92,7 @@ async function main() {
     ...formatProblemLines('清单引用但文件不存在', inventoryWithoutFile),
     ...formatProblemLines('清单存在重复文件定义', duplicateInventoryFiles),
     ...formatProblemLines('formalHosts 引用不存在', unresolvedFormalHosts),
+    ...formatProblemLines('bridgeHosts 引用不存在', unresolvedBridgeHosts),
     ...formatProblemLines('domainServicePaths 引用不存在', unresolvedDomainServices),
     ...dashboardRouteDependencyMismatches,
   ]
@@ -105,7 +109,7 @@ async function main() {
 
   printHeader('校验通过')
   console.log('- 清单已覆盖全部 src/app/api 旧路由文件')
-  console.log('- formalHosts 与 domainServicePaths 引用均可解析')
+  console.log('- formalHosts、bridgeHosts 与 domainServicePaths 引用均可解析')
   console.log('- /api/dashboard/* 的直接查询依赖映射与真实导入保持一致')
   console.log('- phase10 输入分桶已可直接复核与复用')
 }
