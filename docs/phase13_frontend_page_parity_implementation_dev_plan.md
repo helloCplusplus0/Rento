@@ -7,7 +7,7 @@
   - [phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)
 - `phase13-01 ~ phase13-04` 的主要 route module、loader 与错误边界已经落位到 `src/minix`。
 - `phase13-05` 已完成“全量页面审计、验收矩阵、浏览器基线与 `phase14` 交接”的文档收口，并把残余问题收缩到首页 `/` 与 `/bills/stats`。
-- 当前 `phase13` 的后续实施任务不再是重开前四个子任务，而是为这两个残余阻断项补充可进入 `/spec` 的正式收口子任务。
+- `phase13-06` 已完成首页 `/` 的高保真复验、parity gap 收口与最小修复；当前阶段尾项只剩 `/bills/stats` 的正式迁移承接位。
 - 补充约束：`phase13` 任一页面迁移子任务都必须以旧 `Rento` 源代码为直接原型；除已批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，是验收通过的硬门槛之一。
 - 补充判断：当前正式业务页面已不再主要卡在 placeholder 替换，而是卡在“是否完成高保真验收”与“`/bills/stats` 是否仍为未迁移页面”。
 
@@ -43,7 +43,7 @@
 | `phase13-03-detail-create-edit-flow-routes-parity` | 已完成实现，待统一验收 | 房源/合同/账单详情、编辑、新建与流程动作页已具备正式 route module |
 | `phase13-04-renters-and-meter-reading-routes-parity` | 已完成实现，待统一验收 | 租客与抄表页面已进入新宿主；compat bridge 退出留给 `phase14` |
 | `phase13-05-page-parity-acceptance-baseline-closure` | 已完成 | 已完成全量页面清单、迁移状态、验收矩阵、浏览器基线与 `phase14` 交接说明收口 |
-| `phase13-06-dashboard-parity-closure` | 待执行 | 负责首页 `/` 的高保真复验、差异清单收口与最终页面 parity 验收 |
+| `phase13-06-dashboard-parity-closure` | 已完成 | 已完成首页浏览器复验、支持页入口 fallback 修复与“通过保真验收”收口 |
 | `phase13-07-bill-stats-route-parity` | 待执行 | 负责 `/bills/stats` 正式迁入 `src/minix`，但不得提前混写 `phase14` API/query drain |
 
 ## 三、任务拆分建议
@@ -289,9 +289,10 @@
 - 首页 parity gap 的最小修复与复验记录
 
 ### 当前事实基线
-- 当前首页已由 `HomePage` 在 `src/minix` 中真实承接，但仍被文档冻结为“部分迁移”。
-- 当前阻断不再是“是否已有页面壳”，而是“是否已按旧首页原型完成接近 `100%` 的高保真复验，并形成单一验收结论”。
-- 在首页通过正式保真验收前，`phase13` 不应被视为整体完成。
+- 当前首页已由 `HomePage` 在 `src/minix` 中真实承接，并已完成基于旧 `DashboardPageWithStats` 的人工浏览器高保真复验。
+- 本轮唯一需要最小修复的首页 parity gap，是 `/notifications` 与个人抽屉中的 `/profile`、`/notifications` 延后支持页入口会直接落到未迁移路径；当前已改为受控 fallback / 阶段提示，不再把用户带到前端 `404`。
+- 浏览器复验已覆盖：登录后进入 `/`、搜索入口跳转 `/contracts?search=合同`、快捷入口进入 `/settings`、个人入口打开抽屉，以及通知入口触发延后页面提示；截图证据表明首页主体结构、快捷操作、提醒面板与个人入口语义已保持旧原型。
+- `StatisticsCards` 在 `/api/dashboard/stats` 当前不可用时继续展示旧有的分区级错误状态，这属于 `phase14` 的 dashboard API/query parity 边界，不再作为 `phase13-06` 的页面 parity 阻断项。
 
 ### 参考来源
 - `src/minix/routes/HomePage.tsx`

@@ -38,6 +38,8 @@ const MINIX_ROUTER_PATH_PATTERNS = [
 ] as const
 
 const LEGACY_DOCUMENT_PATH_PATTERNS = [
+  /^\/profile$/,
+  /^\/notifications$/,
   /^\/bills\/stats$/,
   /^\/system-health$/,
   /^\/data-consistency$/,
@@ -102,10 +104,10 @@ function showUnsupportedPhaseBoundaryNotice(href: string) {
 }
 
 // Prefer the migrated phase13 routes inside React Router and only fall back to
-// document navigation for genuinely deferred legacy pages. After phase13-04,
-// `/renters/**` and `/meter-readings/**` are owned by the minix router; the
-// remaining document fallback is intentionally limited to `/bills/stats` and
-// the ops-governance pages until their dedicated follow-up tasks land.
+// document navigation for genuinely deferred legacy pages. After phase13-06,
+// homepage-linked support entries such as `/profile` and `/notifications` must
+// keep using the controlled fallback until their dedicated P2 route tasks land;
+// `/renters/**` and `/meter-readings/**` remain owned by the minix router.
 export function navigateToMinixOrDocument(
   navigate: NavigateFunction,
   href: string,

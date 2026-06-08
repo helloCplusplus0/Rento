@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认工作流已从 `phase12-05` 文档收口推进到 `phase13-frontend-page-parity-implementation` 的实施尾段，`phase13-05` 已完成页面审计与验收基线收口，后续继续通过 `phase13-06`、`phase13-07` 收口首页 `/` 与 `/bills/stats` 的残余页面迁移任务。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；当前默认工作流已从 `phase12-05` 文档收口推进到 `phase13-frontend-page-parity-implementation` 的实施尾段，`phase13-06` 已完成首页 `/` 的高保真复验与状态收口，后续继续通过 `phase13-07` 收口 `/bills/stats` 的残余页面迁移任务。
 
 ## 当前双层结构说明
 ### 现有实现层

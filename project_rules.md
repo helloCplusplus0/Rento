@@ -2,7 +2,7 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。当前默认工作流已进入 `phase13-frontend-page-parity-implementation` 的实施尾段：`phase13-05` 已完成页面审计与验收基线收口，后续继续以 `plan.md`、`docs/phase12_*` 与 `docs/phase13_*` 承接 `phase13-06`、`phase13-07` 对首页 `/` 与 `/bills/stats` 的尾项收口。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。当前默认工作流已进入 `phase13-frontend-page-parity-implementation` 的实施尾段：`phase13-05` 已完成页面审计与验收基线收口，`phase13-06` 已完成首页 `/` 的高保真验收与状态收口，后续继续以 `plan.md`、`docs/phase12_*` 与 `docs/phase13_*` 承接 `phase13-07` 对 `/bills/stats` 的尾项收口。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase12 ~ phase16` 的当前轮重点必须建立在 `phase10` 已冻结的 `Prisma + PostgreSQL` 长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断，以及 `phase11` 已冻结的正式部署主线、发布门禁与 legacy 回滚基线之上，不反向改写这些结论。
 
@@ -60,7 +60,7 @@
 
 ## 7. 原地重构规则
 - 当前仓库中的现有实现代码是原地重构的直接参考基线，不另行复制第二份嵌入式源码区。
-- 当前默认工作流已推进到 `phase13-frontend-page-parity-implementation` 的实施尾段；后续实施必须继续建立在 `docs/phase12_*` 与 `plan.md` 已补齐的 `phase12 ~ phase16` 共同边界之上，并以新增的 `docs/phase13_*` 承接真实前端页面迁移实施的子任务顺序、页面切片边界、验收基线，以及 `phase13-06`、`phase13-07` 的尾项收口。
+- 当前默认工作流已推进到 `phase13-frontend-page-parity-implementation` 的实施尾段；后续实施必须继续建立在 `docs/phase12_*` 与 `plan.md` 已补齐的 `phase12 ~ phase16` 共同边界之上，并以新增的 `docs/phase13_*` 承接真实前端页面迁移实施的子任务顺序、页面切片边界、验收基线，以及 `phase13-07` 的尾项收口。
 - 当前默认工作流下，任何页面迁移都不得以“真实页面壳已落位”替代“高保真迁移已完成”；若新宿主页面与旧 `Rento` 页面源代码相比仍存在显著结构漂移，只能视为中间实现结果，不得提前标记为验收通过。
 - `phase06` 审核通过的最低前提，不仅包括根级真相源、目录治理和仓库状态收口，还包括：完整 `Hono` 路线图、模块分类与文件级吸收映射已冻结并通过审核。
 - `phase07` 审核通过的最低前提，至少包括：前端路由方案、开发拓扑、并行壳切入策略、实现目录、脚本方案与最小环境变量口径均已冻结并通过审核；当前该阶段结论已作为 `phase08` 上游输入保留。

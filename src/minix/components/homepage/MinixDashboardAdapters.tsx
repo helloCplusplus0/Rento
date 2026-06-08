@@ -50,6 +50,10 @@ import {
 } from '@/components/ui/sheet'
 
 import { minixClientEnv } from '../../env'
+import {
+  navigateToMinixOrDocument,
+  openDocumentPath,
+} from '../../lib/route-navigation'
 
 interface SearchBarProps {
   placeholder?: string
@@ -143,8 +147,9 @@ export function MinixNotificationEntryButton({
   className,
 }: MinixNotificationEntryButtonProps) {
   return (
-    <Link
-      to="/notifications"
+    <button
+      type="button"
+      onClick={() => openDocumentPath('/notifications')}
       className={cn(
         'inline-flex shrink-0 items-center justify-center gap-1.5 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none',
         notificationEntryStyles[variant],
@@ -154,7 +159,7 @@ export function MinixNotificationEntryButton({
     >
       <Bell className="h-4 w-4" />
       <span>通知</span>
-    </Link>
+    </button>
   )
 }
 
@@ -1074,7 +1079,7 @@ export function MinixUserProfileSheet({
       description: '修改个人信息',
       onClick: () => {
         onOpenChange(false)
-        navigate('/profile')
+        navigateToMinixOrDocument(navigate, '/profile')
       },
     },
     {
@@ -1092,7 +1097,7 @@ export function MinixUserProfileSheet({
       description: '管理消息通知',
       onClick: () => {
         onOpenChange(false)
-        navigate('/notifications')
+        navigateToMinixOrDocument(navigate, '/notifications')
       },
     },
     {

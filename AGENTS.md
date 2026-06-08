@@ -26,7 +26,7 @@
 - 当前默认工作流：`phase13-frontend-page-parity-implementation`
 - 当前主问题：在不反向干扰 `phase07~11` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层、部署主线与迁移兼容边界的前提下，把旧 `Rento` 的正式页面、旧宿主 API 与 PWA 能力完整迁入 `Rento-miniX`，并为最终 legacy 退出建立可验证的对齐路径。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase13-05` 已完成页面清单、迁移状态、验收矩阵、浏览器基线与 `phase14` 交接的文档收口。当前应继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与 [plan.md](file:///home/dell/Projects/Rento/plan.md) 作为当前阶段真相源，并优先推进 `phase13-06-dashboard-parity-closure` 与 `phase13-07-bill-stats-route-parity`，分别收口首页 `/` 与 `/bills/stats`。
+- 当前下一步：`phase13-06-dashboard-parity-closure` 已完成首页 `/` 的高保真复验、最小修复与文档收口。当前应继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与 [plan.md](file:///home/dell/Projects/Rento/plan.md) 作为当前阶段真相源，并优先推进 `phase13-07-bill-stats-route-parity`，收口 `/bills/stats` 的正式迁移承接位。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入
@@ -65,7 +65,7 @@
 - `phase10-data-access-and-migration-closure` 已完成当前轮阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口：长期数据访问层方案、查询/写路径分层、事务边界、迁移兼容项、最低验证要求与 `phase11` 最小上游输入已形成单一闭环。
 - `phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口：正式部署主线、预构建产物链、环境变量、健康检查、发布门禁、legacy 回滚基线、文档最小验证要求与部署/回滚演练记录要求均已同步冻结到根级真相源、`DEPLOYMENT.md` 与 `docs/phase11_*`。
 - `phase12-frontend-parity-and-shell-cutover` 已完成当前轮阶段文档与 `phase12-05` 路线图一致性收口：后续默认以前端页面 parity、旧 UI 承接、`Prisma + PostgreSQL` 保留、`phase12 ~ phase16` 完整路线图、前后依赖、DoD、退出条件与文档轮次最小验证要求为统一输入；其中新增 `phase13-frontend-page-parity-implementation` 专门承接真实页面迁移实施。
-- `phase13-frontend-page-parity-implementation` 已完成 `phase13-05` 文档基线收口：后续默认以正式页面真实迁移、页面壳与页面装配层落位、route-level 数据边界、宿主绑定拆分与页面级验收基线为统一输入，并继续通过 `phase13-06` 与 `phase13-07` 收口首页 `/` 与 `/bills/stats` 的残余尾项。
+- `phase13-frontend-page-parity-implementation` 已完成 `phase13-06` 首页高保真收口：当前默认以正式页面真实迁移、页面壳与页面装配层落位、route-level 数据边界、宿主绑定拆分与页面级验收基线为统一输入，并继续通过 `phase13-07` 收口 `/bills/stats` 的残余尾项。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -147,7 +147,7 @@
 - `phase10` 的职责是冻结长期数据访问层方案、查询分层、统一事务边界、迁移兼容项与 `phase11` 最小上游输入；该阶段现已完成当前轮收口。
 - `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板、发布门禁、文档最小验证要求与部署演练记录要求；当前轮 `phase11-05` 已完成上述文档闭环，但在正式 cutover 审核通过前，仍不得删除 legacy 回滚资产。
 - `phase12` 的职责是冻结前端页面 parity、`src/minix` 页面装配承接边界、旧 UI 复用规则与后续 `phase12 ~ phase16` 的多阶段路线图；当前轮 `phase12-05` 已完成路线图一致性收口，真实前端页面迁移实施已提升为新增 `phase13-frontend-page-parity-implementation`。
-- `phase13` 的职责是把首页、房源、合同、账单、租客、抄表、设置等正式页面真实迁入 `src/minix`，并收口页面壳、页面装配层、route-level 数据边界、宿主绑定拆分与页面级验收基线；当前轮已完成 `phase13-05` 审计与基线收口，后续继续以 `phase13-06`、`phase13-07` 收口首页 `/` 的高保真验收与 `/bills/stats` 的正式迁移。
+- `phase13` 的职责是把首页、房源、合同、账单、租客、抄表、设置等正式页面真实迁入 `src/minix`，并收口页面壳、页面装配层、route-level 数据边界、宿主绑定拆分与页面级验收基线；当前轮已完成 `phase13-06` 首页高保真验收收口，后续继续以 `phase13-07` 收口 `/bills/stats` 的正式迁移。
 - `phase11-04` 已进一步冻结 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界；后续阶段不得把 `Rento-legacy` 重新引入为默认 remote、部署入口、回滚入口或第二真相源。
 - `phase08` 当前轮规划已明确：只冻结最小 API/Auth 骨架，不提前迁移治理接口、正式领域服务或部署切线。
 - `Rento-legacy` 只承担旧主线历史备份与只读参考职责，不作为当前仓库的默认 push remote、默认上游或第二真相源。

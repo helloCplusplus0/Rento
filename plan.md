@@ -4,7 +4,7 @@
 - 当前默认工作流：`phase13-frontend-page-parity-implementation`
 - 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，且 `phase11` 已冻结正式部署主线、回滚基线与发布门禁的前提下，基于 `phase12` 已冻结的页面事实表、页面映射、五层复用矩阵、UI 保真边界与页面-API 联动，为真实前端页面迁移实施产出单一可审核的阶段文档。
 - 当前执行方式：`phase12` 已完成 `phase12-05` 路线图一致性收口；当前轮已进入 `phase13-frontend-page-parity-implementation` 的真实页面迁移实施与文档收口尾段，继续把正式页面真实迁移实施从后续 API/PWA/cutover 阶段中解耦出来。
-- 当前下一步：继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图为阶段真相源；当前轮优先推进 `phase13-06-dashboard-parity-closure` 与 `phase13-07-bill-stats-route-parity`，分别收口首页 `/` 的高保真验收与 `/bills/stats` 的正式迁移承接位。
+- 当前下一步：继续以 [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图为阶段真相源；`phase13-06-dashboard-parity-closure` 已完成首页 `/` 的高保真验收与最小修复，当前轮优先推进 `phase13-07-bill-stats-route-parity`，收口 `/bills/stats` 的正式迁移承接位。
 - 当前阶段说明：`phase10` 已完成并继续作为后续阶段的数据访问主线上游输入保留；`phase11` 已完成并继续作为正式部署主线、发布门禁与 legacy 回滚基线的稳定上游输入保留；当前默认重点已从 `phase12` 的冻结阶段切换为“`phase13` 真实页面迁移实施尾段 + 阶段尾项收口”。
 
 ## 阶段顺序
@@ -222,8 +222,8 @@
   - 不把 API/query parity、PWA parity 或 cutover 职责混写进本阶段
 - 当前结论：
   - 已完成 `phase13-05-page-parity-acceptance-baseline-closure` 当前轮文档收口
-  - `phase13-06-dashboard-parity-closure` 与 `phase13-07-bill-stats-route-parity` 已被提升为本阶段尾项，用于分别收口首页 `/` 的高保真验收与 `/bills/stats` 的正式迁移
-  - 在首页 `/` 仍为“部分迁移”且 `/bills/stats` 仍为“未迁移”的前提下，`phase13` 不得视为整体完成
+  - `phase13-06-dashboard-parity-closure` 已完成首页 `/` 的高保真验收与状态收口，`phase13-07-bill-stats-route-parity` 继续作为本阶段剩余尾项
+  - 在 `/bills/stats` 仍为“未迁移”的前提下，`phase13` 不得视为整体完成
   - 依赖 `phase12` 已冻结的页面事实表、页面映射、复用矩阵、UI 保真边界与实施优先顺序
   - 后续子任务仍按 `docs/phase13_*` 中的顺序逐个进入 `/spec`、实现与验收
 
