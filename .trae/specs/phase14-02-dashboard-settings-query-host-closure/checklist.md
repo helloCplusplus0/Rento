@@ -1,0 +1,9 @@
+- [x] `phase14-02` 的 spec 明确限定为 dashboard/settings query host、bridge 角色、治理边界、页面影响与 D1 顺序冻结任务，没有越界到 API 切流实现
+- [x] `server/routes/dashboard.ts`、`server/routes/settings.ts`、`src/app/api/dashboard/**/route.ts`、`src/app/api/settings/**/route.ts`、`src/lib/page-closure-compat/dashboard.ts`、`src/lib/dashboard-queries.ts`、`src/lib/global-settings.ts` 已全部纳入盘点范围
+- [x] dashboard 域每条 `/api/dashboard/*` 路径都具备单一宿主解释：`/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/vacant-rooms` 由 Hono page-closure bridge 承接，`/overdue-payments` 与 `/unpaid-rent` 保持 retained-legacy
+- [x] settings 域 `/api/settings` 与 `/api/settings/init` 的 API 身份具备单一解释，核心治理语义继续锚定 `src/lib/global-settings.ts`
+- [x] 已明确 `server/routes/dashboard.ts` 当前属于 page-closure bridge，而不是正式 query host 已完成项
+- [x] 已明确 `server/routes/settings.ts` 当前属于最小治理兼容宿主，而不是正式业务 API 已切流
+- [x] 首页 `/`、设置页 `/settings` 与 `/api/validation`、`/api/data-consistency`、健康辅助、repair/status-check 等 governance 辅助接口的边界具备单一解释
+- [x] `phase14-01` 的 host matrix 字段集已被直接复用，没有扩写第二套 dashboard/settings 专用矩阵字段
+- [x] D1 顺序已冻结为 dashboard query host -> settings 治理边界 -> 首页/设置页页面影响闭环，本子任务输出可直接作为 `phase14-03-rooms-buildings-meters-api-drain` 的上游输入

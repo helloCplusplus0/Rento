@@ -127,6 +127,23 @@
   - `renters`：`server/routes/renters.ts` 已存在，但 inventory 的 `formalHosts` 仍为空，只能解释为 bridge
   - `meter-readings`：Hono 已承接写入与部分详情，但列表/history/status/repair 仍由 compat bridge 维持
 
+### 3.2.3 `phase14-02` 冻结的 dashboard / settings D1 结论
+- D1 的固定顺序继续冻结为：
+  - 先统一 dashboard query host 与 page-closure bridge 解释
+  - 再统一 settings API 身份与治理边界
+  - 最后统一首页 `/`、设置页 `/settings` 与 governance 辅助接口的页面影响解释
+- dashboard：
+  - 当前正式 query host 仍由旧 `src/app/api/dashboard/**/route.ts` 与 `src/lib/dashboard-queries.ts` / `src/lib/page-closure-compat/dashboard.ts` 组合承担
+  - `server/routes/dashboard.ts` 当前仅是 page-closure bridge；它承接首页首屏所需的 `/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/vacant-rooms`
+  - `/api/dashboard/overdue-payments` 与 `/api/dashboard/unpaid-rent` 仍属 retained-legacy 查询入口
+  - 当前页面影响面固定为首页 `/`
+- settings：
+  - `/api/settings` 与 `/api/settings/init` 继续按治理型 retained-legacy 解释，核心治理语义继续锚定 `src/lib/global-settings.ts`
+  - `server/routes/settings.ts` 当前属于最小治理兼容宿主，只承接设置页首屏读写、重置与初始化动作，不构成正式业务 API 已切流
+  - 当前页面影响面固定为 `/settings`
+  - `/api/validation`、`/api/data-consistency`、健康辅助与 repair/status-check 等接口继续按 governance 延后范围解释
+- 以上 D1 结论已冻结为 `phase14-03` 及后续业务域 drain 的直接上游输入，不再重复改写 dashboard/settings 宿主身份
+
 ### 3.3 Hono 宿主与 retained-legacy 的主要错位点
 - `dashboard`：
   - `server/routes/dashboard.ts` 已可承接 `/api/dashboard/stats`、`/api/dashboard/vacant-rooms`、`/api/dashboard/leaving-tenants`、`/api/dashboard/upcoming-contracts`、`/api/dashboard/contract-alerts`
@@ -180,8 +197,8 @@
 | 业务域 | `inventoryScope` | `dominantCategory` | `formalHosts` / `bridgeHosts` 冻结结论 | `pageImpact` | `drainPriority` | `freezeConclusion` |
 | --- | --- | --- | --- | --- | --- | --- |
 | Auth / Health | `/api/auth/*`、`/api/health` | `formal-host-owned` | `server/routes/auth.ts`、`server/routes/health.ts` 已冻结为正式宿主 | `/login`、运行时健康检查 | 不纳入主线 drain | 保持已完成态，只保留退出评估与回滚基线 |
-| Dashboard | `/api/dashboard/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/overdue-payments`、`/unpaid-rent`、`/vacant-rooms` | `retained-legacy` | `server/routes/dashboard.ts` 当前只可解释为 page-closure bridge；inventory 虽对部分路径记录 `formalHosts`，但 `/unpaid-rent`、`/vacant-rooms` 仍无正式宿主冻结，且首页查询继续依赖 `src/lib/page-closure-compat/dashboard.ts` | `/` | D1 | dashboard 域尚未形成单一正式 query host，需先在 `phase14-02` 统一“正式 Hono 查询宿主”还是“继续 bridge”结论 |
-| Settings | `/api/settings`、`/api/settings/init` | `retained-legacy` | `server/app.ts` 已挂 `server/routes/settings.ts`，但 inventory 仍将 settings 视为治理型 retained-legacy；当前 Hono 仅能解释为最小治理兼容宿主 | `/settings` | D1 | settings 不因 Hono 已挂载就自动升级为正式业务 API；后续需先冻结其治理身份、权限边界与审计口径 |
+| Dashboard | `/api/dashboard/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/overdue-payments`、`/unpaid-rent`、`/vacant-rooms` | `retained-legacy` | `server/routes/dashboard.ts` 当前只可解释为 page-closure bridge；当前仅覆盖 `/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/vacant-rooms` 首页首屏桥接，`/overdue-payments` 与 `/unpaid-rent` 继续留在 retained-legacy | `/` | D1 | dashboard 域当前正式 query host 仍是旧 `src/app/api/dashboard/**/route.ts` + `src/lib/dashboard-queries.ts` / `src/lib/page-closure-compat/dashboard.ts` 组合，Hono bridge 不构成正式查询切流完成 |
+| Settings | `/api/settings`、`/api/settings/init` | `retained-legacy` | `server/app.ts` 已挂 `server/routes/settings.ts`，但当前 Hono 仅能解释为最小治理兼容宿主；核心治理语义继续锚定 `src/lib/global-settings.ts` | `/settings` | D1 | settings 继续按治理型 retained-legacy 解释；`server/routes/settings.ts` 只承接设置页首屏读写、重置与初始化，不等于正式业务 API 已切流 |
 | Rooms | `/api/rooms`、`/api/rooms/batch`、`/api/rooms/:id`、`/api/rooms/:id/status`、`/api/rooms/:id/meters` | `retained-legacy` 为主 | `server/routes/rooms.ts` 仅对批量创建与删除门禁相关路径具备 formal/compat 承接；列表、详情、编辑、房态修改、房间挂表仍无正式宿主冻结 | `/rooms`、`/rooms/:id`、`/rooms/:id/edit`、`/add/room`、`/add/contract` | D2 | 房源域必须按“读路径 retained、局部写路径 compat”解释，不能把 `rooms.ts` 的存在误判成整域已切流 |
 | Buildings | `/api/buildings`、`/api/buildings/:id` | `formal-host-owned` | `server/routes/buildings.ts` 已冻结为正式宿主；旧 Next 入口仅保留回滚价值 | `/rooms`、`/add/room` | D2 | 楼栋域已可按 formal-host-owned 解释，但其退出仍受房源引用数据回滚基线约束 |
 | Meters | `/api/meters/:meterId`、`/api/meters/:meterId/status`，以及与 `/api/rooms/:id/meters` 的联动边界 | `compat-wrapper` 为主 | `server/routes/meters.ts` 已承接仪表详情、更新、状态切换与受控删除；但房间挂表仍留在 `/api/rooms/:id/meters` retained-legacy | `/rooms`、`/rooms/:id`、`/add/room`、`/meter-readings/*` | D2 | 仪表域不能脱离房间挂表链路单独宣布完成，需把“独立资产正式宿主”与“房间绑定 retained-legacy”同时写清 |
@@ -196,8 +213,8 @@
 ### 4.3 `phase13` 页面影响面绑定结果
 | 页面组 | 当前直接依赖域 | 当前绑定解释 |
 | --- | --- | --- |
-| `/` | Dashboard | 首页已完成页面 parity，但首页数据仍依赖 dashboard retained-legacy / bridge 查询组合 |
-| `/settings` | Settings、Governance | 设置主页已迁移；settings API 仍属治理型 retained-legacy，治理辅助入口仍保持延后边界 |
+| `/` | Dashboard | 首页已完成页面 parity，但首页数据仍依赖 dashboard retained-legacy query host 与 Hono page-closure bridge 组合 |
+| `/settings` | Settings、Governance | 设置主页已迁移；settings API 仍属治理型 retained-legacy，`server/routes/settings.ts` 仅作最小治理兼容宿主，治理辅助入口继续延后 |
 | `/rooms*`、`/add/room` | Rooms、Buildings、Meters | 房源页面已迁移，但列表/详情/房态/挂表仍跨 retained-legacy、formal-host-owned 与 compat-wrapper 三类 |
 | `/contracts*`、`/add/contract` | Contracts、Checkout、Rooms、Renters | 合同与退租页面已迁移，但合同读路径 retained-legacy 与 checkout formal host 仍需分开解释 |
 | `/bills*`、`/bills/stats` | Bills、Dashboard | 账单页已迁移，但 `/api/bills/stats` 仍是 page-to-legacy bridge，账单详情/明细仍依赖旧查询路径 |

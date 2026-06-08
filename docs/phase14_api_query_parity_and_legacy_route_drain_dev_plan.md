@@ -42,7 +42,7 @@
 | 子任务 | 当前状态 | 当前结论 |
 | --- | --- | --- |
 | `phase14-01-route-inventory-reclassification-and-host-matrix` | 已完成（文档冻结） | 已基于 inventory / Hono 路由 / `phase13` 交接表冻结统一分类规则、host matrix 字段集、页面影响面与 drain 优先级 |
-| `phase14-02-dashboard-and-settings-query-host-closure` | 待开始 | 需明确 dashboard/settings 是正式 query host、治理保留，还是 bridge 过渡 |
+| `phase14-02-dashboard-and-settings-query-host-closure` | 已完成（文档冻结） | 已冻结 dashboard retained-legacy query host、Hono page-closure bridge、settings 治理型 retained-legacy 身份、页面影响与 D1 顺序 |
 | `phase14-03-rooms-buildings-meters-api-drain` | 待开始 | 需收口房源、楼栋、仪表 API 的读写宿主与删除门禁边界 |
 | `phase14-04-contracts-and-checkout-api-drain` | 待开始 | 需收口合同列表/详情/编辑/续租/退租/补账单的读写宿主与 compat 边界 |
 | `phase14-05-bills-and-bill-stats-api-drain` | 待开始 | 需收口账单列表/详情/明细/统计的 query host 与兼容包装退出前提 |
@@ -159,6 +159,23 @@
 - dashboard 的正式 query host 与 retained-legacy bridge 关系具备单一解释
 - settings 的 API 身份具备单一解释
 - 首页/设置页与治理接口的边界具备单一解释
+
+### 当前轮已冻结输出
+- D1 固定顺序为：
+  - 先冻结 dashboard query host 与 page-closure bridge 解释
+  - 再冻结 settings API 身份与治理边界
+  - 最后统一首页 `/`、设置页 `/settings` 与 governance 辅助接口的页面影响解释
+- dashboard 当前冻结结论：
+  - 当前正式 query host 仍是旧 `src/app/api/dashboard/**/route.ts` 与 `src/lib/dashboard-queries.ts` / `src/lib/page-closure-compat/dashboard.ts` 组合，不得误判为已完成正式 Hono 查询切流
+  - `server/routes/dashboard.ts` 当前只属于 page-closure bridge；它用于承接首页首屏所需的 `/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/vacant-rooms`
+  - `/api/dashboard/overdue-payments` 与 `/api/dashboard/unpaid-rent` 继续保留为 retained-legacy 查询入口
+  - 当前页面影响面固定为首页 `/`
+- settings 当前冻结结论：
+  - `/api/settings` 与 `/api/settings/init` 继续按治理型 retained-legacy 解释，主语义锚点仍是 `src/lib/global-settings.ts`
+  - `server/routes/settings.ts` 当前只属于最小治理兼容宿主，用于承接设置页首屏读写、重置与初始化动作，不等于正式业务 API 已切流
+  - 当前页面影响面固定为 `/settings`
+  - `/api/validation`、`/api/data-consistency`、健康辅助与 repair/status-check 等入口继续按 governance 延后范围解释
+- 本子任务输出已固定为 `phase14-03-rooms-buildings-meters-api-drain` 的 D1 上游输入，不再重复改写 dashboard/settings 解释
 
 ### 验证要求
 - 确认 dashboard 相关路径逐条可回溯到当前 Hono 或旧 Next 路由

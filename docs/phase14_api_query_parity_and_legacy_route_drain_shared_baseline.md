@@ -151,6 +151,20 @@
   - `renters` 为 compat-wrapper + shared helper bridge
   - `meter-readings` 为 formal/compat/bridge 混合带，不可一刀切
 
+### 5.10 `phase14-02` D1 dashboard / settings 冻结口径
+- D1 固定顺序为：
+  - 先冻结 dashboard query host 与 page-closure bridge
+  - 再冻结 settings API 身份与治理边界
+  - 最后统一首页 `/`、设置页 `/settings` 与 governance 辅助接口的页面影响解释
+- dashboard 当前继续按 `retained-legacy + page-closure bridge` 解释：
+  - 正式 query host 仍是旧 `src/app/api/dashboard/**/route.ts` 与 `src/lib/dashboard-queries.ts` / `src/lib/page-closure-compat/dashboard.ts` 组合
+  - `server/routes/dashboard.ts` 只承接 `/stats`、`/contract-alerts`、`/upcoming-contracts`、`/leaving-tenants`、`/vacant-rooms` 的首页首屏 bridge
+  - `/api/dashboard/overdue-payments` 与 `/api/dashboard/unpaid-rent` 继续属于 retained-legacy
+- settings 当前继续按 `治理型 retained-legacy + 最小 Hono 兼容宿主` 解释：
+  - `/api/settings` 与 `/api/settings/init` 的核心治理语义继续锚定 `src/lib/global-settings.ts`
+  - `server/routes/settings.ts` 只承接设置页首屏读写、重置与初始化，不等于正式业务 API 已切流
+  - `/api/validation`、`/api/data-consistency`、健康辅助与 repair/status-check 继续按 governance 延后范围处理
+
 ## 六、正式范围共享口径
 ### 6.1 `phase14` 主范围
 - dashboard query host
@@ -191,8 +205,8 @@
 ### 7.3 页面影响面冻结结果
 | 页面组 | 当前直接依赖域 | 冻结口径 |
 | --- | --- | --- |
-| `/` | Dashboard | 首页页面 parity 已完成，但首页查询仍属于 dashboard retained-legacy / bridge 输入 |
-| `/settings` | Settings、Governance | 设置页已迁移；settings API 仍按治理型 retained-legacy 解释，治理辅助入口继续延后 |
+| `/` | Dashboard | 首页页面 parity 已完成，但首页查询仍属于 dashboard retained-legacy query host + Hono page-closure bridge 输入 |
+| `/settings` | Settings、Governance | 设置页已迁移；settings API 仍按治理型 retained-legacy 解释，`server/routes/settings.ts` 仅作最小治理兼容宿主，治理辅助入口继续延后 |
 | `/rooms*`、`/add/room` | Rooms、Buildings、Meters | 房源页面依赖 retained-legacy 房间读写、formal-host-owned 楼栋与 compat-wrapper 仪表写路径 |
 | `/contracts*`、`/add/contract` | Contracts、Checkout、Rooms、Renters | 合同页依赖 retained-legacy 合同读路径与 checkout / renters compat 过渡带 |
 | `/bills*`、`/bills/stats` | Bills、Dashboard | 账单页已迁移，但账单统计仍为 page-to-legacy bridge，明细读取仍是 retained-legacy |
@@ -223,8 +237,8 @@
 ### 8.5 分域 host matrix 快照
 | 业务域 | 当前主分类 | 当前宿主解释 | `drainPriority` |
 | --- | --- | --- | --- |
-| Dashboard | `retained-legacy` | `server/routes/dashboard.ts` 仍是 page-closure bridge，不构成正式 query host 完成 | D1 |
-| Settings | `retained-legacy` | `server/routes/settings.ts` 是最小治理兼容宿主，不等于正式业务 API 已切流 | D1 |
+| Dashboard | `retained-legacy` | 正式 query host 仍是旧 `src/app/api/dashboard/**/route.ts` + `src/lib/dashboard-queries.ts` / `src/lib/page-closure-compat/dashboard.ts`；`server/routes/dashboard.ts` 仍是首页 page-closure bridge，不构成正式 query host 完成 | D1 |
+| Settings | `retained-legacy` | `src/lib/global-settings.ts` 仍是 settings 核心治理语义锚点；`server/routes/settings.ts` 是最小治理兼容宿主，不等于正式业务 API 已切流 | D1 |
 | Rooms | `retained-legacy` 为主 | `server/routes/rooms.ts` 仅承接局部批量创建与删除门禁 compat，整域仍未 formal | D2 |
 | Buildings | `formal-host-owned` | `server/routes/buildings.ts` 已冻结为正式宿主 | D2 |
 | Meters | `compat-wrapper` 为主 | `server/routes/meters.ts` 已 formal 承接详情/状态，但房间挂表仍留在 retained-legacy | D2 |
