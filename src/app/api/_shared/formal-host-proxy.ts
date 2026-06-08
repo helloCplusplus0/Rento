@@ -6,6 +6,11 @@ interface FormalHostProxyOptions {
   routeLabel: string
   migrationHost: string
   exitCondition: string
+  compatMetadata?: {
+    targetStrategy?: string
+    closurePhase?: string
+    compatReason?: string
+  }
 }
 
 /**
@@ -34,9 +39,17 @@ export async function proxyToFormalHost(
         error: 'Formal host proxy failed',
         details: {
           currentState: 'compat-wrapper',
-          targetStrategy: 'in-process-formal-host-proxy',
+          targetStrategy:
+            options.compatMetadata?.targetStrategy ??
+            'in-process-formal-host-proxy',
           migrationHost: options.migrationHost,
           exitCondition: options.exitCondition,
+          ...(options.compatMetadata?.closurePhase
+            ? { closurePhase: options.compatMetadata.closurePhase }
+            : {}),
+          ...(options.compatMetadata?.compatReason
+            ? { compatReason: options.compatMetadata.compatReason }
+            : {}),
         },
       },
       { status: 502 }
