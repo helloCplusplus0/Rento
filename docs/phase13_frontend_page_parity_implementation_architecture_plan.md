@@ -81,10 +81,9 @@
 ### 3.2 正式业务页面迁移审计快照
 - 旧 `src/app/**/page.tsx` 冻结的正式业务页面总量仍为 `25`。
 - 其中：
-  - `24` 个页面已完成 `src/minix` route module 落位并可通过 React Router 直接进入。
-  - `1` 个页面为“未迁移”：`/bills/stats` 仍通过 legacy document fallback 打开。
+  - `25` 个页面已完成 `src/minix` route module 落位并可通过 React Router 直接进入。
 - 因此 `phase13` 当前的主风险已从“是否仍是 placeholder”切换为：
-  - `/bills/stats` 是否补齐正式承接位
+  - `/bills/stats` 的 retained-legacy API/query bridge 是否保持单一解释
   - 页面已迁移但 API/query 仍在 retained-legacy / compat-wrapper 的 `phase14` 交接是否单一可解释
 - 这些残余风险当前主要由 `phase13-07-bill-stats-route-parity` 与后续 `phase14` retained-legacy API/query drain 承接，不再混写回 `phase13-05` 的文档基线收口职责。
 
@@ -101,9 +100,9 @@
   - `next/link`
   - `router.push/replace/back/refresh`
 - 当前 `src/minix/lib/route-navigation.ts` 已把 document fallback 收敛为：
-  - 正式业务页面中的 `/bills/stats`
   - 延后支持页 `/profile`、`/notifications`
   - 治理页 `/system-health`、`/data-consistency`
+- `/bills/stats` 已移出正式业务页面 fallback 清单；当前残余风险转为页面内部是否还有经 barrel 或宿主耦合链路残留的 `next/*` 依赖。
 - 因此当前 `phase13-05` 必须把“页面已迁移”与“API/query 已切流”明确拆开，避免把 `phase14` 的 retained-legacy drain 错写成页面迁移已完成。
 
 ### 3.4 Context7 对实施边界的补充依据
@@ -125,7 +124,7 @@
 | `/rooms` | 列表页 | P0 | `src/minix/routes/rooms/RoomListRoute.tsx` | 已迁移 | 已在新宿主承接列表、筛选、详情跳转与错误边界 |
 | `/add` | 聚合入口页 | P0 | `src/minix/routes/add/AddHubRoute.tsx` | 已迁移 | 已承接新增入口聚合与页面内跳转 |
 | `/contracts` | 列表页 | P0 | `src/minix/routes/contracts/ContractListRoute.tsx` | 已迁移 | 已承接合同列表、续租跳转与详情跳转 |
-| `/bills` | 列表页 | P0 | `src/minix/routes/bills/BillListRoute.tsx` | 已迁移 | 已承接账单列表与详情跳转；统计页按钮仍落到 legacy document fallback |
+| `/bills` | 列表页 | P0 | `src/minix/routes/bills/BillListRoute.tsx` | 已迁移 | 已承接账单列表、详情跳转与统计页入口；`/bills/stats` 后续仅剩浏览器复验与 retained-legacy bridge 验证 |
 | `/settings` | 设置页 | P0 | `src/minix/routes/settings/SettingsRoute.tsx` | 已迁移 | 设置主页已迁入；治理辅助入口仍通过 document fallback 打开治理页 |
 | `/rooms/[id]` | 详情页 | P1 | `src/minix/routes/rooms/RoomDetailRoute.tsx` | 已迁移 | 已承接房源详情、关联合同入口与错误边界 |
 | `/rooms/[id]/edit` | 编辑页 | P1 | `src/minix/routes/rooms/EditRoomRoute.tsx` | 已迁移 | 已承接房源编辑与提交后回跳 |
@@ -145,12 +144,12 @@
 | `/renters/[id]/edit` | 编辑页 | P1 | `src/minix/routes/renters/RenterEditRoute.tsx` | 已迁移 | 已承接租客编辑与回填 |
 | `/meter-readings/batch` | 流程动作页 | P1 | `src/minix/routes/meter-readings/MeterReadingBatchRoute.tsx` | 已迁移 | 已承接批量抄表流程与批处理跳转协议 |
 | `/meter-readings/history` | 流程动作页 | P1 | `src/minix/routes/meter-readings/MeterReadingHistoryRoute.tsx` | 已迁移 | 已承接抄表历史浏览与详情恢复路径 |
-| `/bills/stats` | 统计页 | P2 | 暂无；由 `BillListRoute` 经 `navigateToMinixOrDocument('/bills/stats')` 打开 | 未迁移 | 当前仍依赖 legacy document fallback，是正式业务页面中的唯一未迁移项 |
+| `/bills/stats` | 统计页 | P2 | `src/minix/routes/bills/BillStatsRoute.tsx` | 已迁移 | 已收口 route-level loader / pending / error 边界；当前保留 `/api/bills/stats` retained-legacy bridge，退出留给 `phase14` |
 
 ### 4.2 未迁移 / 部分迁移清单
 | 页面路径 | 当前状态 | 现状说明 | 是否阻断 `phase13` 完成判定 |
 | --- | --- | --- | --- |
-| `/bills/stats` | 未迁移 | 仍无 `src/minix/routes/bills/BillStatsRoute.tsx`；当前通过 legacy document fallback 打开旧宿主页 | 是 |
+| `/bills/stats` | 已迁移，待浏览器复验 | 已补齐 `src/minix/routes/bills/BillStatsRoute.tsx`；当前风险转为 retained-legacy `/api/bills/stats` bridge 与 `phase14` drain 交接 | 否 |
 
 ### 4.3 延后范围保持不变
 - P2
@@ -165,7 +164,7 @@
   - `/components`
   - `/business-flow-validation`
 - 以上页面继续按 `phase12` 冻结口径延后，不因 `phase13-05` 的验收基线收口而被重新包装成已迁移正式页面。
-- 当前 `phase13` 仅剩 `/bills/stats` 作为正式业务页面实施尾项；首页 `/` 已由 `phase13-06` 收口为通过保真验收。
+- 当前 `phase13` 的正式业务页面承接位已补齐；首页 `/` 已由 `phase13-06` 收口为通过保真验收，`/bills/stats` 的后续重点转为浏览器复验与 `phase14` retained-legacy drain 交接。
 
 ## 五、新宿主承接结构
 ### 5.1 目录承接位
@@ -324,7 +323,7 @@
 | 页面类别 | 覆盖路径 | 旧原型参考 | 核心验收点 | 最小浏览器路径 | 当前风险 |
 | --- | --- | --- | --- | --- | --- |
 | 工作台首页 | `/` | `src/app/page.tsx`、`src/components/pages/DashboardPageWithStats.tsx` | 统计卡、快捷入口、搜索入口、提醒区、个人入口与整体信息结构需接近旧原型 | `/` -> 搜索 -> 快捷入口 -> 设置 -> 返回首页 | 已完成浏览器复验；剩余 dashboard stats 读接口问题属于 `phase14` API/query parity |
-| 列表页 | `/rooms`、`/contracts`、`/bills`、`/renters` | 对应旧 `src/app/**/page.tsx` 列表页 | 搜索/筛选、空态/错态、详情跳转、一级 CTA 与列表信息结构保持稳定 | 列表 -> 搜索/筛选 -> 打开详情或新建入口 | 账单列表仍存在 `/bills/stats` fallback；各列表的 API/query 切流尚未进入 `phase14` |
+| 列表页 | `/rooms`、`/contracts`、`/bills`、`/renters` | 对应旧 `src/app/**/page.tsx` 列表页 | 搜索/筛选、空态/错态、详情跳转、一级 CTA 与列表信息结构保持稳定 | 列表 -> 搜索/筛选 -> 打开详情或新建入口 | 账单列表已可直接进入 `/bills/stats` 正式路由；各列表的 API/query 切流尚未进入 `phase14` |
 | 详情页 | `/rooms/:id`、`/contracts/:id`、`/bills/:id`、`/renters/:id` | 对应旧详情页 | 详情信息块、关联合同/账单/租客/房源跳转、not-found 同类出口与恢复路径可解释 | 列表 -> 详情 -> 打开关联实体 -> 返回 | 详情读取仍部分依赖 retained-legacy / compat-wrapper API |
 | 编辑 / 新建页 | `/rooms/:id/edit`、`/add/room`、`/add/contract`、`/contracts/new`、`/contracts/:id/edit`、`/bills/create`、`/bills/:id/edit`、`/renters/new`、`/renters/:id/edit` | 对应旧表单页 | 首屏预加载、回填、校验、提交、成功回跳与错误提示保持单一解释 | 进入表单 -> 修改字段 -> 提交 -> 回跳到列表或详情 | 不能因宿主迁移弱化表单字段语义与回跳规则 |
 | 流程动作页 | `/contracts/:id/renew`、`/contracts/:id/checkout`、`/meter-readings/batch`、`/meter-readings/history` | 对应旧流程页 | 上下文预加载、步骤反馈、成功提示、历史保留语义与恢复路径保持稳定 | 合同详情 -> 续租/退租；抄表批量 -> 历史页 | 抄表与续退租仍依赖 compat bridge，必须与 `phase14` drain 边界分开验收 |
@@ -335,7 +334,7 @@
 | 工作台 | `/` | 加载首页 -> 搜索入口 -> 快捷入口 -> 设置入口 -> 通知入口 | 首页不出现说明页/placeholder；搜索、快捷入口、个人入口和设置入口语义与旧原型一致；延后支持页入口走受控 fallback / 阶段提示，不进入前端 `404` | 刷新当前页；若首页装配失败，使用页面内重试按钮并记录错误信息 | 已登录，存在基础 dashboard 数据 |
 | 房源 | `/rooms` | 搜索或筛选 -> 进入 `/rooms/:id` -> 进入 `/rooms/:id/edit` | 列表、详情、编辑链路可走通；详情可打开签约入口；编辑成功后可回跳 | 返回列表后重新打开同一房源，必要时记录错态入口 | 已登录，至少有 1 个房源与可编辑样本 |
 | 合同 | `/contracts` | 打开详情 -> 编辑 -> 续租或退租 | 详情结构、编辑回填、续租/退租流程与旧宿主语义一致 | 返回合同列表后重新进入详情；如失败记录对应合同 ID | 已登录，至少有 1 个进行中合同 |
-| 账单 | `/bills` | 打开详情 -> 编辑 -> 新建账单 -> 打开统计入口 | 列表、详情、编辑、新建路径可执行；统计入口要么迁入新宿主，要么明确落到 legacy fallback | 失败时返回账单列表；若统计页尚未迁移，必须记录当前 fallback 行为 | 已登录，至少有 1 张账单与 1 条可新建路径 |
+| 账单 | `/bills` | 打开详情 -> 编辑 -> 新建账单 -> 打开统计入口 | 列表、详情、编辑、新建与统计入口路径可执行；`/bills/stats` 不再落回正式业务页面 fallback | 失败时返回账单列表；若统计页报错，记录 route-level error 或残留宿主依赖信息 | 已登录，至少有 1 张账单与 1 条可新建路径 |
 | 租客 | `/renters` | 打开详情 -> 编辑 -> 新建租客 -> 从详情跳到关联合同或签约入口 | 列表、详情、编辑、新建链路一致，关联跳转不出现死链 | 返回租客列表，记录关联跳转是否落到新宿主或 compat 桥接 | 已登录，至少有 1 个租客 |
 | 抄表 | `/meter-readings/batch` | 批量抄表 -> 提交或预演 -> 打开历史页 | 批量页与历史页都可进入；历史记录保留语义不被破坏 | 返回批量页重新进入；如失败记录批次与房间样本 | 已登录，至少有 1 个可抄表房间和历史记录样本 |
 
@@ -345,7 +344,7 @@
 | 工作台 / 设置 | `/` 已通过保真验收；`/settings` 已迁移 | `/api/dashboard/*`、`/api/settings*` | dashboard 查询与设置接口仍属 retained-legacy / governance 口径，尚未冻结正式 Hono 查询宿主 | 先明确 dashboard/settings 的正式读取宿主，再决定治理辅助接口如何处理 |
 | 房源 / 新增房源 | `/rooms*`、`/add/room` 已迁移 | `/api/rooms*`、`/api/rooms/:id/meters`、`/api/meters/:meterId*`、`/api/buildings*` | 房源列表/详情/状态/仪表读取仍含 retained-legacy；楼栋与部分仪表操作已进入 formal-host-owned / compat-wrapper | 先拆清房源读路径、仪表读路径与批量/删除写路径，再判断 route drain 顺序 |
 | 合同 / 快捷签约 | `/contracts*`、`/add/contract` 已迁移 | `/api/contracts*` | 合同列表/详情读取仍 retained-legacy；续租、退租、删除等动作已切到 compat-wrapper | 先收口列表/详情/编辑读写，再清理续租/退租 compat 包装 |
-| 账单 | `/bills*` 已迁移；`/bills/stats` 未迁移 | `/api/bills*` | 账单列表、详情、统计仍有 retained-legacy；状态更新/编辑/删除部分已进入 compat-wrapper | 账单 stats 路由补齐与账单读模型切流必须一起评估，避免页面先迁而查询仍分裂 |
+| 账单 | `/bills*` 与 `/bills/stats` 已迁移 | `/api/bills*` | 账单列表、详情、统计仍有 retained-legacy；其中 `/bills/stats` 页面已切到 `src/minix`，但 stats 读取仍通过 legacy API bridge；状态更新/编辑/删除部分已进入 compat-wrapper | 先收口账单 stats 读取宿主与 route drain，再统一评估账单读模型切流，避免页面与查询解释分裂 |
 | 租客 | `/renters*` 已迁移 | `/api/renters*` | 当前仍通过 shared renter page-closure compat helper 桥接旧 Next 与 Hono runtime | 先在 route inventory 中把 compat bridge 与最终正式宿主边界写清，再执行 drain |
 | 抄表 | `/meter-readings*` 已迁移 | `/api/meter-readings*`、`/api/utility-readings` | 当前仍通过 shared meter-reading page-closure compat helper 桥接旧入口 | 先确认批量抄表与历史页对应的读写路径，再统一 cut 到正式宿主 |
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
 
 import { calculateDateRange, type DateRange } from '@/lib/bill-stats'
@@ -20,8 +20,12 @@ export function DateRangeSelector({
   loading,
 }: DateRangeSelectorProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>(
-    value.preset || 'month'
+    value.preset || 'custom'
   )
+
+  useEffect(() => {
+    setSelectedPreset(value.preset || 'custom')
+  }, [value.preset])
 
   const presets = [
     { label: '今日', value: 'today' },

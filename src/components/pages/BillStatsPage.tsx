@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { BarChart3, Download } from 'lucide-react'
 
 import { type BillStatsData, type DateRange } from '@/lib/bill-stats'
@@ -9,38 +8,63 @@ import { Button } from '@/components/ui/button'
 import { BillCharts } from '@/components/business/BillCharts'
 import { DateRangeSelector } from '@/components/business/DateRangeSelector'
 import { StatsSummary } from '@/components/business/StatsSummary'
-import { PageContainer } from '@/components/layout'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 interface BillStatsPageProps {
   initialData: BillStatsData
   initialRange: DateRange
+  loading?: boolean
+  onDateRangeChange?: (range: DateRange) => void
+}
+
+function buildBillStatsSearchParams(range: DateRange) {
+  const params = new URLSearchParams()
+  params.set('start', range.startDate.toISOString().split('T')[0])
+  params.set('end', range.endDate.toISOString().split('T')[0])
+
+  if (range.preset) {
+    params.set('range', range.preset)
+  }
+
+  return params
 }
 
 export function BillStatsPage({
   initialData,
   initialRange,
+  loading = false,
+  onDateRangeChange,
 }: BillStatsPageProps) {
-  const router = useRouter()
   const [dateRange, setDateRange] = useState<DateRange>(initialRange)
   const [statsData, setStatsData] = useState<BillStatsData>(initialData)
-  const [loading, setLoading] = useState(false)
+  const [isLocalLoading, setIsLocalLoading] = useState(false)
+
+  useEffect(() => {
+    setDateRange(initialRange)
+    setStatsData(initialData)
+  }, [initialData, initialRange])
 
   // 处理时间范围变化
   const handleDateRangeChange = async (newRange: DateRange) => {
-    setLoading(true)
+    setDateRange(newRange)
+
+    if (onDateRangeChange) {
+      onDateRangeChange(newRange)
+      return
+    }
+
+    const params = buildBillStatsSearchParams(newRange)
+
+    setIsLocalLoading(true)
     try {
-      // 更新URL参数
-      const params = new URLSearchParams()
-      params.set('start', newRange.startDate.toISOString().split('T')[0])
-      params.set('end', newRange.endDate.toISOString().split('T')[0])
-      if (newRange.preset) {
-        params.set('range', newRange.preset)
+      if (typeof window !== 'undefined') {
+        window.history.pushState(
+          null,
+          '',
+          `/bills/stats?${params.toString()}`
+        )
       }
 
-      // 使用router.push更新URL
-      router.push(`/bills/stats?${params.toString()}`)
-
-      // 获取新的统计数据
       const response = await fetch(
         `/api/bills/stats?${params.toString()}&comparison=true`
       )
@@ -50,13 +74,12 @@ export function BillStatsPage({
 
       const newData = await response.json()
 
-      setDateRange(newRange)
       setStatsData(newData)
     } catch (error) {
       console.error('Failed to fetch stats:', error)
       // 可以添加错误提示
     } finally {
-      setLoading(false)
+      setIsLocalLoading(false)
     }
   }
 
@@ -66,6 +89,8 @@ export function BillStatsPage({
     console.log('Export data:', statsData)
     // 可以导出为CSV或Excel格式
   }
+
+  const isLoading = loading || isLocalLoading
 
   return (
     <PageContainer title="账单统计" showBackButton>
@@ -94,14 +119,14 @@ export function BillStatsPage({
         <DateRangeSelector
           value={dateRange}
           onChange={handleDateRangeChange}
-          loading={loading}
+          loading={isLoading}
         />
 
         {/* 统计摘要 */}
-        <StatsSummary data={statsData} loading={loading} />
+        <StatsSummary data={statsData} loading={isLoading} />
 
         {/* 图表区域 */}
-        <BillCharts data={statsData} loading={loading} />
+        <BillCharts data={statsData} loading={isLoading} />
 
         {/* 数据说明 */}
         <div className="rounded-lg bg-gray-50 p-4">

@@ -2,6 +2,7 @@ import {
   calculateDaysUntilContractExpiry,
   isContractExpiringSoon,
 } from '@/lib/contract-alert-semantics'
+import { parseDateRange, type BillStatsData, type DateRange } from '@/lib/bill-stats'
 import {
   DEFAULT_METER_READING_HISTORY_FILTERS,
   type MeterReadingHistoryFilters,
@@ -167,6 +168,11 @@ export interface ContractCheckoutRouteData {
 export interface BillListRouteData {
   initialSearchQuery: string
   bills: any[]
+}
+
+export interface BillStatsRouteData {
+  initialRange: DateRange
+  statsData: BillStatsData
 }
 
 export interface CreateBillRouteData {
@@ -361,6 +367,133 @@ function normalizeBillForClient(bill: any) {
     paidDate: toDateValue(bill.paidDate),
     createdAt: toDateValue(bill.createdAt),
     updatedAt: toDateValue(bill.updatedAt),
+  }
+}
+
+function normalizeBillStatsBase(source: any) {
+  return {
+    totalAmount: toNumberValue(source?.totalAmount),
+    paidAmount: toNumberValue(source?.paidAmount),
+    pendingAmount: toNumberValue(source?.pendingAmount),
+    overdueAmount: toNumberValue(source?.overdueAmount),
+    totalCount: toNumberValue(source?.totalCount),
+    settledCount: toNumberValue(source?.settledCount),
+    openCount: toNumberValue(source?.openCount),
+    overdueCount: toNumberValue(source?.overdueCount),
+  }
+}
+
+function normalizeBillStatsTypeBreakdown(
+  breakdown: unknown
+): BillStatsData['typeBreakdown'] {
+  const source =
+    typeof breakdown === 'object' && breakdown !== null
+      ? (breakdown as Record<string, { amount?: unknown; count?: unknown }>)
+      : {}
+
+  return {
+    RENT: {
+      amount: toNumberValue(source.RENT?.amount),
+      count: toNumberValue(source.RENT?.count),
+    },
+    DEPOSIT: {
+      amount: toNumberValue(source.DEPOSIT?.amount),
+      count: toNumberValue(source.DEPOSIT?.count),
+    },
+    UTILITIES: {
+      amount: toNumberValue(source.UTILITIES?.amount),
+      count: toNumberValue(source.UTILITIES?.count),
+    },
+    OTHER: {
+      amount: toNumberValue(source.OTHER?.amount),
+      count: toNumberValue(source.OTHER?.count),
+    },
+  }
+}
+
+function normalizeBillStatsDateRange(
+  source: unknown,
+  fallbackRange: DateRange
+): BillStatsData['dateRange'] {
+  const dateRange =
+    typeof source === 'object' && source !== null
+      ? (source as { startDate?: unknown; endDate?: unknown })
+      : {}
+
+  return {
+    startDate: toDateValue(dateRange.startDate) ?? fallbackRange.startDate,
+    endDate: toDateValue(dateRange.endDate) ?? fallbackRange.endDate,
+  }
+}
+
+function normalizeBillStatsPreviousPeriod(
+  source: unknown,
+  fallbackRange: DateRange
+): NonNullable<BillStatsData['comparison']>['previousPeriod'] {
+  const previousPeriod =
+    typeof source === 'object' && source !== null
+      ? (source as Record<string, unknown>)
+      : {}
+
+  return {
+    ...normalizeBillStatsBase(previousPeriod),
+    typeBreakdown: normalizeBillStatsTypeBreakdown(previousPeriod.typeBreakdown),
+    dateRange: normalizeBillStatsDateRange(previousPeriod.dateRange, fallbackRange),
+  }
+}
+
+function normalizeBillStatsForClient(
+  source: unknown,
+  fallbackRange: DateRange
+): BillStatsData {
+  const stats = typeof source === 'object' && source !== null ? source : {}
+  const typedStats = stats as Record<string, unknown>
+
+  return {
+    ...normalizeBillStatsBase(typedStats),
+    typeBreakdown: normalizeBillStatsTypeBreakdown(typedStats.typeBreakdown),
+    timeSeries: Array.isArray(typedStats.timeSeries)
+      ? typedStats.timeSeries.map((item) => ({
+          date:
+            typeof item === 'object' &&
+            item !== null &&
+            typeof (item as { date?: unknown }).date === 'string'
+              ? ((item as { date: string }).date ?? '')
+              : '',
+          totalAmount:
+            typeof item === 'object' && item !== null
+              ? toNumberValue((item as { totalAmount?: unknown }).totalAmount)
+              : 0,
+          paidAmount:
+            typeof item === 'object' && item !== null
+              ? toNumberValue((item as { paidAmount?: unknown }).paidAmount)
+              : 0,
+          pendingAmount:
+            typeof item === 'object' && item !== null
+              ? toNumberValue((item as { pendingAmount?: unknown }).pendingAmount)
+              : 0,
+          count:
+            typeof item === 'object' && item !== null
+              ? toNumberValue((item as { count?: unknown }).count)
+              : 0,
+        }))
+      : [],
+    comparison:
+      typeof typedStats.comparison === 'object' && typedStats.comparison !== null
+        ? {
+            previousPeriod: normalizeBillStatsPreviousPeriod(
+              (typedStats.comparison as { previousPeriod?: unknown }).previousPeriod,
+              fallbackRange
+            ),
+            growthRate: toNumberValue(
+              (typedStats.comparison as { growthRate?: unknown }).growthRate
+            ),
+            changeAmount: toNumberValue(
+              (typedStats.comparison as { changeAmount?: unknown }).changeAmount
+            ),
+          }
+        : undefined,
+    dateRange: normalizeBillStatsDateRange(typedStats.dateRange, fallbackRange),
   }
 }
 
@@ -1077,6 +1210,40 @@ async function fetchBillUtilityDetails(
   }
 }
 
+async function fetchBillStatsRouteData(
+  requestUrl: string,
+  options: RequestOptions = {}
+): Promise<BillStatsRouteData> {
+  const request = new URL(requestUrl)
+  const initialRange = parseDateRange({
+    start: request.searchParams.get('start') ?? undefined,
+    end: request.searchParams.get('end') ?? undefined,
+    range: request.searchParams.get('range') ?? undefined,
+  })
+  const searchParams = new URLSearchParams({
+    start: initialRange.startDate.toISOString().split('T')[0],
+    end: initialRange.endDate.toISOString().split('T')[0],
+    comparison: 'true',
+  })
+
+  if (initialRange.preset) {
+    searchParams.set('range', initialRange.preset)
+  }
+
+  // phase13-07 keeps the page parity bridge narrow: the minix route consumes the
+  // retained-legacy stats API for now, and phase14 owns the future drain/cutover.
+  const payload = await fetchJson<unknown>(
+    `/bills/stats?${searchParams.toString()}`,
+    '账单统计加载失败',
+    options
+  )
+
+  return {
+    initialRange,
+    statsData: normalizeBillStatsForClient(payload, initialRange),
+  }
+}
+
 function buildContractStats(
   contracts: any[],
   contractExpiryAlertDays: number
@@ -1357,6 +1524,13 @@ export async function loadBillListRouteData(
     initialSearchQuery,
     bills,
   }
+}
+
+export async function loadBillStatsRouteData(
+  requestUrl: string,
+  options: RequestOptions = {}
+): Promise<BillStatsRouteData> {
+  return fetchBillStatsRouteData(requestUrl, options)
 }
 
 export async function loadCreateBillRouteData(

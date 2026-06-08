@@ -11,6 +11,7 @@ const MINIX_ROUTER_PATHS = new Set([
   '/contracts',
   '/contracts/new',
   '/bills',
+  '/bills/stats',
   '/bills/create',
   '/renters',
   '/renters/new',
@@ -40,7 +41,6 @@ const MINIX_ROUTER_PATH_PATTERNS = [
 const LEGACY_DOCUMENT_PATH_PATTERNS = [
   /^\/profile$/,
   /^\/notifications$/,
-  /^\/bills\/stats$/,
   /^\/system-health$/,
   /^\/data-consistency$/,
 ] as const

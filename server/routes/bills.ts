@@ -1,4 +1,5 @@
 import { billingDomainBoundary } from '@/lib/domain'
+import { advancedBillStats, parseDateRange } from '@/lib/bill-stats'
 import {
   billingDomainService,
   isBillDeleteGuardBlockedError,
@@ -289,6 +290,54 @@ export function createBillRoutes(env: MinixServerEnv) {
     })
 
     return c.json(toClientBill(newBill))
+  })
+
+  routeApp.get('/stats', async (c) => {
+    const url = new URL(c.req.url)
+    const start = url.searchParams.get('start')
+    const end = url.searchParams.get('end')
+    const range = url.searchParams.get('range')
+    const groupBy =
+      (url.searchParams.get('groupBy') as 'day' | 'week' | 'month') || 'day'
+    const includeComparison = url.searchParams.get('comparison') === 'true'
+    const dateRange = parseDateRange({
+      start: start || undefined,
+      end: end || undefined,
+      range: range || undefined,
+    })
+
+    // phase13-07 keeps `/api/bills/stats` on retained-legacy semantics.
+    // The unified Hono host only provides a static bridge here so the route is
+    // no longer swallowed by the dynamic `/:id` handler before phase14 drain.
+    const statsData = await advancedBillStats.getDetailedStats({
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+      groupBy,
+      includeComparison,
+    })
+
+    return c.json({
+      ...statsData,
+      totalAmount: Number(statsData.totalAmount),
+      paidAmount: Number(statsData.paidAmount),
+      pendingAmount: Number(statsData.pendingAmount),
+      overdueAmount: Number(statsData.overdueAmount),
+      timeSeries: statsData.timeSeries.map((item) => ({
+        ...item,
+        totalAmount: Number(item.totalAmount),
+        paidAmount: Number(item.paidAmount),
+        pendingAmount: Number(item.pendingAmount),
+      })),
+      typeBreakdown: Object.fromEntries(
+        Object.entries(statsData.typeBreakdown).map(([key, value]) => [
+          key,
+          {
+            amount: Number(value.amount),
+            count: Number(value.count),
+          },
+        ])
+      ),
+    })
   })
 
   routeApp.get('/:id/details', async (c) => {

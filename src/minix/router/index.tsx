@@ -41,6 +41,11 @@ import {
   billListLoader,
 } from '../routes/bills/BillListRoute'
 import {
+  BillStatsRoute,
+  BillStatsRouteErrorBoundary,
+  billStatsLoader,
+} from '../routes/bills/BillStatsRoute'
+import {
   CreateBillRoute,
   CreateBillRouteErrorBoundary,
   createBillLoader,
@@ -242,6 +247,12 @@ export const router = createBrowserRouter([
         element: <BillListRoute />,
         loader: billListLoader,
         errorElement: <BillListRouteErrorBoundary />,
+      },
+      {
+        path: 'bills/stats',
+        element: <BillStatsRoute />,
+        loader: billStatsLoader,
+        errorElement: <BillStatsRouteErrorBoundary />,
       },
       {
         path: 'bills/create',

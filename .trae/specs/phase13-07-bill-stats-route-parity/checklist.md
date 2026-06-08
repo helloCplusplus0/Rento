@@ -1,0 +1,10 @@
+- [x] 已冻结 `/bills/stats` 的新旧原型对照输入、页面承接边界与本轮不越界到 `phase14` 的约束
+- [x] 已完成 `BillStatsPage` 对 `next/navigation`、旧页面协议与 retained-legacy API/query 依赖点的盘点
+- [x] 已为 `/bills/stats` 建立 `src/minix` 正式承接位，并具备页面级 loader / pending / error 边界
+- [x] 已确认 `BillStatsPage` 不再直接或经布局 barrel 间接依赖 `next/navigation` / `next/link`
+- [x] 已确认统计页页面结构、筛选、汇总语义与旧原型保持一致，且未重做信息架构
+- [x] 已明确 `/bills/stats` 当前 retained-legacy API/query 的 bridge 说明，并写明其属于 `phase14` 后续输入
+- [x] 已确认统一 `/api/bills/stats` bridge 命中静态 stats 路径，而不会被动态 `bills/:id` 路由吞掉
+- [x] 已确认 `/bills/stats` 不再是正式业务页面 document fallback
+- [x] 已完成最小工程验证与人工浏览器复验
+- [x] 已完成独立子代理终审，并得到明确通过结论

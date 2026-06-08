@@ -390,10 +390,16 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
         formalHosts: [],
-        domainServicePaths: ['src/lib/queries.ts'],
-        keepReason: GOVERNANCE_KEEP_REASON,
+        bridgeHosts: [
+          'src/minix/lib/primary-route-data.ts',
+          'src/minix/routes/bills/BillStatsRoute.tsx',
+          'server/routes/bills.ts',
+        ],
+        domainServicePaths: ['src/lib/bill-stats.ts', 'src/lib/bill-cache.ts'],
+        keepReason:
+          'phase13-07 已把 `/bills/stats` 页面正式迁入 `src/minix`；当前统一 `/api/bills/stats` 仍通过 retained-legacy bridge 承接旧统计查询与缓存语义，并由 `server/routes/bills.ts` 提供静态桥接以避免被 `/:id` 动态路由吞掉。',
         exitCondition:
-          '待 phase10 以后统一处理仪表板/统计查询宿主时，再评估是否迁移或归档。',
+          '待 phase14 收口账单 stats API/query drain、明确正式统计读取宿主后，再移除该 page-to-legacy bridge。',
         rollbackCondition: LEGACY_RUNTIME_ROLLBACK_CONDITION,
       },
     ],
@@ -906,8 +912,11 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/dashboard-queries.ts'],
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: [
+          'src/lib/dashboard-queries.ts',
+          'src/lib/page-closure-compat/dashboard.ts',
+        ],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待 phase10 以后统一处理 dashboard 查询宿主与数据聚合层时，再评估去向。',
@@ -924,8 +933,12 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: [
+          'src/lib/contract-alert-semantics.ts',
+          'src/lib/page-closure-compat/dashboard.ts',
+          'src/lib/prisma.ts',
+        ],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 告警查询宿主时，再评估迁移或归档。',
@@ -942,8 +955,13 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/global-settings.ts', 'src/lib/prisma.ts'],
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: [
+          'src/lib/contract-alert-semantics.ts',
+          'src/lib/global-settings.ts',
+          'src/lib/page-closure-compat/dashboard.ts',
+          'src/lib/prisma.ts',
+        ],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
@@ -960,8 +978,13 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/global-settings.ts', 'src/lib/prisma.ts'],
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: [
+          'src/lib/contract-alert-semantics.ts',
+          'src/lib/global-settings.ts',
+          'src/lib/page-closure-compat/dashboard.ts',
+          'src/lib/prisma.ts',
+        ],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',
@@ -978,8 +1001,11 @@ export const PHASE09_06_LEGACY_ROUTE_INVENTORY: readonly LegacyRouteInventoryEnt
         methods: ['GET'],
         category: 'retained-legacy',
         phase10Input: 'defer-unmigrated',
-        formalHosts: [],
-        domainServicePaths: ['src/lib/prisma.ts'],
+        formalHosts: ['server/routes/dashboard.ts'],
+        domainServicePaths: [
+          'src/lib/page-closure-compat/dashboard.ts',
+          'src/lib/prisma.ts',
+        ],
         keepReason: GOVERNANCE_KEEP_REASON,
         exitCondition:
           '待后续阶段统一处理 dashboard 查询宿主时，再评估迁移或归档。',

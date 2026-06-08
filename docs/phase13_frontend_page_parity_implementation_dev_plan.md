@@ -7,9 +7,9 @@
   - [phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)
 - `phase13-01 ~ phase13-04` 的主要 route module、loader 与错误边界已经落位到 `src/minix`。
 - `phase13-05` 已完成“全量页面审计、验收矩阵、浏览器基线与 `phase14` 交接”的文档收口，并把残余问题收缩到首页 `/` 与 `/bills/stats`。
-- `phase13-06` 已完成首页 `/` 的高保真复验、parity gap 收口与最小修复；当前阶段尾项只剩 `/bills/stats` 的正式迁移承接位。
+- `phase13-06` 已完成首页 `/` 的高保真复验、parity gap 收口与最小修复；`phase13-07` 当前已补齐 `/bills/stats` 的正式迁移承接位，后续重点转为验证与 `phase14` 交接。
 - 补充约束：`phase13` 任一页面迁移子任务都必须以旧 `Rento` 源代码为直接原型；除已批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，是验收通过的硬门槛之一。
-- 补充判断：当前正式业务页面已不再主要卡在 placeholder 替换，而是卡在“是否完成高保真验收”与“`/bills/stats` 是否仍为未迁移页面”。
+- 补充判断：当前正式业务页面已不再主要卡在 placeholder 替换，而是卡在“是否完成高保真验收”与“已迁移页面的 retained-legacy API/query 交接是否单一可解释”。
 
 ## 一、文档定位
 本文档用于把 `phase13-frontend-page-parity-implementation` 拆分为顺序执行的实施子任务，确保仓库先明确“先迁哪些页面、如何拆宿主绑定、如何承接页面级数据边界、如何验收”，再进入逐个页面切片实施。
@@ -44,7 +44,7 @@
 | `phase13-04-renters-and-meter-reading-routes-parity` | 已完成实现，待统一验收 | 租客与抄表页面已进入新宿主；compat bridge 退出留给 `phase14` |
 | `phase13-05-page-parity-acceptance-baseline-closure` | 已完成 | 已完成全量页面清单、迁移状态、验收矩阵、浏览器基线与 `phase14` 交接说明收口 |
 | `phase13-06-dashboard-parity-closure` | 已完成 | 已完成首页浏览器复验、支持页入口 fallback 修复与“通过保真验收”收口 |
-| `phase13-07-bill-stats-route-parity` | 待执行 | 负责 `/bills/stats` 正式迁入 `src/minix`，但不得提前混写 `phase14` API/query drain |
+| `phase13-07-bill-stats-route-parity` | 已完成实现，待验证 | 已为 `/bills/stats` 补齐 `BillStatsRoute`、loader/error 边界与最小 bridge 说明；`phase14` API/query drain 仍未启动 |
 
 ## 三、任务拆分建议
 ## phase13-01-dashboard-and-shell-real-page-landing
@@ -328,9 +328,9 @@
 - 页面级 loader / pending / error 边界
 
 ### 当前事实基线
-- `/bills/stats` 当前仍通过 legacy document fallback 打开旧宿主页。
-- 旧 `BillStatsPage` 仍绑定 `next/navigation`，且统计页数据依赖 retained-legacy API/query。
-- 当前阶段目标是先完成页面 parity 承接与最小 bridge 说明，而不是提前执行 `phase14` 的账单 stats API/query drain。
+- `/bills/stats` 已由 `src/minix/routes/bills/BillStatsRoute.tsx` 正式承接，并补齐 route-level loader / pending / error 边界。
+- `BillStatsPage` 已拆除对 `next/navigation` 的直接依赖，改为宿主无关的页面主体接口；旧宿主保留浏览器级 query + fetch 兜底。
+- 当前阶段目标仍是页面 parity 承接与最小 bridge 说明，不提前执行 `phase14` 的账单 stats API/query drain。
 
 ### 参考来源
 - `src/app/bills/stats/page.tsx`
