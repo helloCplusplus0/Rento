@@ -5,9 +5,11 @@
 - 本文档不替代：
   - [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)
   - [phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)
-- 当前轮只产出阶段文档与顶层真相源同步，不进入 `/spec` 或实现。
+- `phase13-01 ~ phase13-04` 的主要 route module、loader 与错误边界已经落位到 `src/minix`。
+- `phase13-05` 已完成“全量页面审计、验收矩阵、浏览器基线与 `phase14` 交接”的文档收口，并把残余问题收缩到首页 `/` 与 `/bills/stats`。
+- 当前 `phase13` 的后续实施任务不再是重开前四个子任务，而是为这两个残余阻断项补充可进入 `/spec` 的正式收口子任务。
 - 补充约束：`phase13` 任一页面迁移子任务都必须以旧 `Rento` 源代码为直接原型；除已批准的最小技术适配外，接近 `100%` 还原旧页面的信息结构、组件表达、导航节奏、表单交互、状态反馈与主链语义，是验收通过的硬门槛之一。
-- 补充判断：`phase13-01` 的一轮实现虽然完成了首页壳层落位，但因与旧 `DashboardPageWithStats` 原型存在严重结构漂移，不能视为验收通过；后续必须按首页迁移缺口清单重开修复。
+- 补充判断：当前正式业务页面已不再主要卡在 placeholder 替换，而是卡在“是否完成高保真验收”与“`/bills/stats` 是否仍为未迁移页面”。
 
 ## 一、文档定位
 本文档用于把 `phase13-frontend-page-parity-implementation` 拆分为顺序执行的实施子任务，确保仓库先明确“先迁哪些页面、如何拆宿主绑定、如何承接页面级数据边界、如何验收”，再进入逐个页面切片实施。
@@ -33,6 +35,17 @@
 - 若不先明确宿主绑定拆分与 route-level 数据边界，实施会退回整目录搬运或临时兼容拼接。
 - 若不把页面级验收基线放到最后一起收口，`phase14` 将缺少单一可引用的页面 parity 输出。
 
+## 二点五、当前实施状态快照
+| 子任务 | 当前状态 | 当前结论 |
+| --- | --- | --- |
+| `phase13-01-dashboard-and-shell-real-page-landing` | 已落位，待高保真复验 | 首页已由 `HomePage` 承接真实工作台壳，但仍需按旧首页原型完成浏览器对照 |
+| `phase13-02-primary-list-routes-parity` | 已完成实现，待统一验收 | `/rooms`、`/add`、`/contracts`、`/bills`、`/settings` 已不再是 placeholder |
+| `phase13-03-detail-create-edit-flow-routes-parity` | 已完成实现，待统一验收 | 房源/合同/账单详情、编辑、新建与流程动作页已具备正式 route module |
+| `phase13-04-renters-and-meter-reading-routes-parity` | 已完成实现，待统一验收 | 租客与抄表页面已进入新宿主；compat bridge 退出留给 `phase14` |
+| `phase13-05-page-parity-acceptance-baseline-closure` | 已完成 | 已完成全量页面清单、迁移状态、验收矩阵、浏览器基线与 `phase14` 交接说明收口 |
+| `phase13-06-dashboard-parity-closure` | 待执行 | 负责首页 `/` 的高保真复验、差异清单收口与最终页面 parity 验收 |
+| `phase13-07-bill-stats-route-parity` | 待执行 | 负责 `/bills/stats` 正式迁入 `src/minix`，但不得提前混写 `phase14` API/query drain |
+
 ## 三、任务拆分建议
 ## phase13-01-dashboard-and-shell-real-page-landing
 ### 目标
@@ -46,11 +59,11 @@
 - 首页 loader / pending / error 同类边界
 
 ### 当前事实基线
-- 当前 `/` 已由 `HomePage` 挂载，但内容仍是阶段说明与承接清单，而不是正式工作台页面。
+- 当前 `/` 已由 `HomePage` 挂载，并通过 `MinixDashboardAdapters` 承接工作台统计卡、快捷入口、提醒面板、搜索入口与个人入口。
 - `src/minix/layout/UnifiedNavigation.tsx` 已完成 React Router 导航壳承接，可作为首页真实化后的稳定壳层输入。
 - `src/components/pages/DashboardPage.tsx` 与 `DashboardPageWithStats.tsx` 已提供旧首页主体表达参考，但仍需判断其是否直接依赖旧宿主或旧数据获取方式。
-- `phase13-01` 的一轮实现结果已经暴露出严重漂移：首页混入迁移说明文案、宿主状态卡、入口协同卡、首页状态边界卡与重复 `设置` 快捷入口，这些都不属于旧 `Rento` 首页原型的一部分。
-- 因此 `phase13-01` 的当前阻断不再是“首页是否已经脱离说明页”，而是“首页是否已经以旧 `DashboardPageWithStats` 为直接原型完成高保真承接”。
+- `phase13-01` 的当前阻断已经不再是“首页是否仍是说明页”，而是“首页是否已经按旧 `DashboardPageWithStats` / `DashboardPage` 完成高保真对照并形成可复核的浏览器验收记录”。
+- 因此 `phase13-05` 必须继续把 `/` 标记为“部分迁移”，直到首页通过正式保真复验。
 
 ### 参考来源
 - `src/minix/routes/HomePage.tsx`
@@ -93,9 +106,9 @@
 - 与上述页面对应的 route module、页面装配层与首屏数据边界
 
 ### 当前事实基线
-- 当前 `src/minix/router/index.tsx` 中上述路由仍由 `minixPrimaryRoutes` + `PlaceholderPage` 承接。
-- 旧宿主中已存在对应页面主体与表达层，但大量依赖 `next/navigation` 或旧宿主页面级 query。
-- `phase12` 已冻结这些页面为 P0 且全部标记为阻塞 `phase14` retained-legacy API 清退的关键页面。
+- 当前 `src/minix/router/index.tsx` 中上述路由已分别由 `RoomListRoute`、`AddHubRoute`、`ContractListRoute`、`BillListRoute` 与 `SettingsRoute` 真实承接。
+- 旧宿主中的页面主体与表达层已完成第一轮宿主适配，但对应页面仍需要统一纳入 `phase13-05` 验收矩阵。
+- `phase12` 已冻结这些页面为 P0，当前它们继续作为阻塞 `phase14` retained-legacy API 清退的关键页面。
 
 ### 参考来源
 - `src/minix/router/index.tsx`
@@ -141,13 +154,13 @@
 - `/bills/:id/edit`
 
 ### 当前事实基线
-- 上述路由当前在新宿主尚无正式落点。
-- 旧宿主中这些页面广泛混有：
+- 上述路由当前已在新宿主具备正式 route module 与 loader / error boundary 落点。
+- 旧宿主中这些页面原本广泛混有：
   - `generateMetadata()`
   - `notFound()`
   - `dynamic = 'force-dynamic'`
   - 页面级 server query 与 Decimal 转换
-- 因此本子任务的关键不是“复制页面组件”，而是把旧页面的宿主绑定、数据加载与错误出口正确拆离并承接到新 route module。
+- 当前这部分工作的重点已从“补齐路由文件”切换为“确认拆壳结果与旧原型一致，并把 retained-legacy / compat 依赖明确交给 `phase14`”。
 
 ### 参考来源
 - `src/app/rooms/[id]/page.tsx`
@@ -189,8 +202,8 @@
 - `/meter-readings/history`
 
 ### 当前事实基线
-- 上述路由当前在新宿主中都还没有正式承接位。
-- 旧宿主中的租客与抄表页面同样依赖 `next/navigation`、`notFound()` 或页面级数据整形。
+- 上述路由当前都已经在新宿主中具备正式承接位。
+- 租客与抄表页面虽然已迁入 `src/minix`，但仍通过 shared compat helper / runtime bridge 维持与旧入口的过渡协同。
 - `phase12` 已把这些页面冻结为 P1 正式业务页，并明确标记为会直接影响 `phase14` 对 `/api/renters*` 与 `/api/meter-readings*` 的 retained-legacy 清退判断。
 
 ### 参考来源
@@ -229,7 +242,16 @@
 - `phase13` 仅文档轮次最小验证要求
 
 ### 当前事实基线
-- 当前 `phase12` 已冻结页面映射、优先级与页面-API 联动，但尚未形成实施后的验收矩阵。
+- 当前 `phase12` 已冻结页面映射、优先级与页面-API 联动；`phase13-01 ~ phase13-04` 已把 `24/25` 个正式业务页面挂入新宿主。
+- 当前 `phase13-05` 已完成：
+  - 全量正式业务页面审计
+  - 未迁移 / 部分迁移清单
+  - 页面 parity 验收矩阵
+  - 人工浏览器基线
+  - 页面与 retained-legacy API/query 的 `phase14` 交接说明
+- 当前留给后续子任务继续实施的阻断项是：
+  - `/` 仍需高保真验收结论
+  - `/bills/stats` 仍是未迁移页面
 - `phase14` 需要以 `phase13` 的真实页面 parity 结果作为 retained-legacy API/query 清退的直接输入。
 
 ### 参考来源
@@ -255,6 +277,83 @@
 - 确认验收基线未混入 `phase14 ~ phase16` 的职责
 - 确认 `docs/phase13_*`、顶层真相源与 `phase12` 上游输入状态一致
 
+## phase13-06-dashboard-parity-closure
+### 目标
+收口首页 `/` 的高保真复验、差异清单与最终验收结论，使首页不再停留在“部分迁移”状态。
+
+### 范围
+- `/`
+- `HomePage`
+- `DashboardPageWithStats`
+- 首页人工浏览器高保真对照
+- 首页 parity gap 的最小修复与复验记录
+
+### 当前事实基线
+- 当前首页已由 `HomePage` 在 `src/minix` 中真实承接，但仍被文档冻结为“部分迁移”。
+- 当前阻断不再是“是否已有页面壳”，而是“是否已按旧首页原型完成接近 `100%` 的高保真复验，并形成单一验收结论”。
+- 在首页通过正式保真验收前，`phase13` 不应被视为整体完成。
+
+### 参考来源
+- `src/minix/routes/HomePage.tsx`
+- `src/components/pages/DashboardPage.tsx`
+- `src/components/pages/DashboardPageWithStats.tsx`
+- `src/minix/components/homepage/*`
+- `docs/phase13_*`
+
+### 不在范围内
+- 不切 dashboard retained-legacy API/query
+- 不扩写通知中心、个人资料或治理入口
+- 不重做首页信息架构或导航骨架
+
+### DoD
+- `/` 已完成与旧首页原型的高保真浏览器对照
+- 首页 parity gap 已被明确为“已消除”或“仍存在且阻断验收”的单一结论
+- 首页不再保留“部分迁移”状态
+
+### 验证要求
+- 确认首页搜索入口、快捷入口、提醒面板、统计卡与个人入口语义仍与旧原型一致
+- 确认首页不存在迁移说明卡、宿主标签、重复入口或其他显著 UI 漂移
+- 确认首页验收未越界到 `phase14` API/query parity
+
+## phase13-07-bill-stats-route-parity
+### 目标
+把 `/bills/stats` 正式迁入 `src/minix`，收口页面壳、宿主绑定拆分与页面级承接位，使其不再作为正式业务页面唯一 fallback。
+
+### 范围
+- `/bills/stats`
+- `BillStatsPage`
+- `BillStatsRoute`
+- 账单统计页宿主绑定拆分
+- 页面级 loader / pending / error 边界
+
+### 当前事实基线
+- `/bills/stats` 当前仍通过 legacy document fallback 打开旧宿主页。
+- 旧 `BillStatsPage` 仍绑定 `next/navigation`，且统计页数据依赖 retained-legacy API/query。
+- 当前阶段目标是先完成页面 parity 承接与最小 bridge 说明，而不是提前执行 `phase14` 的账单 stats API/query drain。
+
+### 参考来源
+- `src/app/bills/stats/page.tsx`
+- `src/components/pages/BillStatsPage.tsx`
+- `src/app/api/bills/stats/route.ts`
+- `src/lib/bill-stats.ts`
+- `src/minix/routes/bills/*`
+- `server/lib/legacy-route-inventory.ts`
+
+### 不在范围内
+- 不执行 `/api/bills/stats` 的正式宿主切流
+- 不重写账单统计读模型
+- 不把 retained-legacy API 清退提前混写进本子任务
+
+### DoD
+- `/bills/stats` 已具备 `src/minix` 正式承接位
+- `BillStatsPage` 不再直接依赖 `next/navigation`
+- 统计页当前对 retained-legacy API/query 的依赖关系具备单一解释，并明确作为 `phase14` 后续输入
+
+### 验证要求
+- 确认统计页页面结构、筛选、汇总语义与旧原型保持一致
+- 确认统计页迁移未反向扩张为账单 stats API/query drain
+- 确认 `/bills/stats` 不再是正式业务页面 document fallback
+
 ## 四、推荐实施顺序
 建议严格按如下顺序推进：
 
@@ -264,6 +363,8 @@ phase13-02-primary-list-routes-parity
 phase13-03-detail-create-edit-flow-routes-parity
 phase13-04-renters-and-meter-reading-routes-parity
 phase13-05-page-parity-acceptance-baseline-closure
+phase13-06-dashboard-parity-closure
+phase13-07-bill-stats-route-parity
 ```
 
 ## 四点五、子任务实施验收门禁

@@ -154,7 +154,7 @@
 | `/bills` | 正式业务 | 已有 `/bills` placeholder | 保留 `/bills`，后续以 `src/minix/routes/bills/BillListRoute.tsx` 替换 placeholder | 作为首批正式业务列表页迁移落点 | P0 | 是 |
 | `/settings` | 正式业务 | 已有 `/settings` placeholder | 保留 `/settings`，后续以 `src/minix/routes/settings/SettingsRoute.tsx` 替换 placeholder | 作为首批正式设置入口页迁移落点 | P0 | 是 |
 | `/rooms/[id]` | 正式业务 | 新宿主无对应子路由 | 新增 `/rooms/:id`，承接位命名为 `src/minix/routes/rooms/RoomDetailRoute.tsx` | 需要新增 `/rooms/:id` 正式页面壳 | P1 | 是 |
-| `/rooms/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/rooms/:id/edit`，承接位命名为 `src/minix/routes/rooms/RoomEditRoute.tsx` | 需要新增 `/rooms/:id/edit` 正式页面壳 | P1 | 是 |
+| `/rooms/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/rooms/:id/edit`，承接位命名为 `src/minix/routes/rooms/EditRoomRoute.tsx` | 需要新增 `/rooms/:id/edit` 正式页面壳 | P1 | 是 |
 | `/add/room` | 正式业务 | 新宿主无对应子路由 | 新增 `/add/room`，承接位命名为 `src/minix/routes/add/AddRoomRoute.tsx` | 需要新增 `/add/room` 子路由壳，继续复用现有表单表达 | P1 | 是 |
 | `/add/contract` | 正式业务 | 新宿主无对应子路由 | 新增 `/add/contract`，承接位命名为 `src/minix/routes/add/AddContractRoute.tsx` | 需要新增 `/add/contract` 子路由壳 | P1 | 是 |
 | `/contracts/new` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/new`，承接位命名为 `src/minix/routes/contracts/ContractCreateRoute.tsx` | 需要新增 `/contracts/new` 页面壳 | P1 | 是 |
@@ -162,7 +162,7 @@
 | `/contracts/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id/edit`，承接位命名为 `src/minix/routes/contracts/ContractEditRoute.tsx` | 需要新增 `/contracts/:id/edit` 页面壳 | P1 | 是 |
 | `/contracts/[id]/renew` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id/renew`，承接位命名为 `src/minix/routes/contracts/ContractRenewRoute.tsx` | 需要新增 `/contracts/:id/renew` 页面壳 | P1 | 是 |
 | `/contracts/[id]/checkout` | 正式业务 | 新宿主无对应子路由 | 新增 `/contracts/:id/checkout`，承接位命名为 `src/minix/routes/contracts/ContractCheckoutRoute.tsx` | 需要新增 `/contracts/:id/checkout` 页面壳 | P1 | 是 |
-| `/bills/create` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/create`，承接位命名为 `src/minix/routes/bills/BillCreateRoute.tsx` | 需要新增 `/bills/create` 页面壳 | P1 | 是 |
+| `/bills/create` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/create`，承接位命名为 `src/minix/routes/bills/CreateBillRoute.tsx` | 需要新增 `/bills/create` 页面壳 | P1 | 是 |
 | `/bills/[id]` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/:id`，承接位命名为 `src/minix/routes/bills/BillDetailRoute.tsx` | 需要新增 `/bills/:id` 页面壳 | P1 | 是 |
 | `/bills/[id]/edit` | 正式业务 | 新宿主无对应子路由 | 新增 `/bills/:id/edit`，承接位命名为 `src/minix/routes/bills/BillEditRoute.tsx` | 需要新增 `/bills/:id/edit` 页面壳 | P1 | 是 |
 | `/renters` | 正式业务 | 新宿主尚无正式路由 | 新增 `/renters`，承接位命名为 `src/minix/routes/renters/RenterListRoute.tsx` | 需要新增 `/renters` 顶级正式路由 | P1 | 是 |

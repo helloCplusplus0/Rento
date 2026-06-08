@@ -5,7 +5,10 @@
 - 当前文档用于冻结 `phase13-frontend-page-parity-implementation` 的实施架构，不替代：
   - [phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)
   - [phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)
-- 当前轮只产出阶段文档并收口顶层真相源，不进入 `/spec` 或实现。
+- `phase13-01 ~ phase13-04` 已把 P0 / P1 正式页面的大部分 route module、loader 与错误边界落到 `src/minix`。
+- `phase13-05` 已完成把真实页面清单、迁移状态、未迁移清单、验收矩阵、浏览器基线与 `phase14` 交接冻结成单一真相源。
+- 当前轮后续实施任务聚焦 `phase13-06` 与 `phase13-07`：分别收口首页 `/` 的高保真复验，以及 `/bills/stats` 的正式页面承接位。
+- 当前轮不执行 `phase14` retained-legacy API drain、`phase15` PWA parity 或 `phase16` cutover 验收。
 
 ## 一、文档目标
 本文档用于回答以下问题，并把答案冻结成后续 `phase13-*` `/spec` 的单一依据：
@@ -29,7 +32,7 @@
 - [router/index.tsx](file:///home/dell/Projects/Rento/src/minix/router/index.tsx)
 - [MinixShellLayout.tsx](file:///home/dell/Projects/Rento/src/minix/layout/MinixShellLayout.tsx)
 - [UnifiedNavigation.tsx](file:///home/dell/Projects/Rento/src/minix/layout/UnifiedNavigation.tsx)
-- [route-manifest.tsx](file:///home/dell/Projects/Rento/src/minix/routes/route-manifest.tsx)
+- [route-manifest.tsx](file:///home/dell/Projects/Rento/src/minix/routes/route-manifest.tsx) `仅用于导航/状态页/治理元数据说明，不再作为正式业务页面实际承接真相源`
 - `src/app/**/page.tsx`
 - `src/components/pages/*`
 - `src/components/business/*`
@@ -41,77 +44,22 @@
 - `phase11` 已冻结的正式部署主线、环境模板、发布门禁与 legacy 回滚基线
 
 ## 三、当前实施基线
-### 3.1 当前新宿主能力
-- 当前 `src/minix/router/index.tsx` 已承接：
-  - `/login`
-  - `/offline`
-  - `/loading`
-  - `/error`
-  - `/404`
+### 3.1 当前新宿主真实挂载
+- 当前 `src/minix/router/index.tsx` 已真实挂载全部 P0 / P1 正式业务路由，覆盖：
   - `/`
   - `/rooms`
-  - `/add`
-  - `/contracts`
-  - `/bills`
-  - `/settings`
-- 其中除 `/`、`/login`、`/offline` 外，其余正式业务路由仍由 `PlaceholderPage` 占位。
-- 当前 `HomePage` 仍是阶段说明页，不是正式工作台页面。
-- 当前 `src/minix/layout/*` 已完成：
-  - React Router 导航协议
-  - 桌面/移动双导航壳
-  - 键盘 inset 与移动端底部导航承接
-
-### 3.2 当前旧宿主页面事实
-- 旧 `src/app/**/page.tsx` 中仍大量包含：
-  - `generateMetadata()`
-  - `notFound()`
-  - `dynamic = 'force-dynamic'`
-  - 页面级 server query
-  - Decimal 到 number 的数据整形
-  - `Suspense` 壳层
-- 旧 `src/components/pages/*` 与 `src/components/layout/*` 中大量包含：
-  - `next/navigation`
-  - `next/link`
-  - `router.push/replace/back/refresh`
-- 因此 `phase13` 不能采取“页面组件整目录直搬”策略，必须优先拆宿主绑定与 route-level 数据边界。
-
-### 3.3 Context7 对实施边界的补充依据
-- React Router 当前文档继续把 `createBrowserRouter`、嵌套路由与 route-level children 作为推荐承接方式，适合作为新宿主中列表页/详情页/动作页的层级骨架。
-- `phase13` 因此应继续以：
-  - `src/minix/router/index.tsx`
-  - `src/minix/routes/<domain>/*Route.tsx`
-  为正式页面装配与数据边界落点，而不是把旧页面逻辑重新塞回单一全局壳层。
-
-### 3.4 `phase13-01` 当前实现缺口
-- `phase13-01` 的一轮实现已经证明：首页可以脱离纯说明页并落到 `src/minix/routes/HomePage.tsx`，但这不等于首页迁移已经完成。
-- 当前 `HomePage` 与旧 [DashboardPageWithStats.tsx](file:///home/dell/Projects/Rento/src/components/pages/DashboardPageWithStats.tsx) 相比，仍存在以下严重差异：
-  - 新首页新增了迁移说明文案、宿主标签、入口协同卡与首页状态边界卡，这些都不是旧首页原型的一部分。
-  - 新首页没有以旧 `FunctionGrid`、`UnifiedAlertsPanel`、`NotificationEntryButton`、`UserProfileSheet` 的原始结构完成高保真承接，而是改写成新的快捷入口区、说明卡与侧栏信息卡。
-  - 新首页一度出现重复 `设置` 快捷入口，说明装配结构仍未收口到旧原型节奏。
-  - 统计区错误呈现暴露技术态/HTTP 状态码，尚未达到正式工作台的生产级表达。
-- 因此 `phase13-01` 当前只能视为“首页壳层已落位的中间实现结果”，不能视为验收通过。
-
-## 四、首批实施范围
-### 4.1 `phase13` 首批正式页面范围
-`phase13` 只承接 `phase12` 已冻结的 P0 / P1 正式业务页面：
-
-- P0
-  - `/`
-  - `/rooms`
-  - `/add`
-  - `/contracts`
-  - `/bills`
-  - `/settings`
-- P1
   - `/rooms/:id`
   - `/rooms/:id/edit`
+  - `/add`
   - `/add/room`
   - `/add/contract`
+  - `/contracts`
   - `/contracts/new`
   - `/contracts/:id`
   - `/contracts/:id/edit`
   - `/contracts/:id/renew`
   - `/contracts/:id/checkout`
+  - `/bills`
   - `/bills/create`
   - `/bills/:id`
   - `/bills/:id/edit`
@@ -121,10 +69,94 @@
   - `/renters/:id/edit`
   - `/meter-readings/batch`
   - `/meter-readings/history`
+  - `/settings`
+- 状态页继续由 `/login`、`/offline`、`/loading`、`/error`、`/404` 承接。
+- `PlaceholderPage` 已不再承担正式业务路由，只保留为历史占位资产与对照参考。
+- `src/minix/routes/route-manifest.tsx` 当前只继续承接导航标签、状态页元数据与治理入口说明；正式业务页面的实际承接判断以 `src/minix/router/index.tsx` 与对应 `src/minix/routes/**/*Route.tsx` 为准。
+- 当前 `src/minix/layout/*` 已稳定承接：
+  - React Router 导航协议
+  - 桌面/移动双导航壳
+  - 键盘 inset 与移动端底部导航承接
 
-### 4.2 延后范围
-- P2
+### 3.2 正式业务页面迁移审计快照
+- 旧 `src/app/**/page.tsx` 冻结的正式业务页面总量仍为 `25`。
+- 其中：
+  - `23` 个页面已完成 `src/minix` route module 落位并可通过 React Router 直接进入。
+  - `1` 个页面为“部分迁移”：`/` 已脱离说明页并进入真实工作台壳，但仍需按旧首页原型执行高保真复验。
+  - `1` 个页面为“未迁移”：`/bills/stats` 仍通过 legacy document fallback 打开。
+- 因此 `phase13` 当前的主风险已从“是否仍是 placeholder”切换为：
+  - 页面保真验收是否完成
+  - `/bills/stats` 是否补齐正式承接位
+  - 页面已迁移但 API/query 仍在 retained-legacy / compat-wrapper 的 `phase14` 交接是否单一可解释
+- 这两个残余风险继续分别由 `phase13-06-dashboard-parity-closure` 与 `phase13-07-bill-stats-route-parity` 承接，不再混写回 `phase13-05` 的文档基线收口职责。
+
+### 3.3 当前旧宿主与 `phase14` 依赖事实
+- 旧 `src/app/**/page.tsx` 仍大量保留：
+  - `generateMetadata()`
+  - `notFound()`
+  - `dynamic = 'force-dynamic'`
+  - 页面级 server query
+  - Decimal 到 number 的数据整形
+  - `Suspense` 壳层
+- 旧 `src/components/pages/*` 与 `src/components/layout/*` 中仍可见：
+  - `next/navigation`
+  - `next/link`
+  - `router.push/replace/back/refresh`
+- 当前 `src/minix/lib/route-navigation.ts` 已把 document fallback 收窄到：
   - `/bills/stats`
+  - `/system-health`
+  - `/data-consistency`
+- 因此当前 `phase13-05` 必须把“页面已迁移”与“API/query 已切流”明确拆开，避免把 `phase14` 的 retained-legacy drain 错写成页面迁移已完成。
+
+### 3.4 Context7 对实施边界的补充依据
+- React Router 当前文档继续把 `createBrowserRouter`、嵌套路由与 route-level children 作为推荐承接方式，适合作为新宿主中列表页/详情页/动作页的层级骨架。
+- `phase13` 因此应继续以：
+  - `src/minix/router/index.tsx`
+  - `src/minix/routes/<domain>/*Route.tsx`
+  为正式页面装配与数据边界落点，而不是把旧页面逻辑重新塞回单一全局壳层。
+
+### 3.5 首页验收重点
+- 当前 [HomePage.tsx](file:///home/dell/Projects/Rento/src/minix/routes/HomePage.tsx) 已通过 `MinixDashboardAdapters` 复用旧首页主体表达，不再是单纯说明页。
+- 但在缺少人工浏览器对照记录前，`phase13-05` 仍必须把 `/` 标记为“部分迁移”，避免把“真实工作台壳已落位”误判为“已完成接近 `100%` 的旧原型保真验收”。
+
+## 四、正式业务页面全量清单与迁移状态
+### 4.1 全量页面清单
+| 旧页面路径 | 页面类型 | 优先级 | 当前承接位 | 迁移状态 | 当前说明 |
+| --- | --- | --- | --- | --- | --- |
+| `/` | 工作台首页 | P0 | `src/minix/routes/HomePage.tsx` | 部分迁移 | 已完成真实工作台壳落位，但仍需按旧 `DashboardPageWithStats` 执行高保真复验 |
+| `/rooms` | 列表页 | P0 | `src/minix/routes/rooms/RoomListRoute.tsx` | 已迁移 | 已在新宿主承接列表、筛选、详情跳转与错误边界 |
+| `/add` | 聚合入口页 | P0 | `src/minix/routes/add/AddHubRoute.tsx` | 已迁移 | 已承接新增入口聚合与页面内跳转 |
+| `/contracts` | 列表页 | P0 | `src/minix/routes/contracts/ContractListRoute.tsx` | 已迁移 | 已承接合同列表、续租跳转与详情跳转 |
+| `/bills` | 列表页 | P0 | `src/minix/routes/bills/BillListRoute.tsx` | 已迁移 | 已承接账单列表与详情跳转；统计页按钮仍落到 legacy document fallback |
+| `/settings` | 设置页 | P0 | `src/minix/routes/settings/SettingsRoute.tsx` | 已迁移 | 设置主页已迁入；治理辅助入口仍通过 document fallback 打开治理页 |
+| `/rooms/[id]` | 详情页 | P1 | `src/minix/routes/rooms/RoomDetailRoute.tsx` | 已迁移 | 已承接房源详情、关联合同入口与错误边界 |
+| `/rooms/[id]/edit` | 编辑页 | P1 | `src/minix/routes/rooms/EditRoomRoute.tsx` | 已迁移 | 已承接房源编辑与提交后回跳 |
+| `/add/room` | 新建页 | P1 | `src/minix/routes/add/AddRoomRoute.tsx` | 已迁移 | 已承接房源创建与楼栋选择流程 |
+| `/add/contract` | 新建页 | P1 | `src/minix/routes/add/AddContractRoute.tsx` | 已迁移 | 已承接快捷签约入口与房源/租客预填 |
+| `/contracts/new` | 新建页 | P1 | `src/minix/routes/contracts/ContractCreateRoute.tsx` | 已迁移 | 已承接合同新建表单与成功回跳 |
+| `/contracts/[id]` | 详情页 | P1 | `src/minix/routes/contracts/ContractDetailRoute.tsx` | 已迁移 | 已承接合同详情、账单/房源/租客联动入口 |
+| `/contracts/[id]/edit` | 编辑页 | P1 | `src/minix/routes/contracts/ContractEditRoute.tsx` | 已迁移 | 已承接合同编辑与回填 |
+| `/contracts/[id]/renew` | 流程动作页 | P1 | `src/minix/routes/contracts/ContractRenewRoute.tsx` | 已迁移 | 已承接续租上下文预加载、流程表单与回跳 |
+| `/contracts/[id]/checkout` | 流程动作页 | P1 | `src/minix/routes/contracts/ContractCheckoutRoute.tsx` | 已迁移 | 已承接退租结算流程与结果反馈 |
+| `/bills/create` | 新建页 | P1 | `src/minix/routes/bills/CreateBillRoute.tsx` | 已迁移 | 已承接手工建账入口与回跳 |
+| `/bills/[id]` | 详情页 | P1 | `src/minix/routes/bills/BillDetailRoute.tsx` | 已迁移 | 已承接账单详情、关联合同与租客跳转 |
+| `/bills/[id]/edit` | 编辑页 | P1 | `src/minix/routes/bills/EditBillRoute.tsx` | 已迁移 | 已承接账单编辑与结果反馈 |
+| `/renters` | 列表页 | P1 | `src/minix/routes/renters/RenterListRoute.tsx` | 已迁移 | 已承接租客列表与详情跳转 |
+| `/renters/new` | 新建页 | P1 | `src/minix/routes/renters/RenterCreateRoute.tsx` | 已迁移 | 已承接租客创建表单 |
+| `/renters/[id]` | 详情页 | P1 | `src/minix/routes/renters/RenterDetailRoute.tsx` | 已迁移 | 已承接租客详情、关联合同与快捷签约入口 |
+| `/renters/[id]/edit` | 编辑页 | P1 | `src/minix/routes/renters/RenterEditRoute.tsx` | 已迁移 | 已承接租客编辑与回填 |
+| `/meter-readings/batch` | 流程动作页 | P1 | `src/minix/routes/meter-readings/MeterReadingBatchRoute.tsx` | 已迁移 | 已承接批量抄表流程与批处理跳转协议 |
+| `/meter-readings/history` | 流程动作页 | P1 | `src/minix/routes/meter-readings/MeterReadingHistoryRoute.tsx` | 已迁移 | 已承接抄表历史浏览与详情恢复路径 |
+| `/bills/stats` | 统计页 | P2 | 暂无；由 `BillListRoute` 经 `navigateToMinixOrDocument('/bills/stats')` 打开 | 未迁移 | 当前仍依赖 legacy document fallback，是正式业务页面中的唯一未迁移项 |
+
+### 4.2 未迁移 / 部分迁移清单
+| 页面路径 | 当前状态 | 现状说明 | 是否阻断 `phase13` 完成判定 |
+| --- | --- | --- | --- |
+| `/` | 部分迁移 | 路由、页面壳、统计卡、快捷入口与提醒面板已进入新宿主，但尚缺少按旧首页原型完成的正式浏览器对照结论 | 是 |
+| `/bills/stats` | 未迁移 | 仍无 `src/minix/routes/bills/BillStatsRoute.tsx`；当前通过 legacy document fallback 打开旧宿主页 | 是 |
+
+### 4.3 延后范围保持不变
+- P2
   - `/profile`
   - `/notifications`
 - P3
@@ -135,16 +167,8 @@
   - `/layout-demo`
   - `/components`
   - `/business-flow-validation`
-
-### 4.3 首批实施顺序
-为降低迁移风险，`phase13` 默认按以下顺序推进：
-
-1. 首页与顶级列表/入口页
-2. 详情 / 新建 / 编辑 / 流程动作页
-3. 租客与抄表页面
-4. 页面 parity 验收基线收口
-
-该顺序的目的不是把所有页面一次性迁完，而是先让主导航一级页面与其后续动作页形成可解释、可浏览、可为 `phase14` 提供稳定输入的闭环。
+- 以上页面继续按 `phase12` 冻结口径延后，不因 `phase13-05` 的验收基线收口而被重新包装成已迁移正式页面。
+- 其中 `/` 与 `/bills/stats` 虽然不再属于“页面清单待审计”问题，但仍属于 `phase13` 当前必须继续收口的实施尾项。
 
 ## 五、新宿主承接结构
 ### 5.1 目录承接位
@@ -299,35 +323,44 @@
 - [contracts/[id]/page.tsx](file:///home/dell/Projects/Rento/src/app/contracts/[id]/page.tsx) 混有 `generateMetadata()` 与 `notFound()`
 
 ## 八、验收基线
-### 8.1 页面级最小验收矩阵
-`phase13` 至少要为以下维度建立统一验收矩阵：
-
-- 页面是否已从 placeholder / 说明页切换为真实页面壳
-- 页面是否继续以旧 `Rento` 源代码为直接原型，并在除最小技术适配外达到接近 `100%` 的页面保真度
-- 页面信息结构是否与旧原型保持一致
-- 导航节奏与返回/跳转语义是否一致
-- 列表页搜索/筛选/空态是否可用
-- 详情页加载失败 / 资源不存在 / 恢复路径是否可解释
-- 表单页提交、回填、回跳与错误提示是否可解释
-- 流程动作页状态反馈与历史语义是否失真
+### 8.1 页面 parity 验收矩阵
+| 页面类别 | 覆盖路径 | 旧原型参考 | 核心验收点 | 最小浏览器路径 | 当前风险 |
+| --- | --- | --- | --- | --- | --- |
+| 工作台首页 | `/` | `src/app/page.tsx`、`src/components/pages/DashboardPageWithStats.tsx` | 统计卡、快捷入口、搜索入口、提醒区、个人入口与整体信息结构需接近旧原型 | `/` -> 搜索 -> 快捷入口 -> 设置 -> 返回首页 | 仍需防止首页被“已挂载”误判为“已完成高保真迁移” |
+| 列表页 | `/rooms`、`/contracts`、`/bills`、`/renters` | 对应旧 `src/app/**/page.tsx` 列表页 | 搜索/筛选、空态/错态、详情跳转、一级 CTA 与列表信息结构保持稳定 | 列表 -> 搜索/筛选 -> 打开详情或新建入口 | 账单列表仍存在 `/bills/stats` fallback；各列表的 API/query 切流尚未进入 `phase14` |
+| 详情页 | `/rooms/:id`、`/contracts/:id`、`/bills/:id`、`/renters/:id` | 对应旧详情页 | 详情信息块、关联合同/账单/租客/房源跳转、not-found 同类出口与恢复路径可解释 | 列表 -> 详情 -> 打开关联实体 -> 返回 | 详情读取仍部分依赖 retained-legacy / compat-wrapper API |
+| 编辑 / 新建页 | `/rooms/:id/edit`、`/add/room`、`/add/contract`、`/contracts/new`、`/contracts/:id/edit`、`/bills/create`、`/bills/:id/edit`、`/renters/new`、`/renters/:id/edit` | 对应旧表单页 | 首屏预加载、回填、校验、提交、成功回跳与错误提示保持单一解释 | 进入表单 -> 修改字段 -> 提交 -> 回跳到列表或详情 | 不能因宿主迁移弱化表单字段语义与回跳规则 |
+| 流程动作页 | `/contracts/:id/renew`、`/contracts/:id/checkout`、`/meter-readings/batch`、`/meter-readings/history` | 对应旧流程页 | 上下文预加载、步骤反馈、成功提示、历史保留语义与恢复路径保持稳定 | 合同详情 -> 续租/退租；抄表批量 -> 历史页 | 抄表与续退租仍依赖 compat bridge，必须与 `phase14` drain 边界分开验收 |
 
 ### 8.2 人工浏览器验收基线
-每类页面至少形成一条人工浏览器操作链：
+| 业务域 | 入口路径 | 关键操作 | 预期结果 | 失败回退方式 | 数据前提 |
+| --- | --- | --- | --- | --- | --- |
+| 工作台 | `/` | 加载首页 -> 搜索入口 -> 快捷入口 -> 设置入口 | 首页不出现说明页/placeholder；搜索、快捷入口和设置入口语义与旧原型一致 | 刷新当前页；若首页装配失败，使用页面内重试按钮并记录错误信息 | 已登录，存在基础 dashboard 数据 |
+| 房源 | `/rooms` | 搜索或筛选 -> 进入 `/rooms/:id` -> 进入 `/rooms/:id/edit` | 列表、详情、编辑链路可走通；详情可打开签约入口；编辑成功后可回跳 | 返回列表后重新打开同一房源，必要时记录错态入口 | 已登录，至少有 1 个房源与可编辑样本 |
+| 合同 | `/contracts` | 打开详情 -> 编辑 -> 续租或退租 | 详情结构、编辑回填、续租/退租流程与旧宿主语义一致 | 返回合同列表后重新进入详情；如失败记录对应合同 ID | 已登录，至少有 1 个进行中合同 |
+| 账单 | `/bills` | 打开详情 -> 编辑 -> 新建账单 -> 打开统计入口 | 列表、详情、编辑、新建路径可执行；统计入口要么迁入新宿主，要么明确落到 legacy fallback | 失败时返回账单列表；若统计页尚未迁移，必须记录当前 fallback 行为 | 已登录，至少有 1 张账单与 1 条可新建路径 |
+| 租客 | `/renters` | 打开详情 -> 编辑 -> 新建租客 -> 从详情跳到关联合同或签约入口 | 列表、详情、编辑、新建链路一致，关联跳转不出现死链 | 返回租客列表，记录关联跳转是否落到新宿主或 compat 桥接 | 已登录，至少有 1 个租客 |
+| 抄表 | `/meter-readings/batch` | 批量抄表 -> 提交或预演 -> 打开历史页 | 批量页与历史页都可进入；历史记录保留语义不被破坏 | 返回批量页重新进入；如失败记录批次与房间样本 | 已登录，至少有 1 个可抄表房间和历史记录样本 |
 
-- 工作台：首页加载 -> 快捷入口 -> 搜索入口 -> 设置入口
-- 房源：列表 -> 详情 -> 编辑
-- 合同：列表 -> 详情 -> 编辑 / 续租 / 退租
-- 账单：列表 -> 详情 -> 编辑 / 新建
-- 租客：列表 -> 详情 -> 编辑 / 新建
-- 抄表：批量抄表 -> 历史记录
+### 8.3 与 `phase14` 的页面-API 交接表
+| 页面 / 域 | 当前页面状态 | 直接关联 retained-legacy API / query | 当前保留原因 | `phase14` 优先关注点 |
+| --- | --- | --- | --- | --- |
+| 工作台 / 设置 | `/` 部分迁移；`/settings` 已迁移 | `/api/dashboard/*`、`/api/settings*` | dashboard 查询与设置接口仍属 retained-legacy / governance 口径，尚未冻结正式 Hono 查询宿主 | 先明确 dashboard/settings 的正式读取宿主，再决定治理辅助接口如何处理 |
+| 房源 / 新增房源 | `/rooms*`、`/add/room` 已迁移 | `/api/rooms*`、`/api/rooms/:id/meters`、`/api/meters/:meterId*`、`/api/buildings*` | 房源列表/详情/状态/仪表读取仍含 retained-legacy；楼栋与部分仪表操作已进入 formal-host-owned / compat-wrapper | 先拆清房源读路径、仪表读路径与批量/删除写路径，再判断 route drain 顺序 |
+| 合同 / 快捷签约 | `/contracts*`、`/add/contract` 已迁移 | `/api/contracts*` | 合同列表/详情读取仍 retained-legacy；续租、退租、删除等动作已切到 compat-wrapper | 先收口列表/详情/编辑读写，再清理续租/退租 compat 包装 |
+| 账单 | `/bills*` 已迁移；`/bills/stats` 未迁移 | `/api/bills*` | 账单列表、详情、统计仍有 retained-legacy；状态更新/编辑/删除部分已进入 compat-wrapper | 账单 stats 路由补齐与账单读模型切流必须一起评估，避免页面先迁而查询仍分裂 |
+| 租客 | `/renters*` 已迁移 | `/api/renters*` | 当前仍通过 shared renter page-closure compat helper 桥接旧 Next 与 Hono runtime | 先在 route inventory 中把 compat bridge 与最终正式宿主边界写清，再执行 drain |
+| 抄表 | `/meter-readings*` 已迁移 | `/api/meter-readings*`、`/api/utility-readings` | 当前仍通过 shared meter-reading page-closure compat helper 桥接旧入口 | 先确认批量抄表与历史页对应的读写路径，再统一 cut 到正式宿主 |
 
-### 8.3 与 `phase14` 的交接输出
-`phase13` 完成后，应向 `phase14` 提供：
-
-- 真实页面 parity 页面清单
-- 页面与 retained-legacy API 的最新依赖关系
-- 页面级浏览器验收基线
-- 仍阻塞 retained-legacy API 清退的页面清单
+### 8.4 文档轮次最小验证要求
+- `docs/phase13_*` 三份文档互链复核通过。
+- 被引用的 `src/minix/*`、`src/components/pages/*`、旧 `src/app/**/page.tsx` 与 `server/lib/legacy-route-inventory.ts` 路径存在。
+- 页面清单与 `phase12` 冻结的 `25` 个正式业务页面保持一致，不重新扩写支持页、治理页或 dev-only 页面。
+- 文档明确区分：
+  - 页面迁移状态
+  - 页面保真验收状态
+  - `phase14` retained-legacy API/query drain 依赖
+- 文档不把 `phase14 ~ phase16` 的职责提前写成本子任务完成条件。
 
 ## 九、明确延后项
 以下内容不属于 `phase13` 的实施范围：
@@ -346,19 +379,21 @@
 - 确认所有实施边界都没有混写 `phase14 ~ phase16` 职责
 - 确认页面迁移仍保持 `Prisma + PostgreSQL`、UI 保真与历史保留约束
 - 确认任何页面验收都不会把“页面壳已落位”误判为“页面迁移已完成”；若与旧原型仍有显著结构漂移，必须明确回退验收结论
+- 确认全量页面清单、未迁移清单、验收矩阵、浏览器基线与 `phase14` 交接表之间没有相互冲突的状态描述
 
 ## 十一、阶段结论
-`phase13-frontend-page-parity-implementation` 的架构价值不在于“立即写完所有页面代码”，而在于：
+`phase13-frontend-page-parity-implementation` 在当前轮的架构价值，不再只是“规划下一步怎么迁”，而在于：
 
 ```text
-先把真实页面迁移的承接结构、页面切片顺序、宿主绑定拆分方式、
-route-level 数据边界与验收基线冻结，
-再进入逐个 /spec 的实施与审核。
+先把 25 个正式业务页面的真实承接结果做成可审计清单，
+再通过 `phase13-05` 固定未迁移项、保真验收矩阵、浏览器基线与 phase14 交接，
+最后由 `phase13-06`、`phase13-07` 分别收口首页与 `/bills/stats`，
+避免页面迁移结果和后续 API drain 判断继续各说各话。
 ```
 
 这能确保：
 
-- 不让页面迁移重新退回整目录搬运
-- 不让 `next/*` 协议继续渗入新宿主
-- 不让页面实施顺带混入 API / PWA / cutover 职责
+- 不让页面迁移结果继续停留在“已经有路由所以应该算完成”的模糊状态
+- 不让 `next/*` 协议、legacy document fallback 与 retained-legacy API 依赖被混写成单一问题
+- 不让 `phase14` 在没有页面清单和浏览器基线的情况下自行猜测 drain 顺序
 - 不让 UI 迁移顺带演变成视觉重设计

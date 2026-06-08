@@ -78,7 +78,7 @@
 - 复核所有被列入清单的页面路径真实存在
 - 确认正式页面与 dev-only / 辅助页边界不混写
 
-## phase12-02-page-to-minix-route-mapping
+## phase12-02-page-to-minix-handoff-mapping
 ### 目标
 冻结旧页面到 `src/minix` 路由承接位的一一映射表，回答“哪些页面迁、迁到哪里、先后顺序如何、哪些继续延后”。
 
@@ -321,7 +321,7 @@
 
 ```text
 phase12-01-page-inventory-and-formal-scope-freeze
-phase12-02-page-to-minix-route-mapping
+phase12-02-page-to-minix-handoff-mapping
 phase12-03-composition-reuse-and-shell-closure
 phase12-04-ui-parity-and-adaptation-boundary
 phase12-05-roadmap-consistency-and-phase12-to-phase16-closure

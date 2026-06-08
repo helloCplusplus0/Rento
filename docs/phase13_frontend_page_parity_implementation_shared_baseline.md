@@ -6,7 +6,9 @@
 - 当前互链文档为：
   - [phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)
   - [phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)
-- 当前轮只产出阶段文档与一致性收口，不进入 `/spec` 或实现。
+- `phase13-01 ~ phase13-04` 的 route module、loader 与页面壳已在 `src/minix` 落地；`phase13-05` 已完成迁移审计与验收基线收口。
+- 当前轮后续实施任务继续聚焦 `phase13-06` 与 `phase13-07`，分别处理首页 `/` 的高保真收口与 `/bills/stats` 的正式迁移。
+- 当前轮不执行 `phase14 ~ phase16` 的实现职责。
 
 ## 一、文档目的
 本文档用于冻结 `phase13-frontend-page-parity-implementation` 的共享判断标准，避免后续子任务分别从页面壳、路由装配、宿主绑定、数据加载或页面验收视角出发，重新产出互相冲突的解释。
@@ -90,6 +92,17 @@
 - 指列表页、详情页、编辑页、新建页、流程动作页在 route module 中承接的 loader / pending / error / not-found 同类边界。
 - 该边界属于路由层职责，不属于布局壳、导航壳或通用组件层。
 
+### 5.6 迁移状态词汇
+- `已迁移`：页面已具备 `src/minix/routes/*Route.tsx` 正式承接位，且主入口不再依赖 document fallback。
+- `部分迁移`：页面已具备正式承接位，但当前仍缺少高保真验收结论，或仍存在需要显式追踪的 parity gap。
+- `未迁移`：页面尚无 `src/minix` 正式承接位，当前仍依赖旧宿主页或 document fallback。
+- `legacy document fallback`：通过 `navigateToMinixOrDocument()` 或 `openDocumentPath()` 打开旧宿主页，仅允许用于 `phase13` 明确延后的页面，不等于页面已经迁移。
+
+### 5.7 验收状态词汇
+- `待浏览器复验`：页面已完成 route module 落位，但尚未基于旧原型完成人工浏览器对照。
+- `通过保真验收`：页面已基于旧 `src/app/**/page.tsx` 与既有主体表达完成对照，确认在除最小技术适配外达到接近 `100%` 保真。
+- `存在 parity gap`：页面虽可访问，但仍存在信息结构、导航节奏、交互或历史语义的显著漂移，不得标记为通过。
+
 ## 六、正式范围共享口径
 ### 6.1 `phase13` 首批正式页面范围
 - P0
@@ -136,9 +149,19 @@
 ### 6.3 P0 / P1 / P2 / P3 / P4 的实施期含义
 - `P0`：已在新宿主中存在顶级路由或首页入口，必须最先从说明页 / placeholder 切换为真实页面壳。
 - `P1`：尚未在新宿主中存在正式路由，但属于核心主链详情、编辑、新建或流程动作页，必须在 P0 稳定后补齐。
-- `P2`：统计页与支持页，属于后续正式输入，但不进入 `phase13` 首批真实迁移实施范围。
+- `P2`：统计页与支持页，属于后续正式输入，不进入 `phase13` 首批真实迁移实施范围；但若其已被阶段文档明确提升为 `phase13` 完成阻断项，则需在本阶段尾项继续补齐，不得静默滑入 `phase14`。
 - `P3`：治理页，继续延后，不进入 `phase13` 首批范围。
 - `P4`：dev-only / 待归档候选，不进入正式 parity 范围。
+
+### 6.4 当前迁移状态快照
+- 当前正式业务页面总量仍为 `25`，来源保持与 `phase12` 冻结事实表一致。
+- 当前迁移审计结果固定为：
+  - `23` 个页面 `已迁移`
+  - `1` 个页面 `部分迁移`：`/`
+  - `1` 个页面 `未迁移`：`/bills/stats`
+- 当前唯一允许的正式业务页面 document fallback 仍是 `/bills/stats`；`/system-health` 与 `/data-consistency` 属于治理延后项，不计入正式业务页面未迁移统计。
+- 设置页打开治理辅助入口时仍会触发 `openDocumentPath()`，但这不改变 `/settings` 主页面已迁移的判定。
+- `phase13-05` 之后，`/` 与 `/bills/stats` 的状态不再只作为审计事实保留，而必须分别由 `phase13-06`、`phase13-07` 推进到可重新申请阶段验收的状态。
 
 ## 七、UI 与数据访问共享口径
 ### 7.1 UI 共享口径
@@ -187,6 +210,7 @@
 ## 九、与后续阶段的共享边界
 ### 9.1 对 `phase14` 的共享输出
 - 真实页面 parity 页面清单
+- 页面迁移状态审计与未迁移清单
 - 页面级验收矩阵
 - 页面与 retained-legacy API 的最新依赖关系
 - 仍阻塞 retained-legacy API 清退的页面清单
@@ -225,13 +249,16 @@
 - 至少确认页面 parity、宿主绑定拆分、页面级数据边界与验收基线已经形成单一判断标准
 - 至少确认被引用代码、文档与路径真实存在
 - 至少确认任何已实施页面在验收时都会与旧 `Rento` 源代码逐项对照；若仍存在显著结构漂移，必须回退“验收通过”结论
+- 至少确认“已迁移 / 部分迁移 / 未迁移 / legacy document fallback / 待浏览器复验”在三份 `docs/phase13_*` 中含义一致
+- 至少确认当前文档轮次不会把 `phase14` route drain、`phase15` PWA parity 或 `phase16` cutover 验收写成本轮完成条件
 
 ## 十三、阶段结论
 `phase13-frontend-page-parity-implementation` 的共享基线价值不在于“马上迁完全部页面”，而在于：
 
 ```text
 先把真实页面迁移的实施词汇、边界、职责分层与验收标准冻结，
-再让后续 /spec 和实现建立在单一实施真相之上。
+再让后续 /spec 和实现建立在单一实施真相之上，
+并为首页 `/` 与 `/bills/stats` 这类阶段尾项保留明确的继续执行承接位。
 ```
 
 这能确保：
