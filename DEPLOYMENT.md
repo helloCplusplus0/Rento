@@ -3,7 +3,8 @@
 > 状态说明：
 > - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 回滚基线边界。
 > - 当前仓库已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；正式环境模板、主健康入口、最低发布门禁、文档最小验证要求与部署/回滚演练记录要求均已冻结。
-> - `phase16` 当前轮已完成 `/plan` 与 `phase16-01` 证据盘点收口；四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`。因此，本文档只承接部署相关摘要结论与引用入口，不扩写第二套过程记录。
+> - `phase16` 当前轮已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证，以及 `phase16-03` 当前轮源码层对齐复核、cutover 审核包字段冻结与待云端复验占位；四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`。因此，本文档只承接部署相关摘要结论与引用入口，不扩写第二套过程记录。
+> - 正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未在当前开发环境执行；由于缺少真实云服务器与公认 HTTPS 条件，相关结果已明确延后到真实云服务器阶段补齐，不伪造“已完成”记录。
 
 ## 正式部署主线
 - 正式部署目标固定为：`Caddy + systemd + Hono + PostgreSQL`
@@ -25,7 +26,7 @@
 - `phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到正式部署主线口径，并继续原样继承 `phase10` 的迁移兼容边界
 - `phase11-05` 已把顶层真相源、`docs/phase11_*`、最低工程验证命令、文档最小验证要求与部署/回滚演练记录要求收口到当前部署主线说明
 - `phase15` 当前承接位继续建立在同一部署主线上：`manifest.json`、`sw.js`、`index.html` PWA metadata、`scripts/pwa-smoke-check.sh` 与 `server/lib/static.ts` 的头策略统一由纯新主线交付，不再把旧 Next PWA 宿主作为正式部署必需入口
-- `phase16` 当前继续在同一部署主线上执行最终验收：部署相关 matrix 已固定回写 `shared_baseline`，正式部署演练记录、legacy 回滚演练记录、`/api/health`、主链 smoke 与 PWA HTTPS 验收结果将继续固定回写 `dev_plan`，并共同构成 cutover 审核包
+- `phase16` 当前继续在同一部署主线上执行最终验收：部署相关 matrix 已固定回写 `shared_baseline`，正式部署演练记录、legacy 回滚演练记录、`/api/health`、主链 smoke 与 PWA HTTPS 验收结果将继续固定回写 `dev_plan`，并共同构成 cutover 审核包；当前轮若缺少真实云服务器与公认 HTTPS 条件，则只冻结字段、触发条件与引用入口
 - 当前脚本边界固定为：
   - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
   - `npm run build:minix`：当前产出前端 `dist/` 与服务端 `build/minix-server/` 预构建产物
@@ -165,6 +166,7 @@ REQUEST_TIMEOUT=30000
 - 记录可以落位到后续审核材料或阶段文档，但必须能被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 明确引用。
 - 这些记录用于 cutover 审核、legacy 退出判断与回滚基线保留/退出决策，不得以口头确认替代。
 - `phase16` 当前轮默认要求把这些记录统一回写到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，再由 `DEPLOYMENT.md`、根级真相源与 `docs/phase16_*` 互相引用，避免形成第二套部署审计口径。
+- 当前若本地环境不具备真实云服务器与公认 HTTPS 条件，允许只冻结这些记录的模板、待补字段、触发条件与引用入口；正式部署演练与 legacy 回滚演练结果延后到真实云服务器执行后补齐。
 
 ## legacy 回滚基线
 以下资产仍服务于旧容器化运行线的历史运行与回滚参考职责：
@@ -219,7 +221,7 @@ cutline 说明：
 - `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 已成为正式部署资产承接位
 - `.env.example`、`scripts/health-check.sh` 与 `/api/health` 已收口为正式部署主线的统一环境与健康检查口径
 - `phase11-05` 已把文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求收口到当前部署真相源
-- `phase16` 已把 cutover 审核、rollback 记录与 legacy 退出判断提升为当前部署真相源的直接继承输入；其中部署相关 matrix 统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，后续部署验收再由 `DEPLOYMENT.md` 与根级真相源引用摘要结论
+- `phase16` 已把 cutover 审核、rollback 记录与 legacy 退出判断提升为当前部署真相源的直接继承输入；其中部署相关 matrix 统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，后续部署验收再由 `DEPLOYMENT.md` 与根级真相源引用摘要结论；当前轮正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练均延后到真实云服务器执行
 - legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口、默认运维入口或正式真相源职责
 - `Rento-legacy` 的职责已冻结为只读历史备份与对照参考，不参与当前仓库的部署或回滚入口
 - legacy 基线的保留条件、退出条件与 cutline 解释已收口到单一部署说明入口

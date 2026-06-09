@@ -5,6 +5,8 @@
 - 当前仓库已经具备阶段输入：`phase13` 页面 parity、`phase14` API/query parity、`phase15` PWA/runtime parity 与 `phase11` 部署/回滚基线均已形成稳定上游。
 - 当前轮已完成 `docs/phase16_*` 三件套与根级真相源同步，并已完成 `phase16-01` 的证据盘点、四类 parity matrix 回填与固定落位。
 - 四类 parity matrix 固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`；本文件后续只承接自动化验证结果、人工验收、cutover 审核记录、正式部署/legacy 回滚演练记录与 legacy 退出判断回写。
+- `phase16-02` 已完成固定自动化验证组合、gap triage 与源码路径映射；当前轮继续执行 `phase16-03` 任务 `1 ~ 4`，完成源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与根级真相源同步。
+- 当前开发环境仍不具备真实云服务器与公认 HTTPS 条件；因此正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练只冻结待补字段、触发条件与引用入口，不伪造已完成结果。
 
 ## 配套文档
 - 架构规划：`docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md`
@@ -96,9 +98,13 @@
 
 ## phase16-03-manual-acceptance-and-cutover-packet
 ### 目标
-形成本阶段的人工浏览器验收记录、正式部署演练记录、legacy 回滚演练记录与 cutover 审核包。
+当前轮优先完成源码层对齐复核、cutover 审核包字段冻结与待真实云服务器复验的记录占位；正式人工浏览器验收、正式部署演练与 legacy 回滚演练结果延后到真实云服务器执行后再回写。
 
 ### 范围
+- `phase16-01` 四类 parity matrix 与 `phase16-02` 自动化验证记录的输入复核
+- 页面主链、API/query、PWA/runtime、部署入口、健康检查与 rollback 入口的源码层对齐复核
+- cutover 审核包字段、待补字段、触发条件、引用入口与结论占位冻结
+- `docs/phase16_*`、`README.md`、`AGENTS.md`、`plan.md`、`architecture_map.md`、`DEPLOYMENT.md` 的当前轮口径同步
 - 页面主链人工浏览器对照
 - PC 浏览器 PWA 安装/登录链路复验
 - 带公认 HTTPS 证书环境下的 Android + Chrome 安装/更新/离线验证
@@ -107,7 +113,9 @@
 
 ### DoD
 - 人工验收记录必须区分“本地开发验收”和“正式 HTTPS 部署验收”。
+- 当前轮必须明确哪些结论已由源码/脚本/文档复核覆盖，哪些结论待真实云服务器执行后补齐。
 - cutover 审核包至少包含：验证命令、健康检查、主链 smoke、PWA 结果、部署演练、回滚演练、回滚触发条件与最终结论。
+- 当前轮不得伪造人工 HTTPS 验收、正式部署演练或 legacy 回滚演练结果。
 - 所有记录都能被 `docs/phase16_*` 与根级真相源直接引用。
 
 ## phase16-04-legacy-exit-decision-and-root-sync
@@ -251,13 +259,40 @@
   - 真实迁移遗漏：本轮未发现新的页面/API/PWA/部署真实迁移遗漏；失败项已收敛为环境占用与非阻断技术适配提示。
 
 ## 八、人工验收与 cutover 审核记录
-- 待 `phase16-03` 回写：
-  - 页面主链人工浏览器对照
-  - PC 浏览器 PWA 安装/登录链路
-  - 带公认 HTTPS 证书环境下的 Android + Chrome 安装/更新/离线验证
-  - 正式部署演练记录
-  - legacy 回滚演练记录
-  - cutover 审核结论
+- `phase16-03` 当前轮边界：
+  - 本轮只完成源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与根级真相源同步。
+  - 本轮不伪造人工 HTTPS 验收、正式部署演练或 legacy 回滚演练结果。
+  - 本轮继续保留“本地开发验收”与“正式 HTTPS 部署验收”的区分口径。
+- 直接输入复核：
+  - 页面/API/PWA/部署四类 parity matrix：`docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`
+  - 自动化验证与 gap triage：本文件“七、自动化验证记录”
+  - 部署与回滚基线：`DEPLOYMENT.md`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service`、`scripts/start-minix.mjs`、`scripts/health-check.sh`、`scripts/start-entry.mjs`、`docker-compose.yml`、`nginx/nginx.conf`
+- 源码层对齐复核结论：
+  - 页面主链：未发现新的页面 parity 缺口；`src/minix/router/index.tsx` 继续承接 `25` 个正式业务页面，`src/app/**/page.tsx` 仍只作为原型参考，不承担纯新主线正式运行职责。
+  - API/query：未发现新的正式业务 retained-legacy 缺口；`server/lib/legacy-route-inventory.ts` 继续维持 `formal-host-owned / compat-wrapper / retained-legacy` 单一分类，剩余 retained-legacy 仍只限治理/辅助接口。
+  - PWA/runtime：未发现新的运行时缺口；`src/minix/layout/MinixRuntimeLayout.tsx`、`public/manifest.json`、`public/sw.js`、`server/lib/static.ts` 与 `scripts/pwa-smoke-check.sh` 继续形成单一 PWA 交付链路，但正式 Android/Chrome + HTTPS 验收仍待真实云服务器执行。
+  - 部署/cutover/rollback：未发现新的入口缺口；`scripts/start-minix.mjs`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service` 与 `scripts/health-check.sh` 继续构成正式主线入口，`scripts/start-entry.mjs`、`docker-compose.yml`、`nginx/nginx.conf` 继续只承担 rollback-only 职责。
+  - blocker 判断：当前未发现新的源码层 `parity-blocker`；当前唯一待补项是环境级阻塞，即缺少真实云服务器与公认 HTTPS，无法在本地形成正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练记录。
+- 新缺口映射：
+  - 页面：无新增缺口；基线路径继续为 `src/minix/router/index.tsx`、`src/minix/routes/*`、`src/app/**/page.tsx`。
+  - API/query：无新增缺口；基线路径继续为 `server/lib/legacy-route-inventory.ts`、`server/routes/*`、`src/app/api/**/route.ts`。
+  - PWA/runtime：无新增缺口；正式 HTTPS 复验待补，涉及 `src/minix/layout/MinixRuntimeLayout.tsx`、`src/components/pwa/*`、`public/manifest.json`、`public/sw.js`、`server/lib/static.ts`、`scripts/pwa-smoke-check.sh`。
+  - 部署/回滚：无新增缺口；正式演练待补，涉及 `scripts/start-minix.mjs`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service`、`scripts/health-check.sh`、`scripts/start-entry.mjs`、`docker-compose.yml`、`nginx/nginx.conf`。
+- cutover 审核包字段冻结：
+  - 验证命令：固定引用本文件“七、自动化验证记录”的九条自动化命令与结果。
+  - 源码层对齐摘要：固定记录页面/API/PWA/部署四类对齐结论、缺口判断与真实文件映射。
+  - 本地开发验收摘要：固定记录既有 `phase15` PC 安装/登录链路与本地 HTTP 退化口径，明确其不替代正式 HTTPS 验收。
+  - 正式 HTTPS 人工验收记录：固定字段为执行时间、目标环境、访问域名、设备/浏览器、安装结果、更新结果、离线结果、截图/录屏引用、结论；当前状态保持 `待真实云服务器执行`。
+  - 正式部署演练记录：固定字段为执行时间、目标环境、部署命令、构建来源、`/api/health` 结果、主链 smoke 结果、异常与处置、结论；当前状态保持 `待真实云服务器执行`。
+  - legacy 回滚演练记录：固定字段为触发前提、回滚入口、回滚命令、恢复验证、回滚耗时、残留风险、结论；当前状态保持 `待真实云服务器执行`。
+  - 回滚触发条件：固定记录健康检查失败、主链 smoke 失败、PWA HTTPS 验收失败、正式访问性不满足发布门禁时必须进入回滚评估。
+  - 最终 cutover 结论：只允许 `通过` 或 `未通过但单值化`；当前状态保持 `待 phase16-04 汇总判定`。
+- 待真实云服务器复验清单：
+  - 页面主链人工浏览器对照：待在真实云服务器 + 正式域名环境执行。
+  - PC 浏览器 PWA 安装/登录链路复验：待在真实云服务器 + 正式域名环境执行。
+  - Android + Chrome + HTTPS 安装/更新/离线验证：待在真实云服务器 + 公认 HTTPS 环境执行。
+  - 正式部署环境主链访问性与 `/api/health` 结果：待在真实云服务器执行。
+  - legacy 回滚入口恢复性记录：待在真实云服务器执行故障回滚验证后补齐。
 
 ## 九、legacy 退出判断与阶段结论
 - 待 `phase16-04` 回写：

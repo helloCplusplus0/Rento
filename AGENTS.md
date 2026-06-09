@@ -26,7 +26,7 @@
 - 当前默认工作流：`phase16-parity-verification-cutover-and-legacy-exit`
 - 当前主问题：在不反向干扰 `phase07~15` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层、部署主线、页面 parity、API/query parity、PWA parity 与迁移兼容边界的前提下，继续完成最终验收、cutover 与 legacy 退出。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase16` 已完成当前轮 `/plan` 与 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 三件套冻结，并已完成 `phase16-01` 的证据盘点、四类 parity matrix 回填与固定落位；后续默认进入 `phase16-02 ~ phase16-04` 的自动化验证、人工验收、cutover 审核与 legacy 退出判断实施；`phase16` 仍只继承结果，不承担正式业务 API 迁移职责。
+- 当前下一步：`phase16` 已完成当前轮 `/plan` 与 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 三件套冻结，并已完成 `phase16-01` 证据盘点、`phase16-02` 自动化验证与 `phase16-03` 当前轮源码层对齐复核 / cutover 审核包字段冻结；后续默认先在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练，再进入 `phase16-04` 的 cutover 审核与 legacy 退出判断实施；`phase16` 仍只继承结果，不承担正式业务 API 迁移职责。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入
@@ -69,7 +69,7 @@
 - `phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项已完成复验并回写到统一页面 parity / 浏览器基线 / `phase14` 交接文档中。
 - `phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口：正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；剩余 retained-legacy 仅限治理/辅助接口，正式业务旧入口已统一降级为 `formal-host-owned` 或 `compat-wrapper`。
 - `phase15-minix-pwa-and-runtime-parity` 已完成当前轮收口：`docs/phase15_*`、纯新主线 PWA 交付链路、工程验证、独立审核与本地人工验收补充已形成单一结论。
-- `phase16-parity-verification-cutover-and-legacy-exit` 已完成当前轮 `/plan` 与 `phase16-01` 文档收口：四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，当前进入 `phase16-02 ~ phase16-04` 实施阶段。
+- `phase16-parity-verification-cutover-and-legacy-exit` 已完成当前轮 `/plan`、`phase16-01` 文档收口与 `phase16-02` 自动化验证；`phase16-03` 当前轮已完成源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与真相源同步，正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练明确延后到真实云服务器执行。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明

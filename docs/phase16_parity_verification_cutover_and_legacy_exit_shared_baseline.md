@@ -225,7 +225,7 @@
   - `0` 条 PWA/runtime 能力项构成当前 `phase16` `parity-blocker`
   - 本地 `PC + Edge/Chrome + HTTP` 的安装与登录链路已由 `phase15` 人工验收记录覆盖，可作为当前 matrix 的既有运行时证据
   - 本地移动端 `HTTP` 无统一安装入口继续归类为 `acceptable-adaptation`，不单独上调为 blocker
-  - 带公认 HTTPS 证书环境下的 Android + Chrome 安装、更新与离线兜底仍需在 `phase16-03` 完成最终人工复验；这属于既定后续验证动作，不改变当前“能力已落位”的 matrix 结论
+  - 带公认 HTTPS 证书环境下的 Android + Chrome 安装、更新与离线兜底仍需在 `phase16-03` 的真实云服务器轮次完成最终人工复验；当前轮只冻结占位、触发条件与引用入口，不改变当前“能力已落位”的 matrix 结论
 - 差异分类编码：
   - `P1 / acceptable-adaptation`：`VITE_ENABLE_PWA` 是构建期开关；切换启用/关闭态需要重建 `dist/`，不等同于 legacy Next 运行时变量热切换
   - `P2 / acceptable-adaptation`：本地移动端 `HTTP` 不出现安装提示由浏览器安全上下文决定，继续按普通 Web 退化
@@ -259,7 +259,7 @@
   - `6` 条能力项已完成回填：`4` 条 `已满足 parity`、`1` 条 `non-blocking-legacy-reference`、`1` 条 `待 phase16-03 ~ phase16-04 执行的审核动作`
   - 正式入口、正式公网代理、正式守护进程与正式健康检查链路都已形成单一解释，不再要求旧容器化运行线承担默认主入口职责
   - legacy 资产当前统一归类为 `rollback-only`，继续保留直到 cutover 审核、正式部署演练与 legacy 回滚演练记录闭环完成
-  - 当前未执行正式部署演练与 legacy 回滚演练，因此本 matrix 只回填“入口与职责是否冻结”的当前结论，不提前给出 `phase16` 最终通过/未通过判断
+  - 当前未执行正式部署演练与 legacy 回滚演练；`phase16-03` 当前轮只冻结模板、待补字段、触发条件与引用入口，真实演练记录延后到真实云服务器执行，因此本 matrix 只回填“入口与职责是否冻结”的当前结论，不提前给出 `phase16` 最终通过/未通过判断
 - 差异分类编码：
   - `D1 / formal-host-owned`：由 `build:minix` / `start:minix`、`Caddy`、`systemd`、`/api/health` 组成的正式主线入口
   - `D2 / acceptable-adaptation`：部署拓扑从 `docker-compose + nginx + Next.js standalone` 切换为 `Caddy + systemd + Hono`，属于已批准的主线替代

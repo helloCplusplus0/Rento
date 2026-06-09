@@ -45,6 +45,7 @@
 - 纯新主线已完成最小受控 PWA 交付链路。
 - 本地 `PC + Edge/Chrome + HTTP` 安装/登录链路通过。
 - 本地移动端 HTTP 无安装入口是预期退化，移动端安装提示、更新与离线兜底的最终判断继续以带公认 HTTPS 证书的部署环境为准。
+- 若当前开发环境缺少真实云服务器与公认 HTTPS 条件，`phase16-03` 当前轮允许只冻结待补字段、触发条件与引用入口，不伪造正式人工验收结果。
 
 ### 3.5 对 `phase16-01` 的直接约束
 - `phase16-01` 负责冻结证据清单、四类 parity matrix 字段、差异分类规则、固定回写落位，并完成四类 matrix 回填。
@@ -119,11 +120,13 @@
 ### 6.3 PWA/runtime 判断决策
 - 本地移动端 HTTP 无安装入口不构成 blocker。
 - 带公认 HTTPS 证书环境下的 Android + Chrome 安装/更新/离线结果，才是最终 cutover 判断基线。
+- 在缺少真实云服务器与公认 HTTPS 条件时，`phase16-03` 当前轮只冻结正式 HTTPS 验收模板与引用入口，待云端复验后再回写结果。
 - 旧 Next PWA 宿主只有在仍承担正式 `manifest`、`sw.js`、安装提示或更新提示主职责时，才构成 blocker。
 
 ### 6.4 deploy / rollback 判断决策
 - `npm run build:minix`、`npm run start:minix`、`/api/health` 与 smoke 脚本继续构成纯新主线正式验证入口。
 - `LEGACY_START=1 npm run start` 只保留 legacy-only 身份，不得再被视为当前正式运行入口。
+- 在缺少真实云服务器条件时，`phase16-03` 当前轮只冻结正式部署演练与 legacy 回滚演练模板、触发条件与引用入口，真实演练结果延后到云端执行。
 - legacy 资产退出的前提不是“文件删掉了”，而是“替代入口、验证记录与回滚窗口已形成可审计闭环”。
 
 ## 七、明确不做

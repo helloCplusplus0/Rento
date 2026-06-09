@@ -3,9 +3,10 @@
 ## 当前默认入口
 - 当前默认工作流：`phase16-parity-verification-cutover-and-legacy-exit`
 - 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，`phase11` 已冻结正式部署主线、回滚基线与发布门禁，且 `phase12 ~ phase15` 已分别完成页面 parity、正式业务 API/query parity 与纯新主线 PWA/runtime parity 的前提下，进入仅继承结果的 `phase16` 最终验收与 cutover 路线。
-- 当前执行方式：`phase12` 已完成页面事实表、页面装配与路线图冻结；`phase13` 已完成正式业务页面 `25/25` 迁移；`phase14` 已完成 `phase14-01 ~ phase14-07` 的冻结输入、两波真实 API/query cutover、route inventory 审计与阶段收口；`phase15` 已完成纯新主线 PWA/runtime parity。当前 `phase16` 已完成 `/plan`、`phase16-01` 证据盘点与四类 parity matrix 固定落位，后续按自动化验证 -> 人工验收/cutover 审核 -> legacy 退出判断的顺序推进。
-- 当前下一步：以 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 以及 `phase13 ~ phase15` 的已完成上游输入为真相源，进入 `phase16-02 ~ phase16-04` 的自动化验证、人工验收、cutover 审核包、回滚演练记录与 legacy 退出条件实施；其中四类 parity matrix 统一以 `shared_baseline` 为证据入口，过程记录统一回写 `dev_plan`。
+- 当前执行方式：`phase12` 已完成页面事实表、页面装配与路线图冻结；`phase13` 已完成正式业务页面 `25/25` 迁移；`phase14` 已完成 `phase14-01 ~ phase14-07` 的冻结输入、两波真实 API/query cutover、route inventory 审计与阶段收口；`phase15` 已完成纯新主线 PWA/runtime parity。当前 `phase16` 已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证，以及 `phase16-03` 当前轮源码层对齐复核、cutover 审核包字段冻结与待云端复验占位。
+- 当前下一步：以 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 以及 `phase13 ~ phase15` 的已完成上游输入为真相源，先在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练，再进入 `phase16-04` 的 cutover 审核包汇总与 legacy 退出条件实施；其中四类 parity matrix 统一以 `shared_baseline` 为证据入口，过程记录统一回写 `dev_plan`。
 - 当前人工验收补充：本地 `PC + Edge/Chrome + HTTP` 已验证安装提示、安装成功与登录链路正常；本地移动端 `Edge/Chrome + HTTP` 不出现安装入口按浏览器安全要求与既有 `Rento` 部署经验属于预期退化，移动端安装提示的正式判断继续以带公认 HTTPS 证书的部署环境为准。
+- 当前云端待补项：正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未在当前环境执行；由于当前开发环境不具备真实云服务器与公认 HTTPS 条件，`phase16-03` 当前轮只冻结模板、触发条件、引用入口与待补字段，不写入伪造结果。
 - 当前阶段说明：`phase10` 已完成并继续作为后续阶段的数据访问主线上游输入保留；`phase11` 已完成并继续作为正式部署主线、发布门禁与 legacy 回滚基线的稳定上游输入保留；`phase13` 已完成当前轮真实页面迁移与阶段尾项收口；`phase14` 已完成 API 层迁移收口，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口，`phase15` 与 `phase16` 只继承结果，不再继续承担正式业务 API 迁移职责。
 
 ## 阶段顺序
@@ -279,7 +280,8 @@
 - 当前结论：
   - 已完成当前轮 `/plan` 与 `docs/phase16_*` 三件套冻结
   - 已完成 `phase16-01` 当前轮证据盘点、四类 parity matrix 回填与固定落位：matrix 统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
-  - 当前默认下一步为基于 `phase13` 页面 parity、`phase14` API/query parity、`phase15` PWA parity 与 `phase11` 部署/回滚基线，进入 `phase16-02 ~ phase16-04` 的自动化验证、人工验收、cutover 审核与 legacy 退出判断实施
+  - 已完成 `phase16-02` 自动化验证，以及 `phase16-03` 当前轮源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与根级真相源同步
+  - 正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练延后到真实云服务器执行；当前未写入“已完成”结果
   - 仅继承既有页面/API/PWA parity 结果，不再承担任何正式业务 API 迁移职责
 
 ## `phase12 ~ phase16` 闭环路线图矩阵

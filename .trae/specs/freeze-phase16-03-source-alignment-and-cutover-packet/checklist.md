@@ -1,0 +1,9 @@
+- [x] `phase16-03` 的 spec 明确限定为源码层对齐、cutover 审核包字段冻结与待云端复验占位，没有伪造人工 HTTPS 验收、正式部署演练或 legacy 回滚演练结果
+- [x] `phase16-01` 的四类 parity matrix 与 `phase16-02` 的自动化验证记录被明确作为 `phase16-03` 的直接输入
+- [x] spec 明确要求继续区分“本地开发验收”和“正式 HTTPS 部署验收”
+- [x] spec 明确允许把正式 Android/Chrome + HTTPS 验收延后到真实云服务器执行
+- [x] spec 明确要求 cutover 审核包至少保留验证命令、健康检查、主链 smoke、PWA 结果、部署演练、回滚演练、回滚触发条件与最终结论字段或占位
+- [x] spec 明确要求源码层对齐复核若发现新缺口，必须映射到具体页面/API/PWA/部署路径与真实文件
+- [x] spec 明确要求 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md` 成为当前轮记录真相源
+- [x] spec 明确要求所有记录能被 `docs/phase16_*` 与根级真相源直接引用
+- [x] `phase16-03` 的任务拆分能直接衔接 `phase16-04-legacy-exit-decision-and-root-sync`
