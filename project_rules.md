@@ -104,6 +104,7 @@
 - `phase11-04` 期间必须把 legacy 容器化运行线冻结为“历史运行参考 + 故障回滚基线 + 差异对照”职责，不得再作为默认部署入口、默认运维入口或正式真相源扩写。
 - `phase11-04` 期间 `Rento-legacy` 只允许作为 GitHub 侧只读历史备份与对照参考，不得作为部署入口、回滚入口、默认 remote、默认上游或第二真相源重新引入。
 - GitHub Release 正式部署包必须继续以 `Caddy + systemd + Hono + PostgreSQL` 为唯一正式主线；不得借“GitHub 发布”把 Docker、GHCR 或 legacy deployment artifact 重新包装为正式入口。
+- 允许 `push main` 自动生成 `prerelease deploy bundle` 作为快速验证、预演练与待验收环境的部署产物，但该 prerelease 不得改写“正式部署默认使用 `v*` 正式 release bundle”的口径。
 - legacy 资产只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，才允许进入后续退出决策；本阶段不得直接删除这些资产。
 - `phase16-04` 当前轮必须把 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 统一视为 `rollback-only` 资产；在真实云服务器证据补齐前，不得把它们误写为“已退出”“已归档完成”或“可删除”。
 - `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。

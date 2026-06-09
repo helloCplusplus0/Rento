@@ -2,11 +2,12 @@ name: Release Formal Deploy Bundle
 
 on:
   push:
+    branches: ['main']
     tags: ['v*']
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Release tag to create from the selected ref, e.g. v1.2.3
+        description: New formal release tag to create from the selected ref, e.g. v1.2.3
         required: true
         type: string
 
@@ -20,9 +21,6 @@ jobs:
     permissions:
       contents: write
 
-    env:
-      NODE_ENV: production
-
     steps:
       - name: Resolve release tag
         id: release_meta
@@ -30,14 +28,25 @@ jobs:
           INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
           REF_NAME: ${{ github.ref_name }}
           REF_SHA: ${{ github.sha }}
+          REF_TYPE: ${{ github.ref_type }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             RELEASE_TAG="$INPUT_RELEASE_TAG"
             BUILD_REF="$REF_SHA"
-          else
+            RELEASE_CHANNEL="formal"
+            IS_PRERELEASE="false"
+          elif [ "$REF_TYPE" = "tag" ]; then
             RELEASE_TAG="$REF_NAME"
             BUILD_REF="$REF_SHA"
+            RELEASE_CHANNEL="formal"
+            IS_PRERELEASE="false"
+          else
+            SHORT_SHA="$(printf '%s' "$REF_SHA" | cut -c1-12)"
+            RELEASE_TAG="pre-main-${SHORT_SHA}"
+            BUILD_REF="$REF_SHA"
+            RELEASE_CHANNEL="prerelease"
+            IS_PRERELEASE="true"
           fi
 
           if [ -z "$RELEASE_TAG" ]; then
@@ -45,7 +54,7 @@ jobs:
             exit 1
           fi
 
-          if [[ "$RELEASE_TAG" != v* ]]; then
+          if [ "$RELEASE_CHANNEL" = "formal" ] && [[ "$RELEASE_TAG" != v* ]]; then
             RELEASE_TAG="v$RELEASE_TAG"
           fi
 
@@ -64,6 +73,8 @@ jobs:
             echo "version=$VERSION"
             echo "asset_name=$ASSET_NAME"
             echo "checksum_name=$CHECKSUM_NAME"
+            echo "release_channel=$RELEASE_CHANNEL"
+            echo "is_prerelease=$IS_PRERELEASE"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository at build ref
@@ -94,6 +105,8 @@ jobs:
           test -f build/minix-server/index.mjs
 
       - name: Prune dev dependencies for deploy bundle
+        env:
+          NODE_ENV: production
         run: npm prune --omit=dev
 
       - name: Assemble formal deploy bundle
@@ -187,8 +200,16 @@ jobs:
           BUILD_REF: ${{ steps.release_meta.outputs.build_ref }}
           ASSET_NAME: ${{ steps.release_meta.outputs.asset_name }}
           CHECKSUM_NAME: ${{ steps.release_meta.outputs.checksum_name }}
+          RELEASE_CHANNEL: ${{ steps.release_meta.outputs.release_channel }}
+          IS_PRERELEASE: ${{ steps.release_meta.outputs.is_prerelease }}
         run: |
-          RELEASE_NOTES="Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL. Built from ${BUILD_REF}."
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            RELEASE_TITLE="${RELEASE_TAG}"
+            RELEASE_NOTES="Auto-generated prerelease deploy bundle from main. Built from ${BUILD_REF} for Caddy + systemd + Hono + PostgreSQL."
+          else
+            RELEASE_TITLE="${RELEASE_TAG}"
+            RELEASE_NOTES="Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL. Built from ${BUILD_REF}."
+          fi
 
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
             echo "::error::Tag ${RELEASE_TAG} already exists on origin. Use a new release_tag or push that tag directly."
@@ -200,9 +221,17 @@ jobs:
             exit 1
           fi
 
-          gh release create "$RELEASE_TAG" \
-            "$ASSET_NAME" \
-            "$CHECKSUM_NAME" \
-            --target "$BUILD_REF" \
-            --title "$RELEASE_TAG" \
+          RELEASE_ARGS=(
+            "$RELEASE_TAG"
+            "$ASSET_NAME"
+            "$CHECKSUM_NAME"
+            --target "$BUILD_REF"
+            --title "$RELEASE_TITLE"
             --notes "$RELEASE_NOTES"
+          )
+
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            RELEASE_ARGS+=(--prerelease --latest=false)
+          fi
+
+          gh release create "${RELEASE_ARGS[@]}"

@@ -21,10 +21,15 @@
   - `systemd`
   - `postgresql`
 - 一个可用的公网域名
-- 一个可用的 release tag，例如 `v1.2.3`
+- 一个可用的正式 release tag，例如 `v1.2.3`
 - 服务器能够访问 GitHub Release
 
-如果当前还没有现成 release，可以先在仓库侧手工触发正式部署包 workflow：
+补充说明：
+- 推送到 `main` 后，仓库会自动生成以 `pre-main-<sha>` 命名的 `prerelease deploy bundle`
+- 这些 prerelease 用于快速验证、预演练与待验收环境
+- 正式服务器默认仍使用 `v*` 正式 release bundle
+
+如果当前还没有现成正式 release，可以先在仓库侧手工触发正式部署包 workflow：
 
 ```bash
 gh workflow run release-deploy-bundle.yml --ref main -f release_tag=v1.2.3
@@ -32,8 +37,9 @@ gh workflow run release-deploy-bundle.yml --ref main -f release_tag=v1.2.3
 
 说明：
 - `workflow_dispatch` 现在会直接基于你选定的分支/提交构建正式部署包
+- 推送到 `main` 时，仓库也会自动生成新的 `prerelease deploy bundle`
 - 若远端还没有同名 tag/release，workflow 会自动创建
-- 若远端已有同名 release，workflow 会覆盖上传最新部署包资产
+- 若远端已有同名 tag/release，workflow 会直接失败并要求改用新的 `release_tag`
 - 等 workflow 成功后，再继续服务器部署步骤
 
 ## 3. 第一次部署
