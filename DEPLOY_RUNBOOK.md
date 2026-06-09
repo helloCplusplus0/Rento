@@ -27,6 +27,7 @@
 补充说明：
 - 推送到 `main` 后，仓库会自动生成以 `pre-main-<sha>` 命名的 `prerelease deploy bundle`
 - 这些 prerelease 用于快速验证、预演练与待验收环境
+- `prerelease` 与 `v*` 正式 release bundle 都默认按 `npm run build:minix:pwa` 构建
 - 正式服务器默认仍使用 `v*` 正式 release bundle
 
 如果当前还没有现成正式 release，可以先在仓库侧手工触发正式部署包 workflow：
@@ -78,6 +79,10 @@ sudo editor /etc/rento-minix/rento-minix.env
 - `NEXTAUTH_SECRET=<强随机值>`
 - `DATABASE_URL=postgresql://...`
 - `MINIX_SERVER_PORT=3002`
+
+补充说明：
+- 当前 GitHub Release 部署包默认已经按 `npm run build:minix:pwa` 预构建为 PWA enabled
+- 修改 `/etc/rento-minix/rento-minix.env` 中的 `VITE_ENABLE_PWA` 不会热切换已下载 release 的 PWA 状态；只有重新构建 `dist/` 才会生效
 
 5. 执行正式部署
 

@@ -25,7 +25,7 @@
 - `phase11-01` 已把 `build:minix` / `start:minix` 收口到“前端 `dist/` + 服务端 `build/minix-server/`”的预构建产物链
 - `phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线
 - `phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到正式部署主线口径，并继续原样继承 `phase10` 的迁移兼容边界
-- 当前 GitHub 发布链已切换为：`.github/workflows/release-deploy-bundle.yml` 负责执行 `npm run build:minix`、生成部署包并上传为 GitHub Release asset；推送 `main` 会自动生成 `prerelease deploy bundle`，推送 `v*` tag 会自动生成正式 release bundle，`workflow_dispatch` 保留为基于当前选定 ref 的手工正式发包入口；云服务器只拉包、解压、切换 `current`、刷新 `systemd/Caddy`，不在服务器执行 build
+- 当前 GitHub 发布链已切换为：`.github/workflows/release-deploy-bundle.yml` 负责执行 `npm run build:minix:pwa`、生成 PWA-enabled 部署包并上传为 GitHub Release asset；推送 `main` 会自动生成 `prerelease deploy bundle`，推送 `v*` tag 会自动生成正式 release bundle，`workflow_dispatch` 保留为基于当前选定 ref 的手工正式发包入口；云服务器只拉包、解压、切换 `current`、刷新 `systemd/Caddy`，不在服务器执行 build
 - `phase11-05` 已把顶层真相源、`docs/phase11_*`、最低工程验证命令、文档最小验证要求与部署/回滚演练记录要求收口到当前部署主线说明
 - `phase15` 当前承接位继续建立在同一部署主线上：`manifest.json`、`sw.js`、`index.html` PWA metadata、`scripts/pwa-smoke-check.sh` 与 `server/lib/static.ts` 的头策略统一由纯新主线交付，不再把旧 Next PWA 宿主作为正式部署必需入口
 - `phase16` 当前继续在同一部署主线上执行最终验收：部署相关 matrix 已固定回写 `shared_baseline`，正式部署演练记录、legacy 回滚演练记录、`/api/health`、主链 smoke 与 PWA HTTPS 验收结果将继续固定回写 `dev_plan`，并共同构成 cutover 审核包；当前轮若缺少真实云服务器与公认 HTTPS 条件，则只冻结字段、触发条件与引用入口
@@ -80,23 +80,26 @@ Internet
 `phase11-05` 已把以下部署治理要求冻结为正式资产边界的一部分：
 - 文档最小验证要求：`docs/phase11_*` 互链复核、被引用路径存在性复核、根级真相源与 `DEPLOYMENT.md` 状态一致性复核
 - 后续实施最低工程验证命令：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`
+- 上述 `build:minix` 仍是 `phase11` 阶段冻结时的历史最小工程验证门槛；当前 GitHub Release 部署包默认构建 profile 已切换为 `npm run build:minix:pwa`。
 - 部署/回滚演练记录要求：最小字段、引用方式与审核用途
 
 ## GitHub 部署包
 - 云端部署产物来源固定为 GitHub Release asset，而不是 `.next`、legacy deployment artifact 或 GHCR 容器镜像。
 - 发布 workflow 固定为 `.github/workflows/release-deploy-bundle.yml`：
-  - 执行 `npm run build:minix`
+  - 执行 `npm run build:minix:pwa`
   - 验证 `dist/` 与 `build/minix-server/`
+  - 验证 `manifest.json`、`sw.js` 与 `rento-pwa-enabled=true`
+  - 启动最小本地 runtime 并执行 `bash ./scripts/pwa-smoke-check.sh --profile runtime-only --base-url http://127.0.0.1:<port>`
   - 执行 `npm prune --omit=dev`
   - 打包运行所需文件并上传到 GitHub Release
 - 自动触发规则固定为：
-  - `push main`：自动生成 `prerelease deploy bundle`
-  - `push v*`：自动生成正式 release bundle
+  - `push main`：自动生成按 `build:minix:pwa` 构建的 `prerelease deploy bundle`
+  - `push v*`：自动生成按 `build:minix:pwa` 构建的正式 release bundle
   - `workflow_dispatch`：手工输入 `release_tag`，基于当前选定 ref 创建新的正式 release bundle
 - `workflow_dispatch` 当前不再要求预先存在 git tag：
   - 若远端尚无同名 tag/release，则由 workflow 自动创建
   - 若远端已存在同名 tag/release，则 workflow 会直接失败并提示改用新的 `release_tag`
-- 正式部署默认仍使用 `v*` 正式 release bundle；`main` 自动生成的 prerelease 仅用于快速验证、预演练与待验收环境，不改写正式 cutover 口径。
+- 正式部署默认仍使用 `v*` 正式 release bundle；`main` 自动生成的 prerelease 也保持 PWA-enabled，仅用于快速验证、预演练与待验收环境，不改写正式 cutover 口径。
 - 部署包命名规则固定为：
   - `rento-minix-<version>-deploy-bundle.tar.gz`
   - `rento-minix-<version>-deploy-bundle.tar.gz.sha256`
@@ -154,7 +157,7 @@ DATABASE_URL=postgresql://...
 MINIX_SERVER_HOST=127.0.0.1
 MINIX_SERVER_PORT=3002
 MINIX_DIST_DIR=dist
-VITE_ENABLE_PWA=false
+VITE_ENABLE_PWA=true
 CORS_ENABLED=true
 MAX_REQUEST_SIZE=10485760
 REQUEST_TIMEOUT=30000
@@ -165,7 +168,8 @@ REQUEST_TIMEOUT=30000
 - 正式服务器环境文件固定放置在 `/etc/rento-minix/rento-minix.env`
 - `AUTH_SESSION_SECRET` 是正式主变量，`NEXTAUTH_SECRET` 仅保留历史兼容回退
 - `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 默认保持一致
-- `VITE_ENABLE_PWA` 是纯新主线 PWA 构建 profile 开关；切换启用/关闭态需要重新构建 `dist/`，不是仅重启 `start:minix` 即可生效
+- 正式 release bundle 默认已按 `npm run build:minix:pwa` 预构建为 PWA enabled
+- `VITE_ENABLE_PWA` 是纯新主线 PWA 构建 profile 开关；仅在本地或手工重建 `dist/` 时生效，切换启用/关闭态需要重新构建 `dist/`，不是仅重启 `start:minix` 即可生效
 - 迁移脚本兼容变量继续保留 `RUN_SEED` 与 `DB_WAIT_SECS`，但它们不改变正式主线的 PostgreSQL / `migrate deploy` 定位
 - 任何涉及认证、CORS、健康检查或部署端口的调整，都必须同步更新实现、模板与文档
 
@@ -177,7 +181,8 @@ REQUEST_TIMEOUT=30000
   - `sw.js` 为 `no-cache, no-store, must-revalidate`
   - `sw.js` 额外返回 `Service-Worker-Allowed: /`
 - `scripts/pwa-smoke-check.sh` 是当前最小工程验证入口，用于校验 `/api/health`、`/manifest.json`、`/sw.js` 与 `/offline`。
-- 默认 smoke profile 与默认构建保持一致：`bash ./scripts/pwa-smoke-check.sh --profile pwa-disabled --base-url <runtime-url>` 用于验证默认关闭态。
+- 默认 smoke profile 固定为 `runtime-only`，用于在最小运行时条件下校验 PWA-enabled 产物已正确挂载。
+- 若需要显式验证关闭态或兼容场景，继续使用：`bash ./scripts/pwa-smoke-check.sh --profile pwa-disabled --base-url <runtime-url>`。
 - 正式 PWA 交付链路固定为：
   - `npm run build:minix:pwa`
   - `bash ./scripts/pwa-smoke-check.sh --profile production-ready --base-url <runtime-url>`
@@ -195,7 +200,7 @@ REQUEST_TIMEOUT=30000
 正式部署切线前至少完成：
 - `npm run lint`
 - `npm run type-check`
-- `npm run build:minix`
+- `npm run build:minix:pwa`
 - `npm run audit:phase09:legacy-routes`
 - 条件允许时执行 `npm run smoke:phase09:all`
 - `/api/health` 可用

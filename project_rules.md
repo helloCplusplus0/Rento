@@ -104,10 +104,12 @@
 - `phase11-04` 期间必须把 legacy 容器化运行线冻结为“历史运行参考 + 故障回滚基线 + 差异对照”职责，不得再作为默认部署入口、默认运维入口或正式真相源扩写。
 - `phase11-04` 期间 `Rento-legacy` 只允许作为 GitHub 侧只读历史备份与对照参考，不得作为部署入口、回滚入口、默认 remote、默认上游或第二真相源重新引入。
 - GitHub Release 正式部署包必须继续以 `Caddy + systemd + Hono + PostgreSQL` 为唯一正式主线；不得借“GitHub 发布”把 Docker、GHCR 或 legacy deployment artifact 重新包装为正式入口。
+- GitHub Release 部署包默认必须按 `npm run build:minix:pwa` 产出 PWA-enabled `dist/`；不得再以 `npm run build:minix` 作为 release bundle 的默认构建 profile。
 - 允许 `push main` 自动生成 `prerelease deploy bundle` 作为快速验证、预演练与待验收环境的部署产物，但该 prerelease 不得改写“正式部署默认使用 `v*` 正式 release bundle”的口径。
 - legacy 资产只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，才允许进入后续退出决策；本阶段不得直接删除这些资产。
 - `phase16-04` 当前轮必须把 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 统一视为 `rollback-only` 资产；在真实云服务器证据补齐前，不得把它们误写为“已退出”“已归档完成”或“可删除”。
 - `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
+- 上述 `phase11` 工程验证中的 `build:minix` 保留为历史阶段最小门槛，不改写当前 GitHub Release 部署包默认按 `npm run build:minix:pwa` 构建的正式口径。
 - `phase11-05` 已冻结部署/回滚演练的最小记录要求：至少包含演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件与最终结论；记录必须明确标注“正式主线验证”或“legacy 回滚验证”，并可被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 引用用于审核。
 - `phase12` 期间允许冻结旧页面到 `src/minix` 的承接顺序、页面装配复用策略与 UI 保真规则，但不得把 UI 迁移扩写为视觉重设计，也不得在本阶段重新打开 ORM 替换议题；`Prisma + PostgreSQL` 继续固定为当前正式数据访问主线。
 - `phase12` 当前轮最低文档验证要求固定为：`docs/phase12_*` 互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核；进入新增 `phase13-frontend-page-parity-implementation` 与后续页面/API/PWA/cutover 实施前，不以“路线图已规划”为理由跳过页面映射表、UI 保真边界、完整路线图、前后依赖、DoD 与退出条件审核。

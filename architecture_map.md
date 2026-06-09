@@ -352,7 +352,7 @@
 ## 正式部署真相源
 - 根级 `DEPLOYMENT.md`、`README.md`、`AGENTS.md`、`project_rules.md`、`plan.md` 与 `docs/phase11_*` 将共同承接 `Rento-miniX` 的正式部署说明、发布门禁与 cutline 退出条件。
 - 在 `phase11` 当前轮实现中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，并已落地 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 作为正式部署资产基线。
-- 当前 GitHub 部署包链路已补齐为正式真相源的一部分：`.github/workflows/release-deploy-bundle.yml` 负责生成 GitHub Release asset；推送 `main` 会自动生成 `prerelease deploy bundle`，推送 `v*` tag 会自动生成正式 release bundle，`workflow_dispatch` 保留为基于当前选定 ref 的手工正式发包入口；`scripts/pull-release-deploy-bundle.sh` 负责把正式部署包拉取到 `/opt/rento-minix/current`，环境文件固定落位 `/etc/rento-minix/rento-minix.env`。
+- 当前 GitHub 部署包链路已补齐为正式真相源的一部分：`.github/workflows/release-deploy-bundle.yml` 负责按 `npm run build:minix:pwa` 生成 PWA-enabled GitHub Release asset；推送 `main` 会自动生成 `prerelease deploy bundle`，推送 `v*` tag 会自动生成正式 release bundle，`workflow_dispatch` 保留为基于当前选定 ref 的手工正式发包入口；`scripts/pull-release-deploy-bundle.sh` 负责把正式部署包拉取到 `/opt/rento-minix/current`，环境文件固定落位 `/etc/rento-minix/rento-minix.env`。
 - 当前 `.env.example` 已升级为正式共享环境模板，`scripts/health-check.sh` 已固定默认命中 `/api/health`，并与 `NEXTAUTH_URL` / `MINIX_SERVER_PORT` 口径保持一致。
 - `phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界收口到根级文档与 `docs/phase11_*`。
 - `phase11-05` 已把文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求收口到上述根级真相源与 `docs/phase11_*` 的单一闭环中。

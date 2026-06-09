@@ -64,6 +64,10 @@ jobs:
             exit 1
           fi
 
+          BUILD_COMMAND="npm run build:minix:pwa"
+          PWA_ENABLED="true"
+          RELEASE_PROFILE="pwa-enabled"
+
           ASSET_NAME="rento-minix-${VERSION}-deploy-bundle.tar.gz"
           CHECKSUM_NAME="${ASSET_NAME}.sha256"
 
@@ -75,6 +79,9 @@ jobs:
             echo "checksum_name=$CHECKSUM_NAME"
             echo "release_channel=$RELEASE_CHANNEL"
             echo "is_prerelease=$IS_PRERELEASE"
+            echo "build_command=$BUILD_COMMAND"
+            echo "pwa_enabled=$PWA_ENABLED"
+            echo "release_profile=$RELEASE_PROFILE"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository at build ref
@@ -97,12 +104,48 @@ jobs:
         run: npx prisma generate
 
       - name: Build minix release
-        run: npm run build:minix
+        env:
+          BUILD_COMMAND: ${{ steps.release_meta.outputs.build_command }}
+        run: "$BUILD_COMMAND"
 
       - name: Verify formal build artifacts
         run: |
           test -f dist/index.html
           test -f build/minix-server/index.mjs
+          test -f dist/manifest.json
+          test -f dist/sw.js
+          grep -F 'name="rento-pwa-enabled" content="true"' dist/index.html
+
+      - name: Verify PWA-enabled runtime shell
+        env:
+          AUTH_SESSION_SECRET: test-release-bundle-secret
+          NEXTAUTH_URL: http://127.0.0.1:4010
+          ALLOWED_ORIGINS: http://127.0.0.1:4010
+          MINIX_SERVER_HOST: 127.0.0.1
+          MINIX_SERVER_PORT: 4010
+          APP_INTERNAL_PORT: 4010
+        run: |
+          node ./scripts/start-minix.mjs >"$RUNNER_TEMP/minix-release-runtime.log" 2>&1 &
+          SERVER_PID=$!
+
+          cleanup() {
+            if kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+              kill "$SERVER_PID" >/dev/null 2>&1 || true
+              wait "$SERVER_PID" >/dev/null 2>&1 || true
+            fi
+          }
+
+          trap cleanup EXIT
+
+          for _ in $(seq 1 30); do
+            if curl -fsS --max-time 2 http://127.0.0.1:4010/ >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          curl -fsS --max-time 2 http://127.0.0.1:4010/ >/dev/null
+          bash ./scripts/pwa-smoke-check.sh --profile runtime-only --base-url http://127.0.0.1:4010
 
       - name: Prune dev dependencies for deploy bundle
         env:
@@ -114,6 +157,8 @@ jobs:
           RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
           VERSION: ${{ steps.release_meta.outputs.version }}
           BUILD_REF: ${{ steps.release_meta.outputs.build_ref }}
+          RELEASE_PROFILE: ${{ steps.release_meta.outputs.release_profile }}
+          PWA_ENABLED: ${{ steps.release_meta.outputs.pwa_enabled }}
         run: |
           STAGE_ROOT="$RUNNER_TEMP/deploy-stage"
           APP_ROOT="$STAGE_ROOT/rento-minix"
@@ -152,6 +197,8 @@ jobs:
           release_tag=${RELEASE_TAG}
           version=${VERSION}
           build_ref=${BUILD_REF}
+          release_profile=${RELEASE_PROFILE}
+          pwa_enabled=${PWA_ENABLED}
           formal_runtime=Caddy + systemd + Hono + PostgreSQL
           included_paths=
           - dist/
@@ -202,13 +249,14 @@ jobs:
           CHECKSUM_NAME: ${{ steps.release_meta.outputs.checksum_name }}
           RELEASE_CHANNEL: ${{ steps.release_meta.outputs.release_channel }}
           IS_PRERELEASE: ${{ steps.release_meta.outputs.is_prerelease }}
+          RELEASE_PROFILE: ${{ steps.release_meta.outputs.release_profile }}
         run: |
           if [ "$IS_PRERELEASE" = "true" ]; then
             RELEASE_TITLE="${RELEASE_TAG}"
-            RELEASE_NOTES="Auto-generated prerelease deploy bundle from main. Built from ${BUILD_REF} for Caddy + systemd + Hono + PostgreSQL."
+            RELEASE_NOTES="Auto-generated prerelease deploy bundle from main. Built from ${BUILD_REF} with ${RELEASE_PROFILE} for Caddy + systemd + Hono + PostgreSQL."
           else
             RELEASE_TITLE="${RELEASE_TAG}"
-            RELEASE_NOTES="Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL. Built from ${BUILD_REF}."
+            RELEASE_NOTES="Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL. Built from ${BUILD_REF} with ${RELEASE_PROFILE}."
           fi
 
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then

@@ -4,7 +4,7 @@ set -euo pipefail
 BASE_URL="${NEXTAUTH_URL:-http://127.0.0.1:${MINIX_SERVER_PORT:-${APP_INTERNAL_PORT:-3002}}}"
 TIMEOUT="${TIMEOUT:-10}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROFILE="${PROFILE:-pwa-disabled}"
+PROFILE="${PROFILE:-runtime-only}"
 EXPECT_PWA_ENABLED="${EXPECT_PWA_ENABLED:-}"
 EXPECT_HEALTH_STATUS="${EXPECT_HEALTH_STATUS:-}"
 
@@ -38,7 +38,7 @@ Options:
                    production-ready: PWA enabled + healthy health endpoint.
                    runtime-only: PWA enabled + relaxed health status contract.
                    pwa-disabled: PWA disabled + relaxed health status contract.
-                   Defaults to pwa-disabled.
+                   Defaults to runtime-only.
   --expect-pwa-enabled true|false
                    Overrides the profile-level PWA expectation.
   --expect-health-status healthy|degraded|unhealthy|any
