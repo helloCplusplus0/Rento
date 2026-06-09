@@ -230,7 +230,7 @@ jobs:
           sha256sum "$ASSET_NAME" > "$CHECKSUM_NAME"
 
       - name: Upload formal deploy artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: formal-deploy-bundle-${{ steps.release_meta.outputs.release_tag }}
           path: |
