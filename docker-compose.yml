@@ -5,6 +5,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${APP_INTERNAL_PORT:-3001}
+      APP_INTERNAL_PORT: ${APP_INTERNAL_PORT:-3001}
+      MINIX_SERVER_PORT: ${APP_INTERNAL_PORT:-3001}
       DATABASE_URL: ${CONTAINER_DATABASE_URL}
       BACKUP_DIR: ${CONTAINER_BACKUP_DIR:-/app/backups}
       LOG_DIR: ${CONTAINER_LOG_DIR:-/app/logs}

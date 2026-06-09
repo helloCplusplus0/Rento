@@ -364,6 +364,7 @@
 - `scripts/cloud-deploy.sh`：当前部署执行脚本
 - `scripts/bootstrap-deploy-assets.sh`：当前部署资产拉取脚本
 - `scripts/start-entry.mjs`：当前 `Next.js standalone` 生产启动入口
+- `Dockerfile` / `.github/workflows/docker-build.yml`：rollback-only GHCR 镜像构建入口；镜像内部已切到当前可构建的 `minix` 产物链，但只服务于 legacy 容器回滚基线
 - 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径：继续仅作为 legacy 回滚参考
 
 legacy 基线统一边界：

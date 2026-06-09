@@ -252,6 +252,8 @@ REQUEST_TIMEOUT=30000
 - `scripts/start-entry.mjs`
 -   当前 `Next.js standalone` 生产启动入口，继续对应旧运行线的启动语义；默认不再直接通过 `npm run start` 启动，只有在明确进行 legacy 对照或回滚验证时才允许使用 `LEGACY_START=1 npm run start`；当前分类固定为 `rollback-only`
 - 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径
+- `Dockerfile` / `.github/workflows/docker-build.yml`
+-   当前 rollback-only GHCR 镜像构建入口；为维持 legacy 容器回滚链持续可构建，镜像内部已切换为构建 `npm run build:minix` + `scripts/start-minix.mjs` 的当前运行产物，但外层职责仍固定为 legacy 容器编排、差异对照与故障回滚，不得被重新解释为正式主线
 
 这些资产的统一身份固定为：
 - 只服务于旧 `docker-compose + nginx + Next.js standalone` 运行线
@@ -265,6 +267,7 @@ legacy 回滚职责边界：
 - 不通过把当前开发 remote 切回 `Rento-legacy` 来处理运行问题
 - 不继续把 `docker-compose + nginx + Next.js standalone` 扩写成未来正式部署主线
 - 不把 legacy 容器化脚本重新包装成 `Rento-miniX` 的正式发布或运维入口
+- 不把 rollback-only GHCR 镜像内部改用 `minix` 产物链，误读成正式部署重新回到容器主线
 
 legacy 资产保留条件：
 - 在 `Caddy + systemd + Hono + PostgreSQL` 正式部署主线完成稳定验证前继续保留
