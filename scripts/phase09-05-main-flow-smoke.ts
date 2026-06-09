@@ -418,6 +418,17 @@ function assertInventoryExpectation(expectation: InventoryExpectation): Assertio
 async function assertBillsFallbackFile(): Promise<AssertionResult> {
   const filePath = path.join(WORKSPACE_ROOT, 'server/routes/bills.ts')
   const content = await readFile(filePath, 'utf8')
+  const reasonMatch = content.match(/reason:\s*'([^']+)'/)
+  const reasonText = reasonMatch?.[1] ?? ''
+  const reasonChecks = [
+    'phase14-05 起统一 /api runtime',
+    'server/routes/bills.ts',
+    '账单列表、统计、详情、草稿更新、收款状态',
+    '删除门禁',
+    'utility-details',
+    'compat proxy',
+    'repair-details',
+  ]
   const checks = [
     {
       label: '使用 phase14-05 作为当前 fallback 阶段说明',
@@ -430,10 +441,8 @@ async function assertBillsFallbackFile(): Promise<AssertionResult> {
       ),
     },
     {
-      label: 'LEGACY_COMPAT.reason 已说明 bills 正式职责归属 Hono',
-      matched: content.includes(
-        'phase14-05 起统一 /api runtime 已由 server/routes/bills.ts 承担账单列表、统计、详情、草稿更新、收款状态与删除门禁等正式职责'
-      ),
+      label: 'LEGACY_COMPAT.reason 已通过关键片段说明 bills 正式职责归属 Hono',
+      matched: reasonText.length > 0 && reasonChecks.every((fragment) => reasonText.includes(fragment)),
     },
     {
       label: 'fallback 文案不再输出旧的 phase09-03 partial-migrated 状态',

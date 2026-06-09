@@ -1,0 +1,10 @@
+- [x] `phase16-02` 的 spec 明确限定为固定自动化验证组合、结果记录与 gap triage，没有越界到人工 HTTPS 验收、正式部署演练、legacy 回滚演练或 legacy 退出最终结论
+- [x] `phase16-01` 已冻结的四类 parity matrix 被明确作为 `phase16-02` 的直接输入，而不是被重新定义
+- [x] `npm run lint`、`npm run type-check`、`npm run build:minix` 被明确纳入 `phase16-02` 的固定命令集合
+- [x] `npm run audit:phase09:legacy-routes`、`npm run smoke:phase09:all`、`npm run smoke:phase14:wave2` 被明确纳入 `phase16-02` 的固定命令集合
+- [x] `npm run build:minix:pwa`、`bash ./scripts/pwa-smoke-check.sh --profile production-ready --base-url <runtime-url>`、`bash ./scripts/health-check.sh --url <runtime-url>` 被明确纳入 `phase16-02` 的固定命令集合
+- [x] spec 要求每条验证命令都必须有单独结果记录，且回写到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
+- [x] spec 要求失败项必须分级为环境问题、合理适配或真实迁移遗漏
+- [x] spec 要求真实迁移遗漏必须映射到具体页面/API/PWA/部署路径与真实文件
+- [x] spec 要求无法执行的命令必须记录阻塞原因、是否构成 blocker 与临时替代验证路径
+- [x] `phase16-02` 的任务拆分能直接衔接 `phase16-03-manual-acceptance-and-cutover-packet`

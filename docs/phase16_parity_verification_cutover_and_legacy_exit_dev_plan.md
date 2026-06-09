@@ -168,16 +168,87 @@
 - legacy 退出顺序、保留条件与最终结论固定回写到本文件“九、legacy 退出判断与阶段结论”，并同步到 `plan.md`、`README.md`、`AGENTS.md`、`architecture_map.md` 与 `DEPLOYMENT.md`。
 
 ## 七、自动化验证记录
-- 待 `phase16-02` 回写：
-  - `npm run lint`
-  - `npm run type-check`
-  - `npm run build:minix`
-  - `npm run audit:phase09:legacy-routes`
-  - `npm run smoke:phase09:all`
-  - `npm run smoke:phase14:wave2`
-  - `npm run build:minix:pwa`
-  - `bash ./scripts/pwa-smoke-check.sh --profile production-ready --base-url <runtime-url>`
-  - `bash ./scripts/health-check.sh --url <runtime-url>`
+- 边界复核：
+  - 本轮仅覆盖固定自动化验证组合、结果记录与 gap triage，不提前写入人工 HTTPS 验收、正式部署演练、legacy 回滚演练或 legacy 退出最终结论。
+  - 执行范围已按 `package.json`、`scripts/phase09-05-main-flow-smoke.ts`、`scripts/phase14-06-query-cutover-smoke.ts`、`scripts/pwa-smoke-check.sh` 与 `scripts/health-check.sh` 复核为固定九条命令。
+  - 本轮运行时 URL 采用最小可行本地生产运行时 `http://127.0.0.1:39124`；首次尝试默认端口与 `3102` 均因 `EADDRINUSE` 失败，已归类为环境占用并改用隔离端口继续验证。
+- `npm run lint`
+  - 结果：通过。
+  - 关键输出：`next lint` 返回 `No ESLint warnings or errors`。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - triage：`acceptable-adaptation`。结合 Context7 2026-06 最新 Next.js 文档，`next lint` 已在 Next.js 16 移除，当前仓库仍停留在 `next lint` 脚本属于技术债，不构成当前轮功能 blocker；后续应把 `package.json` 的 `lint` 脚本迁移到 ESLint CLI。
+- `npm run type-check`
+  - 结果：通过。
+  - 关键输出：`tsc --noEmit` 退出码 `0`。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - triage：通过。Context7 2026-06 TypeScript 文档确认 `--noEmit` 仍是有效且推荐的纯类型校验方式。
+- `npm run build:minix`
+  - 结果：通过。
+  - 关键输出：客户端与 SSR 产物均成功生成到 `dist/` 与 `build/minix-server/`。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - triage：
+    - `acceptable-adaptation`：Vite 输出 `The CJS build of Vite's Node API is deprecated`，当前未阻断构建，影响文件待后续聚焦到 `vite.config.ts` 与相关 Node API 调用链。
+    - `acceptable-adaptation`：`.env`/`.env.example` 中存在 `NODE_ENV=production`，Vite 提示该值不用于创建 development build；当前命令仍为 production build，未阻断阶段验证。
+    - `acceptable-adaptation`：客户端 chunk 超过 `500 kB`，对应 `dist/assets/index-*.js` 体积较大，属于性能优化议题，不是当前 parity-blocker。
+    - `acceptable-adaptation`：`src/lib/reading-status-sync.ts` 同时被动态与静态引用，SSR 构建提示不会单独拆 chunk；当前不影响产物可用性。
+- `npm run audit:phase09:legacy-routes`
+  - 结果：通过。
+  - 关键输出：旧路由文件 `48`、清单覆盖 `48`、操作条目 `53`；`formal-host-owned: 5`、`compat-wrapper: 42`、`retained-legacy: 6`。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - matrix 映射：API/query parity matrix 继续维持 `phase14` 收口结论，正式业务 retained-legacy 主职责仍为 `0`，剩余 retained-legacy 仅限治理/辅助接口。
+- `npm run smoke:phase09:all`
+  - 结果：通过，退出码 `0`。
+  - 关键输出：`17/17` 断言通过，`bills fallback 说明` 已恢复为 `PASS`。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - triage：已通过。当前轮已把 `scripts/phase09-05-main-flow-smoke.ts` 中 `assertBillsFallbackFile()` 从整句精确匹配调整为 `LEGACY_COMPAT.reason` 范围内的关键职责片段匹配，继续约束 `phase14-05`、`server/routes/bills.ts`、`utility-details` 在内的正式账单职责与治理尾项，同时避免因说明文案补充细节而误报。
+  - 真实文件映射：
+    - API 路径：`/api/bills`、`/api/bills/stats`、`/api/bills/:id`、`/api/bills/:id/details`
+    - 正式宿主文件：`server/routes/bills.ts`
+    - 失败断言文件：`scripts/phase09-05-main-flow-smoke.ts`
+    - 兼容入口文件：`src/app/api/bills/route.ts`、`src/app/api/bills/[id]/route.ts`、`src/app/api/bills/stats/route.ts`
+- `npm run smoke:phase14:wave2`
+  - 结果：通过。
+  - 关键输出：`48/48` 断言通过。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - matrix 映射：API/query parity matrix 中 dashboard、settings、renters、meter-readings、utility compat tail 继续维持 `phase14-06` 结论；相关 formal host 与 compat wrapper 未出现回退。
+- `npm run build:minix:pwa`
+  - 结果：通过。
+  - 关键输出：PWA 打开后客户端与 SSR 产物再次成功生成。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - triage：沿用 `build:minix` 的非阻断构建告警；未发现新的 PWA 构建缺口。
+- `bash ./scripts/pwa-smoke-check.sh --profile production-ready --base-url http://127.0.0.1:39124`
+  - 结果：通过。
+  - 关键输出：`/api/health`、HTML shell、`manifest.json`、`sw.js`、`/offline` 与 hashed assets 缓存头全部通过。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - matrix 映射：PWA/runtime parity matrix 维持通过；本次仅使用 loopback HTTP，本地 smoke 可接受，但不替代 `phase16-03` 的真实 HTTPS 设备验收。
+- `bash ./scripts/health-check.sh --url http://127.0.0.1:39124/api/health`
+  - 结果：通过。
+  - 关键输出：`status=healthy`、HTTP `200`、数据库检查 `pass`、内存检查 `pass`。
+  - 失败原因：无。
+  - blocker：否。
+  - 替代路径：无。
+  - matrix 映射：deploy/cutover/rollback matrix 的本地主健康入口可用；本次结论只覆盖本地生产产物运行时，不提前外推到正式 cutover 审核。
+- gap triage 汇总：
+  - 环境问题：默认端口与 `3102` 被占用，影响 `start:minix` 首次启动；通过改用 `39124` 完成最小本地运行时验证。映射文件：`scripts/start-minix.mjs`、`server/index.ts`。当前不是 blocker。
+  - 合理适配：`next lint` 弃用提示、Vite CJS Node API 弃用提示、chunk 体积告警、`NODE_ENV` 提示均未阻断本轮验证。映射文件：`package.json`、`vite.config.ts`、`.env.example`。
+  - 自动化验证 blocker：当前轮已清零；`phase09` 主链 smoke 的账单 fallback 断言已改为关键片段匹配并重跑通过。
+  - 真实迁移遗漏：本轮未发现新的页面/API/PWA/部署真实迁移遗漏；失败项已收敛为环境占用与非阻断技术适配提示。
 
 ## 八、人工验收与 cutover 审核记录
 - 待 `phase16-03` 回写：
