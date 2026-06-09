@@ -72,6 +72,10 @@
 ## 8.3 PWA 承接技能
 - 当前 PWA 能力的价值已经在 `phase05` 冻结，后续目标不是取消 PWA，而是把安装、更新、最小离线兜底与发布口径迁到纯新主线。
 - PWA 迁移默认保持最小受控策略：不因“追求离线能力”而缓存动态鉴权业务接口，不因“安装体验”而引入第二套前端宿主或第二套缓存真相源。
+- 当进入 `phase15` 时，默认优先复用旧 `src/app/layout.tsx`、`src/components/layout/*`、`src/hooks/usePwaInstallState.ts` 与根级 `public/manifest.json`、`public/sw.js` 的现有语义，再把宿主耦合剥离到 `src/components/pwa/*`、`src/minix/layout/MinixRuntimeLayout.tsx`、`index.html` 与 `server/lib/static.ts`。
+- `phase15` 的 PWA 验收默认至少比较：安装提示是否仍可用、更新提示是否仍可用、`/offline` 是否仍作为最小离线兜底、`manifest.json`/`sw.js` 是否由纯新主线统一交付、以及是否继续坚持“不缓存动态鉴权业务接口”的缓存边界。
+- 若 `phase15` 实现后仍需要旧 Next 宿主直接承担 `manifest`、`sw.js`、安装提示或更新提示的正式主职责，应判定为“PWA parity 未完成”，不得标记本阶段通过。
+- 若 `phase15` 实现后 service worker、静态头或 smoke 脚本把 `/api/*`、登录态页面响应或其他业务真相数据错误纳入缓存，应判定为“缓存边界漂移”，必须回退验收结论并重新修复。
 
 ## 9. 迁移链治理技能
 - 当前主线已是 PostgreSQL，但迁移链仍有 SQLite 时代遗留。

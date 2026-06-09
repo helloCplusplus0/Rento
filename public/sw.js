@@ -9,9 +9,9 @@ const PRECACHE_URLS = [
   '/icons/icon-192x192-maskable.png',
   '/icons/icon-512x512-maskable.png',
 ]
-const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image'])
-const STATIC_PATH_PREFIXES = ['/_next/static/']
-const NON_CACHEABLE_PATH_PREFIXES = ['/api/', '/_next/image']
+const STATIC_PATH_PREFIXES = ['/assets/', '/icons/']
+const STATIC_EXACT_PATHS = new Set(['/favicon.ico'])
+const NON_CACHEABLE_PATH_PREFIXES = ['/api/']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -63,18 +63,6 @@ function isExplicitlyNonCacheable(requestUrl, request) {
     return true
   }
 
-  if (requestUrl.searchParams.has('_rsc')) {
-    return true
-  }
-
-  if (request.headers.get('RSC') === '1') {
-    return true
-  }
-
-  if (request.headers.get('next-router-prefetch') === '1') {
-    return true
-  }
-
   return false
 }
 
@@ -83,11 +71,15 @@ function isCacheableStaticRequest(requestUrl, request) {
     return true
   }
 
+  if (STATIC_EXACT_PATHS.has(requestUrl.pathname)) {
+    return true
+  }
+
   if (STATIC_PATH_PREFIXES.some((prefix) => requestUrl.pathname.startsWith(prefix))) {
     return true
   }
 
-  return STATIC_DESTINATIONS.has(request.destination)
+  return false
 }
 
 function canStoreResponse(response) {

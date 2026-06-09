@@ -64,17 +64,50 @@ export async function serveMinixAsset(
 
 async function createFileResponse(filePath: string, forcedContentType?: string) {
   const body = await fs.readFile(filePath)
-  const contentType =
-    forcedContentType || MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream'
+  const contentType = resolveContentType(filePath, forcedContentType)
+  const headers = createAssetHeaders(filePath, contentType)
 
   return new Response(new Uint8Array(body), {
-    headers: {
-      'content-type': contentType,
-      'cache-control': filePath.endsWith('index.html')
-        ? 'no-cache'
-        : 'public, max-age=31536000, immutable',
-    },
+    headers,
   })
+}
+
+function resolveContentType(filePath: string, forcedContentType?: string) {
+  if (forcedContentType) {
+    return forcedContentType
+  }
+
+  if (path.basename(filePath) === 'manifest.json') {
+    return 'application/manifest+json; charset=utf-8'
+  }
+
+  return MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream'
+}
+
+function createAssetHeaders(filePath: string, contentType: string) {
+  const basename = path.basename(filePath)
+  const headers: Record<string, string> = {
+    'content-type': contentType,
+  }
+
+  if (basename === 'index.html') {
+    headers['cache-control'] = 'no-cache'
+    return headers
+  }
+
+  if (basename === 'sw.js') {
+    headers['cache-control'] = 'no-cache, no-store, must-revalidate'
+    headers['service-worker-allowed'] = '/'
+    return headers
+  }
+
+  if (basename === 'manifest.json') {
+    headers['cache-control'] = 'no-cache'
+    return headers
+  }
+
+  headers['cache-control'] = 'public, max-age=31536000, immutable'
+  return headers
 }
 
 async function isFile(filePath: string) {

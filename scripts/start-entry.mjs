@@ -12,6 +12,11 @@ const distDir = path.join(projectDir, '.next')
 const standaloneDir = path.join(distDir, 'standalone')
 const standaloneServerPath = path.join(standaloneDir, 'server.js')
 
+if (!isLegacyStartApproved()) {
+  printLegacyStartNotice()
+  process.exit(1)
+}
+
 const validation = validateProductionArtifacts(distDir)
 
 if (!validation.ok) {
@@ -161,8 +166,23 @@ function printFailure(errors) {
   }
   console.error('')
   console.error('建议顺序：')
-  console.error('1. 执行 `npm run build`')
-  console.error('2. 如需验证 PWA，再执行 `NEXT_PUBLIC_ENABLE_PWA=1 npm run start`')
+  console.error('1. 如需继续验证 phase15/phase16 正式链路，请改用 `npm run build:minix` 或 `npm run build:minix:pwa`')
+  console.error('2. 然后执行 `npm run start:minix` 与 `bash ./scripts/pwa-smoke-check.sh --profile ...`')
+  console.error('3. `npm run start` 仅保留给 legacy 对照/回滚基线，不再作为 phase15 正式 PWA 验证入口')
+}
+
+function isLegacyStartApproved() {
+  return process.env.LEGACY_START === '1'
+}
+
+function printLegacyStartNotice() {
+  console.error('`npm run start` 已降级为 legacy 对照/回滚基线入口，默认不再直接启动。')
+  console.error('如需继续验证 phase15/phase16 正式链路，请改用：')
+  console.error('1. `npm run build:minix` 或 `npm run build:minix:pwa`')
+  console.error('2. `npm run start:minix`')
+  console.error('3. `bash ./scripts/pwa-smoke-check.sh --profile ...`')
+  console.error('')
+  console.error('只有在明确验证 legacy 对照/回滚基线时，才使用 `LEGACY_START=1 npm run start`。')
 }
 
 function readPort() {

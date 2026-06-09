@@ -24,6 +24,7 @@
 - `phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线
 - `phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到正式部署主线口径，并继续原样继承 `phase10` 的迁移兼容边界
 - `phase11-05` 已把顶层真相源、`docs/phase11_*`、最低工程验证命令、文档最小验证要求与部署/回滚演练记录要求收口到当前部署主线说明
+- `phase15` 当前承接位继续建立在同一部署主线上：`manifest.json`、`sw.js`、`index.html` PWA metadata、`scripts/pwa-smoke-check.sh` 与 `server/lib/static.ts` 的头策略统一由纯新主线交付，不再把旧 Next PWA 宿主作为正式部署必需入口
 - 当前脚本边界固定为：
   - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
   - `npm run build:minix`：当前产出前端 `dist/` 与服务端 `build/minix-server/` 预构建产物
@@ -89,6 +90,7 @@ DATABASE_URL=postgresql://...
 MINIX_SERVER_HOST=127.0.0.1
 MINIX_SERVER_PORT=3002
 MINIX_DIST_DIR=dist
+VITE_ENABLE_PWA=false
 CORS_ENABLED=true
 MAX_REQUEST_SIZE=10485760
 REQUEST_TIMEOUT=30000
@@ -98,8 +100,25 @@ REQUEST_TIMEOUT=30000
 - `.env.example` 是唯一共享模板，`.env` 仍是私有运行配置
 - `AUTH_SESSION_SECRET` 是正式主变量，`NEXTAUTH_SECRET` 仅保留历史兼容回退
 - `NEXTAUTH_URL` 与 `ALLOWED_ORIGINS` 默认保持一致
+- `VITE_ENABLE_PWA` 是纯新主线 PWA 构建 profile 开关；切换启用/关闭态需要重新构建 `dist/`，不是仅重启 `start:minix` 即可生效
 - 迁移脚本兼容变量继续保留 `RUN_SEED` 与 `DB_WAIT_SECS`，但它们不改变正式主线的 PostgreSQL / `migrate deploy` 定位
 - 任何涉及认证、CORS、健康检查或部署端口的调整，都必须同步更新实现、模板与文档
+
+## PWA 交付口径
+- 纯新主线继续使用根级 `public/manifest.json` 与 `public/sw.js` 作为正式 PWA 产物真相源。
+- `server/lib/static.ts` 需要保证：
+  - `index.html` 为 `no-cache`
+  - `manifest.json` 为 `no-cache`
+  - `sw.js` 为 `no-cache, no-store, must-revalidate`
+  - `sw.js` 额外返回 `Service-Worker-Allowed: /`
+- `scripts/pwa-smoke-check.sh` 是当前最小工程验证入口，用于校验 `/api/health`、`/manifest.json`、`/sw.js` 与 `/offline`。
+- 默认 smoke profile 与默认构建保持一致：`bash ./scripts/pwa-smoke-check.sh --profile pwa-disabled --base-url <runtime-url>` 用于验证默认关闭态。
+- 正式 PWA 交付链路固定为：
+  - `npm run build:minix:pwa`
+  - `bash ./scripts/pwa-smoke-check.sh --profile production-ready --base-url <runtime-url>`
+- 若只是在本地验证纯新主线运行时、但数据库或其他基础设施尚未完备，可使用：
+  - `bash ./scripts/pwa-smoke-check.sh --profile runtime-only --base-url <runtime-url>`
+- Android + Chrome + HTTPS 的安装、更新、离线兜底验证仍属于后续人工浏览器验收，不由部署文档自动替代。
 
 ## 迁移与数据库口径
 - PostgreSQL 是唯一正式数据库主线
@@ -156,7 +175,7 @@ REQUEST_TIMEOUT=30000
 - `scripts/bootstrap-deploy-assets.sh`
 -   当前 legacy 部署资产拉取脚本，默认仍拉取容器化部署所需文件集合
 - `scripts/start-entry.mjs`
--   当前 `Next.js standalone` 生产启动入口，继续对应旧运行线的启动语义
+-   当前 `Next.js standalone` 生产启动入口，继续对应旧运行线的启动语义；默认不再直接通过 `npm run start` 启动，只有在明确进行 legacy 对照或回滚验证时才允许使用 `LEGACY_START=1 npm run start`
 - 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径
 
 这些资产的统一身份固定为：
@@ -167,6 +186,7 @@ REQUEST_TIMEOUT=30000
 legacy 回滚职责边界：
 - 只回滚存量容器化运行线的镜像、部署资产、环境配置与验证路径
 - 只用于正式部署主线稳定验证完成前的应急恢复与差异对照
+- `npm run start` 默认不再作为 `phase15` / `phase16` 的正式验证入口；纯新主线继续使用 `npm run build:minix` 或 `npm run build:minix:pwa`、`npm run start:minix` 与 `bash ./scripts/pwa-smoke-check.sh --profile ...`
 - 不通过把当前开发 remote 切回 `Rento-legacy` 来处理运行问题
 - 不继续把 `docker-compose + nginx + Next.js standalone` 扩写成未来正式部署主线
 - 不把 legacy 容器化脚本重新包装成 `Rento-miniX` 的正式发布或运维入口

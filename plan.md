@@ -1,10 +1,11 @@
 # plan.md
 
 ## 当前默认入口
-- 当前默认工作流：`phase15-minix-pwa-and-runtime-parity`
-- 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，`phase11` 已冻结正式部署主线、回滚基线与发布门禁，且 `phase12 ~ phase14` 已分别完成页面 parity、正式业务 API/query parity 与旧 `src/app/api/*` 正式职责 drain 的前提下，进入仅继承结果的 `phase15 ~ phase16` 路线。
+- 当前默认工作流：`phase16-parity-verification-cutover-and-legacy-exit`
+- 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，`phase11` 已冻结正式部署主线、回滚基线与发布门禁，且 `phase12 ~ phase15` 已分别完成页面 parity、正式业务 API/query parity 与纯新主线 PWA/runtime parity 的前提下，进入仅继承结果的 `phase16` 最终验收与 cutover 路线。
 - 当前执行方式：`phase12` 已完成页面事实表、页面装配与路线图冻结；`phase13` 已完成正式业务页面 `25/25` 迁移；`phase14` 已完成 `phase14-01 ~ phase14-07` 的冻结输入、两波真实 API/query cutover、route inventory 审计与阶段收口。后续 `phase15` 仅继承纯新主线页面与 API 边界结果，不再承担任何正式业务 API 迁移职责。
-- 当前下一步：以 [phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md)、[phase13_frontend_page_parity_implementation_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_architecture_plan.md)、[phase13_frontend_page_parity_implementation_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_dev_plan.md)、[phase13_frontend_page_parity_implementation_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase13_frontend_page_parity_implementation_shared_baseline.md)、[phase12_frontend_parity_and_shell_cutover_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase12_frontend_parity_and_shell_cutover_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图作为已完成上游输入，准备后续 `phase15` `/plan`；在此之前，不再把 `phase14` 视为进行中阶段。
+- 当前下一步：以 [phase15_minix_pwa_and_runtime_parity_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_architecture_plan.md)、[phase15_minix_pwa_and_runtime_parity_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_dev_plan.md)、[phase15_minix_pwa_and_runtime_parity_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_shared_baseline.md)、[phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图作为已完成上游输入，进入 `phase16` 的 `/plan` 与最终验收准备；在此期间不再把 `phase15` 视为进行中阶段。
+- 当前人工验收补充：本地 `PC + Edge/Chrome + HTTP` 已验证安装提示、安装成功与登录链路正常；本地移动端 `Edge/Chrome + HTTP` 不出现安装入口按浏览器安全要求与既有 `Rento` 部署经验属于预期退化，移动端安装提示的正式判断继续以带公认 HTTPS 证书的部署环境为准。
 - 当前阶段说明：`phase10` 已完成并继续作为后续阶段的数据访问主线上游输入保留；`phase11` 已完成并继续作为正式部署主线、发布门禁与 legacy 回滚基线的稳定上游输入保留；`phase13` 已完成当前轮真实页面迁移与阶段尾项收口；`phase14` 已完成 API 层迁移收口，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口，`phase15` 与 `phase16` 只继承结果，不再继续承担正式业务 API 迁移职责。
 
 ## 阶段顺序
@@ -258,8 +259,11 @@
   - PWA 迁移不反向引入第二套前端宿主或第二套缓存真相源
   - PWA 验收清单与发布门禁可被后续 cutover 审核直接引用
 - 当前结论：
-  - 尚未开始
+  - 已完成当前轮 `/plan`、阶段文档与实现收口
   - 仅继承 `phase13` 页面 parity 结果、`phase14` 已完成的正式 API/query 宿主边界、compat 保留条件与回滚基线，不再承担任何正式业务 API 迁移职责
+  - 已完成 `src/minix/*`、`public/*`、`server/lib/static.ts`、`.env.example` 与 `scripts/pwa-smoke-check.sh` 的单一 PWA 交付链路收口
+  - 已完成当前轮工程验证、独立审核与人工验收补充：本地 PC 安装/登录链路通过，本地移动端 HTTP 不出现安装入口属于预期退化；移动端安装体验的正式浏览器结论继续以带公认 HTTPS 证书的部署环境为准
+  - 后续 `phase16` 只继承本阶段的 PWA parity、人工验收边界与发布口径结果，不再回写 `phase15` 实现职责
 
 ### phase16-parity-verification-cutover-and-legacy-exit
 - 目标：基于 `phase13 ~ phase15` 的迁移结果，完成自动化对齐、人工浏览器验收、cutover 审核、回滚演练与 legacy 技术栈退出条件收口。
@@ -273,8 +277,9 @@
   - cutover 审核、回滚演练与 legacy 退出条件具备单一解释
   - 旧技术栈只剩归档/只读参考职责，不再是正式运行必需项
 - 当前结论：
-  - 尚未开始
-  - 仅继承 `phase13` 页面 parity、`phase14` API/query parity 与 `phase15` PWA parity 的实现和验证结果，不再承担任何正式业务 API 迁移职责
+  - 尚未进入 `/plan`
+  - 当前默认下一步为基于 `phase13` 页面 parity、`phase14` API/query parity 与 `phase15` PWA parity 的实现和验证结果，进入最终验收、cutover 审核、回滚演练与 legacy 退出规划
+  - 仅继承既有页面/API/PWA parity 结果，不再承担任何正式业务 API 迁移职责
 
 ## `phase12 ~ phase16` 闭环路线图矩阵
 | 阶段 | 核心职责 | 直接继承输入 | 前置依赖 | DoD | 退出条件 | 仅文档轮次最小验证要求 |

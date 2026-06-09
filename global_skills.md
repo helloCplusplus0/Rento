@@ -43,6 +43,8 @@ reference-driven in-place replatform workflow
 - 当推进到 `phase07-app-shell-and-runtime-foundation` 时，必须先冻结前端路由方案、开发拓扑、并行壳切入策略、实现目录与最小环境变量口径，再进入该阶段 `/spec`。
 - 当推进到 `phase12-frontend-parity-and-shell-cutover` 时，必须先冻结旧页面到 `src/minix` 的映射表、页面装配复用策略、UI 保真边界、`Prisma + PostgreSQL` 保留口径，以及 `phase12 ~ phase16` 的完整路线图，再进入该阶段 `/spec`。
 - 当推进到 `phase13-frontend-page-parity-implementation` 时，必须先冻结 P0/P1 页面切片顺序、route module 组织方式、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界与浏览器验收基线，再进入该阶段 `/spec`。
+- 当推进到 `phase15-minix-pwa-and-runtime-parity` 时，必须先冻结新主线 `manifest`、`service worker`、安装提示、更新提示、最小离线页、环境变量口径与 PWA smoke 清单，再进入本阶段实现。
+- `phase15` 的实现顺序默认固定为：先同步最小阶段文档与根级真相源，再收口共享 PWA runtime 与 Minix 根挂载，再收口静态头/环境变量/smoke，最后执行 lint、type-check、build 与 PWA smoke。
 
 ## 6. 迁移保真技能
 - 涉及合同、账单、支付周期、仪表、抄表主链时，优先验证业务真实、状态可解释、历史可追溯，而不是先追求形式上的极简。
@@ -55,6 +57,7 @@ reference-driven in-place replatform workflow
 ## 7. 工程校验技能
 - 对阶段切换至少检查：文档是否一致、仓库远端是否正确、技术栈是否仍匹配目标方案、验证路径是否可执行。
 - 对实现阶段至少检查：`lint`、`type-check`、构建、健康检查与核心 smoke test。
+- 对 `phase15` 实现阶段，除通用校验外，还必须额外检查：`manifest.json`、`sw.js`、`/offline`、静态头与 PWA smoke 脚本口径是否与文档一致。
 - 对部署与运行阶段，优先验证低配服务器是否可运行、可维护、可回滚，而不是追求花哨基础设施。
 
 ## 8. 发布与回滚治理技能
@@ -79,3 +82,6 @@ reference-driven in-place replatform workflow
 - 对 `phase12 ~ phase16` 相关问题，可额外优先识别两类高风险项：
 - `parity-blocker`：会导致纯新主线无法完整承接旧页面、旧 API 或旧 PWA 能力的问题，例如页面映射缺失、保真边界不清或 retained-legacy 无法退出。
 - `ui-drift`：会导致迁移过程脱离旧 `Rento` 页面原型、重新设计视觉体系或破坏现有交互节奏的问题。
+- 对 `phase15` 相关问题，可额外优先识别两类高风险项：
+- `pwa-parity-gap`：会导致纯新主线仍依赖旧 Next PWA 宿主、或 `manifest`/`sw.js`/安装提示/离线页不能被统一交付的问题。
+- `cache-boundary-drift`：会导致 service worker 或静态头错误缓存动态鉴权业务接口、登录态页面响应或其他业务真相数据的问题。
