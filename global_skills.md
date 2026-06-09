@@ -45,6 +45,8 @@ reference-driven in-place replatform workflow
 - 当推进到 `phase13-frontend-page-parity-implementation` 时，必须先冻结 P0/P1 页面切片顺序、route module 组织方式、页面装配/数据加载边界、宿主绑定拆分策略、页面级加载/错态边界与浏览器验收基线，再进入该阶段 `/spec`。
 - 当推进到 `phase15-minix-pwa-and-runtime-parity` 时，必须先冻结新主线 `manifest`、`service worker`、安装提示、更新提示、最小离线页、环境变量口径与 PWA smoke 清单，再进入本阶段实现。
 - `phase15` 的实现顺序默认固定为：先同步最小阶段文档与根级真相源，再收口共享 PWA runtime 与 Minix 根挂载，再收口静态头/环境变量/smoke，最后执行 lint、type-check、build 与 PWA smoke。
+- 当推进到 `phase16-parity-verification-cutover-and-legacy-exit` 时，必须先冻结页面/API/PWA/部署四类 parity matrix、差异分类标准、cutover 审核包结构、rollback 记录要求与 legacy 退出顺序，再进入任何补丁实现或退出决策。
+- `phase16` 的实施顺序默认固定为：先同步最小阶段文档与根级真相源，再盘点证据并生成 parity matrix，再执行自动化验证与人工验收，最后冻结 cutover 结论、rollback 记录与 legacy 退出判断。
 
 ## 6. 迁移保真技能
 - 涉及合同、账单、支付周期、仪表、抄表主链时，优先验证业务真实、状态可解释、历史可追溯，而不是先追求形式上的极简。
@@ -85,3 +87,7 @@ reference-driven in-place replatform workflow
 - 对 `phase15` 相关问题，可额外优先识别两类高风险项：
 - `pwa-parity-gap`：会导致纯新主线仍依赖旧 Next PWA 宿主、或 `manifest`/`sw.js`/安装提示/离线页不能被统一交付的问题。
 - `cache-boundary-drift`：会导致 service worker 或静态头错误缓存动态鉴权业务接口、登录态页面响应或其他业务真相数据的问题。
+- 对 `phase16` 相关问题，可额外优先识别三类高风险项：
+- `parity-blocker`：会导致纯新主线无法完整替代旧 `Rento` 的差异。
+- `cutover-blocker`：会导致正式部署主线无法作为唯一正式交付入口的问题。
+- `rollback-gap`：会导致 legacy 回滚基线无法被清楚触发、验证或审计的问题。

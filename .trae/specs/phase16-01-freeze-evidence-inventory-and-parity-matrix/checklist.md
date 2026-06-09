@@ -1,0 +1,11 @@
+- [x] `phase16-01` 的 spec 明确限定为证据盘点、四类 parity matrix、差异分类与固定落位冻结任务，没有越界到正式业务 API 迁移、页面重设计、PWA 新方案重做或 legacy 资产删除
+- [x] `phase11`、`phase13`、`phase14`、`phase15` 的上游结果都被纳入 `phase16-01` 证据清单，而不是被重新定义
+- [x] 页面 parity matrix 明确要求记录旧页面路径、新页面路径、页面类型、当前结论、证据来源与差异说明
+- [x] API/query parity matrix 明确要求记录 route path + method、inventory category、formal host、compat/bridge host、依赖面、退出条件与最终判定
+- [x] PWA/runtime parity matrix 明确要求记录能力项、本地 PC 结果、移动端 HTTP 结果、正式 HTTPS 结果、差异分类与 cutover 影响
+- [x] deploy / cutover / rollback matrix 明确要求记录正式入口、legacy 入口、触发条件、验证证据、回滚窗口与最终状态
+- [x] `parity-blocker`、`acceptable-adaptation`、`non-blocking-legacy-reference` 三类差异在 spec 中具备单一解释
+- [x] 四类 parity matrix 的固定落位被限定到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`
+- [x] 自动化验证结果、人工验收、cutover 审核包、回滚演练与 legacy 退出判断的固定落位被限定到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
+- [x] `README.md`、`AGENTS.md`、`plan.md`、`architecture_map.md`、`DEPLOYMENT.md` 的 `phase16` 状态同步被明确纳入 `phase16-01` 的实施范围
+- [x] `phase16-01` 的任务拆分能直接衔接 `phase16-02-automated-verification-and-gap-triage`

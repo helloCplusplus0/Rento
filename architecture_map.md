@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；`phase13-frontend-page-parity-implementation` 已完成当前轮页面迁移与最终复核，正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项均已收口；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口，正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，后续 `phase15 ~ phase16` 只继承该结果继续推进。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；`phase13-frontend-page-parity-implementation` 已完成当前轮页面迁移与最终复核，正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项均已收口；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口，正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；`phase15` 已完成纯新主线 PWA/runtime parity 收口；`phase16` 已完成 `/plan` 与 `phase16-01` 证据盘点收口，四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，当前进入 `phase16-02 ~ phase16-04` 实施阶段。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -15,7 +15,7 @@
 - 在 `phase10` 数据访问层方案冻结前，不把这部分现有实现一次性大爆炸改写成新架构。
 
 ### 新主线规划层
-- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*`、`docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*` 组成当前 `Rento-miniX` 的主真相源。
+- 根级 `README.md`、`AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `docs/phase06_*`、`docs/phase07_*`、`docs/phase08_*`、`docs/phase09_*`、`docs/phase10_*`、`docs/phase11_*`、`docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*`、`docs/phase16_*` 组成当前 `Rento-miniX` 的主真相源。
 - 仓库内曾创建的 `Rento-miniX/` 子目录，已在完成内容吸收与引用复核后删除；相关治理结论已由根级真相源与 `docs/phase06_*` 承接，并继续作为 `phase07` 的上游输入。
 
 ## `phase07` 目标结构说明
@@ -247,6 +247,7 @@
   - `public/sw.js`
   - `src/minix/routes/OfflinePage.tsx`
 - `phase15` 已把这些承接位与 `src/minix/router/index.tsx`、`src/minix/App.tsx`、`index.html`、`.env.example`、`scripts/pwa-smoke-check.sh` 与 `server/lib/static.ts` 收口成单一交付链路，并完成当前轮工程验证、独立审核与人工验收补充。
+- `phase16` 已把 `docs/phase16_*` 冻结为最终验收承接层：四类 parity matrix 固定回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核包、rollback 记录与 legacy 退出顺序固定回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，而不是散落到临时记录中。
 
 ### 规划中的 parity 验收与 legacy 退出层
 - `phase16` 规划中的 cutover 与 legacy 退出继续建立在：
@@ -432,4 +433,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步已从 `phase15` 当前轮收口推进到 `phase16` 准备阶段：后续继续以 `docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase14` 已完成 retained-legacy API/query drain，`phase15` 已完成纯新主线 PWA parity 收口，`phase16` 只继承页面/API/PWA parity、compat 保留边界与回滚基线结果，legacy 资产继续保留为回滚基线直到 cutover 审核通过。
+- 当前默认下一步已从“进入 `phase16 /plan` 准备阶段”推进到“执行 `phase16` 当前轮实施”：后续继续以 `docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*`、`docs/phase16_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase14` 已完成 retained-legacy API/query drain，`phase15` 已完成纯新主线 PWA parity 收口，`phase16-01` 已完成证据盘点与 parity matrix 固定落位，当前由 `phase16-02 ~ phase16-04` 继续负责自动化验证、人工验收、cutover 审核、rollback 记录与 legacy 退出判断，legacy 资产继续保留为回滚基线直到 cutover 审核通过。

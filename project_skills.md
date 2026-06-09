@@ -77,6 +77,13 @@
 - 若 `phase15` 实现后仍需要旧 Next 宿主直接承担 `manifest`、`sw.js`、安装提示或更新提示的正式主职责，应判定为“PWA parity 未完成”，不得标记本阶段通过。
 - 若 `phase15` 实现后 service worker、静态头或 smoke 脚本把 `/api/*`、登录态页面响应或其他业务真相数据错误纳入缓存，应判定为“缓存边界漂移”，必须回退验收结论并重新修复。
 
+## 8.4 最终 parity 验收技能
+- 当进入 `phase16` 时，默认优先把差异分成 `parity-blocker`、`acceptable-adaptation` 与 `non-blocking-legacy-reference` 三类，而不是继续笼统描述“还有 legacy”。
+- 页面最终验收默认直接比较旧 `src/app/**/page.tsx` 与 `src/minix/routes/*` 的正式页面表达、主链交互、信息结构与状态反馈，而不是只看 URL 是否已切到新宿主。
+- API/query 最终验收默认直接继承 `server/lib/legacy-route-inventory.ts` 的分类；旧 `src/app/api/*` 文件仍存在本身不构成失败，只有在其仍承担正式业务主职责时才构成 blocker。
+- PWA 最终验收默认继续接受“本地移动端 HTTP 无安装入口”的浏览器安全退化；最终判断必须以带公认 HTTPS 证书的部署环境结果为准。
+- cutover 最终验收默认要求正式入口、健康检查、主链 smoke、PWA 验收、回滚入口与演练记录同时具备单一解释；缺任一项都不得轻易判定“已经彻底完成原地重构”。
+
 ## 9. 迁移链治理技能
 - 当前主线已是 PostgreSQL，但迁移链仍有 SQLite 时代遗留。
 - `migration_lock.toml`、历史 SQL、兼容脚本需要被明确标记为“兼容项”而不是“当前最佳实践”。

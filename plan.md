@@ -3,8 +3,8 @@
 ## 当前默认入口
 - 当前默认工作流：`phase16-parity-verification-cutover-and-legacy-exit`
 - 当前阶段目标：在 `phase10` 已冻结 `Prisma + PostgreSQL` 数据访问主线、查询分层、统一事务边界与迁移兼容边界，`phase11` 已冻结正式部署主线、回滚基线与发布门禁，且 `phase12 ~ phase15` 已分别完成页面 parity、正式业务 API/query parity 与纯新主线 PWA/runtime parity 的前提下，进入仅继承结果的 `phase16` 最终验收与 cutover 路线。
-- 当前执行方式：`phase12` 已完成页面事实表、页面装配与路线图冻结；`phase13` 已完成正式业务页面 `25/25` 迁移；`phase14` 已完成 `phase14-01 ~ phase14-07` 的冻结输入、两波真实 API/query cutover、route inventory 审计与阶段收口。后续 `phase15` 仅继承纯新主线页面与 API 边界结果，不再承担任何正式业务 API 迁移职责。
-- 当前下一步：以 [phase15_minix_pwa_and_runtime_parity_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_architecture_plan.md)、[phase15_minix_pwa_and_runtime_parity_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_dev_plan.md)、[phase15_minix_pwa_and_runtime_parity_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_shared_baseline.md)、[phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md) 与本文件中的 `phase12 ~ phase16` 路线图作为已完成上游输入，进入 `phase16` 的 `/plan` 与最终验收准备；在此期间不再把 `phase15` 视为进行中阶段。
+- 当前执行方式：`phase12` 已完成页面事实表、页面装配与路线图冻结；`phase13` 已完成正式业务页面 `25/25` 迁移；`phase14` 已完成 `phase14-01 ~ phase14-07` 的冻结输入、两波真实 API/query cutover、route inventory 审计与阶段收口；`phase15` 已完成纯新主线 PWA/runtime parity。当前 `phase16` 已完成 `/plan`、`phase16-01` 证据盘点与四类 parity matrix 固定落位，后续按自动化验证 -> 人工验收/cutover 审核 -> legacy 退出判断的顺序推进。
+- 当前下一步：以 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 以及 `phase13 ~ phase15` 的已完成上游输入为真相源，进入 `phase16-02 ~ phase16-04` 的自动化验证、人工验收、cutover 审核包、回滚演练记录与 legacy 退出条件实施；其中四类 parity matrix 统一以 `shared_baseline` 为证据入口，过程记录统一回写 `dev_plan`。
 - 当前人工验收补充：本地 `PC + Edge/Chrome + HTTP` 已验证安装提示、安装成功与登录链路正常；本地移动端 `Edge/Chrome + HTTP` 不出现安装入口按浏览器安全要求与既有 `Rento` 部署经验属于预期退化，移动端安装提示的正式判断继续以带公认 HTTPS 证书的部署环境为准。
 - 当前阶段说明：`phase10` 已完成并继续作为后续阶段的数据访问主线上游输入保留；`phase11` 已完成并继续作为正式部署主线、发布门禁与 legacy 回滚基线的稳定上游输入保留；`phase13` 已完成当前轮真实页面迁移与阶段尾项收口；`phase14` 已完成 API 层迁移收口，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口，`phase15` 与 `phase16` 只继承结果，不再继续承担正式业务 API 迁移职责。
 
@@ -277,8 +277,9 @@
   - cutover 审核、回滚演练与 legacy 退出条件具备单一解释
   - 旧技术栈只剩归档/只读参考职责，不再是正式运行必需项
 - 当前结论：
-  - 尚未进入 `/plan`
-  - 当前默认下一步为基于 `phase13` 页面 parity、`phase14` API/query parity 与 `phase15` PWA parity 的实现和验证结果，进入最终验收、cutover 审核、回滚演练与 legacy 退出规划
+  - 已完成当前轮 `/plan` 与 `docs/phase16_*` 三件套冻结
+  - 已完成 `phase16-01` 当前轮证据盘点、四类 parity matrix 回填与固定落位：matrix 统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
+  - 当前默认下一步为基于 `phase13` 页面 parity、`phase14` API/query parity、`phase15` PWA parity 与 `phase11` 部署/回滚基线，进入 `phase16-02 ~ phase16-04` 的自动化验证、人工验收、cutover 审核与 legacy 退出判断实施
   - 仅继承既有页面/API/PWA parity 结果，不再承担任何正式业务 API 迁移职责
 
 ## `phase12 ~ phase16` 闭环路线图矩阵
@@ -310,9 +311,11 @@
 - `docs/phase10_*` 将承接长期数据访问层方案、查询分层、事务边界、迁移兼容项与 legacy route inventory 对齐等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase11_*` 将承接正式部署主线、服务端产物链、环境模板、健康检查、发布门禁、legacy 回滚基线与 cutline 退出条件等阶段细节；本文件继续只保留阶段总览与验收结论。
 - `docs/phase12_*` 将承接旧页面到 `src/minix` 的映射表、页面装配复用策略、UI 保真边界与 `phase12 ~ phase16` 路线图冻结；本文件继续只保留阶段总览与验收结论。
+- `docs/phase16_*` 将承接页面/API/PWA/部署四类 parity matrix、差异分类标准、cutover 审核包、rollback 记录与 legacy 退出顺序；其中四类 parity matrix 固定回写 `shared_baseline`，过程记录固定回写 `dev_plan`；本文件继续只保留阶段总览与验收结论。
 - `phase10` 收口后的最低验证命令固定为 `npm run audit:phase09:legacy-routes`、`npm run lint`、`npm run type-check`；若仅文档变更，至少补做 `docs/phase10_*` 互链与被引用路径存在性复核。
 - `phase11-05` 收口后，若本轮仅涉及 `phase11` 文档，最低验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核，以及根级真相源与 `DEPLOYMENT.md` 状态一致性复核；若进入后续实施、演练或发布验证，最低工程验证命令固定为 `npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
 - `phase12` 当前轮若仅涉及文档，最低验证要求固定为：`docs/phase12_*` 三份文档互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md` 与 `docs/phase12_*` 状态一致性复核；待进入新增 `phase13-frontend-page-parity-implementation` 阶段时，再由对应 `dev_plan` 冻结最低工程验证命令与页面 parity 验收要求。
+- `phase16` 当前轮若仅涉及文档，最低验证要求固定为：`docs/phase16_*` 三份文档互链复核、被引用路径存在性复核，以及 `README.md`、`AGENTS.md`、`project_rules.md`、`architecture_map.md`、`plan.md`、`DEPLOYMENT.md` 与 `docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*`、`docs/phase16_*` 状态一致性复核；进入实施后，再按对应 `dev_plan` 执行固定自动化验证、人工验收与独立审核。
 
 ## 历史说明
 - 早期阶段围绕 MVP 功能、UI 落地和 SQLite 本地开发展开。

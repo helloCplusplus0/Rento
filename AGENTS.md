@@ -26,7 +26,7 @@
 - 当前默认工作流：`phase16-parity-verification-cutover-and-legacy-exit`
 - 当前主问题：在不反向干扰 `phase07~15` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层、部署主线、页面 parity、API/query parity、PWA parity 与迁移兼容边界的前提下，继续完成最终验收、cutover 与 legacy 退出。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase15-minix-pwa-and-runtime-parity` 已完成当前轮收口，应以 [phase15_minix_pwa_and_runtime_parity_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_architecture_plan.md)、[phase15_minix_pwa_and_runtime_parity_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_dev_plan.md)、[phase15_minix_pwa_and_runtime_parity_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_shared_baseline.md)、[phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_architecture_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_dev_plan.md)、[phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase14_api_query_parity_and_legacy_route_drain_shared_baseline.md) 与 [plan.md](file:///home/dell/Projects/Rento/plan.md) 作为已完成上游输入，进入 `phase16` 的 `/plan` 与最终验收准备；`phase16` 只继承结果，不再承担正式业务 API 迁移职责。
+- 当前下一步：`phase16` 已完成当前轮 `/plan` 与 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 三件套冻结，并已完成 `phase16-01` 的证据盘点、四类 parity matrix 回填与固定落位；后续默认进入 `phase16-02 ~ phase16-04` 的自动化验证、人工验收、cutover 审核与 legacy 退出判断实施；`phase16` 仍只继承结果，不承担正式业务 API 迁移职责。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入
@@ -69,7 +69,7 @@
 - `phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项已完成复验并回写到统一页面 parity / 浏览器基线 / `phase14` 交接文档中。
 - `phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口：正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；剩余 retained-legacy 仅限治理/辅助接口，正式业务旧入口已统一降级为 `formal-host-owned` 或 `compat-wrapper`。
 - `phase15-minix-pwa-and-runtime-parity` 已完成当前轮收口：`docs/phase15_*`、纯新主线 PWA 交付链路、工程验证、独立审核与本地人工验收补充已形成单一结论。
-- 当前默认进入 `phase16-parity-verification-cutover-and-legacy-exit` 的 `/plan` 准备阶段。
+- `phase16-parity-verification-cutover-and-legacy-exit` 已完成当前轮 `/plan` 与 `phase16-01` 文档收口：四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，当前进入 `phase16-02 ~ phase16-04` 实施阶段。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -77,6 +77,7 @@
 - [project_rules.md](file:///home/dell/Projects/Rento/project_rules.md)：刚性规则、门禁与禁止事项
 - [architecture_map.md](file:///home/dell/Projects/Rento/architecture_map.md)：仓库结构、现状与重构承接位
 - [plan.md](file:///home/dell/Projects/Rento/plan.md)：当前默认阶段、阶段顺序与验收结论
+- [DEPLOYMENT.md](file:///home/dell/Projects/Rento/DEPLOYMENT.md)：正式部署主线、cutover 审核与 legacy 回滚基线说明
 - [global_skills.md](file:///home/dell/Projects/Rento/global_skills.md)：跨阶段通用方法论与重构 workflow 规则
 - [project_skills.md](file:///home/dell/Projects/Rento/project_skills.md)：合同、账单、仪表、删除门禁与 UI 承接等专属技能
 - [phase06_minix_replatform_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_architecture_plan.md)：`phase06` 架构规划
@@ -109,6 +110,9 @@
 - [phase15_minix_pwa_and_runtime_parity_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_architecture_plan.md)：`phase15` 架构规划
 - [phase15_minix_pwa_and_runtime_parity_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_dev_plan.md)：`phase15` 开发规划
 - [phase15_minix_pwa_and_runtime_parity_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase15_minix_pwa_and_runtime_parity_shared_baseline.md)：`phase15` 共享基线
+- [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)：`phase16` 架构规划
+- [phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)：`phase16` 开发规划
+- [phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md)：`phase16` 共享基线
 - [docs/archive/README.md](file:///home/dell/Projects/Rento/docs/archive/README.md)：历史任务文档与遗留材料归档说明
 
 ## 8. 推荐阅读顺序
@@ -128,6 +132,8 @@
 14. `docs/phase12_*`
 15. `docs/phase13_*`
 16. `docs/phase14_*`
+17. `docs/phase15_*`
+18. `docs/phase16_*`
 
 ## 9. 文档同步规则
 - 当默认工作流切换到新的 `phase*` 前，必须先同步 `AGENTS.md`、`project_rules.md`、`global_skills.md`、`project_skills.md`、`plan.md` 与 `architecture_map.md`。
