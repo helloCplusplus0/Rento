@@ -25,7 +25,7 @@
 - `phase11-01` 已把 `build:minix` / `start:minix` 收口到“前端 `dist/` + 服务端 `build/minix-server/`”的预构建产物链
 - `phase11-02` 已补齐 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 正式部署资产基线
 - `phase11-03` 已把 `.env.example`、`scripts/health-check.sh` 与 `/api/health` 收口到正式部署主线口径，并继续原样继承 `phase10` 的迁移兼容边界
-- 当前 GitHub 正式发布链已切换为：`.github/workflows/release-deploy-bundle.yml` 负责执行 `npm run build:minix`、生成正式部署包并上传为 GitHub Release asset；云服务器只拉包、解压、切换 `current`、刷新 `systemd/Caddy`，不在服务器执行 build
+- 当前 GitHub 正式发布链已切换为：`.github/workflows/release-deploy-bundle.yml` 负责执行 `npm run build:minix`、生成正式部署包并上传为 GitHub Release asset；推送 `v*` tag 会自动出包，`workflow_dispatch` 也可直接基于当前选定 ref 创建首个同名 release/tag；若同名 release 已存在，workflow 会直接失败并要求改用新的 `release_tag`；云服务器只拉包、解压、切换 `current`、刷新 `systemd/Caddy`，不在服务器执行 build
 - `phase11-05` 已把顶层真相源、`docs/phase11_*`、最低工程验证命令、文档最小验证要求与部署/回滚演练记录要求收口到当前部署主线说明
 - `phase15` 当前承接位继续建立在同一部署主线上：`manifest.json`、`sw.js`、`index.html` PWA metadata、`scripts/pwa-smoke-check.sh` 与 `server/lib/static.ts` 的头策略统一由纯新主线交付，不再把旧 Next PWA 宿主作为正式部署必需入口
 - `phase16` 当前继续在同一部署主线上执行最终验收：部署相关 matrix 已固定回写 `shared_baseline`，正式部署演练记录、legacy 回滚演练记录、`/api/health`、主链 smoke 与 PWA HTTPS 验收结果将继续固定回写 `dev_plan`，并共同构成 cutover 审核包；当前轮若缺少真实云服务器与公认 HTTPS 条件，则只冻结字段、触发条件与引用入口
@@ -89,6 +89,11 @@ Internet
   - 验证 `dist/` 与 `build/minix-server/`
   - 执行 `npm prune --omit=dev`
   - 打包运行所需文件并上传到 GitHub Release
+- `workflow_dispatch` 当前不再要求预先存在 git tag：
+  - 手工触发时输入 `release_tag`
+  - workflow 直接基于当前选定 ref 的提交构建部署包
+  - 若远端尚无同名 tag/release，则由 workflow 自动创建
+  - 若远端已存在同名 tag/release，则 workflow 会直接失败并提示改用新的 `release_tag`
 - 正式部署包命名规则固定为：
   - `rento-minix-<version>-deploy-bundle.tar.gz`
   - `rento-minix-<version>-deploy-bundle.tar.gz.sha256`

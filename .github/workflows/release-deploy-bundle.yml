@@ -6,12 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing git tag to package and publish, e.g. v1.2.3
+        description: Release tag to create from the selected ref, e.g. v1.2.3
         required: true
         type: string
 
 concurrency:
-  group: release-deploy-bundle-${{ github.ref || inputs.release_tag }}
+  group: release-deploy-bundle-${{ inputs.release_tag || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -29,12 +29,15 @@ jobs:
         env:
           INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
           REF_NAME: ${{ github.ref_name }}
+          REF_SHA: ${{ github.sha }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             RELEASE_TAG="$INPUT_RELEASE_TAG"
+            BUILD_REF="$REF_SHA"
           else
             RELEASE_TAG="$REF_NAME"
+            BUILD_REF="$REF_SHA"
           fi
 
           if [ -z "$RELEASE_TAG" ]; then
@@ -42,21 +45,32 @@ jobs:
             exit 1
           fi
 
+          if [[ "$RELEASE_TAG" != v* ]]; then
+            RELEASE_TAG="v$RELEASE_TAG"
+          fi
+
           VERSION="${RELEASE_TAG#v}"
+          if [ -z "$VERSION" ]; then
+            echo "release version is required"
+            exit 1
+          fi
+
           ASSET_NAME="rento-minix-${VERSION}-deploy-bundle.tar.gz"
           CHECKSUM_NAME="${ASSET_NAME}.sha256"
 
           {
             echo "release_tag=$RELEASE_TAG"
+            echo "build_ref=$BUILD_REF"
             echo "version=$VERSION"
             echo "asset_name=$ASSET_NAME"
             echo "checksum_name=$CHECKSUM_NAME"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Checkout repository at release ref
+      - name: Checkout repository at build ref
         uses: actions/checkout@v6
         with:
-          ref: ${{ steps.release_meta.outputs.release_tag }}
+          ref: ${{ steps.release_meta.outputs.build_ref }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -86,6 +100,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
           VERSION: ${{ steps.release_meta.outputs.version }}
+          BUILD_REF: ${{ steps.release_meta.outputs.build_ref }}
         run: |
           STAGE_ROOT="$RUNNER_TEMP/deploy-stage"
           APP_ROOT="$STAGE_ROOT/rento-minix"
@@ -123,6 +138,7 @@ jobs:
           cat <<EOF > "$APP_ROOT/DEPLOY_BUNDLE_MANIFEST.txt"
           release_tag=${RELEASE_TAG}
           version=${VERSION}
+          build_ref=${BUILD_REF}
           formal_runtime=Caddy + systemd + Hono + PostgreSQL
           included_paths=
           - dist/
@@ -163,22 +179,30 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create or update GitHub release
+      - name: Create GitHub release and publish assets
         env:
+          EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
-        run: |
-          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" \
-              --title "$RELEASE_TAG" \
-              --notes "Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL."
-          fi
-
-      - name: Upload release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
+          BUILD_REF: ${{ steps.release_meta.outputs.build_ref }}
           ASSET_NAME: ${{ steps.release_meta.outputs.asset_name }}
           CHECKSUM_NAME: ${{ steps.release_meta.outputs.checksum_name }}
         run: |
-          gh release upload "$RELEASE_TAG" "$ASSET_NAME" "$CHECKSUM_NAME" --clobber
+          RELEASE_NOTES="Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL. Built from ${BUILD_REF}."
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag ${RELEASE_TAG} already exists on origin. Use a new release_tag or push that tag directly."
+            exit 1
+          fi
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Release ${RELEASE_TAG} already exists. Use a new release_tag to keep deploy bundles immutable."
+            exit 1
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            "$ASSET_NAME" \
+            "$CHECKSUM_NAME" \
+            --target "$BUILD_REF" \
+            --title "$RELEASE_TAG" \
+            --notes "$RELEASE_NOTES"

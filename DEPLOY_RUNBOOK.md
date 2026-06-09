@@ -21,8 +21,20 @@
   - `systemd`
   - `postgresql`
 - 一个可用的公网域名
-- 一个已经发布到 GitHub Release 的 tag，例如 `v1.2.3`
+- 一个可用的 release tag，例如 `v1.2.3`
 - 服务器能够访问 GitHub Release
+
+如果当前还没有现成 release，可以先在仓库侧手工触发正式部署包 workflow：
+
+```bash
+gh workflow run release-deploy-bundle.yml --ref main -f release_tag=v1.2.3
+```
+
+说明：
+- `workflow_dispatch` 现在会直接基于你选定的分支/提交构建正式部署包
+- 若远端还没有同名 tag/release，workflow 会自动创建
+- 若远端已有同名 release，workflow 会覆盖上传最新部署包资产
+- 等 workflow 成功后，再继续服务器部署步骤
 
 ## 3. 第一次部署
 1. 拉取管理脚本仓库副本

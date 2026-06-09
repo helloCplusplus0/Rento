@@ -30,7 +30,7 @@
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入
-  - 把 GitHub Release 正式部署包链路固定为当前唯一正式云端部署来源：由 `.github/workflows/release-deploy-bundle.yml` 生成部署包，云服务器使用 `scripts/pull-release-deploy-bundle.sh` 拉取到 `/opt/rento-minix/current`
+  - 把 GitHub Release 正式部署包链路固定为当前唯一正式云端部署来源：由 `.github/workflows/release-deploy-bundle.yml` 生成部署包；推送 `v*` tag 会自动出包，`workflow_dispatch` 也可直接基于当前选定 ref 创建首个同名 release/tag；若同名 release 已存在，workflow 会直接失败并要求改用新的 `release_tag`；云服务器使用 `scripts/pull-release-deploy-bundle.sh` 拉取到 `/opt/rento-minix/current`
   - 把 `phase12` 已冻结的页面事实表、页面映射、五层复用矩阵、UI 保真边界与页面-API 联动，以及 `phase13` 已完成的页面 parity 结果、浏览器基线与页面-API/query 交接，作为 `phase14` 的直接上游输入
   - 保留 `phase14-01 ~ phase14-04` 的冻结与实施输入层结论，以及 `phase14-05 ~ phase14-07` 的真实迁移与阶段收口结果，作为 `phase15` 与 `phase16` 的稳定 API 上游输入
   - 明确 `phase14` 已完成正式业务 API/query drain，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；剩余 retained-legacy 仅限治理/辅助接口
