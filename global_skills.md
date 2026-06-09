@@ -47,6 +47,8 @@ reference-driven in-place replatform workflow
 - `phase15` 的实现顺序默认固定为：先同步最小阶段文档与根级真相源，再收口共享 PWA runtime 与 Minix 根挂载，再收口静态头/环境变量/smoke，最后执行 lint、type-check、build 与 PWA smoke。
 - 当推进到 `phase16-parity-verification-cutover-and-legacy-exit` 时，必须先冻结页面/API/PWA/部署四类 parity matrix、差异分类标准、cutover 审核包结构、rollback 记录要求与 legacy 退出顺序，再进入任何补丁实现或退出决策。
 - `phase16` 的实施顺序默认固定为：先同步最小阶段文档与根级真相源，再盘点证据并生成 parity matrix，再执行自动化验证与人工验收，最后冻结 cutover 结论、rollback 记录与 legacy 退出判断。
+- 当执行 `phase16-04` 时，必须把 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 的职责明确单值化为 `rollback-only`、写清归档/退出前提与回滚窗口，并避免把待真实云服务器执行的正式人工 HTTPS 验收、正式部署演练或 legacy 回滚演练伪造成“已完成”。
+- 若 `phase16` 当前轮仍缺少真实云服务器证据，则最终结论必须写成 `未通过但单值化`，只允许在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练后再复判是否可改写为 `通过`。
 
 ## 6. 迁移保真技能
 - 涉及合同、账单、支付周期、仪表、抄表主链时，优先验证业务真实、状态可解释、历史可追溯，而不是先追求形式上的极简。
@@ -67,6 +69,7 @@ reference-driven in-place replatform workflow
 - 对历史兼容逻辑、迁移桥接逻辑与新旧并存逻辑，必须写明存在原因、当前作用与退出条件。
 - 发布前优先确认环境变量、健康检查、部署脚本与核心业务 smoke test 已冻结。
 - 当推进到 `phase11-deployment-cutover-and-cutline-closure` 时，优先冻结正式部署主线、legacy 回滚基线、环境模板、健康检查与发布门禁，再进入任何部署实现。
+- 若正式部署路径切换到 GitHub Release 部署包，必须同时冻结：Release asset 命名规则、服务器拉包脚本、环境文件位置、`systemd`/`Caddy` 刷新步骤与健康检查步骤，避免产生“GitHub 产物已切换，但服务器仍按 legacy 路径部署”的双重解释。
 
 ## 9. 文档-实现一致性扫描技能
 - 在阶段切换前，检查顶层文档是否准确描述当前代码、目录与仓库状态。

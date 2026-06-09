@@ -1,0 +1,6 @@
+- [x] spec 明确区分 `DEPLOYMENT.md` 的治理职责与 `DEPLOY_RUNBOOK.md` 的操作职责
+- [x] spec 明确要求新增服务器准备脚本
+- [x] spec 明确要求新增正式部署执行脚本
+- [x] spec 明确要求服务器部署全过程不执行 build
+- [x] spec 明确要求 runbook 覆盖首次部署、升级部署、健康检查与回滚入口
+- [x] tasks 覆盖脚本新增、手册新增、文档同步与独立验收

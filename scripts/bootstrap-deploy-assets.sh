@@ -2,7 +2,11 @@
 
 set -euo pipefail
 
-REPO_URL="${RENTO_REPO_URL:-https://github.com/helloCplusplus0/Rento.git}"
+# rollback-only:
+# This script keeps serving the legacy containerized rollback baseline.
+# Formal deployment must use scripts/pull-release-deploy-bundle.sh instead.
+
+REPO_URL="${RENTO_REPO_URL:-https://github.com/helloCplusplus0/Rento-miniX.git}"
 REPO_REF="${RENTO_REPO_REF:-main}"
 TARGET_DIR="${1:-./rento-deploy}"
 
@@ -63,13 +67,17 @@ prepare_runtime_dirs() {
 
 print_summary() {
   cat <<EOF
-[OK] 已完成部署资产拉取
+[OK] 已完成 legacy 回滚资产拉取
 
 目录: $TARGET_DIR
 分支: $REPO_REF
 仓库: $REPO_URL
 
-下一步:
+说明:
+- 该脚本只服务于 rollback-only 容器化运行线。
+- 正式主线请改用 scripts/pull-release-deploy-bundle.sh 从 GitHub Release 拉取部署包。
+
+legacy 回滚下一步:
 1. cd "$TARGET_DIR"
 2. cp .env.example .env
 3. 编辑 .env 中的域名、密钥、管理员哈希和数据库密码

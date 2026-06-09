@@ -1,0 +1,7 @@
+- [x] spec 明确要求 GitHub Actions 生成正式部署包，而不是只生成 legacy 容器化 deployment artifact
+- [x] spec 明确要求正式部署包基于 `build:minix`，并以 `dist/` 与 `build/minix-server/` 为核心产物
+- [x] spec 明确要求云服务器部署时不执行 build
+- [x] spec 明确要求 legacy 容器化镜像、GHCR 入口与旧 deployment artifact 只保留 rollback-only 身份
+- [x] spec 明确要求 CI 从 `.next` 校验切换到 `build:minix` 主线校验
+- [x] tasks 覆盖 workflow 调整、部署包清单、云端拉包脚本、文档同步与最终验收
+- [x] 文档目标能够支持“从 GitHub 拉正式部署产物并按说明部署”的单一路径

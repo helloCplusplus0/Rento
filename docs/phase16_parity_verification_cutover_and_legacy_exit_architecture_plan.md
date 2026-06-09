@@ -5,6 +5,7 @@
 - `phase14` 已完成正式业务 API/query parity，`server/routes/*.ts` 与 `server/lib/legacy-route-inventory.ts` 已形成 `formal-host-owned / compat-wrapper / retained-legacy` 的单一分类；旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口。
 - `phase15` 已完成纯新主线 PWA/runtime parity，`src/components/pwa/*`、`src/minix/layout/MinixRuntimeLayout.tsx`、`public/manifest.json`、`public/sw.js`、`server/lib/static.ts` 与 `scripts/pwa-smoke-check.sh` 已形成单一交付链路。
 - `phase11` 已冻结正式部署主线、回滚基线与部署/回滚演练记录要求；`DEPLOYMENT.md`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service`、`scripts/start-minix.mjs` 与 `scripts/start-entry.mjs` 已具备 cutover / rollback 的直接输入价值。
+- `phase16-04` 当前轮只冻结 legacy-exit 决策与 root sync：`docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 统一降级为 `rollback-only`；当前轮最终结论固定为 `未通过但单值化`，原因是正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练仍待真实云服务器执行。
 
 ## 配套文档
 - 开发规划：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
@@ -128,6 +129,8 @@
 - `LEGACY_START=1 npm run start` 只保留 legacy-only 身份，不得再被视为当前正式运行入口。
 - 在缺少真实云服务器条件时，`phase16-03` 当前轮只冻结正式部署演练与 legacy 回滚演练模板、触发条件与引用入口，真实演练结果延后到云端执行。
 - legacy 资产退出的前提不是“文件删掉了”，而是“替代入口、验证记录与回滚窗口已形成可审计闭环”。
+- `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh` 与 `scripts/start-entry.mjs` 当前统一视为 `rollback-only` 资产：允许用于故障回滚、差异对照和回滚演练，不再作为默认部署/运维入口。
+- 回滚窗口固定按事件关闭而不是按主观判断关闭：只有在真实云服务器完成正式人工 HTTPS 验收、正式部署演练、legacy 回滚演练，并由 `phase16-04` 把最终结论改写为 `通过` 后，才允许开始归档/退出判断。
 
 ## 七、明确不做
 - 不重新打开正式业务 API 迁移。
@@ -143,6 +146,11 @@
 - 本阶段最终允许两种合法结果：
   - `通过`：`Rento-miniX` 已具备替代旧 `Rento` 的条件，legacy 资产只剩回滚/归档/只读参考职责。
   - `未通过但单值化`：全部 blocker 已被明确映射到真实缺口与后续最小补齐任务，不再保留模糊灰区。
+- `phase16` 当前轮最终结论固定为 `未通过但单值化`，且不得在真实云服务器证据补齐前改写为 `通过`。
+- 当前轮结论理由固定为三条：
+  - 页面/API/PWA/部署四类 parity matrix 与自动化验证均未发现新的源码层 `parity-blocker`。
+  - legacy 容器化资产已完成 `rollback-only` 单值化分类，不再承担正式主职责。
+  - 正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未在真实云服务器执行，因此仍存在 `cutover-blocker`，只能判定为“未通过但单值化”。
 
 ## 九、证据产物固定落位
 - 不新增第二套 phase16 审计目录；本阶段证据统一回写到既有真相源。

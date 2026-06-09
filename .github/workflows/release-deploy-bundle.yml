@@ -1,0 +1,184 @@
+name: Release Formal Deploy Bundle
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing git tag to package and publish, e.g. v1.2.3
+        required: true
+        type: string
+
+concurrency:
+  group: release-deploy-bundle-${{ github.ref || inputs.release_tag }}
+  cancel-in-progress: true
+
+jobs:
+  build-release-bundle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      NODE_ENV: production
+
+    steps:
+      - name: Resolve release tag
+        id: release_meta
+        env:
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RELEASE_TAG="$INPUT_RELEASE_TAG"
+          else
+            RELEASE_TAG="$REF_NAME"
+          fi
+
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "release tag is required"
+            exit 1
+          fi
+
+          VERSION="${RELEASE_TAG#v}"
+          ASSET_NAME="rento-minix-${VERSION}-deploy-bundle.tar.gz"
+          CHECKSUM_NAME="${ASSET_NAME}.sha256"
+
+          {
+            echo "release_tag=$RELEASE_TAG"
+            echo "version=$VERSION"
+            echo "asset_name=$ASSET_NAME"
+            echo "checksum_name=$CHECKSUM_NAME"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository at release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release_meta.outputs.release_tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build minix release
+        run: npm run build:minix
+
+      - name: Verify formal build artifacts
+        run: |
+          test -f dist/index.html
+          test -f build/minix-server/index.mjs
+
+      - name: Prune dev dependencies for deploy bundle
+        run: npm prune --omit=dev
+
+      - name: Assemble formal deploy bundle
+        env:
+          RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
+          VERSION: ${{ steps.release_meta.outputs.version }}
+        run: |
+          STAGE_ROOT="$RUNNER_TEMP/deploy-stage"
+          APP_ROOT="$STAGE_ROOT/rento-minix"
+
+          rm -rf "$STAGE_ROOT"
+          mkdir -p "$APP_ROOT/scripts"
+
+          cp -a dist "$APP_ROOT/dist"
+          cp -a build "$APP_ROOT/build"
+          cp -a deploy "$APP_ROOT/deploy"
+          cp -a prisma "$APP_ROOT/prisma"
+          cp -a node_modules "$APP_ROOT/node_modules"
+
+          cp package.json "$APP_ROOT/package.json"
+          cp package-lock.json "$APP_ROOT/package-lock.json"
+          cp .env.example "$APP_ROOT/.env.example"
+          cp README.md "$APP_ROOT/README.md"
+          cp DEPLOYMENT.md "$APP_ROOT/DEPLOYMENT.md"
+          cp DEPLOY_RUNBOOK.md "$APP_ROOT/DEPLOY_RUNBOOK.md"
+
+          cp scripts/start-minix.mjs "$APP_ROOT/scripts/start-minix.mjs"
+          cp scripts/health-check.sh "$APP_ROOT/scripts/health-check.sh"
+          cp scripts/migrate-and-seed.sh "$APP_ROOT/scripts/migrate-and-seed.sh"
+          cp scripts/prepare-release-host.sh "$APP_ROOT/scripts/prepare-release-host.sh"
+          cp scripts/deploy-release-on-server.sh "$APP_ROOT/scripts/deploy-release-on-server.sh"
+          cp scripts/pull-release-deploy-bundle.sh "$APP_ROOT/scripts/pull-release-deploy-bundle.sh"
+
+          chmod +x \
+            "$APP_ROOT/scripts/health-check.sh" \
+            "$APP_ROOT/scripts/migrate-and-seed.sh" \
+            "$APP_ROOT/scripts/prepare-release-host.sh" \
+            "$APP_ROOT/scripts/deploy-release-on-server.sh" \
+            "$APP_ROOT/scripts/pull-release-deploy-bundle.sh"
+
+          cat <<EOF > "$APP_ROOT/DEPLOY_BUNDLE_MANIFEST.txt"
+          release_tag=${RELEASE_TAG}
+          version=${VERSION}
+          formal_runtime=Caddy + systemd + Hono + PostgreSQL
+          included_paths=
+          - dist/
+          - build/minix-server/
+          - deploy/
+          - prisma/
+          - node_modules/
+          - package.json
+          - package-lock.json
+          - .env.example
+          - README.md
+          - DEPLOYMENT.md
+          - DEPLOY_RUNBOOK.md
+          - scripts/start-minix.mjs
+          - scripts/health-check.sh
+          - scripts/migrate-and-seed.sh
+          - scripts/prepare-release-host.sh
+          - scripts/deploy-release-on-server.sh
+          - scripts/pull-release-deploy-bundle.sh
+          EOF
+
+      - name: Archive formal deploy bundle
+        env:
+          ASSET_NAME: ${{ steps.release_meta.outputs.asset_name }}
+          CHECKSUM_NAME: ${{ steps.release_meta.outputs.checksum_name }}
+        run: |
+          STAGE_ROOT="$RUNNER_TEMP/deploy-stage"
+          tar -C "$STAGE_ROOT" -czf "$ASSET_NAME" rento-minix
+          sha256sum "$ASSET_NAME" > "$CHECKSUM_NAME"
+
+      - name: Upload formal deploy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: formal-deploy-bundle-${{ steps.release_meta.outputs.release_tag }}
+          path: |
+            ${{ steps.release_meta.outputs.asset_name }}
+            ${{ steps.release_meta.outputs.checksum_name }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
+              --notes "Formal deploy bundle for Caddy + systemd + Hono + PostgreSQL."
+          fi
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
+          ASSET_NAME: ${{ steps.release_meta.outputs.asset_name }}
+          CHECKSUM_NAME: ${{ steps.release_meta.outputs.checksum_name }}
+        run: |
+          gh release upload "$RELEASE_TAG" "$ASSET_NAME" "$CHECKSUM_NAME" --clobber

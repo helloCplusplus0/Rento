@@ -2,13 +2,14 @@
 
 ## 1. 范围与边界
 - 当前项目定位为“私有租赁管理后台原地重构主线”，默认服务于自有房源经营，不以开放注册 SaaS 为目标。
-- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。`phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁移，`phase13-05` 已完成最终复核，`phase13-06` 与 `phase13-07` 已收口首页 `/` 与 `/bills/stats` 尾项；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口：正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口；`phase15` 已完成当前轮 PWA/runtime parity 收口；`phase16` 当前轮已完成 `/plan` 与 `phase16-01` 证据盘点收口，四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，后续只允许进入 `phase16-02 ~ phase16-04`，继续继承上述页面/API/PWA 迁移结果、发布门禁与回滚边界推进最终验收、cutover 与 legacy 退出，不得再回写正式业务 API 迁移职责。
+- `phase07-app-shell-and-runtime-foundation`、`phase08-api-and-auth-foundation`、`phase09-domain-service-migration` 与 `phase10-data-access-and-migration-closure` 已完成当前轮阶段收口；`phase11-deployment-cutover-and-cutline-closure` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；`phase12-frontend-parity-and-shell-cutover` 已完成 `phase12-05` 文档收口并把页面 parity 冻结为单一上游输入。`phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁移，`phase13-05` 已完成最终复核，`phase13-06` 与 `phase13-07` 已收口首页 `/` 与 `/bills/stats` 尾项；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口：正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口；`phase15` 已完成当前轮 PWA/runtime parity 收口；`phase16` 当前轮已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证、`phase16-03` 源码层对齐复核与 `phase16-04` 当前轮任务 `1 ~ 4` 的 legacy-exit 决策同步，四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，自动化验证、人工验收、cutover 审核、部署/回滚演练与 legacy 退出判断已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`；当前轮最终结论固定为 `未通过但单值化`，五项 legacy 资产统一保持 `rollback-only`，后续只允许在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练后再复判是否可改写为 `通过`，不得再回写正式业务 API 迁移职责。
 - 所有设计必须围绕真实租务流程：房源、租客、合同、账单、仪表、抄表、退租、续租。
 - `phase12 ~ phase16` 的当前轮重点必须建立在 `phase10` 已冻结的 `Prisma + PostgreSQL` 长期数据访问层方案、正式/兼容/治理查询分层、统一事务边界、迁移兼容项边界与 legacy route inventory 退出判断，以及 `phase11` 已冻结的正式部署主线、发布门禁与 legacy 回滚基线之上，不反向改写这些结论。
 
 ## 2. 安全与发布规则
 - 在完整安全边界未收口前，禁止把应用作为公网匿名可访问后台部署。
 - 生产环境必须使用私有 `.env`；`.env.example` 仅作为模板，不允许把真实主机地址、密码与密钥回写到共享文档。
+- 正式服务器环境文件固定放置在 `/etc/rento-minix/rento-minix.env`；正式应用目录固定为 `/opt/rento-minix/current`。
 - 任何涉及认证、会话、来源限制、CORS 的调整，都必须同时更新实现、环境模板和文档。
 - 新增管理页、调试入口或迁移辅助入口时，必须先判断其门禁边界。
 
@@ -98,10 +99,13 @@
 - `phase11` 期间正式部署主线默认不再引入 `redis`；`redis` 仅允许继续留在旧容器化运行线的历史回滚基线中。
 - `phase11` 期间根级 `DEPLOYMENT.md` 必须升级为当前正式部署真相源；旧容器化部署说明应明确降级为 legacy 回滚基线，并迁入归档入口或保留为附录。
 - `phase11` 期间若调整部署方式、环境变量或健康检查，必须同步更新实现、`.env.example`、`README.md`、`architecture_map.md`、`project_rules.md` 与 `DEPLOYMENT.md`。
+- `phase11` 之后若调整 GitHub 正式部署包、Release asset 命名、服务器拉包脚本、`systemd`/`Caddy` 刷新步骤或健康检查步骤，必须同步更新 `.github/workflows/*`、`scripts/pull-release-deploy-bundle.sh`、`DEPLOYMENT.md` 与根级真相源。
 - `phase11-04` 期间必须盘点并持续保留以下 legacy 回滚资产清单，直到退出条件满足：`docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs`，以及历史容器化镜像、容器、`nginx`、`redis` 变量口径。
 - `phase11-04` 期间必须把 legacy 容器化运行线冻结为“历史运行参考 + 故障回滚基线 + 差异对照”职责，不得再作为默认部署入口、默认运维入口或正式真相源扩写。
 - `phase11-04` 期间 `Rento-legacy` 只允许作为 GitHub 侧只读历史备份与对照参考，不得作为部署入口、回滚入口、默认 remote、默认上游或第二真相源重新引入。
+- GitHub Release 正式部署包必须继续以 `Caddy + systemd + Hono + PostgreSQL` 为唯一正式主线；不得借“GitHub 发布”把 Docker、GHCR 或 legacy deployment artifact 重新包装为正式入口。
 - legacy 资产只有在正式部署主线、发布门禁、部署演练与回滚验证全部完成并通过审核，且替代真相源与回滚记录冻结后，才允许进入后续退出决策；本阶段不得直接删除这些资产。
+- `phase16-04` 当前轮必须把 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 统一视为 `rollback-only` 资产；在真实云服务器证据补齐前，不得把它们误写为“已退出”“已归档完成”或“可删除”。
 - `phase11` 当前轮最低文档验证要求固定为：`docs/phase11_*` 互链复核、被引用路径存在性复核；进入后续实现或发布验证前，最低工程验证要求固定为：`npm run lint`、`npm run type-check`、`npm run build:minix`、`npm run audit:phase09:legacy-routes`，并在条件允许时执行 `npm run smoke:phase09:all`。
 - `phase11-05` 已冻结部署/回滚演练的最小记录要求：至少包含演练时间、目标环境、执行命令、健康检查结果、主链 smoke 结果、回滚触发条件与最终结论；记录必须明确标注“正式主线验证”或“legacy 回滚验证”，并可被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 引用用于审核。
 - `phase12` 期间允许冻结旧页面到 `src/minix` 的承接顺序、页面装配复用策略与 UI 保真规则，但不得把 UI 迁移扩写为视觉重设计，也不得在本阶段重新打开 ORM 替换议题；`Prisma + PostgreSQL` 继续固定为当前正式数据访问主线。
@@ -133,4 +137,5 @@
 - 最小鉴权门禁已落地，但角色控制、最小审计与公网发布所需的完整安全边界仍未全部完成。
 - 旧容器化部署链仍能支撑存量运行线，但不应被误读为 `Rento-miniX` 的未来正式部署主线；其退出仍依赖 `phase11-04` 已冻结的保留条件、退出条件与回滚记录收口。
 - 新主线运行时虽已完成 `build:minix` 前端 `dist/` 与服务端 `build/minix-server/` 预构建产物链收口，且 `phase11-05` 已冻结文档最小验证要求与部署/回滚演练记录要求，但正式部署演练执行、legacy 基线退出审计与最终 cutline 验证仍需在后续审核与演练中继续完成。
+- `phase16` 当前轮虽已把五项 legacy 资产职责、保留边界、退出前提与回滚窗口单值化，但由于正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未在真实云服务器执行，当前最终结论仍必须保持为 `未通过但单值化`，不得提前写成 `通过`。
 - 旧 `src/app` 页面与旧 Next PWA 宿主仍未完成纯新主线 parity；旧 `src/app/api/*` 中承担正式业务主职责的 retained-legacy 路由已在 `phase14` 清零，剩余治理/辅助 retained-legacy 与旧 Next PWA 宿主一起作为 `phase15 ~ phase16` 的继承输入，不再继续混写到 `phase11` 的部署收口职责中。

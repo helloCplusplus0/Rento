@@ -54,6 +54,7 @@
 - 默认要求云端不构建，只运行预构建产物。
 - 默认要求部署链低复杂度、低 I/O 峰值、低维护负担。
 - 当推进到 `phase11` 时，默认冻结 `Caddy + systemd + Hono + PostgreSQL` 作为正式部署主线，避免重新回到 `Docker-heavy` 或多入口并存。
+- 若使用 GitHub Release 部署包交付，默认要求把 `dist/`、`build/minix-server/`、运行时依赖、迁移脚本与 `deploy/` 基线一起打包；服务器只负责下载、校验、解压、切换 `current`、刷新 `systemd/Caddy` 与健康检查，不负责 build。
 
 ## 8.1 Prisma 保留技能
 - 当前默认目标不是替换 `Prisma`，而是在保留 `Prisma + PostgreSQL` 的前提下完成旧 `Next.js` / legacy API / legacy PWA / Docker-heavy 运行线退出。
@@ -110,3 +111,5 @@
 - 它们在 `phase06` 阶段应被视为参考输入和回滚基线，而不是未来 `Rento-miniX` 正式部署主线。
 - 对外说明必须区分“当前存量可运行”与“未来轻量主线目标”，避免混写。
 - 当进入 `phase11` 时，默认要求把这些资产显式降级为 legacy 回滚基线，并写清保留条件、退出条件与不得继续扩写的边界。
+- 当进入 `phase16-04` 时，必须进一步把 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 单值化为 `rollback-only`：只允许用于故障回滚、差异对照、回滚演练与历史运维参考，不再作为默认部署、默认运维或正式验收入口。
+- 若 `phase16` 当前轮仍缺少真实云服务器上的正式人工 HTTPS 验收、正式部署演练或 legacy 回滚演练证据，则最终阶段结论只能写成 `未通过但单值化`，不得写成 `通过`。

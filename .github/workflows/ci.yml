@@ -58,13 +58,29 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Build application
-        run: npm run build
+      - name: Build minix application
+        run: npm run build:minix
 
-      - name: Check build artifacts
+      - name: Check formal build artifacts
         run: |
-          if [ ! -d ".next" ]; then
-            echo "Build failed: .next directory not found"
+          if [ ! -d "dist" ]; then
+            echo "Build failed: dist directory not found"
             exit 1
           fi
-          echo "Build successful"
+
+          if [ ! -d "build/minix-server" ]; then
+            echo "Build failed: build/minix-server directory not found"
+            exit 1
+          fi
+
+          if [ ! -f "dist/index.html" ]; then
+            echo "Build failed: dist/index.html not found"
+            exit 1
+          fi
+
+          if [ ! -f "build/minix-server/index.mjs" ]; then
+            echo "Build failed: build/minix-server/index.mjs not found"
+            exit 1
+          fi
+
+          echo "Formal build artifacts are ready"

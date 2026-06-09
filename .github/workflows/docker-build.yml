@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Legacy Rollback Container Image
 
 on:
   push:
@@ -23,6 +23,11 @@ jobs:
       packages: write
 
     steps:
+      - name: Clarify legacy boundary
+        run: |
+          echo "This workflow only maintains rollback-only container assets."
+          echo "Formal deployment stays on Caddy + systemd + Hono + PostgreSQL."
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -52,7 +57,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
+      - name: Build and push rollback-only Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -64,17 +69,23 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
-      - name: Generate deployment artifact
+      - name: Generate legacy deployment artifact
         if: github.event_name != 'pull_request'
         run: |
-          mkdir -p deployment
-          cp docker-compose.yml deployment/
-          cp .env.example deployment/.env.template
-          echo "IMAGE_TAG=${{ steps.meta.outputs.tags }}" >> deployment/.env.template
+          mkdir -p legacy-deployment
+          cp docker-compose.yml legacy-deployment/
+          cp .env.example legacy-deployment/.env.template
+          echo "IMAGE_TAG=${{ steps.meta.outputs.tags }}" >> legacy-deployment/.env.template
+          cat <<'EOF' > legacy-deployment/ROLLBACK_ONLY.txt
+          This artifact is rollback-only.
+          Do not use it as the formal deployment entry for Rento-miniX.
+          The formal deployment path is the GitHub release deploy bundle that
+          runs on Caddy + systemd + Hono + PostgreSQL.
+          EOF
 
-      - name: Upload deployment artifact
+      - name: Upload legacy deployment artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: deployment-files
-          path: deployment/
+          name: legacy-deployment-files
+          path: legacy-deployment/

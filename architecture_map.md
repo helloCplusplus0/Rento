@@ -6,7 +6,7 @@
 - 当前仓库同时包含：
   - 旧 `Rento` 的现有实现与存量运行资产
   - `Rento-miniX` 原地重构所需的根级真相源与阶段文档
-- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；`phase13-frontend-page-parity-implementation` 已完成当前轮页面迁移与最终复核，正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项均已收口；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口，正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；`phase15` 已完成纯新主线 PWA/runtime parity 收口；`phase16` 已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证，以及 `phase16-03` 当前轮源码层对齐复核与 cutover 审核包字段冻结，四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练延后到真实云服务器执行。
+- 当前阶段的核心任务不再是回退重做应用壳、运行时基础或最小 API/Auth 骨架；`phase09` 已完成共享领域服务、正式宿主、主链 smoke 与 compat wrapper 清单收口，`phase10` 已完成阶段文档与 `phase10-01 ~ phase10-05` `/spec` 收口，并继续固定 `Prisma + PostgreSQL` 为正式数据访问主线，`phase11` 已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口，并已把正式环境模板、主健康入口、文档最小验证要求与部署演练记录要求冻结为单一部署真相的一部分；`phase13-frontend-page-parity-implementation` 已完成当前轮页面迁移与最终复核，正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项均已收口；`phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口，正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；`phase15` 已完成纯新主线 PWA/runtime parity 收口；`phase16` 已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证、`phase16-03` 当前轮源码层对齐复核与 `phase16-04` 当前轮任务 `1 ~ 4` 的 legacy-exit 决策同步，四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，五项 legacy 资产已统一冻结为 `rollback-only`，当前轮最终结论固定为 `未通过但单值化`；正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练继续延后到真实云服务器执行。
 
 ## 当前双层结构说明
 ### 现有实现层
@@ -190,13 +190,22 @@
   - 顶层真相源、`DEPLOYMENT.md` 与 `docs/phase11_*` 的最终一致性复核
   - 仅文档变更时的最小验证要求
   - 后续部署/回滚演练的最小记录字段、引用方式与审核用途
+- 当前面向操作者的部署操作层已进一步拆分为：
+  - `DEPLOY_RUNBOOK.md`：首次部署、升级部署、健康检查与回滚入口的简洁操作手册
+  - `scripts/prepare-release-host.sh`：服务器准备脚本
+  - `scripts/deploy-release-on-server.sh`：正式部署执行脚本
+  - `scripts/pull-release-deploy-bundle.sh`：底层拉包脚本
 - 因此 `phase11` 的直接实现承接位将围绕：
   - `package.json`
   - `scripts/start-minix.mjs`
   - `scripts/health-check.sh`
   - `scripts/migrate-and-seed.sh`
+  - `scripts/prepare-release-host.sh`
+  - `scripts/deploy-release-on-server.sh`
+  - `scripts/pull-release-deploy-bundle.sh`
   - `tsconfig` 的服务端产物配置
   - `DEPLOYMENT.md`
+  - `DEPLOY_RUNBOOK.md`
   - `deploy/caddy/Caddyfile`
   - `deploy/systemd/rento-minix.service`
 
@@ -343,6 +352,7 @@
 ## 正式部署真相源
 - 根级 `DEPLOYMENT.md`、`README.md`、`AGENTS.md`、`project_rules.md`、`plan.md` 与 `docs/phase11_*` 将共同承接 `Rento-miniX` 的正式部署说明、发布门禁与 cutline 退出条件。
 - 在 `phase11` 当前轮实现中，正式部署主线已冻结为 `Caddy + systemd + Hono + PostgreSQL`，并已落地 `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 作为正式部署资产基线。
+- 当前 GitHub 正式部署包链路已补齐为正式真相源的一部分：`.github/workflows/release-deploy-bundle.yml` 负责生成 GitHub Release asset，`scripts/pull-release-deploy-bundle.sh` 负责把正式部署包拉取到 `/opt/rento-minix/current`，环境文件固定落位 `/etc/rento-minix/rento-minix.env`。
 - 当前 `.env.example` 已升级为正式共享环境模板，`scripts/health-check.sh` 已固定默认命中 `/api/health`，并与 `NEXTAUTH_URL` / `MINIX_SERVER_PORT` 口径保持一致。
 - `phase11-04` 已把 legacy 回滚资产清单、保留条件、退出条件与 `Rento-legacy` 的只读边界收口到根级文档与 `docs/phase11_*`。
 - `phase11-05` 已把文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求收口到上述根级真相源与 `docs/phase11_*` 的单一闭环中。
@@ -361,6 +371,7 @@ legacy 基线统一边界：
 - 不再作为默认部署入口、默认运维入口或正式真相源
 - 在正式部署主线、发布门禁、部署演练与回滚验证完成并通过审核前继续保留
 - 只有在替代真相源与回滚记录冻结后，才允许进入后续退出决策；本轮不直接删除资产
+- 当前五项命名资产 `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 已统一降级为 `rollback-only`
 
 ## 根目录结构
 ```text
@@ -408,6 +419,7 @@ Rento/
 ### `scripts`
 - `scripts/dev-entry.mjs`：旧 `Next.js` 开发态入口，继续承担现状对照与回滚参考职责
 - `scripts/start-entry.mjs`：旧 `Next.js` 启动入口，继续承担存量运行线与回滚基线职责
+- `scripts/pull-release-deploy-bundle.sh`：正式主线 GitHub Release 拉包脚本，负责把预构建部署包落位到 `/opt/rento-minix/current`
 - 当前定位：在 `dev:minix`、`build:minix`、`start:minix` 或等价新主线脚本冻结前，不作为可删除资产
 
 ### `prisma`
@@ -433,4 +445,4 @@ Rento/
 - 完整 `Rento -> Rento-miniX` 阶段路线图的长期全局承接位已收口到根级 `plan.md`；`docs/phase06_*` 仅保留其在 `phase06` 中的推导、冻结与验收说明。
 - `phase07` 已完成 `src/minix/`、`server/`、新脚本口径与旧运行线映射冻结，后续不再需要继续把新增宿主逻辑写回旧 `src/app` 或旧 `src/app/api/*`。
 - `phase08` 已完成：统一 API 宿主、认证门禁、中间件链、错误处理、公开 API 白名单、环境变量“新主旧兼”口径与最小页面守卫已完成当前阶段收口。
-- 当前默认下一步已从“进入 `phase16 /plan` 准备阶段”推进到“执行 `phase16` 当前轮实施”：后续继续以 `docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*`、`docs/phase16_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase14` 已完成 retained-legacy API/query drain，`phase15` 已完成纯新主线 PWA parity 收口，`phase16-01` 已完成证据盘点与 parity matrix 固定落位，`phase16-02` 已完成自动化验证，`phase16-03` 当前轮已完成源码层对齐复核与 cutover 审核包字段冻结；后续需先在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练，再进入 `phase16-04` 的 cutover 审核与 legacy 退出判断，legacy 资产继续保留为回滚基线直到 cutover 审核通过。
+- 当前默认下一步已从“进入 `phase16 /plan` 准备阶段”推进到“执行 `phase16` 当前轮实施”：后续继续以 `docs/phase12_*`、`docs/phase13_*`、`docs/phase14_*`、`docs/phase15_*`、`docs/phase16_*` 与 `plan.md` 为真相源，按已冻结的 `phase12 -> phase13 -> phase14 -> phase15 -> phase16` 路线图推进；其中 `phase14` 已完成 retained-legacy API/query drain，`phase15` 已完成纯新主线 PWA parity 收口，`phase16-01` 已完成证据盘点与 parity matrix 固定落位，`phase16-02` 已完成自动化验证，`phase16-03` 当前轮已完成源码层对齐复核与 cutover 审核包字段冻结，`phase16-04` 当前轮已完成 legacy 资产职责、退出前提与回滚窗口单值化；后续需先在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练，再复判是否可把当前轮结论从 `未通过但单值化` 改写为 `通过`，legacy 资产继续保留为 `rollback-only` 基线直到 cutover 审核通过。

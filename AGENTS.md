@@ -26,15 +26,17 @@
 - 当前默认工作流：`phase16-parity-verification-cutover-and-legacy-exit`
 - 当前主问题：在不反向干扰 `phase07~15` 已冻结的应用壳、统一 API 宿主、共享领域服务、数据访问层、部署主线、页面 parity、API/query parity、PWA parity 与迁移兼容边界的前提下，继续完成最终验收、cutover 与 legacy 退出。
 - 当前默认顺序、阶段目标与验收结论，以 [plan.md](file:///home/dell/Projects/Rento/plan.md) 为唯一主真相源。
-- 当前下一步：`phase16` 已完成当前轮 `/plan` 与 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 三件套冻结，并已完成 `phase16-01` 证据盘点、`phase16-02` 自动化验证与 `phase16-03` 当前轮源码层对齐复核 / cutover 审核包字段冻结；后续默认先在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练，再进入 `phase16-04` 的 cutover 审核与 legacy 退出判断实施；`phase16` 仍只继承结果，不承担正式业务 API 迁移职责。
+- 当前下一步：`phase16` 已完成当前轮 `/plan` 与 [phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md)、[phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md](file:///home/dell/Projects/Rento/docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md) 三件套冻结，并已完成 `phase16-01` 证据盘点、`phase16-02` 自动化验证、`phase16-03` 当前轮源码层对齐复核 / cutover 审核包字段冻结，以及 `phase16-04` 当前轮任务 `1 ~ 4` 的 legacy-exit 决策与根级真相源同步；当前轮最终结论已单值化为 `未通过但单值化`，后续默认只允许先在真实云服务器补齐正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练，再复判是否可改写为 `通过`；`phase16` 仍只继承结果，不承担正式业务 API 迁移职责。
 - 当前阶段重点：
   - 把 `phase10` 已冻结的长期数据访问层方案、查询分层、统一事务边界与迁移兼容项边界作为稳定上游输入，并继续固定 `Prisma + PostgreSQL` 为当前正式数据访问主线
   - 把 `phase11` 已冻结的正式部署主线、环境模板、健康检查、发布门禁与 legacy 回滚基线作为稳定上游输入
+  - 把 GitHub Release 正式部署包链路固定为当前唯一正式云端部署来源：由 `.github/workflows/release-deploy-bundle.yml` 生成部署包，云服务器使用 `scripts/pull-release-deploy-bundle.sh` 拉取到 `/opt/rento-minix/current`
   - 把 `phase12` 已冻结的页面事实表、页面映射、五层复用矩阵、UI 保真边界与页面-API 联动，以及 `phase13` 已完成的页面 parity 结果、浏览器基线与页面-API/query 交接，作为 `phase14` 的直接上游输入
   - 保留 `phase14-01 ~ phase14-04` 的冻结与实施输入层结论，以及 `phase14-05 ~ phase14-07` 的真实迁移与阶段收口结果，作为 `phase15` 与 `phase16` 的稳定 API 上游输入
   - 明确 `phase14` 已完成正式业务 API/query drain，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；剩余 retained-legacy 仅限治理/辅助接口
   - 明确 `phase15` 与 `phase16` 只承接 PWA parity、最终验收、cutover 与 legacy 退出，不反向重开页面迁移或正式业务 API 迁移职责
   - 保持旧 `docker-compose + nginx + Next.js standalone` 运行线只承担历史运行线、故障回滚与差异对照职责，直到 `phase16` 审核通过
+  - 把面向操作者的云端部署操作层固定为：`DEPLOY_RUNBOOK.md` + `scripts/prepare-release-host.sh` + `scripts/deploy-release-on-server.sh`；`scripts/pull-release-deploy-bundle.sh` 只保留为底层拉包能力
 
 ## 5. 当前明确冻结与禁止事项
 - 不恢复 SQLite 本地缓存/离线同步路线。
@@ -51,6 +53,7 @@
 - 数据质量底线：合同、账单、抄表、仪表关联必须可追溯；历史账务记录优先保留。
 - 安全底线：对外部署前必须具备登录、会话保护、来源控制与最小审计线索。
 - 部署底线：未来主线默认云端不做源码构建，优先运行预构建产物。
+- 正式部署底线：环境文件固定放在 `/etc/rento-minix/rento-minix.env`，正式部署目录固定为 `/opt/rento-minix/current`，服务刷新固定覆盖 `systemd` 与 `Caddy`，legacy 容器化/GHCR 仅保留 `rollback-only`。
 
 ## 6.1 当前阶段结论
 - `phase01-restart-foundation-*` 已完成，结论为：已具备恢复开发条件。
@@ -69,7 +72,7 @@
 - `phase13-frontend-page-parity-implementation` 已完成当前轮收口：正式业务页面 `25/25` 已迁入 `src/minix`，首页 `/` 与 `/bills/stats` 尾项已完成复验并回写到统一页面 parity / 浏览器基线 / `phase14` 交接文档中。
 - `phase14-api-query-parity-and-legacy-route-drain` 已完成 `phase14-01 ~ phase14-07` 当前轮收口：正式业务 API/query 已迁入统一 Hono 宿主，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由；剩余 retained-legacy 仅限治理/辅助接口，正式业务旧入口已统一降级为 `formal-host-owned` 或 `compat-wrapper`。
 - `phase15-minix-pwa-and-runtime-parity` 已完成当前轮收口：`docs/phase15_*`、纯新主线 PWA 交付链路、工程验证、独立审核与本地人工验收补充已形成单一结论。
-- `phase16-parity-verification-cutover-and-legacy-exit` 已完成当前轮 `/plan`、`phase16-01` 文档收口与 `phase16-02` 自动化验证；`phase16-03` 当前轮已完成源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与真相源同步，正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练明确延后到真实云服务器执行。
+- `phase16-parity-verification-cutover-and-legacy-exit` 已完成当前轮 `/plan`、`phase16-01` 文档收口、`phase16-02` 自动化验证、`phase16-03` 源码层对齐复核与 `phase16-04` 当前轮任务 `1 ~ 4` 的 legacy-exit 决策同步；legacy 资产已统一冻结为 `rollback-only`，当前轮最终结论固定为 `未通过但单值化`，正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练明确延后到真实云服务器执行后再复判。
 
 ## 7. 全局文档导航
 - [README.md](file:///home/dell/Projects/Rento/README.md)：项目总览与当前状态说明
@@ -78,6 +81,7 @@
 - [architecture_map.md](file:///home/dell/Projects/Rento/architecture_map.md)：仓库结构、现状与重构承接位
 - [plan.md](file:///home/dell/Projects/Rento/plan.md)：当前默认阶段、阶段顺序与验收结论
 - [DEPLOYMENT.md](file:///home/dell/Projects/Rento/DEPLOYMENT.md)：正式部署主线、cutover 审核与 legacy 回滚基线说明
+- [DEPLOY_RUNBOOK.md](file:///home/dell/Projects/Rento/DEPLOY_RUNBOOK.md)：面向操作者的简洁部署手册
 - [global_skills.md](file:///home/dell/Projects/Rento/global_skills.md)：跨阶段通用方法论与重构 workflow 规则
 - [project_skills.md](file:///home/dell/Projects/Rento/project_skills.md)：合同、账单、仪表、删除门禁与 UI 承接等专属技能
 - [phase06_minix_replatform_architecture_plan.md](file:///home/dell/Projects/Rento/docs/phase06_minix_replatform_architecture_plan.md)：`phase06` 架构规划
@@ -164,7 +168,7 @@
 - `phase08` 的职责是冻结统一 API 宿主、认证门禁、错误处理与最小安全边界；该阶段现已完成，其结论继续作为 `phase09` 的上游输入。
 - `phase09` 的职责是冻结共享领域服务落点、迁移合同/账单/支付周期/仪表/抄表/删除门禁等主链领域服务，并收口主链查询与写路径一致性，而不是在当前回合直接切 ORM 最终主线或改写最终部署主线。
 - `phase10` 的职责是冻结长期数据访问层方案、查询分层、统一事务边界、迁移兼容项与 `phase11` 最小上游输入；该阶段现已完成当前轮收口。
-- `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板、发布门禁、文档最小验证要求与部署演练记录要求；当前轮 `phase11-05` 已完成上述文档闭环，但在正式 cutover 审核通过前，仍不得删除 legacy 回滚资产。
+- `phase11` 的职责是冻结正式部署主线、回滚基线、旧运行线退出条件、环境模板、发布门禁、文档最小验证要求与部署演练记录要求；当前轮 `phase11-05` 已完成上述文档闭环，但在正式 cutover 审核通过前，仍不得删除 legacy 回滚资产；`phase16-04` 当前轮进一步把五项 legacy 资产统一降级为 `rollback-only`，且在真实云服务器证据补齐前不得进入归档或退出执行。
 - `phase12` 的职责是冻结前端页面 parity、`src/minix` 页面装配承接边界、旧 UI 复用规则与后续 `phase12 ~ phase16` 的多阶段路线图；当前轮 `phase12-05` 已完成路线图一致性收口，真实前端页面迁移实施已提升为新增 `phase13-frontend-page-parity-implementation`。
 - `phase13` 的职责是把首页、房源、合同、账单、租客、抄表、设置等正式页面真实迁入 `src/minix`，并收口页面壳、页面装配层、route-level 数据边界、宿主绑定拆分与页面级验收基线；当前轮该阶段已完成，后续默认由 `phase14` 继承其页面 parity 输出推进 retained-legacy API/query drain。
 - `phase14` 的职责是先完成 route inventory、query host、页面影响面、contracts/checkout D3 边界与 drain 顺序的冻结与实施输入层，再完成真实 API/query drain 实施、route inventory 审计与阶段收口；当前该阶段已完成，旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，后续不得把正式业务 API 迁移职责重新外溢到 `phase15` 或 `phase16`。

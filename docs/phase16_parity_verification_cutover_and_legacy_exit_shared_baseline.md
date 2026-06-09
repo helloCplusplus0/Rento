@@ -275,13 +275,34 @@
 | legacy 回滚资产保留边界 | `DEPLOYMENT.md` 中的保留条件、退出条件与 cutline 说明 | `docker-compose.yml`、`nginx/nginx.conf`、`scripts/start-entry.mjs` | 需要执行故障回滚、存量运行线对照或 legacy-only 验证时 | `DEPLOYMENT.md` legacy 回滚基线章节 + 相关 legacy 资产文件 | 直到 `phase16-04` 完成退出判断前持续保留 | `D3` | `non-blocking-legacy-reference`；legacy 资产仍在，但已不承担正式主职责 |
 | cutover / rollback 审核记录 | `docs/phase16_*` + `DEPLOYMENT.md` 引用摘要 | legacy 仅提供回滚入口与记录对象，不再提供第二套真相源 | 需要输出正式部署演练记录、legacy 回滚演练记录、回滚触发条件与最终 cutover 审核包时 | `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md` 第 7~9 节 + `DEPLOYMENT.md` 部署演练记录要求 | 直到 `phase16-03 ~ phase16-04` 执行完毕前都处于开放窗口 | `D4` | `待后续阶段执行`；当前只冻结字段与承接位，不提前给出最终 cutover/rollback 结论 |
 
-## 五、共享判断标准
+## 五、legacy 资产单值化边界
+- 当前 `rollback-only` 资产职责固定如下：
+  - `docker-compose.yml`：旧 `app + postgres + redis + nginx` 容器编排入口，只用于 legacy 回滚、差异对照与演练。
+  - `nginx/nginx.conf`：旧容器网络中的 HTTPS 反向代理配置，只代理 `app:3001`，只用于 legacy 回滚与对照。
+  - `scripts/cloud-deploy.sh`：旧容器化部署执行脚本，只用于 legacy 资产恢复、回滚演练与历史运维参考。
+  - `scripts/bootstrap-deploy-assets.sh`：旧容器化部署资产稀疏拉取脚本，只用于重建 legacy 回滚工作目录与审计基线。
+  - `scripts/start-entry.mjs`：旧 `Next.js standalone` 启动入口，只允许通过 `LEGACY_START=1 npm run start` 执行 legacy 对照或回滚演练。
+- 当前没有任何上述资产承担正式主线默认部署、默认运维或正式验收入口职责。
+- 上述资产当前都只满足“继续保留为 rollback-only 基线”的条件，尚未满足“可归档/可退出”的前提。
+
+## 六、legacy 退出顺序与回滚窗口
+- 退出顺序固定为：
+  - 先补齐真实云服务器上的正式人工 HTTPS 验收记录。
+  - 再补齐真实云服务器上的正式部署演练记录。
+  - 再补齐真实云服务器上的 legacy 回滚演练记录。
+  - 最后由 `phase16-04` 复判并决定是否把当前轮结论从 `未通过但单值化` 改写为 `通过`，以及是否允许进入归档/退出判断。
+- 回滚窗口固定为“事件窗口”而非当前轮主观判断：
+  - 窗口开启条件：真实云服务器开始执行正式 cutover 审核与演练。
+  - 窗口关闭条件：正式人工 HTTPS 验收、正式部署演练、legacy 回滚演练全部通过并形成可追溯记录，且 `phase16-04` 最终结论被回写为 `通过`。
+  - 在窗口关闭前，legacy 资产一律维持 `rollback-only` 身份，不进入删除、归档或退出执行。
+
+## 七、共享判断标准
 - 不把“旧文件仍存在”直接等同于“重构未完成”。
 - 不把“功能表现有技术适配差异”直接等同于“迁移遗漏”。
 - 不把“仍保留 legacy 资产”直接等同于“仍依赖 legacy 正式运行”。
 - 只有当旧入口仍承担正式业务主职责，或会阻断纯新主线正式交付时，才允许判为 `parity-blocker`。
 
-## 六、最小验证要求
+## 八、最小验证要求
 - 文档与路径验证：
   - `docs/phase16_*` 三份文档互链复核
   - 被引用路径存在性复核
@@ -302,7 +323,7 @@
   - 正式部署环境主链可访问性
   - legacy 回滚入口可恢复性
 
-## 七、cutover 审核包要求
+## 九、cutover 审核包要求
 - 至少包含：
   - 四类 parity matrix
   - 自动化验证结果
@@ -314,19 +335,20 @@
 - 结论只允许两种：
   - `通过`
   - `未通过但单值化`
+- `phase16` 当前轮最终结论固定为 `未通过但单值化`，理由是源码/自动化证据已收口但真实云服务器上的正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未完成。
 
-## 八、legacy 退出边界
+## 十、legacy 退出边界
 - legacy 资产的保留原因、退出条件、回滚价值与当前耦合关系都必须被写清。
 - 在 cutover 审核通过前，legacy 资产默认继续保留为回滚基线。
 - 只有当正式替代入口、验证结果与回滚记录都冻结后，legacy 资产才允许进入归档或退出决策。
 
-## 九、明确不做
+## 十一、明确不做
 - 不重开正式业务 API 迁移。
 - 不重开页面实现或视觉重设计。
 - 不重开 PWA 新方案选型或离线数据库议题。
 - 不在本阶段直接删除 legacy 容器化资产、旧页面原型或旧 API 文件。
 
-## 十、证据产物固定落位
+## 十二、证据产物固定落位
 - 页面 parity matrix 固定落位在“4.1 页面 parity matrix”。
 - API/query parity matrix 固定落位在“4.2 API/query parity matrix”。
 - PWA/runtime parity matrix 固定落位在“4.3 PWA/runtime parity matrix”。
