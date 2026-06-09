@@ -28,7 +28,7 @@ import type { ContractWithDetailsForClient } from '@/types/database'
 import {
   buildBillPresentationStats,
   sortBillsForDisplay,
-} from '@/lib/bill-semantics'
+} from '@/lib/bill-semantics.shared'
 import { getBillDisplayLabel, getBillVisualConfig } from '@/lib/bill-display'
 import {
   calculateDaysUntilContractExpiry,

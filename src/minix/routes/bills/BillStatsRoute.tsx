@@ -7,7 +7,7 @@ import {
 } from 'react-router-dom'
 import type { LoaderFunctionArgs } from 'react-router-dom'
 
-import type { DateRange } from '@/lib/bill-stats'
+import type { DateRange } from '@/lib/bill-stats.shared'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { BillStatsPage } from '@/components/pages/BillStatsPage'
 import { Card, CardContent } from '@/components/ui/card'

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
 
-import { calculateDateRange, type DateRange } from '@/lib/bill-stats'
+import { calculateDateRange, type DateRange } from '@/lib/bill-stats.shared'
 import { formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'

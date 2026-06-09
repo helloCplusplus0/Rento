@@ -1,10 +1,9 @@
-import type { BillStatus } from '@prisma/client'
-
 import {
   BILL_AMOUNT_EPSILON,
   OPEN_BILL_STATUSES,
   resolveBillStatus,
   type BillPresentationStatus,
+  type SharedBillStatus,
   toBillAmount,
 } from '@/lib/bill-semantics'
 
@@ -25,7 +24,7 @@ export interface CheckoutSettlementBillInput {
   amount: unknown
   receivedAmount?: unknown
   pendingAmount: unknown
-  status: string
+  status: SharedBillStatus
 }
 
 export interface CheckoutSettlementContractInput {
@@ -50,7 +49,7 @@ export interface CheckoutSettlementLineItem {
   minAdjustableAmount: number
   maxAdjustableAmount: number
   billNumber?: string
-  billStatus?: BillStatus
+  billStatus?: SharedBillStatus
   billReceivedAmount?: number
   billPendingAmount?: number
   presentationStatus?: BillPresentationStatus
@@ -115,7 +114,7 @@ export interface CheckoutSettlementResult {
       amount: number
       receivedAmount: number
       pendingAmount: number
-      status: BillStatus
+      status: SharedBillStatus
     }>
   }
   lineItems: {
@@ -185,7 +184,7 @@ export function calculateCheckoutSettlement(
   const unpaidBills = (contract.bills ?? [])
     .filter(
       (bill) =>
-        OPEN_BILL_STATUSES.includes(bill.status as BillStatus) &&
+        OPEN_BILL_STATUSES.includes(bill.status) &&
         toBillAmount(bill.pendingAmount) > BILL_AMOUNT_EPSILON
     )
     .map((bill) => ({
@@ -195,7 +194,7 @@ export function calculateCheckoutSettlement(
       amount: toBillAmount(bill.amount),
       receivedAmount: toBillAmount(bill.receivedAmount ?? 0),
       pendingAmount: toBillAmount(bill.pendingAmount),
-      status: bill.status as BillStatus,
+      status: bill.status,
     }))
 
   const rentRefund = roundCurrency(Math.max(0, rentDifference))
@@ -572,7 +571,7 @@ export function applyCheckoutSettlementSubmission(
 }
 
 export function buildCheckoutBillStatusAfterSettlement(params: {
-  currentStatus: BillStatus
+  currentStatus: SharedBillStatus
   originalPendingAmount: number
   settledAmount: number
 }) {

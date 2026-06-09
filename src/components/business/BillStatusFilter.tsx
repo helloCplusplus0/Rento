@@ -4,7 +4,7 @@ import {
   getBillPresentationStatusLabel,
   type BillPresentationStats,
   type BillPresentationStatus,
-} from '@/lib/bill-semantics'
+} from '@/lib/bill-semantics.shared'
 import { cn } from '@/lib/utils'
 import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { Badge } from '@/components/ui/badge'

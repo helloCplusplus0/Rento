@@ -8,7 +8,8 @@ import {
   getBillPresentationStatus,
   sortBillsForDisplay,
   type BillPresentationStatus,
-} from '@/lib/bill-semantics'
+} from '@/lib/bill-semantics.shared'
+import type { BillWithContractForClient } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,11 +22,10 @@ import { BillStatsOverview } from '@/components/business/BillStatsOverview'
 import { BillStatusFilter } from '@/components/business/BillStatusFilter'
 import { PageContainer } from '@/components/layout/PageContainer'
 
-// 简化类型定义，使用any避免复杂的类型转换
 interface BillListPageProps {
-  initialBills: any[]
+  initialBills: BillWithContractForClient[]
   initialSearchQuery?: string
-  onOpenBill?: (bill: any) => void
+  onOpenBill?: (bill: BillWithContractForClient) => void
   onOpenStats?: () => void
 }
 
@@ -40,8 +40,8 @@ function BillGrid({
   loading,
   className,
 }: {
-  bills: any[]
-  onBillClick?: (bill: any) => void
+  bills: BillWithContractForClient[]
+  onBillClick?: (bill: BillWithContractForClient) => void
   loading?: boolean
   className?: string
 }) {
@@ -97,7 +97,7 @@ function BillGrid({
         {bills.map((bill) => (
           <BillCardCompact
             key={bill.id}
-            bill={bill as any}
+            bill={bill}
             onClick={() => onBillClick?.(bill)}
           />
         ))}
@@ -108,7 +108,7 @@ function BillGrid({
         {bills.map((bill) => (
           <BillCardCompact
             key={bill.id}
-            bill={bill as any}
+            bill={bill}
             className="h-full"
             onClick={() => onBillClick?.(bill)}
           />
@@ -170,7 +170,7 @@ export function BillListPage({
     [initialBills]
   )
 
-  const handleBillClick = (bill: any) => {
+  const handleBillClick = (bill: BillWithContractForClient) => {
     if (onOpenBill) {
       onOpenBill(bill)
       return
@@ -219,7 +219,7 @@ export function BillListPage({
 
         {/* 统计概览 */}
         <BillStatsOverview
-          bills={initialBills as any} // 临时类型转换
+          bills={initialBills}
           presentationStats={presentationStats}
         />
 

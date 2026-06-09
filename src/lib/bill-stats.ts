@@ -14,65 +14,24 @@ import {
   subWeeks,
 } from 'date-fns'
 
-import { buildBillPresentationStats } from './bill-semantics'
+import {
+  calculateDateRange,
+  getBillTypeText,
+  parseDateRange,
+  type BillStatsData,
+  type DateRange,
+} from './bill-stats.shared'
+import { buildBillPresentationStats } from './bill-semantics.shared'
 import { billStatsCache } from './bill-cache'
 import { prisma } from './prisma'
 
 /**
- * 账单统计数据类型定义
+ * server-only 账单统计宿主：
+ * 承接 Prisma 读查询、缓存与聚合计算。
+ * 浏览器侧若只需要 DTO、时间范围工具或类型文本，请改用 bill-stats.shared。
  */
-export interface BillStatsData {
-  // 基础统计
-  totalAmount: number // 总应收金额
-  paidAmount: number // 已收金额
-  pendingAmount: number // 待收金额
-  overdueAmount: number // 逾期金额
-
-  // 数量统计
-  totalCount: number // 总账单数
-  settledCount: number // 已结清账单数（PAID + COMPLETED）
-  openCount: number // 待处理账单数（PENDING）
-  overdueCount: number // 逾期账单数
-
-  // 类型分布
-  typeBreakdown: {
-    RENT: { amount: number; count: number }
-    DEPOSIT: { amount: number; count: number }
-    UTILITIES: { amount: number; count: number }
-    OTHER: { amount: number; count: number }
-  }
-
-  // 时间趋势
-  timeSeries: Array<{
-    date: string
-    totalAmount: number
-    paidAmount: number
-    pendingAmount: number
-    count: number
-  }>
-
-  // 同期对比
-  comparison?: {
-    previousPeriod: Omit<BillStatsData, 'timeSeries' | 'comparison'>
-    growthRate: number
-    changeAmount: number
-  }
-
-  // 时间范围
-  dateRange: {
-    startDate: Date
-    endDate: Date
-  }
-}
-
-/**
- * 时间范围类型
- */
-export interface DateRange {
-  startDate: Date
-  endDate: Date
-  preset?: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
-}
+export type { BillStatsData, DateRange } from './bill-stats.shared'
+export { calculateDateRange, getBillTypeText, parseDateRange } from './bill-stats.shared'
 
 /**
  * 高级账单统计计算模块（优化版）
@@ -419,86 +378,4 @@ export async function getThisMonthStats(): Promise<BillStatsData> {
     groupBy: 'week',
     includeComparison: true,
   })
-}
-
-/**
- * 计算日期范围
- */
-export function calculateDateRange(preset: string): DateRange {
-  const now = new Date()
-
-  switch (preset) {
-    case 'today':
-      return {
-        startDate: startOfDay(now),
-        endDate: endOfDay(now),
-        preset: 'today',
-      }
-    case 'week':
-      return {
-        startDate: startOfWeek(now),
-        endDate: endOfWeek(now),
-        preset: 'week',
-      }
-    case 'month':
-      return {
-        startDate: startOfMonth(now),
-        endDate: endOfMonth(now),
-        preset: 'month',
-      }
-    case 'quarter':
-      return {
-        startDate: subMonths(startOfMonth(now), 2),
-        endDate: endOfMonth(now),
-        preset: 'quarter',
-      }
-    case 'year':
-      return {
-        startDate: subMonths(startOfMonth(now), 11),
-        endDate: endOfMonth(now),
-        preset: 'year',
-      }
-    default:
-      return {
-        startDate: startOfMonth(now),
-        endDate: endOfMonth(now),
-        preset: 'month',
-      }
-  }
-}
-
-/**
- * 解析日期范围参数
- */
-export function parseDateRange(params: {
-  start?: string
-  end?: string
-  range?: string
-}): DateRange {
-  if (params.range) {
-    return calculateDateRange(params.range)
-  }
-
-  if (params.start && params.end) {
-    return {
-      startDate: new Date(params.start),
-      endDate: new Date(params.end),
-      preset: 'custom',
-    }
-  }
-
-  return calculateDateRange('month')
-}
-
-/**
- * 获取账单类型文本
- */
-export function getBillTypeText(type: string): string {
-  const typeMap = {
-    RENT: '租金',
-    DEPOSIT: '押金',
-    UTILITIES: '水电费',
-    OTHER: '其他',
-  }
-  return typeMap[type as keyof typeof typeMap] || type
 }

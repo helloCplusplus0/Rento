@@ -1,5 +1,3 @@
-import { globalSettings } from './global-settings'
-
 /**
  * 水电表管理工具函数
  * 提供仪表编号生成、用量计算、数据验证等功能
@@ -310,46 +308,6 @@ export function getDefaultUnit(meterType: MeterType): string {
   }
 
   return defaultUnits[meterType]
-}
-
-/**
- * 获取仪表类型的默认单价 (增强版)
- * 优先从全局设置获取，回退到硬编码默认值
- * @param meterType 仪表类型
- * @returns 默认单价
- */
-export async function getDefaultUnitPrice(
-  meterType: MeterType
-): Promise<number> {
-  try {
-    // 优先从数据库全局设置获取
-    const billingSettings = await globalSettings.getBillingSettings()
-
-    switch (meterType) {
-      case 'ELECTRICITY':
-        return billingSettings.electricityPrice
-      case 'COLD_WATER':
-        return billingSettings.waterPrice
-      case 'HOT_WATER':
-        return billingSettings.waterPrice * 1.5 // 热水通常比冷水贵50%
-      case 'GAS':
-        return billingSettings.gasPrice
-      default:
-        return 1.0
-    }
-  } catch (error) {
-    console.error('[仪表工具] 获取默认单价失败，使用硬编码回退值:', error)
-
-    // 回退到硬编码默认值
-    const fallbackPrices: Record<MeterType, number> = {
-      ELECTRICITY: 1.0,
-      COLD_WATER: 10.0,
-      HOT_WATER: 15.0,
-      GAS: 3.5,
-    }
-
-    return fallbackPrices[meterType]
-  }
 }
 
 /**

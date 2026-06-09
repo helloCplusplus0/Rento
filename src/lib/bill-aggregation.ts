@@ -1,4 +1,4 @@
-import { calculateUtilityBill } from '@/lib/bill-calculations'
+import { calculateUtilityBill } from '@/lib/bill-calculations.server'
 import { prisma } from '@/lib/prisma'
 
 /**

@@ -1,18 +1,101 @@
-import type { Bill, Building, Contract, Renter, Room } from '@prisma/client'
+export type RoomType = 'SHARED' | 'WHOLE' | 'SINGLE'
+export type RoomStatus = 'VACANT' | 'OCCUPIED' | 'OVERDUE' | 'MAINTENANCE'
+export type ContractStatus = 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'TERMINATED'
+export type BillType = 'RENT' | 'DEPOSIT' | 'UTILITIES' | 'OTHER'
+export type BillStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'COMPLETED'
 
-// 导出 Prisma 生成的类型
-export type {
-  Building,
-  Room,
-  Renter,
-  Contract,
-  Bill,
-  RoomType,
-  RoomStatus,
-  ContractStatus,
-  BillType,
-  BillStatus,
-} from '@prisma/client'
+/**
+ * 前端 DTO / view-model 真相源：
+ * 保持与正式业务语义对齐，但不再让浏览器可达模块直接依赖 Prisma 生成类型。
+ */
+export interface Building {
+  id: string
+  name: string
+  address: string | null
+  totalRooms: number
+  description: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Room {
+  id: string
+  roomNumber: string
+  floorNumber: number
+  buildingId: string
+  roomType: RoomType
+  area: number | null
+  rent: number
+  status: RoomStatus
+  currentRenter: string | null
+  overdueDays: number | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Renter {
+  id: string
+  name: string
+  gender: string | null
+  phone: string
+  idCard: string | null
+  emergencyContact: string | null
+  emergencyPhone: string | null
+  occupation: string | null
+  company: string | null
+  moveInDate: Date | null
+  tenantCount: number | null
+  remarks: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Contract {
+  id: string
+  contractNumber: string
+  roomId: string
+  renterId: string
+  startDate: Date
+  endDate: Date
+  isExtended: boolean
+  monthlyRent: number
+  totalRent: number
+  deposit: number
+  keyDeposit: number | null
+  cleaningFee: number | null
+  status: ContractStatus
+  businessStatus: string | null
+  paymentMethod: string | null
+  paymentTiming: string | null
+  signedBy: string | null
+  signedDate: Date | null
+  remarks: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Bill {
+  id: string
+  billNumber: string
+  type: BillType
+  itemLabel: string | null
+  amount: number
+  receivedAmount: number
+  pendingAmount: number
+  dueDate: Date
+  paidDate: Date | null
+  period: string | null
+  status: BillStatus
+  contractId: string
+  paymentMethod: string | null
+  operator: string | null
+  remarks: string | null
+  aggregationType: string | null
+  metadata: string | null
+  meterReadingId: string | null
+  createdAt: Date
+  updatedAt: Date
+}
 
 // 扩展类型定义
 export interface BuildingWithRooms extends Building {
@@ -54,16 +137,6 @@ export interface RoomWithContracts extends Room {
     renter: Renter
     bills: Bill[]
   })[]
-}
-
-export interface ContractWithDetails extends Contract {
-  room: RoomWithBuilding
-  renter: Renter
-  bills: Bill[]
-}
-
-export interface BillWithContract extends Bill {
-  contract: ContractWithDetails
 }
 
 // 统计数据类型
@@ -109,6 +182,25 @@ export interface ContractWithDetailsForClient
     pendingAmount: number
   })[]
 }
+
+/**
+ * 兼容保留：
+ * 旧组件仍可能引用 `ContractWithDetails` / `BillWithContract`，
+ * 但前端真相源已统一收口到 DTO / view-model。
+ */
+export type ContractWithDetails = ContractWithDetailsForClient
+
+export type BillContractForClient = Omit<ContractWithDetailsForClient, 'bills'>
+
+export interface BillWithContractForClient
+  extends Omit<Bill, 'amount' | 'receivedAmount' | 'pendingAmount'> {
+  amount: number
+  receivedAmount: number
+  pendingAmount: number
+  contract: BillContractForClient
+}
+
+export type BillWithContract = BillWithContractForClient
 
 // 为客户端组件定义的租客类型（包含合同信息）
 export interface RenterWithContractsForClient extends Renter {

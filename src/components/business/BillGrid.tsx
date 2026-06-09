@@ -1,11 +1,11 @@
 'use client'
 
-import type { BillWithContract } from '@/types/database'
+import type { BillWithContractForClient } from '@/types/database'
 import { BillCard, BillCardSkeleton } from '@/components/business/bill-card'
 
 interface BillGridProps {
-  bills: BillWithContract[]
-  onBillClick?: (bill: BillWithContract) => void
+  bills: BillWithContractForClient[]
+  onBillClick?: (bill: BillWithContractForClient) => void
   loading?: boolean
   className?: string
 }

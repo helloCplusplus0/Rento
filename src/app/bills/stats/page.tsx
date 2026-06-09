@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
-import { advancedBillStats, parseDateRange } from '@/lib/bill-stats'
+import { advancedBillStats } from '@/lib/bill-stats'
+import { parseDateRange } from '@/lib/bill-stats.shared'
 import { BillStatsPage } from '@/components/pages/BillStatsPage'
 
 export const metadata: Metadata = {

@@ -1,0 +1,8 @@
+- [x] 首页访问 `/` 时前端应用正常启动，不再白屏
+- [x] 浏览器控制台不再出现 `.prisma/client/index-browser` 相关报错
+- [x] 客户端账单页面不再通过 `bill-semantics` 运行时转导服务端账务域模块
+- [x] `src/lib/domain/billing/index.ts` 继续作为服务端账务真相源，但前端运行时不再直接或间接消费
+- [x] `src/lib/checkout-settlement.ts` 与退租页面不再依赖 `@prisma/client` 类型或 Prisma 服务端实现
+- [x] 前端可达模块中的 Prisma 生成类型直连已收口为客户端 DTO / view-model 类型
+- [x] `/bills` 与 `/contracts/:id/checkout` 可正常加载，不再触发 Prisma 浏览器依赖错误
+- [x] `npm run lint`、`npm run type-check` 与 `npm run build:minix:pwa` 通过

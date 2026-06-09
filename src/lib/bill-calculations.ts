@@ -3,7 +3,6 @@ import {
   formatContractPaymentCycle,
   normalizeContractPaymentCycle,
 } from './contract-payment-cycle'
-import { globalSettings } from './global-settings'
 
 /**
  * 水电费计算结果 (增强版)
@@ -32,62 +31,6 @@ export interface RentCalculationResult {
   cleaningFee: number // 清洁费
   totalAmount: number // 总金额
   paymentCycle: string // 付款周期
-}
-
-/**
- * 计算水电费 (增强版)
- * 根据用量和单价计算费用，支持燃气费
- * 优先使用仪表单价，回退到全局设置，最后回退到硬编码默认值
- */
-export async function calculateUtilityBill(
-  electricityUsage: number,
-  waterUsage: number,
-  gasUsage: number = 0,
-  meterPrices?: {
-    electricityPrice?: number // 来自仪表配置的单价
-    waterPrice?: number // 来自仪表配置的单价
-    gasPrice?: number
-  }
-): Promise<UtilityBillResult> {
-  let electricityPrice: number
-  let waterPrice: number
-  let gasPrice: number
-
-  try {
-    // 获取全局设置作为回退值
-    const billingSettings = await globalSettings.getBillingSettings()
-
-    // 优先使用仪表单价，回退到全局设置
-    electricityPrice =
-      meterPrices?.electricityPrice ?? billingSettings.electricityPrice
-    waterPrice = meterPrices?.waterPrice ?? billingSettings.waterPrice
-    gasPrice = meterPrices?.gasPrice ?? billingSettings.gasPrice
-  } catch (error) {
-    console.error('[账单计算] 获取全局设置失败，使用硬编码默认值:', error)
-
-    // 最终回退到硬编码默认值
-    electricityPrice = meterPrices?.electricityPrice ?? 0.6
-    waterPrice = meterPrices?.waterPrice ?? 3.5
-    gasPrice = meterPrices?.gasPrice ?? 2.5
-  }
-
-  const electricityCost = electricityUsage * electricityPrice
-  const waterCost = waterUsage * waterPrice
-  const gasCost = gasUsage * gasPrice
-  const totalCost = electricityCost + waterCost + gasCost
-
-  return {
-    electricityCost: Math.round(electricityCost * 100) / 100, // 保留两位小数
-    waterCost: Math.round(waterCost * 100) / 100,
-    gasCost: gasUsage > 0 ? Math.round(gasCost * 100) / 100 : undefined,
-    totalCost: Math.round(totalCost * 100) / 100,
-    electricityUsage,
-    waterUsage,
-    gasUsage: gasUsage > 0 ? gasUsage : undefined,
-    electricityPrice,
-    waterPrice,
-    gasPrice: gasUsage > 0 ? gasPrice : undefined,
-  }
 }
 
 /**

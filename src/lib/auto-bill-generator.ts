@@ -1,6 +1,4 @@
-import {
-  calculateUtilityBill,
-} from '@/lib/bill-calculations'
+import { calculateUtilityBill } from '@/lib/bill-calculations.server'
 import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import {
   generateBaseBillsForContract,

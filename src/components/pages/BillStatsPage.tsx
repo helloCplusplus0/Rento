@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { BarChart3, Download } from 'lucide-react'
 
-import { type BillStatsData, type DateRange } from '@/lib/bill-stats'
+import { type BillStatsData, type DateRange } from '@/lib/bill-stats.shared'
 import { Button } from '@/components/ui/button'
 import { BillCharts } from '@/components/business/BillCharts'
 import { DateRangeSelector } from '@/components/business/DateRangeSelector'

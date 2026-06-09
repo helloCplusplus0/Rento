@@ -32,36 +32,6 @@ import {
   addRoomLoader,
 } from '../routes/add/AddRoomRoute'
 import {
-  BillDetailRoute,
-  BillDetailRouteErrorBoundary,
-  billDetailLoader,
-} from '../routes/bills/BillDetailRoute'
-import {
-  BillListRoute,
-  BillListRouteErrorBoundary,
-  billListLoader,
-} from '../routes/bills/BillListRoute'
-import {
-  BillStatsRoute,
-  BillStatsRouteErrorBoundary,
-  billStatsLoader,
-} from '../routes/bills/BillStatsRoute'
-import {
-  CreateBillRoute,
-  CreateBillRouteErrorBoundary,
-  createBillLoader,
-} from '../routes/bills/CreateBillRoute'
-import {
-  EditBillRoute,
-  EditBillRouteErrorBoundary,
-  editBillLoader,
-} from '../routes/bills/EditBillRoute'
-import {
-  ContractCheckoutRoute,
-  ContractCheckoutRouteErrorBoundary,
-  contractCheckoutLoader,
-} from '../routes/contracts/ContractCheckoutRoute'
-import {
   ContractCreateRoute,
   ContractCreateRouteErrorBoundary,
   contractCreateLoader,
@@ -242,39 +212,69 @@ export const router = createBrowserRouter([
           },
           {
             path: 'contracts/:id/checkout',
-            element: <ContractCheckoutRoute />,
-            loader: contractCheckoutLoader,
-            errorElement: <ContractCheckoutRouteErrorBoundary />,
+            lazy: async () => {
+              const routeModule = await import('../routes/contracts/ContractCheckoutRoute')
+              return {
+                Component: routeModule.ContractCheckoutRoute,
+                loader: routeModule.contractCheckoutLoader,
+                ErrorBoundary: routeModule.ContractCheckoutRouteErrorBoundary,
+              }
+            },
           },
           {
             path: 'bills',
-            element: <BillListRoute />,
-            loader: billListLoader,
-            errorElement: <BillListRouteErrorBoundary />,
+            lazy: async () => {
+              const routeModule = await import('../routes/bills/BillListRoute')
+              return {
+                Component: routeModule.BillListRoute,
+                loader: routeModule.billListLoader,
+                ErrorBoundary: routeModule.BillListRouteErrorBoundary,
+              }
+            },
           },
           {
             path: 'bills/stats',
-            element: <BillStatsRoute />,
-            loader: billStatsLoader,
-            errorElement: <BillStatsRouteErrorBoundary />,
+            lazy: async () => {
+              const routeModule = await import('../routes/bills/BillStatsRoute')
+              return {
+                Component: routeModule.BillStatsRoute,
+                loader: routeModule.billStatsLoader,
+                ErrorBoundary: routeModule.BillStatsRouteErrorBoundary,
+              }
+            },
           },
           {
             path: 'bills/create',
-            element: <CreateBillRoute />,
-            loader: createBillLoader,
-            errorElement: <CreateBillRouteErrorBoundary />,
+            lazy: async () => {
+              const routeModule = await import('../routes/bills/CreateBillRoute')
+              return {
+                Component: routeModule.CreateBillRoute,
+                loader: routeModule.createBillLoader,
+                ErrorBoundary: routeModule.CreateBillRouteErrorBoundary,
+              }
+            },
           },
           {
             path: 'bills/:id',
-            element: <BillDetailRoute />,
-            loader: billDetailLoader,
-            errorElement: <BillDetailRouteErrorBoundary />,
+            lazy: async () => {
+              const routeModule = await import('../routes/bills/BillDetailRoute')
+              return {
+                Component: routeModule.BillDetailRoute,
+                loader: routeModule.billDetailLoader,
+                ErrorBoundary: routeModule.BillDetailRouteErrorBoundary,
+              }
+            },
           },
           {
             path: 'bills/:id/edit',
-            element: <EditBillRoute />,
-            loader: editBillLoader,
-            errorElement: <EditBillRouteErrorBoundary />,
+            lazy: async () => {
+              const routeModule = await import('../routes/bills/EditBillRoute')
+              return {
+                Component: routeModule.EditBillRoute,
+                loader: routeModule.editBillLoader,
+                ErrorBoundary: routeModule.EditBillRouteErrorBoundary,
+              }
+            },
           },
           {
             path: 'renters',

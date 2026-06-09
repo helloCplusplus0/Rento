@@ -1,4 +1,4 @@
-import type { RoomStatus } from '@prisma/client'
+import type { RoomStatus } from '@/types/database'
 
 /**
  * 转换房间数据中的Decimal字段为number类型

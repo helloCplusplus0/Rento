@@ -1,6 +1,6 @@
 'use client'
 
-import type { Building } from '@prisma/client'
+import type { Building } from '@/types/database'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

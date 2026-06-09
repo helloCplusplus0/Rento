@@ -1,7 +1,6 @@
-import type { RoomStatus } from '@prisma/client'
 import { cn } from '@/lib/utils'
 
-import type { RoomWithBuildingForClient } from '@/types/database'
+import type { RoomStatus, RoomWithBuildingForClient } from '@/types/database'
 import { roomDetailMobileStyles } from '@/components/business/room-detail-mobile-styles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

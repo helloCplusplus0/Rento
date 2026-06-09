@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { RoomStatus } from '@prisma/client'
 
-import type { RoomWithBuildingForClient } from '@/types/database'
+import type { RoomStatus, RoomWithBuildingForClient } from '@/types/database'
 import type { MeterWithReadingsForClient } from '@/types/meter'
 import {
   formatClientApiError,

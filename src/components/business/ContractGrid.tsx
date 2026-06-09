@@ -1,90 +1,9 @@
 'use client'
 
-import type { ContractWithDetails } from '@/types/database'
+import type { ContractWithDetailsForClient } from '@/types/database'
 
 import { contractListMobileStyles } from './contract-list-mobile-styles'
 import { ContractCard } from './contract-card'
-
-// 为客户端组件定义的合同类型（Decimal 转换为 number）
-interface ContractWithDetailsForClient {
-  id: string
-  contractNumber: string
-  roomId: string
-  renterId: string
-  startDate: Date
-  endDate: Date
-  isExtended: boolean
-  monthlyRent: number
-  totalRent: number
-  deposit: number
-  keyDeposit: number | null
-  cleaningFee: number | null
-  paymentMethod?: string | null
-  paymentTiming?: string | null
-  status: string
-  businessStatus?: string | null
-  signedBy?: string | null
-  signedDate?: Date | null
-  createdAt: Date
-  updatedAt: Date
-  room: {
-    id: string
-    roomNumber: string
-    floorNumber: number
-    buildingId: string
-    roomType: string
-    area: number | null
-    rent: number
-    status: string
-    currentRenter?: string | null
-    overdueDays?: number | null
-    createdAt: Date
-    updatedAt: Date
-    building: {
-      id: string
-      name: string
-      address: string | null
-      totalRooms: number
-      description: string | null
-      createdAt: Date
-      updatedAt: Date
-    }
-  }
-  renter: {
-    id: string
-    name: string
-    gender?: string | null
-    phone: string
-    idCard?: string | null
-    emergencyContact?: string | null
-    emergencyPhone?: string | null
-    occupation?: string | null
-    company?: string | null
-    moveInDate?: Date | null
-    tenantCount?: number | null
-    remarks?: string | null
-    createdAt: Date
-    updatedAt: Date
-  }
-  bills: Array<{
-    id: string
-    billNumber: string
-    type: string
-    amount: number
-    receivedAmount: number
-    pendingAmount: number
-    dueDate: Date
-    paidDate?: Date | null
-    period?: string | null
-    status: string
-    paymentMethod?: string | null
-    operator?: string | null
-    remarks?: string | null
-    contractId: string
-    createdAt: Date
-    updatedAt: Date
-  }>
-}
 
 interface ContractGridProps {
   contracts: ContractWithDetailsForClient[]
@@ -138,7 +57,7 @@ export function ContractGrid({
       {contracts.map((contract) => (
         <ContractCard
           key={contract.id}
-          contract={contract as any}
+          contract={contract}
           onClick={() => onContractClick?.(contract)}
         />
       ))}

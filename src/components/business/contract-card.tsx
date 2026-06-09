@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FileText, User } from 'lucide-react'
 
-import type { ContractWithDetails } from '@/types/database'
+import type { ContractWithDetailsForClient } from '@/types/database'
 import { calculateOverdueDays, formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
@@ -13,15 +13,15 @@ import { ContractStatusBadge } from '@/components/ui/status-badge'
 import { TouchCard } from '@/components/ui/touch-button'
 
 interface ContractCardProps {
-  contract: ContractWithDetails
+  contract: ContractWithDetailsForClient
   onClick?: () => void
   className?: string
 }
 
 interface ContractListProps {
-  contracts: ContractWithDetails[]
-  onContractClick?: (contract: ContractWithDetails) => void
-  onInviteBinding?: (contract: ContractWithDetails) => void
+  contracts: ContractWithDetailsForClient[]
+  onContractClick?: (contract: ContractWithDetailsForClient) => void
+  onInviteBinding?: (contract: ContractWithDetailsForClient) => void
   className?: string
 }
 
@@ -155,7 +155,7 @@ export function ContractList({
   })
 
   // 计算逾期天数
-  const getOverdueDays = (contract: ContractWithDetails) => {
+  const getOverdueDays = (contract: ContractWithDetailsForClient) => {
     const today = new Date()
     const endDate = new Date(contract.endDate)
     const diffTime = today.getTime() - endDate.getTime()

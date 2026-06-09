@@ -1,14 +1,14 @@
 'use client'
 
-import type { BillWithContract } from '@/types/database'
-import type { BillPresentationStats } from '@/lib/bill-semantics'
+import type { BillWithContractForClient } from '@/types/database'
+import type { BillPresentationStats } from '@/lib/bill-semantics.shared'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface BillStatsOverviewProps {
-  bills: BillWithContract[]
+  bills: BillWithContractForClient[]
   presentationStats: BillPresentationStats
 }
 

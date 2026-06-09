@@ -8,12 +8,12 @@ import {
 } from 'lucide-react'
 
 import { formatCurrency, formatDate } from '@/lib/format'
+import type { CheckoutContractPageDto } from '@/lib/checkout-contract.shared'
 import {
   formatClientApiError,
   readClientApiError,
 } from '@/lib/client-api-error'
 import { cn } from '@/lib/utils'
-import type { ContractWithDetailsForClient } from '@/types/database'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,23 +38,8 @@ import {
   type PageHostNavigation,
 } from './page-host-navigation'
 
-type CheckoutContractWithMeters = ContractWithDetailsForClient & {
-  room: ContractWithDetailsForClient['room'] & {
-    meters: Array<{
-      id: string
-      meterNumber: string
-      displayName: string
-      meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
-      unitPrice: number
-      unit: string
-      location: string | null
-      latestReading: number | null
-    }>
-  }
-}
-
 interface CheckoutContractPageProps {
-  contract: CheckoutContractWithMeters
+  contract: CheckoutContractPageDto
   navigation?: PageHostNavigation
 }
 

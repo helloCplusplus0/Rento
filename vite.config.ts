@@ -6,9 +6,22 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiPort = env.MINIX_SERVER_PORT || env.APP_INTERNAL_PORT || '3002'
+  const rawPwaEnabled = process.env.VITE_ENABLE_PWA ?? env.VITE_ENABLE_PWA ?? 'false'
+  const pwaEnabled = rawPwaEnabled.trim().toLowerCase() === 'true' ? 'true' : 'false'
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'inject-minix-pwa-flag',
+        transformIndexHtml(html) {
+          return html.replace(/%VITE_ENABLE_PWA%/g, pwaEnabled)
+        },
+      },
+    ],
+    define: {
+      'import.meta.env.VITE_ENABLE_PWA': JSON.stringify(pwaEnabled),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),

@@ -1,6 +1,6 @@
 'use client'
 
-import type { BillWithContract } from '@/types/database'
+import type { BillWithContractForClient } from '@/types/database'
 import {
   getBillDisplayLabel,
   getBillVisualConfig,
@@ -13,7 +13,7 @@ import { BillStatusBadge } from '@/components/ui/status-badge'
 import { TouchCard } from '@/components/ui/touch-button'
 
 interface BillCardCompactProps {
-  bill: BillWithContract
+  bill: BillWithContractForClient
   onClick?: () => void
   className?: string
 }

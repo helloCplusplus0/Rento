@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { Building } from '@prisma/client'
 
+import type { Building } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'

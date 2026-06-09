@@ -1,7 +1,7 @@
 /**
  * 兼容包装层：
- * phase09-03 起账务金额/状态/展示语义的正式真相源迁入 src/lib/domain/billing。
- * 旧文件继续导出同名能力，避免存量页面与查询层在当前阶段被一次性切断。
+ * fix_014 起仅保留纯 shared 账单展示语义，阻断浏览器运行时穿透到 server-only 的
+ * src/lib/domain/billing；服务端若需要正式账务真相，应直接依赖 domain/billing。
  */
 export {
   BILL_AMOUNT_EPSILON,
@@ -16,15 +16,15 @@ export {
   isBillSettled,
   isOpenBillStatus,
   isSettledBillStatus,
-  resolveBillAmounts,
   resolveBillStatus,
   sortBillsForDisplay,
   toBillAmount,
-} from '@/lib/domain/billing'
+} from '@/lib/bill-semantics.shared'
 
 export type {
   BillDisplaySortableLike,
   BillPresentationLike,
   BillPresentationStats,
   BillPresentationStatus,
-} from '@/lib/domain/billing'
+  SharedBillStatus,
+} from '@/lib/bill-semantics.shared'

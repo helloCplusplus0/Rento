@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import type { Building as BuildingType } from '@prisma/client'
 import { Building, Edit, MoreVertical, Plus, Trash2 } from 'lucide-react'
 
+import type { Building as BuildingType } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'

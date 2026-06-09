@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { Building } from '@prisma/client'
 
+import type { Building } from '@/types/database'
 import { BuildingSelector } from '@/components/business/BuildingSelector'
 import { RoomBatchForm } from '@/components/business/RoomBatchForm'
 import { RoomPreviewList } from '@/components/business/RoomPreviewList'

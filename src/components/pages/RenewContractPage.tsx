@@ -15,6 +15,7 @@ import {
   formatClientApiError,
   readClientApiError,
 } from '@/lib/client-api-error'
+import type { ContractWithDetailsForClient } from '@/types/database'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,38 +47,6 @@ interface RenewContractFormData {
   signedBy?: string
   signedDate?: string
   remarks?: string
-}
-
-interface ContractWithDetailsForClient {
-  id: string
-  contractNumber: string
-  roomId: string
-  renterId: string
-  startDate: Date
-  endDate: Date
-  monthlyRent: number
-  totalRent?: number
-  deposit: number
-  keyDeposit: number | null
-  cleaningFee: number | null
-  paymentMethod?: string | null
-  paymentTiming?: string | null
-  status: string
-  businessStatus?: string | null
-  isExtended?: boolean
-  signedBy?: string | null
-  signedDate?: Date | null
-  remarks?: string | null
-  room: {
-    roomNumber: string
-    building: {
-      name: string
-    }
-  }
-  renter: {
-    name: string
-    phone: string
-  }
 }
 
 interface RenewContractPageProps {

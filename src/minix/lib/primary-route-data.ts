@@ -2,14 +2,20 @@ import {
   calculateDaysUntilContractExpiry,
   isContractExpiringSoon,
 } from '@/lib/contract-alert-semantics'
-import { parseDateRange, type BillStatsData, type DateRange } from '@/lib/bill-stats'
+import {
+  parseDateRange,
+  type BillStatsData,
+  type DateRange,
+} from '@/lib/bill-stats.shared'
 import {
   DEFAULT_METER_READING_HISTORY_FILTERS,
   type MeterReadingHistoryFilters,
   type MeterReadingHistoryRecord,
   type MeterReadingRecordType,
 } from '@/lib/meter-reading-history'
+import type { CheckoutContractPageDto } from '@/lib/checkout-contract.shared'
 import type {
+  BillWithContractForClient,
   ContractWithDetailsForClient,
   RenterWithContractsForClient,
   RoomWithBuildingForClient,
@@ -122,7 +128,7 @@ export interface RenterEditRouteData {
 
 export interface ContractListRouteData {
   initialSearchQuery: string
-  contracts: any[]
+  contracts: ContractWithDetailsForClient[]
   stats: ContractStats
   expiryAlerts: ContractExpiryAlert[]
   contractExpiryAlertDays: number
@@ -149,25 +155,12 @@ export interface ContractRenewRouteData {
 }
 
 export interface ContractCheckoutRouteData {
-  contract: ContractWithDetailsForClient & {
-    room: ContractWithDetailsForClient['room'] & {
-      meters: Array<{
-        id: string
-        meterNumber: string
-        displayName: string
-        meterType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS'
-        unitPrice: number
-        unit: string
-        location: string | null
-        latestReading: number | null
-      }>
-    }
-  }
+  contract: CheckoutContractPageDto
 }
 
 export interface BillListRouteData {
   initialSearchQuery: string
-  bills: any[]
+  bills: BillWithContractForClient[]
 }
 
 export interface BillStatsRouteData {
@@ -606,6 +599,19 @@ function normalizeContractForClient(contract: any): ContractWithDetailsForClient
   } as ContractWithDetailsForClient
 }
 
+function normalizeBillWithContractForClient(
+  bill: any
+): BillWithContractForClient {
+  const normalizedBill = normalizeBillForClient(bill)
+  const normalizedContract = normalizeContractForClient(bill.contract)
+  const { bills: _unusedBills, ...contract } = normalizedContract
+
+  return {
+    ...normalizedBill,
+    contract,
+  } as BillWithContractForClient
+}
+
 function normalizeCheckoutMeter(meter: any) {
   return {
     id: meter.id,
@@ -942,8 +948,8 @@ async function fetchBuildings(options: RequestOptions = {}) {
 async function fetchAllContractPages(
   filters: { renterId?: string } = {},
   options: RequestOptions = {}
-) {
-  const contracts: any[] = []
+): Promise<ContractWithDetailsForClient[]> {
+  const contracts: ContractWithDetailsForClient[] = []
   let page = 1
   let totalPages = 1
 
@@ -963,7 +969,9 @@ async function fetchAllContractPages(
       options
     )
 
-    contracts.push(...payload.contracts)
+    contracts.push(
+      ...payload.contracts.map((contract) => normalizeContractForClient(contract))
+    )
     totalPages = normalizeTotalPages(payload.totalPages)
     page += 1
   }
@@ -1098,8 +1106,8 @@ async function fetchAllActiveContractPages(options: RequestOptions = {}) {
 async function fetchAllBillPages(
   initialSearchQuery: string,
   options: RequestOptions = {}
-) {
-  const bills: any[] = []
+): Promise<BillWithContractForClient[]> {
+  const bills: BillWithContractForClient[] = []
   let page = 1
   let totalPages = 1
 
@@ -1119,7 +1127,7 @@ async function fetchAllBillPages(
       options
     )
 
-    bills.push(...payload.data)
+    bills.push(...payload.data.map((bill) => normalizeBillWithContractForClient(bill)))
     totalPages = normalizeTotalPages(payload.totalPages)
     page += 1
   }
@@ -1245,7 +1253,7 @@ async function fetchBillStatsRouteData(
 }
 
 function buildContractStats(
-  contracts: any[],
+  contracts: ContractWithDetailsForClient[],
   contractExpiryAlertDays: number
 ): ContractStats {
   const now = new Date()
@@ -1277,7 +1285,7 @@ function buildContractStats(
 }
 
 function buildContractExpiryAlerts(
-  contracts: any[],
+  contracts: ContractWithDetailsForClient[],
   contractExpiryAlertDays: number
 ): ContractExpiryAlert[] {
   const now = new Date()

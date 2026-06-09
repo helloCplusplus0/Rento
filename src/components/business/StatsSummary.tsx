@@ -2,7 +2,7 @@
 
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react'
 
-import { type BillStatsData } from '@/lib/bill-stats'
+import { type BillStatsData } from '@/lib/bill-stats.shared'
 import { formatCurrency } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 

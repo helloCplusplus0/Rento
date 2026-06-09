@@ -16,7 +16,7 @@ import {
   YAxis,
 } from 'recharts'
 
-import { getBillTypeText, type BillStatsData } from '@/lib/bill-stats'
+import { getBillTypeText, type BillStatsData } from '@/lib/bill-stats.shared'
 import { formatCurrency } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
