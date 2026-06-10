@@ -1,11 +1,12 @@
 import { Edit, FileText, Plus, Trash2 } from 'lucide-react'
+import type { RenterWithContractsForClient } from '@/types/database'
 import { cn } from '@/lib/utils'
 
 import { renterDetailMobileStyles } from '@/components/business/renter-detail-mobile-styles'
 import { Button } from '@/components/ui/button'
 
 interface RenterActionsProps {
-  renter: any
+  renter: Pick<RenterWithContractsForClient, 'id' | 'contracts'>
   onEdit: () => void
   onAddContract?: () => void
   onViewContracts?: () => void
@@ -27,7 +28,7 @@ export function RenterActions({
   isLoading,
 }: RenterActionsProps) {
   const hasActiveContract = renter.contracts?.some(
-    (c: any) => c.status === 'ACTIVE'
+    (contract) => contract.status === 'ACTIVE'
   )
 
   const handleAddContract = () => {

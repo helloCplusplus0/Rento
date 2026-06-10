@@ -2,25 +2,21 @@
 
 import { Phone, User } from 'lucide-react'
 
-import { formatDate } from '@/lib/format'
+import { formatCurrency, formatDate } from '@/lib/format'
 import { renterListMobileStyles } from '@/components/business/renter-list-mobile-styles'
+import type { RenterCardViewModel } from '@/components/business/renter-display'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { TouchCard } from '@/components/ui/touch-button'
 
 interface RenterCardProps {
-  renter: any // 使用any避免复杂的类型定义
-  onClick?: (renter: any) => void
+  renter: RenterCardViewModel
+  onClick?: (renterId: string) => void
 }
 
 export function RenterCard({ renter, onClick }: RenterCardProps) {
-  const activeContract = renter.contracts?.find(
-    (c: any) => c.status === 'ACTIVE'
-  )
-  const hasActiveContract = !!activeContract
-
   const handleCardClick = () => {
-    onClick?.(renter)
+    onClick?.(renter.id)
   }
 
   return (
@@ -44,10 +40,10 @@ export function RenterCard({ renter, onClick }: RenterCardProps) {
             </div>
 
             <Badge
-              variant={hasActiveContract ? 'default' : 'secondary'}
+              variant={renter.statusLabel === '在租' ? 'default' : 'secondary'}
               className={renterListMobileStyles.cardBadge}
             >
-              {hasActiveContract ? '在租' : '空闲'}
+              {renter.statusLabel}
             </Badge>
           </div>
 
@@ -55,16 +51,18 @@ export function RenterCard({ renter, onClick }: RenterCardProps) {
             <div className={renterListMobileStyles.detailPairRow}>
               <span className={renterListMobileStyles.detailLabel}>当前房间</span>
               <span className={renterListMobileStyles.cardDetailValueTight}>
-                {activeContract
-                  ? `${activeContract.room.building.name} - ${activeContract.room.roomNumber}`
-                  : '暂无在租房间'}
+                {renter.currentRoomLabel}
               </span>
             </div>
 
             <div className={renterListMobileStyles.detailRow}>
               <span className={renterListMobileStyles.detailLabel}>月租金</span>
               <span className={renterListMobileStyles.detailValue}>
-                {activeContract ? `¥${activeContract.monthlyRent}` : '-'}
+                {renter.monthlyRent !== null
+                  ? formatCurrency(renter.monthlyRent)
+                  : renter.statusLabel === '在租'
+                    ? '租金待补全'
+                    : '-'}
               </span>
             </div>
 
@@ -87,19 +85,13 @@ export function RenterCard({ renter, onClick }: RenterCardProps) {
                 </span>
               </div>
               <span className={renterListMobileStyles.footerMetaSubtle}>
-                历史合同 {renter.contracts?.length || 0} 个
+                历史合同 {renter.contractCount} 个
               </span>
             </div>
 
-            {activeContract ? (
+            {renter.footerHint ? (
               <div className="mt-1 flex justify-end">
-                <span className={renterListMobileStyles.footerHint}>
-                  在租房间已关联
-                </span>
-              </div>
-            ) : renter.contracts?.length > 0 ? (
-              <div className="mt-1 flex justify-end">
-                <span className={renterListMobileStyles.footerHint}>当前无活跃合同</span>
+                <span className={renterListMobileStyles.footerHint}>{renter.footerHint}</span>
               </div>
             ) : null}
           </div>

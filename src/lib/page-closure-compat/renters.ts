@@ -2,6 +2,7 @@ import {
   revalidateMutationPaths,
   type MutationRevalidationRuntime,
 } from '@/lib/mutation-revalidation'
+import { toNullableFiniteNumber } from '@/lib/number-coercion'
 import { optimizedRenterQueries } from '@/lib/optimized-queries'
 import { renterQueries } from '@/lib/queries'
 
@@ -73,14 +74,18 @@ function normalizeMoveInDate(value: string | null | undefined) {
   return new Date(value)
 }
 
+function serializeNullableNumber(value: unknown) {
+  return toNullableFiniteNumber(value)
+}
+
 function serializeContract(contract: any) {
   return {
     ...contract,
-    monthlyRent: Number(contract.monthlyRent),
-    totalRent: Number(contract.totalRent),
-    deposit: Number(contract.deposit),
-    keyDeposit: contract.keyDeposit ? Number(contract.keyDeposit) : null,
-    cleaningFee: contract.cleaningFee ? Number(contract.cleaningFee) : null,
+    monthlyRent: serializeNullableNumber(contract.monthlyRent),
+    totalRent: serializeNullableNumber(contract.totalRent),
+    deposit: serializeNullableNumber(contract.deposit),
+    keyDeposit: serializeNullableNumber(contract.keyDeposit),
+    cleaningFee: serializeNullableNumber(contract.cleaningFee),
   }
 }
 

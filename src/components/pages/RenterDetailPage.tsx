@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
   pushWithHostNavigation,
@@ -9,6 +9,10 @@ import {
 } from '@/lib/host-navigation'
 import type { RenterWithContractsForClient } from '@/types/database'
 
+import {
+  buildRenterBasicInfoViewModel,
+  buildRenterContractHistoryViewModels,
+} from '@/components/business/renter-display'
 import { renterDetailMobileStyles } from '@/components/business/renter-detail-mobile-styles'
 import { RenterActions } from '@/components/business/RenterActions'
 import { RenterBasicInfo } from '@/components/business/RenterBasicInfo'
@@ -35,6 +39,11 @@ export function RenterDetailPage({
   onOpenContracts,
 }: RenterDetailPageProps) {
   const [loading, setLoading] = useState(false)
+  const renterBasicInfo = useMemo(() => buildRenterBasicInfoViewModel(renter), [renter])
+  const renterContractHistory = useMemo(
+    () => buildRenterContractHistoryViewModels(renter.contracts || []),
+    [renter]
+  )
 
   const handleEdit = () => {
     if (onEdit) {
@@ -74,13 +83,13 @@ export function RenterDetailPage({
     }
   }
 
-  const handleContractClick = (contract: { id: string }) => {
+  const handleContractClick = (contractId: string) => {
     if (onOpenContract) {
-      onOpenContract(contract.id)
+      onOpenContract(contractId)
       return
     }
 
-    pushWithHostNavigation(`/contracts/${contract.id}`, navigation)
+    pushWithHostNavigation(`/contracts/${contractId}`, navigation)
   }
 
   return (
@@ -101,11 +110,11 @@ export function RenterDetailPage({
         />
 
         {/* 基本信息 */}
-        <RenterBasicInfo renter={renter} />
+        <RenterBasicInfo renter={renterBasicInfo} />
 
         {/* 合同历史 */}
         <RenterContractHistory
-          contracts={renter.contracts || []}
+          contracts={renterContractHistory}
           onContractClick={handleContractClick}
         />
       </div>

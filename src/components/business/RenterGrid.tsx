@@ -1,13 +1,14 @@
 'use client'
 
+import type { RenterCardViewModel } from '@/components/business/renter-display'
 import { renterListMobileStyles } from '@/components/business/renter-list-mobile-styles'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { RenterCard } from './RenterCard'
 
 interface RenterGridProps {
-  renters: any[]
-  onRenterClick?: (renter: any) => void
+  renters: RenterCardViewModel[]
+  onRenterClick?: (renterId: string) => void
   loading?: boolean
 }
 

@@ -17,6 +17,7 @@ import type { CheckoutContractPageDto } from '@/lib/checkout-contract.shared'
 import type {
   BillWithContractForClient,
   ContractWithDetailsForClient,
+  RenterContractForClient,
   RenterWithContractsForClient,
   RoomWithBuildingForClient,
 } from '@/types/database'
@@ -548,6 +549,26 @@ function normalizeContractSummaryForClient(contract: any) {
   }
 }
 
+function normalizeRenterContractForClient(contract: any): RenterContractForClient {
+  return {
+    ...contract,
+    monthlyRent: toNullableNumberValue(contract.monthlyRent),
+    totalRent: toNullableNumberValue(contract.totalRent),
+    deposit: toNullableNumberValue(contract.deposit),
+    keyDeposit: toNullableNumberValue(contract.keyDeposit),
+    cleaningFee: toNullableNumberValue(contract.cleaningFee),
+    startDate: toDateValue(contract.startDate) ?? new Date(contract.startDate),
+    endDate: toDateValue(contract.endDate) ?? new Date(contract.endDate),
+    signedDate: toDateValue(contract.signedDate),
+    createdAt: toDateValue(contract.createdAt) ?? new Date(contract.createdAt),
+    updatedAt: toDateValue(contract.updatedAt) ?? new Date(contract.updatedAt),
+    room: contract.room
+      ? normalizeRoomForClient(contract.room, { includeContracts: false })
+      : contract.room,
+    bills: (contract.bills ?? []).map((bill: any) => normalizeBillForClient(bill)),
+  } as RenterContractForClient
+}
+
 function normalizeRoomForClient(
   room: any,
   options: { includeContracts?: boolean } = {}
@@ -578,7 +599,7 @@ function normalizeRenterForClient(
     updatedAt: toDateValue(renter.updatedAt),
     contracts: options.includeContracts
       ? (renter.contracts ?? []).map((contract: any) =>
-          normalizeContractSummaryForClient(contract)
+          normalizeRenterContractForClient(contract)
         )
       : renter.contracts,
   } as RenterWithContractsForClient

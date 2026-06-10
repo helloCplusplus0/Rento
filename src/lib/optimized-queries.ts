@@ -380,9 +380,17 @@ export const optimizedRenterQueries = {
           contracts: {
             select: {
               id: true,
+              contractNumber: true,
               status: true,
               startDate: true,
               endDate: true,
+              monthlyRent: true,
+              totalRent: true,
+              deposit: true,
+              keyDeposit: true,
+              cleaningFee: true,
+              createdAt: true,
+              updatedAt: true,
               room: {
                 select: {
                   id: true,

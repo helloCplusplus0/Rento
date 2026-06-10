@@ -202,24 +202,32 @@ export interface BillWithContractForClient
 
 export type BillWithContract = BillWithContractForClient
 
-// 为客户端组件定义的租客类型（包含合同信息）
-export interface RenterWithContractsForClient extends Renter {
-  contracts: (Omit<
+export type RenterBillForClient = Omit<
+  Bill,
+  'amount' | 'receivedAmount' | 'pendingAmount'
+> & {
+  amount: number
+  receivedAmount: number
+  pendingAmount: number
+}
+
+export interface RenterContractForClient
+  extends Omit<
     Contract,
     'monthlyRent' | 'totalRent' | 'deposit' | 'keyDeposit' | 'cleaningFee'
-  > & {
-    monthlyRent: number
-    totalRent: number
-    deposit: number
-    keyDeposit: number | null
-    cleaningFee: number | null
-    room?: RoomWithBuildingForClient
-    bills?: (Omit<Bill, 'amount' | 'receivedAmount' | 'pendingAmount'> & {
-      amount: number
-      receivedAmount: number
-      pendingAmount: number
-    })[]
-  })[]
+  > {
+  monthlyRent: number | null
+  totalRent: number | null
+  deposit: number | null
+  keyDeposit: number | null
+  cleaningFee: number | null
+  room?: RoomWithBuildingForClient
+  bills?: RenterBillForClient[]
+}
+
+// 为客户端组件定义的租客类型（包含合同信息）
+export interface RenterWithContractsForClient extends Renter {
+  contracts: RenterContractForClient[]
 }
 
 // 账单表单数据类型

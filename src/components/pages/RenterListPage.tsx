@@ -8,6 +8,7 @@ import {
 } from '@/lib/host-navigation'
 import type { RenterWithContractsForClient } from '@/types/database'
 
+import { buildRenterCardViewModel } from '@/components/business/renter-display'
 import { renterListMobileStyles } from '@/components/business/renter-list-mobile-styles'
 import { RenterGrid } from '@/components/business/RenterGrid'
 import { RenterSearchBar } from '@/components/business/RenterSearchBar'
@@ -23,7 +24,7 @@ interface RenterListPageProps {
     newThisMonth: number
   }
   navigation?: HostNavigationAdapter
-  onOpenRenter?: (renter: RenterWithContractsForClient) => void
+  onOpenRenter?: (renterId: string) => void
 }
 
 export function RenterListPage({
@@ -59,9 +60,9 @@ export function RenterListPage({
       // 状态筛选
       if (renterFilter) {
         if (renterFilter === 'active') {
-          return renter.contracts.some((c: any) => c.status === 'ACTIVE')
+          return renter.contracts.some((contract) => contract.status === 'ACTIVE')
         } else if (renterFilter === 'inactive') {
-          return !renter.contracts.some((c: any) => c.status === 'ACTIVE')
+          return !renter.contracts.some((contract) => contract.status === 'ACTIVE')
         } else if (renterFilter === 'new_this_month') {
           const createdAt = renter.createdAt ? new Date(renter.createdAt) : null
           if (!createdAt || Number.isNaN(createdAt.getTime())) {
@@ -90,14 +91,19 @@ export function RenterListPage({
     [initialStats]
   )
 
+  const renterCards = useMemo(
+    () => filteredRenters.map((renter) => buildRenterCardViewModel(renter)),
+    [filteredRenters]
+  )
+
   // 处理租客点击
-  const handleRenterClick = (renter: RenterWithContractsForClient) => {
+  const handleRenterClick = (renterId: string) => {
     if (onOpenRenter) {
-      onOpenRenter(renter)
+      onOpenRenter(renterId)
       return
     }
 
-    pushWithHostNavigation(`/renters/${renter.id}`, navigation)
+    pushWithHostNavigation(`/renters/${renterId}`, navigation)
   }
 
   return (
@@ -131,7 +137,7 @@ export function RenterListPage({
 
         {/* 租客网格 */}
         <RenterGrid
-          renters={filteredRenters}
+          renters={renterCards}
           onRenterClick={handleRenterClick}
           loading={loading}
         />

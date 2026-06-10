@@ -2,20 +2,17 @@ import {
   IdCard,
 } from 'lucide-react'
 
-import { formatDate } from '@/lib/format'
+import { formatCurrency, formatDate } from '@/lib/format'
+import type { RenterBasicInfoViewModel } from '@/components/business/renter-display'
 import { renterDetailMobileStyles } from '@/components/business/renter-detail-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface RenterBasicInfoProps {
-  renter: any
+  renter: RenterBasicInfoViewModel
 }
 
 export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
-  const activeContract = renter.contracts?.find(
-    (c: any) => c.status === 'ACTIVE'
-  )
-
   return (
     <Card className={renterDetailMobileStyles.card}>
       <CardHeader className={renterDetailMobileStyles.cardHeader}>
@@ -139,15 +136,67 @@ export function RenterBasicInfo({ renter }: RenterBasicInfoProps) {
         {/* 当前状态 */}
         <div className={renterDetailMobileStyles.sectionBlock}>
           <h4 className={renterDetailMobileStyles.sectionTitle}>当前状态</h4>
-          <div className={renterDetailMobileStyles.statusRow}>
-            <Badge variant={activeContract ? 'default' : 'secondary'}>
-              {activeContract ? '在租' : '空闲'}
-            </Badge>
+          <div className={renterDetailMobileStyles.statusCard}>
+            <div className={renterDetailMobileStyles.statusHeader}>
+              <Badge variant={renter.currentStatus.badgeVariant}>
+                {renter.currentStatus.badgeLabel}
+              </Badge>
+              <div className={renterDetailMobileStyles.statusMeta}>
+                <p className={renterDetailMobileStyles.statusTitle}>
+                  {renter.currentStatus.title}
+                </p>
+                <p className={renterDetailMobileStyles.statusDescription}>
+                  {renter.currentStatus.description}
+                </p>
+              </div>
+            </div>
 
-            {activeContract && (
-              <div className={renterDetailMobileStyles.statusRoomText}>
-                当前房间: {activeContract.room.building.name} -{' '}
-                {activeContract.room.roomNumber}
+            {(renter.currentStatus.roomLabel ||
+              renter.currentStatus.contractNumber ||
+              renter.currentStatus.monthlyRent !== null) && (
+              <div className={renterDetailMobileStyles.statusGrid}>
+                {renter.currentStatus.roomLabel && (
+                  <div className={renterDetailMobileStyles.statusField}>
+                    <div className={renterDetailMobileStyles.fieldLabel}>当前房间</div>
+                    <div className={renterDetailMobileStyles.statusFieldValue}>
+                      {renter.currentStatus.roomLabel}
+                    </div>
+                  </div>
+                )}
+
+                {renter.currentStatus.monthlyRent !== null && (
+                  <div className={renterDetailMobileStyles.statusField}>
+                    <div className={renterDetailMobileStyles.fieldLabel}>当前月租</div>
+                    <div className={renterDetailMobileStyles.statusFieldValue}>
+                      {formatCurrency(renter.currentStatus.monthlyRent)}
+                    </div>
+                  </div>
+                )}
+
+                {(renter.currentStatus.contractNumber ||
+                  renter.currentStatus.startDate ||
+                  renter.currentStatus.endDate) && (
+                  <div
+                    className={`${renterDetailMobileStyles.statusField} ${renterDetailMobileStyles.statusFieldWide}`}
+                  >
+                    <div className={renterDetailMobileStyles.fieldLabel}>合同摘要</div>
+                    <div className={renterDetailMobileStyles.statusFieldValue}>
+                      {renter.currentStatus.contractNumber ?? '合同编号待补全'}
+                      {(renter.currentStatus.startDate || renter.currentStatus.endDate) && (
+                        <>
+                          {' '}
+                          | {renter.currentStatus.startDate
+                            ? formatDate(renter.currentStatus.startDate)
+                            : '-'}{' '}
+                          -{' '}
+                          {renter.currentStatus.endDate
+                            ? formatDate(renter.currentStatus.endDate)
+                            : '-'}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

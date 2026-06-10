@@ -84,9 +84,7 @@ function RenterListRouteContent({ data }: { data: RenterListRouteData }) {
       initialRenters={data.renters}
       initialSearchQuery={data.initialSearchQuery}
       initialStats={data.stats}
-      onOpenRenter={(renter) =>
-        navigateToMinixOrDocument(navigate, `/renters/${renter.id}`)
-      }
+      onOpenRenter={(renterId) => navigateToMinixOrDocument(navigate, `/renters/${renterId}`)}
     />
   )
 }
