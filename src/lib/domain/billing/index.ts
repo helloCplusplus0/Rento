@@ -11,6 +11,11 @@ import {
   normalizeContractPaymentCycle,
 } from '@/lib/contract-payment-cycle'
 import {
+  getContractBillGenerationRule,
+  resolveContractBillGenerationContext,
+  type ContractBillGenerationContext,
+} from '@/lib/contract-bill-generation-context'
+import {
   BILL_AMOUNT_EPSILON,
   getBillPresentationStatus,
   isBillSettled,
@@ -556,7 +561,12 @@ function generateBillNumber(type: string, contractNumber: string): string {
   return `BILL${contractNumber.slice(-3)}${typePrefix}${timestamp}`
 }
 
-function buildContractBaseBillDrafts(contract: ContractForBaseBills) {
+function buildContractBaseBillDrafts(
+  contract: ContractForBaseBills,
+  context: ContractBillGenerationContext = resolveContractBillGenerationContext(
+    contract
+  )
+) {
   const drafts: Array<{
     type: 'RENT' | 'DEPOSIT' | 'OTHER'
     itemLabel?: string
@@ -569,8 +579,9 @@ function buildContractBaseBillDrafts(contract: ContractForBaseBills) {
 
   const fullContractPeriod = `${contract.startDate.toISOString().slice(0, 10)} 至 ${contract.endDate.toISOString().slice(0, 10)}`
   const paymentMethodLabel = contract.paymentMethod || '待确定'
+  const generationRule = getContractBillGenerationRule(context)
 
-  if (Number(contract.deposit) > 0) {
+  if (generationRule.includeDepositBill && Number(contract.deposit) > 0) {
     drafts.push({
       type: 'DEPOSIT',
       amount: Number(contract.deposit),
@@ -581,7 +592,11 @@ function buildContractBaseBillDrafts(contract: ContractForBaseBills) {
     })
   }
 
-  if (contract.keyDeposit && Number(contract.keyDeposit) > 0) {
+  if (
+    generationRule.includeKeyDepositBill &&
+    contract.keyDeposit &&
+    Number(contract.keyDeposit) > 0
+  ) {
     drafts.push({
       type: 'OTHER',
       itemLabel: '钥匙押金',
@@ -593,7 +608,11 @@ function buildContractBaseBillDrafts(contract: ContractForBaseBills) {
     })
   }
 
-  if (contract.cleaningFee && Number(contract.cleaningFee) > 0) {
+  if (
+    generationRule.includeCleaningFeeBill &&
+    contract.cleaningFee &&
+    Number(contract.cleaningFee) > 0
+  ) {
     drafts.push({
       type: 'OTHER',
       itemLabel: '卫生费',
@@ -612,15 +631,17 @@ function buildContractBaseBillDrafts(contract: ContractForBaseBills) {
     contract.paymentMethod
   )
 
-  for (const period of rentBillPlan.periods) {
-    drafts.push({
-      type: 'RENT',
-      amount: rentBillPlan.rentAmountPerPeriod,
-      dueDate: period.dueDate,
-      period: period.periodLabel,
-      paymentMethod: paymentMethodLabel,
-      remarks: `${rentBillPlan.paymentCycleLabel}租金 - 合同${contract.contractNumber} - 第${period.index}期`,
-    })
+  if (generationRule.includeRentBill) {
+    for (const period of rentBillPlan.periods) {
+      drafts.push({
+        type: 'RENT',
+        amount: rentBillPlan.rentAmountPerPeriod,
+        dueDate: period.dueDate,
+        period: period.periodLabel,
+        paymentMethod: paymentMethodLabel,
+        remarks: `${rentBillPlan.paymentCycleLabel}租金 - 合同${contract.contractNumber} - 第${period.index}期`,
+      })
+    }
   }
 
   return {
@@ -896,7 +917,10 @@ export async function updateBillCollectionStatus(
 }
 
 export async function generateBaseBillsForContract(
-  contractId: string
+  contractId: string,
+  options: {
+    context?: ContractBillGenerationContext
+  } = {}
 ): Promise<GeneratedBaseBillSummary[]> {
   return runInMainChainWriteTransaction(async (tx) => {
     const contract = await getContractForBaseBills(tx, contractId)
@@ -905,10 +929,13 @@ export async function generateBaseBillsForContract(
       throw new Error('Contract not found')
     }
 
-    const { drafts } = buildContractBaseBillDrafts({
-      ...contract,
-      bills: [],
-    } as ContractForBaseBills)
+    const { drafts } = buildContractBaseBillDrafts(
+      {
+        ...contract,
+        bills: [],
+      } as ContractForBaseBills,
+      options.context
+    )
 
     const createdBills: GeneratedBaseBillSummary[] = []
 

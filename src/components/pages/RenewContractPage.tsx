@@ -530,6 +530,10 @@ export function RenewContractPage({
                 <h4 className={renewContractMobileStyles.sectionTitle}>
                   租金信息
                 </h4>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                  续租页字段默认继承原合同且保持可编辑，但系统只会自动生成租金账单与卫生费账单。
+                  若本次续租需要补收押金或钥匙押金，请在续租完成后通过“新增账单”单独处理。
+                </div>
                 <div className={renewContractMobileStyles.formGrid}>
                   <div>
                     <Label
@@ -578,7 +582,7 @@ export function RenewContractPage({
                       className={renewContractMobileStyles.input}
                     />
                     <p className={renewContractMobileStyles.helperText}>
-                      续租时押金可调整，退租时需退还
+                      续租时押金默认继承且可调整；调整后会作为合同事实保留，若需补收请在续租完成后新增账单
                     </p>
                   </div>
                 </div>
@@ -607,7 +611,7 @@ export function RenewContractPage({
                       className={renewContractMobileStyles.input}
                     />
                     <p className={renewContractMobileStyles.helperText}>
-                      续租时钥匙押金可调整，退租时需退还
+                      续租时钥匙押金默认继承且可调整；调整后不会自动出账，若需补收请在续租完成后新增账单
                     </p>
                   </div>
                   <div>
@@ -636,6 +640,11 @@ export function RenewContractPage({
                       清洁费为一次性费用，收取后不退还
                     </p>
                   </div>
+                </div>
+                <div className={renewContractMobileStyles.noteBox}>
+                  <p className={renewContractMobileStyles.noteText}>
+                    续租默认只会自动生成租金和卫生费账单。若本次续租需要补收押金或钥匙押金，请在续租完成后通过“新增账单”单独处理；这里的押金字段调整仅用于保留合同事实与后续退租结算语义。
+                  </p>
                 </div>
               </div>
 
@@ -769,6 +778,8 @@ export function RenewContractPage({
                       cleaningFee: formData.newCleaningFee,
                       paymentMethod: formData.paymentMethod,
                     }}
+                    generationContext="RENEWAL"
+                    helperMessage="续租成功后系统只会自动生成租金账单与卫生费账单。押金和钥匙押金字段仍会随合同保存，但如需补收，请在合同创建后通过新增账单处理。"
                   />
                 )}
 

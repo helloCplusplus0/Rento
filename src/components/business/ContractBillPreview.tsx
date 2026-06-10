@@ -28,6 +28,8 @@ interface ContractFormData {
 interface ContractBillPreviewProps {
   contractData: ContractFormData
   className?: string
+  generationContext?: 'NEW_SIGN' | 'RENEWAL'
+  helperMessage?: string
 }
 
 interface PreviewBill {
@@ -49,6 +51,8 @@ interface PreviewBill {
 export function ContractBillPreview({
   contractData,
   className,
+  generationContext = 'NEW_SIGN',
+  helperMessage,
 }: ContractBillPreviewProps) {
   // 生成预览账单数据
   const previewBills = useMemo(() => {
@@ -56,9 +60,10 @@ export function ContractBillPreview({
     const startDate = new Date(contractData.startDate)
     const endDate = new Date(contractData.endDate)
     const contractNumber = `CT${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}XXXXXX`
+    const isRenewal = generationContext === 'RENEWAL'
 
     // 1. 押金账单
-    if (contractData.deposit > 0) {
+    if (!isRenewal && contractData.deposit > 0) {
       bills.push({
         id: 'deposit',
         type: 'DEPOSIT',
@@ -71,7 +76,7 @@ export function ContractBillPreview({
     }
 
     // 2. 钥匙押金账单
-    if (contractData.keyDeposit && contractData.keyDeposit > 0) {
+    if (!isRenewal && contractData.keyDeposit && contractData.keyDeposit > 0) {
       bills.push({
         id: 'keyDeposit',
         type: 'OTHER',
@@ -105,7 +110,7 @@ export function ContractBillPreview({
     bills.push(...rentBills)
 
     return bills.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
-  }, [contractData])
+  }, [contractData, generationContext])
 
   // 计算统计信息
   const stats = useMemo(() => {
@@ -141,7 +146,9 @@ export function ContractBillPreview({
           账单预览
         </CardTitle>
         <p className={contractBillPreviewMobileStyles.description}>
-          合同创建后将自动生成以下 {stats.totalBills} 个账单
+          {generationContext === 'RENEWAL'
+            ? `续租成功后将自动生成以下 ${stats.totalBills} 个账单`
+            : `合同创建后将自动生成以下 ${stats.totalBills} 个账单`}
         </p>
       </CardHeader>
       <CardContent className={contractBillPreviewMobileStyles.content}>
@@ -281,8 +288,9 @@ export function ContractBillPreview({
         {/* 提示信息 */}
         <div className={contractBillPreviewMobileStyles.helperCard}>
           <p className={contractBillPreviewMobileStyles.helperText}>
-            💡 <strong>提示：</strong>
-            这些账单将在合同创建成功后自动生成，您可以在合同详情页面查看和管理所有账单。
+            <strong>提示：</strong>{' '}
+            {helperMessage ||
+              '这些账单将在合同创建成功后自动生成，您可以在合同详情页面查看和管理所有账单。'}
           </p>
         </div>
       </CardContent>

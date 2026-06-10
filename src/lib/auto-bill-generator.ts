@@ -1,4 +1,5 @@
 import { calculateUtilityBill } from '@/lib/bill-calculations.server'
+import { type ContractBillGenerationContext } from '@/lib/contract-bill-generation-context'
 import { buildContractRentBillPlan } from '@/lib/contract-payment-cycle'
 import {
   generateBaseBillsForContract,
@@ -113,7 +114,10 @@ export async function generateBillsOnContractSigned(
     console.log(
       `[账单生成] 开始通过共享领域服务生成基础账单，支付方式: ${contract.paymentMethod}`
     )
-    const bills = await generateBaseBillsForContract(contractId)
+    const generationContext: ContractBillGenerationContext = 'NEW_SIGN'
+    const bills = await generateBaseBillsForContract(contractId, {
+      context: generationContext,
+    })
     console.log(`[账单生成] 基础账单生成完成，共${bills.length}个`)
 
     const totalTime = Date.now() - startTime

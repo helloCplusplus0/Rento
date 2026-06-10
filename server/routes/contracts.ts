@@ -19,6 +19,7 @@ import { optimizedContractQueries } from '@/lib/optimized-queries'
 import { prisma } from '@/lib/prisma'
 import { contractQueries, renterQueries, roomQueries } from '@/lib/queries'
 import { invalidateBillCaches } from '@/lib/bill-cache'
+import { preserveRenewalRemarkMarker } from '@/lib/contract-bill-generation-context'
 import { revalidateMutationPaths } from '@/lib/mutation-revalidation'
 
 import type { AuthAppEnv } from '../lib/auth-context'
@@ -567,7 +568,10 @@ export function createContractRoutes(env: MinixServerEnv) {
         updateData.signedDate = body.signedDate ? new Date(body.signedDate) : null
       }
       if (body.remarks !== undefined) {
-        updateData.remarks = body.remarks
+        updateData.remarks = preserveRenewalRemarkMarker(
+          existingContract.remarks,
+          body.remarks
+        )
       }
 
       if (Object.keys(updateData).length === 0) {
@@ -637,7 +641,10 @@ export function createContractRoutes(env: MinixServerEnv) {
       updateData.signedDate = body.signedDate ? new Date(body.signedDate) : null
     }
     if (body.remarks !== undefined) {
-      updateData.remarks = body.remarks
+      updateData.remarks = preserveRenewalRemarkMarker(
+        existingContract.remarks,
+        body.remarks
+      )
     }
 
     if (Object.keys(updateData).length === 0) {

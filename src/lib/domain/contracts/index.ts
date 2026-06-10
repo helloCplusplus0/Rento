@@ -7,6 +7,10 @@ import {
   type AppliedCheckoutSettlementResult,
   type CheckoutSettlementSubmissionItem,
 } from '@/lib/checkout-settlement'
+import {
+  resolveContractBillGenerationContext,
+  type ContractBillGenerationContext,
+} from '@/lib/contract-bill-generation-context'
 import { prisma } from '@/lib/prisma'
 import { runInMainChainWriteTransaction } from '@/lib/transaction-manager'
 import {
@@ -244,6 +248,7 @@ export interface SerializedLifecycleContract {
 
 export interface GenerateContractBillsResult {
   contractId: string
+  generationContext: ContractBillGenerationContext
   generationMode: 'GENERATE_BASE' | 'REPAIR_MISSING_RENT'
   generatedBills: GeneratedBaseBillSummary[]
   factSnapshot: ContractFactSnapshot
@@ -678,12 +683,14 @@ export async function generateContractBills(
   contractId: string,
   options: {
     mode?: 'auto' | 'base' | 'repair'
+    context?: ContractBillGenerationContext
   } = {}
 ): Promise<GenerateContractBillsResult> {
   const contract = await prisma.contract.findUnique({
     where: { id: contractId },
     select: {
       id: true,
+      remarks: true,
       bills: {
         select: {
           id: true,
@@ -696,6 +703,8 @@ export async function generateContractBills(
     throw new Error('Contract not found')
   }
 
+  const generationContext =
+    options.context ?? resolveContractBillGenerationContext(contract)
   const generationMode =
     options.mode === 'base'
       ? 'GENERATE_BASE'
@@ -707,16 +716,22 @@ export async function generateContractBills(
 
   const generatedBills =
     generationMode === 'GENERATE_BASE'
-      ? await generateBaseBillsForContract(contractId)
+      ? await generateBaseBillsForContract(contractId, {
+          context: generationContext,
+        })
       : await repairMissingRentBillsForContract(contractId)
   const factSnapshot = await getContractFactSnapshot(contractId)
 
   return {
     contractId,
+    generationContext,
     generationMode,
     generatedBills,
     factSnapshot,
-    consistency: buildFlowConsistencyEvidence('NEW_SIGN_CONTRACT', factSnapshot),
+    consistency: buildFlowConsistencyEvidence(
+      generationContext === 'RENEWAL' ? 'RENEW_CONTRACT' : 'NEW_SIGN_CONTRACT',
+      factSnapshot
+    ),
   }
 }
 
@@ -890,6 +905,7 @@ export async function renewContract(
       transactionResult.newContract.id,
       {
         mode: 'auto',
+        context: 'RENEWAL',
       }
     )
   } catch (error) {
