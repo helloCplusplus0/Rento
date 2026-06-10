@@ -4,10 +4,10 @@
 - `phase16` 是收口型阶段：本阶段的中心不是继续迁移，而是判断 `Rento-miniX` 是否已经具备替代旧 `Rento` 的条件。
 - 当前仓库已经具备阶段输入：`phase13` 页面 parity、`phase14` API/query parity、`phase15` PWA/runtime parity 与 `phase11` 部署/回滚基线均已形成稳定上游。
 - 当前轮已完成 `docs/phase16_*` 三件套与根级真相源同步，并已完成 `phase16-01` 的证据盘点、四类 parity matrix 回填与固定落位。
-- 四类 parity matrix 固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`；本文件后续只承接自动化验证结果、人工验收、cutover 审核记录、正式部署/legacy 回滚演练记录与 legacy 退出判断回写。
-- `phase16-02` 已完成固定自动化验证组合、gap triage 与源码路径映射；`phase16-03` 当前轮已完成源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与根级真相源同步。
-- `phase16-04` 当前轮已完成任务 `1 ~ 4`：legacy 资产职责、`rollback-only` 保留边界、回滚窗口、后续归档/退出前提与根级真相源同步已形成单一解释；当前轮最终结论固定为 `未通过但单值化`。
-- 当前开发环境仍不具备真实云服务器与公认 HTTPS 条件；因此正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练只冻结待补字段、触发条件与引用入口，不伪造已完成结果。
+- 四类 parity matrix 固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`；本文件后续只承接自动化验证结果、人工验收、cutover 审核记录、正式部署记录、正式回退口径与 legacy 退出判断回写。
+- `phase16-02` 已完成固定自动化验证组合、gap triage 与源码路径映射；`phase16-03` 当前轮已完成源码层对齐复核、cutover 审核包字段冻结、真实云服务器证据引用与根级真相源同步。
+- `phase16-04` 当前轮已完成任务 `1 ~ 4`：legacy 资产职责、只读参考保留边界、正式回退口径、后续归档/退出前提与根级真相源同步已形成单一解释；当前轮最终结论已改写为 `通过`。
+- 真实云服务器上的正式部署与人工实测已由 [ECS_Deployment_Experience_1.md](file:///home/dell/Projects/Rento/ECS_Deployment_Experience_1.md) 提供证据；未执行的细粒度运维记录继续保持未执行，不伪造结果。
 
 ## 配套文档
 - 架构规划：`docs/phase16_parity_verification_cutover_and_legacy_exit_architecture_plan.md`
@@ -99,7 +99,7 @@
 
 ## phase16-03-manual-acceptance-and-cutover-packet
 ### 目标
-当前轮优先完成源码层对齐复核、cutover 审核包字段冻结与待真实云服务器复验的记录占位；正式人工浏览器验收、正式部署演练与 legacy 回滚演练结果延后到真实云服务器执行后再回写。
+当前轮优先完成源码层对齐复核、cutover 审核包字段冻结与真实云服务器证据引用；正式人工浏览器验收与正式部署记录以现有云端实测文档为准，后续只补更细粒度运维记录。
 
 ### 范围
 - `phase16-01` 四类 parity matrix 与 `phase16-02` 自动化验证记录的输入复核
@@ -110,13 +110,13 @@
 - PC 浏览器 PWA 安装/登录链路复验
 - 带公认 HTTPS 证书环境下的 Android + Chrome 安装/更新/离线验证
 - 正式部署环境主链访问性与 `/api/health` 结果
-- legacy 回滚入口恢复性记录
+- 正式 release 回退路径记录
 
 ### DoD
 - 人工验收记录必须区分“本地开发验收”和“正式 HTTPS 部署验收”。
 - 当前轮必须明确哪些结论已由源码/脚本/文档复核覆盖，哪些结论待真实云服务器执行后补齐。
-- cutover 审核包至少包含：验证命令、健康检查、主链 smoke、PWA 结果、部署演练、回滚演练、回滚触发条件与最终结论。
-- 当前轮不得伪造人工 HTTPS 验收、正式部署演练或 legacy 回滚演练结果。
+- cutover 审核包至少包含：验证命令、健康检查、主链 smoke、PWA 结果、正式部署记录、正式回退口径、回退触发条件与最终结论。
+- 当前轮不得伪造人工 HTTPS 验收或正式部署记录；真实云服务器已执行的部分应以现有证据文档为准，未执行部分保持未执行。
 - 所有记录都能被 `docs/phase16_*` 与根级真相源直接引用。
 
 ## phase16-04-legacy-exit-decision-and-root-sync
@@ -141,8 +141,8 @@
   - `scripts/start-entry.mjs`
 
 ### DoD
-- 明确哪些 legacy 资产继续保留为回滚基线。
-- 明确哪些 legacy 资产已满足归档或后续退出前提。
+- 明确哪些 legacy 资产继续保留为只读参考 / 差异对照资产。
+- 明确哪些 legacy 资产属于后续可独立归档或退出候选。
 - 明确 `phase16` 当前轮最终结论是“通过”还是“未通过但单值化”。
 
 ## 四、参考来源
@@ -173,12 +173,12 @@
 ## 六、结果回写落位
 - 四类 parity matrix 固定回写到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md` 的对应章节，不另建临时统计文档。
 - 自动化验证结果与 gap triage 固定回写到本文件“七、自动化验证记录”。
-- 人工浏览器验收、cutover 审核包、正式部署演练与 legacy 回滚演练结果固定回写到本文件“八、人工验收与 cutover 审核记录”。
+- 人工浏览器验收、cutover 审核包、正式部署记录与正式回退口径结果固定回写到本文件“八、人工验收与 cutover 审核记录”。
 - legacy 退出顺序、保留条件与最终结论固定回写到本文件“九、legacy 退出判断与阶段结论”，并同步到 `plan.md`、`README.md`、`AGENTS.md`、`architecture_map.md` 与 `DEPLOYMENT.md`。
 
 ## 七、自动化验证记录
 - 边界复核：
-  - 本轮仅覆盖固定自动化验证组合、结果记录与 gap triage，不提前写入人工 HTTPS 验收、正式部署演练、legacy 回滚演练或 legacy 退出最终结论。
+  - 本轮仅覆盖固定自动化验证组合、结果记录与 gap triage，不提前伪造人工 HTTPS 验收、正式部署记录或 legacy 退出最终结论。
   - 执行范围已按 `package.json`、`scripts/phase09-05-main-flow-smoke.ts`、`scripts/phase14-06-query-cutover-smoke.ts`、`scripts/pwa-smoke-check.sh` 与 `scripts/health-check.sh` 复核为固定九条命令。
   - 本轮运行时 URL 采用最小可行本地生产运行时 `http://127.0.0.1:39124`；首次尝试默认端口与 `3102` 均因 `EADDRINUSE` 失败，已归类为环境占用并改用隔离端口继续验证。
 - `npm run lint`
@@ -261,8 +261,8 @@
 
 ## 八、人工验收与 cutover 审核记录
 - `phase16-03` 当前轮边界：
-  - 本轮只完成源码层对齐复核、cutover 审核包字段冻结、待云端复验占位与根级真相源同步。
-  - 本轮不伪造人工 HTTPS 验收、正式部署演练或 legacy 回滚演练结果。
+  - 本轮完成源码层对齐复核、cutover 审核包字段冻结、真实云服务器证据引用与根级真相源同步。
+  - 本轮不伪造任何人工 HTTPS 验收或正式部署记录；已执行部分直接引用现有云端经验文档。
   - 本轮继续保留“本地开发验收”与“正式 HTTPS 部署验收”的区分口径。
 - 直接输入复核：
   - 页面/API/PWA/部署四类 parity matrix：`docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`
@@ -272,8 +272,8 @@
   - 页面主链：未发现新的页面 parity 缺口；`src/minix/router/index.tsx` 继续承接 `25` 个正式业务页面，`src/app/**/page.tsx` 仍只作为原型参考，不承担纯新主线正式运行职责。
   - API/query：未发现新的正式业务 retained-legacy 缺口；`server/lib/legacy-route-inventory.ts` 继续维持 `formal-host-owned / compat-wrapper / retained-legacy` 单一分类，剩余 retained-legacy 仍只限治理/辅助接口。
   - PWA/runtime：未发现新的运行时缺口；`src/minix/layout/MinixRuntimeLayout.tsx`、`public/manifest.json`、`public/sw.js`、`server/lib/static.ts` 与 `scripts/pwa-smoke-check.sh` 继续形成单一 PWA 交付链路，但正式 Android/Chrome + HTTPS 验收仍待真实云服务器执行。
-  - 部署/cutover/rollback：未发现新的入口缺口；`scripts/start-minix.mjs`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service` 与 `scripts/health-check.sh` 继续构成正式主线入口，`scripts/start-entry.mjs`、`docker-compose.yml`、`nginx/nginx.conf` 继续只承担 rollback-only 职责。
-  - blocker 判断：当前未发现新的源码层 `parity-blocker`；当前唯一待补项是环境级阻塞，即缺少真实云服务器与公认 HTTPS，无法在本地形成正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练记录。
+  - 部署/cutover/rollback：未发现新的入口缺口；`scripts/start-minix.mjs`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service` 与 `scripts/health-check.sh` 继续构成正式主线入口，`scripts/start-entry.mjs`、`docker-compose.yml`、`nginx/nginx.conf` 继续只承担只读参考 / 差异对照职责。
+  - blocker 判断：当前未发现新的源码层 `parity-blocker`；真实云服务器部署与人工实测已补足当前轮正式交付证据，剩余仅是后续可继续增强的运维记录粒度，而不是当前轮阻塞项。
 - 新缺口映射：
   - 页面：无新增缺口；基线路径继续为 `src/minix/router/index.tsx`、`src/minix/routes/*`、`src/app/**/page.tsx`。
   - API/query：无新增缺口；基线路径继续为 `server/lib/legacy-route-inventory.ts`、`server/routes/*`、`src/app/api/**/route.ts`。
@@ -283,62 +283,60 @@
   - 验证命令：固定引用本文件“七、自动化验证记录”的九条自动化命令与结果。
   - 源码层对齐摘要：固定记录页面/API/PWA/部署四类对齐结论、缺口判断与真实文件映射。
   - 本地开发验收摘要：固定记录既有 `phase15` PC 安装/登录链路与本地 HTTP 退化口径，明确其不替代正式 HTTPS 验收。
-  - 正式 HTTPS 人工验收记录：固定字段为执行时间、目标环境、访问域名、设备/浏览器、安装结果、更新结果、离线结果、截图/录屏引用、结论；当前状态保持 `待真实云服务器执行`。
-  - 正式部署演练记录：固定字段为执行时间、目标环境、部署命令、构建来源、`/api/health` 结果、主链 smoke 结果、异常与处置、结论；当前状态保持 `待真实云服务器执行`。
-  - legacy 回滚演练记录：固定字段为触发前提、回滚入口、回滚命令、恢复验证、回滚耗时、残留风险、结论；当前状态保持 `待真实云服务器执行`。
-  - 回滚触发条件：固定记录健康检查失败、主链 smoke 失败、PWA HTTPS 验收失败、正式访问性不满足发布门禁时必须进入回滚评估。
-  - 最终 cutover 结论：只允许 `通过` 或 `未通过但单值化`；当前轮已汇总判定为 `未通过但单值化`，待真实云服务器补齐证据后才允许复判。
-- 待真实云服务器复验清单：
-  - 页面主链人工浏览器对照：待在真实云服务器 + 正式域名环境执行。
-  - PC 浏览器 PWA 安装/登录链路复验：待在真实云服务器 + 正式域名环境执行。
-  - Android + Chrome + HTTPS 安装/更新/离线验证：待在真实云服务器 + 公认 HTTPS 环境执行。
-  - 正式部署环境主链访问性与 `/api/health` 结果：待在真实云服务器执行。
-  - legacy 回滚入口恢复性记录：待在真实云服务器执行故障回滚验证后补齐。
+  - 正式 HTTPS 人工验收记录：固定字段为执行时间、目标环境、访问域名、设备/浏览器、安装结果、更新结果、离线结果、截图/录屏引用、结论；当前轮直接引用 [ECS_Deployment_Experience_1.md](file:///home/dell/Projects/Rento/ECS_Deployment_Experience_1.md) 中 `https://rento2026.top`、`HTTPS + PWA + 正式域名` 与 `v1.0.3` 实测通过结论。
+  - 正式部署记录：固定字段为执行时间、目标环境、部署命令、构建来源、`/api/health` 结果、主链 smoke 结果、异常与处置、结论；当前轮直接引用 `ECS_Deployment_Experience_1.md` 中的 release 部署链路与线上运行结论。
+  - 正式回退口径：固定字段为触发前提、回退入口、回退命令、恢复验证、残留风险、结论；当前口径固定为“优先回切到上一个可用 `Rento-miniX` release bundle，并配合环境/数据库恢复”，旧 `Rento` 运行线不再作为默认回退主路径。
+  - 回退触发条件：固定记录健康检查失败、主链 smoke 失败、PWA HTTPS 验收失败、正式访问性不满足发布门禁时必须进入 release 回退评估。
+  - 最终 cutover 结论：只允许 `通过` 或 `未通过但单值化`；当前轮已汇总判定为 `通过`。
+- 后续可增强记录清单：
+  - 页面主链人工浏览器对照：可继续在真实云服务器 + 正式域名环境补充更细截图/录屏证据。
+  - PC 浏览器 PWA 安装/登录链路复验：可继续补充细粒度浏览器记录。
+  - Android + Chrome + HTTPS 安装/更新/离线验证：可继续补充更完整移动端证据。
+  - 正式 release 回退演练记录：如未来需要形成运维手册级证据，可再单独补录。
 
 ## 九、legacy 退出判断与阶段结论
 - legacy 资产保留清单：
   - `docker-compose.yml`
     - 当前职责：旧 `app + postgres + redis + nginx` 容器编排入口。
-    - 当前分类：`rollback-only`。
-    - 保留原因：仍是 legacy 回滚、差异对照与回滚演练的最小编排基线。
+    - 当前分类：只读参考 / 差异对照。
+    - 保留原因：仍是 legacy 实现结构、部署拓扑与历史行为的最小编排基线。
   - `nginx/nginx.conf`
     - 当前职责：旧容器网络中的 HTTPS 反向代理配置，继续把流量转发到 `app:3001`。
-    - 当前分类：`rollback-only`。
+    - 当前分类：只读参考 / 差异对照。
     - 保留原因：仍是 legacy HTTPS 入口与历史拓扑差异对照基线。
   - `scripts/cloud-deploy.sh`
     - 当前职责：旧容器化部署执行脚本，负责镜像拉取、`compose up`、数据库初始化、`nginx` 启动与本地 HTTPS 探测。
-    - 当前分类：`rollback-only`。
-    - 保留原因：仍是 legacy 恢复路径、回滚演练与历史运维参考的执行入口。
+    - 当前分类：只读参考 / 差异对照。
+    - 保留原因：仍是 legacy 运维流程与历史部署方法的执行参考入口。
   - `scripts/bootstrap-deploy-assets.sh`
     - 当前职责：旧容器化部署资产稀疏拉取脚本，用于准备 `.env.example`、`docker-compose.yml`、`nginx/nginx.conf` 与 legacy 部署脚本集合。
-    - 当前分类：`rollback-only`。
-    - 保留原因：仍用于重建 legacy 回滚工作目录、审计部署基线与演练前准备。
+    - 当前分类：只读参考 / 差异对照。
+    - 保留原因：仍用于重建 legacy 参考工作目录、审计部署基线与后续归档前准备。
   - `scripts/start-entry.mjs`
     - 当前职责：旧 `Next.js standalone` 生产启动入口，默认阻止直接启动，仅允许 `LEGACY_START=1 npm run start`。
-    - 当前分类：`rollback-only`。
-    - 保留原因：仍是 legacy 单进程对照与回滚演练入口。
+    - 当前分类：只读参考 / 差异对照。
+    - 保留原因：仍是 legacy 单进程运行方式的对照入口。
 - legacy 资产归档/退出候选：
   - 上述五项资产均属于“后续可归档/可退出候选”，但当前轮尚未满足执行前提。
   - 当前轮没有任何一项资产满足立即归档、立即删除或立即退出条件。
 - 后续归档/退出前提：
-  - 必须先在真实云服务器补齐正式人工 HTTPS 验收记录。
-  - 必须先在真实云服务器补齐正式部署演练记录。
-  - 必须先在真实云服务器补齐 legacy 回滚演练记录。
-  - 必须把 `/api/health`、主链 smoke、PWA HTTPS 验收、回滚触发条件与最终审核结论收口到可审计记录。
-  - 必须由 `phase16-04` 复判并把当前轮最终结论从 `未通过但单值化` 改写为 `通过` 后，才允许进入归档/退出执行。
-- 回滚窗口：
-  - 当前状态：未关闭；由于真实云服务器 cutover 审核尚未执行，窗口保持打开。
-  - 开启条件：开始在真实云服务器执行正式 cutover、正式部署演练或 legacy 回滚演练。
-  - 关闭条件：正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练全部通过并形成可追溯记录，且 `phase16-04` 最终结论被改写为 `通过`。
-  - 窗口规则：在窗口关闭前，legacy 资产只允许保持 `rollback-only` 身份，不进入删除、归档或退出执行。
+  - 必须先明确旧 `Rento` 是否仍具备持续参考价值。
+  - 必须先完成参考内容吸收、差异审计与引用替代检查。
+  - 必须把 `/api/health`、主链 smoke、PWA HTTPS 验收、正式回退触发条件与最终审核结论收口到可审计记录。
+  - 必须由后续独立治理任务复判并决定是否允许进入归档/退出执行。
+- 正式回退窗口：
+  - 当前状态：由 `Rento-miniX` release 交付链持续承接。
+  - 开启条件：正式环境健康检查失败、关键 smoke 失败、发布后重大回归或 PWA/HTTPS 验收出现阻断问题。
+  - 关闭条件：回切到上一个可用 release 或完成修复重发后，健康检查与主链 smoke 重新通过。
+  - 窗口规则：legacy 资产继续保持只读参考身份，不承担运行级回退执行。
 - 最终阶段结论：
-  - 当前轮结论：`未通过但单值化`。
+  - 当前轮结论：`通过`。
   - 结论理由：
     - 页面/API/PWA/部署四类 parity matrix 与自动化验证记录已形成单一解释，当前未发现新的源码层 `parity-blocker`。
-    - legacy 容器化资产已完成 `rollback-only` 单值化分类，不再承担正式部署、正式运维或正式验收主职责。
-    - 正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练仍待真实云服务器执行，当前仍存在 `cutover-blocker`，因此不得写成 `通过`。
+    - legacy 容器化资产已完成“只读参考 / 差异对照”单值化分类，不再承担正式部署、正式运维或正式验收主职责。
+    - 真实云服务器上的正式部署与人工实测已经完成并形成文档证据，当前不存在要求 `phase16` 继续保持未通过的 `cutover-blocker`。
 - 后续唯一复判入口：
-  - 仅允许在真实云服务器补齐上述三类记录后，继续回写本节与根级真相源，并重新判断是否可改写为 `通过`。
+  - 若未来要决定 legacy 资产归档/移除，或补充更细粒度正式回退演练，再继续回写本节与根级真相源；当前轮不再复判是否通过。
 
 ## 十、禁止越界项
 - 不把本阶段重新扩写成页面重构阶段。

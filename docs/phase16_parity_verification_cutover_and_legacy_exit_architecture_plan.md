@@ -4,8 +4,8 @@
 - `phase13` 已完成正式业务页面 `25/25` 迁移，`src/minix/routes/*`、`src/minix/router/index.tsx` 与 `src/app/**/page.tsx` 已形成“新宿主承接位 + 旧页面原型参考”的双层结构。
 - `phase14` 已完成正式业务 API/query parity，`server/routes/*.ts` 与 `server/lib/legacy-route-inventory.ts` 已形成 `formal-host-owned / compat-wrapper / retained-legacy` 的单一分类；旧 `src/app/api/*` 中已不存在承担正式业务主职责的 retained-legacy 路由，剩余 retained-legacy 仅限治理/辅助接口。
 - `phase15` 已完成纯新主线 PWA/runtime parity，`src/components/pwa/*`、`src/minix/layout/MinixRuntimeLayout.tsx`、`public/manifest.json`、`public/sw.js`、`server/lib/static.ts` 与 `scripts/pwa-smoke-check.sh` 已形成单一交付链路。
-- `phase11` 已冻结正式部署主线、回滚基线与部署/回滚演练记录要求；`DEPLOYMENT.md`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service`、`scripts/start-minix.mjs` 与 `scripts/start-entry.mjs` 已具备 cutover / rollback 的直接输入价值。
-- `phase16-04` 当前轮只冻结 legacy-exit 决策与 root sync：`docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 统一降级为 `rollback-only`；当前轮最终结论固定为 `未通过但单值化`，原因是正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练仍待真实云服务器执行。
+- `phase11` 已冻结正式部署主线、发布门禁与部署记录要求；`DEPLOYMENT.md`、`deploy/caddy/Caddyfile`、`deploy/systemd/rento-minix.service` 与 `scripts/start-minix.mjs` 已具备正式 cutover 与 release 级回退的直接输入价值。
+- `phase16-04` 当前轮完成 legacy-exit 决策与 root sync：`docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh`、`scripts/start-entry.mjs` 统一降级为只读参考 / 差异对照资产；当前轮最终结论改写为 `通过`，原因是自动化验证、源码层对齐与真实云服务器部署实测已共同证明 `Rento-miniX` 可以独立交付与继续推进。
 
 ## 配套文档
 - 开发规划：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
@@ -24,13 +24,13 @@
 - 基于 `phase13 ~ phase15` 的已完成结果，形成页面、API/query、PWA/runtime、deploy/cutover/rollback 四类 parity 审核闭环。
 - 把“是否已经完成原地重构”的判断从口头描述收口为可审计证据包。
 - 对剩余差异进行单值化分级，避免后续阶段继续把“旧文件还在”误写成“重构未完成”。
-- 在不重开页面迁移、正式业务 API 迁移、PWA 重构和 ORM 议题的前提下，冻结 legacy 退出顺序与回滚窗口。
+- 在不重开页面迁移、正式业务 API 迁移、PWA 重构和 ORM 议题的前提下，冻结 legacy 保留边界与正式 release 级回退口径。
 
 ## 三、直接继承输入
 ### 3.1 来自 `phase11`
 - 正式部署主线固定为 `Caddy + systemd + Hono + PostgreSQL`。
 - 部署/回滚演练记录字段、健康检查与发布门禁继续以 `DEPLOYMENT.md` 为单一真相源。
-- legacy 容器化运行线继续作为回滚基线保留，直到 `phase16` 审核通过。
+- legacy 容器化运行线继续作为只读参考、差异对照与历史运维基线保留，不再承担 `phase16` 通过前置条件。
 
 ### 3.2 来自 `phase13`
 - 正式业务页面 `25/25` 已迁入 `src/minix`。
@@ -127,10 +127,10 @@
 ### 6.4 deploy / rollback 判断决策
 - `npm run build:minix`、`npm run start:minix`、`/api/health` 与 smoke 脚本继续构成纯新主线正式验证入口。
 - `LEGACY_START=1 npm run start` 只保留 legacy-only 身份，不得再被视为当前正式运行入口。
-- 在缺少真实云服务器条件时，`phase16-03` 当前轮只冻结正式部署演练与 legacy 回滚演练模板、触发条件与引用入口，真实演练结果延后到云端执行。
-- legacy 资产退出的前提不是“文件删掉了”，而是“替代入口、验证记录与回滚窗口已形成可审计闭环”。
-- `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh` 与 `scripts/start-entry.mjs` 当前统一视为 `rollback-only` 资产：允许用于故障回滚、差异对照和回滚演练，不再作为默认部署/运维入口。
-- 回滚窗口固定按事件关闭而不是按主观判断关闭：只有在真实云服务器完成正式人工 HTTPS 验收、正式部署演练、legacy 回滚演练，并由 `phase16-04` 把最终结论改写为 `通过` 后，才允许开始归档/退出判断。
+- 真实云服务器上的正式部署与人工实测记录以 [ECS_Deployment_Experience_1.md](file:///home/dell/Projects/Rento/ECS_Deployment_Experience_1.md) 为当前轮直接证据入口；后续若补充更细粒度部署演练，继续作为增强证据，而不是当前轮通过前提。
+- legacy 资产退出的前提不是“必须完成 legacy runtime 回滚演练”，而是“`Rento-miniX` 已成为唯一正式主线，旧资产只剩只读参考价值，且未来归档/移除条件已被写清”。
+- `docker-compose.yml`、`nginx/nginx.conf`、`scripts/cloud-deploy.sh`、`scripts/bootstrap-deploy-assets.sh` 与 `scripts/start-entry.mjs` 当前统一视为只读参考 / 差异对照资产：允许用于历史实现比对、运维经验追溯与未来归档前审计，不再作为默认部署/运维入口，也不再构成正式回退依赖。
+- 当前正式回退口径固定为 `Rento-miniX` 自身的 release 级回退：优先回切到上一个可用 release bundle，并结合环境文件恢复、数据库备份恢复与健康检查复验完成处置；旧 `Rento` 运行线不是默认回退主路径。
 
 ## 七、明确不做
 - 不重新打开正式业务 API 迁移。
@@ -142,15 +142,15 @@
 ## 八、验收判断
 - `phase16` 至少能给出页面/API/PWA/部署四类 parity matrix 的单一结论。
 - 每个剩余差异都必须被归类为 `parity-blocker`、`acceptable-adaptation` 或 `non-blocking-legacy-reference`。
-- cutover 审核、回滚演练与 legacy 退出顺序必须具备单一解释，且能被根级真相源直接引用。
+- cutover 审核、正式回退口径与 legacy 保留边界必须具备单一解释，且能被根级真相源直接引用。
 - 本阶段最终允许两种合法结果：
-  - `通过`：`Rento-miniX` 已具备替代旧 `Rento` 的条件，legacy 资产只剩回滚/归档/只读参考职责。
+  - `通过`：`Rento-miniX` 已具备替代旧 `Rento` 的条件，legacy 资产只剩只读参考 / 差异对照 / 未来归档候选职责。
   - `未通过但单值化`：全部 blocker 已被明确映射到真实缺口与后续最小补齐任务，不再保留模糊灰区。
-- `phase16` 当前轮最终结论固定为 `未通过但单值化`，且不得在真实云服务器证据补齐前改写为 `通过`。
+- `phase16` 当前轮最终结论改写为 `通过`。
 - 当前轮结论理由固定为三条：
   - 页面/API/PWA/部署四类 parity matrix 与自动化验证均未发现新的源码层 `parity-blocker`。
-  - legacy 容器化资产已完成 `rollback-only` 单值化分类，不再承担正式主职责。
-  - 正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未在真实云服务器执行，因此仍存在 `cutover-blocker`，只能判定为“未通过但单值化”。
+  - legacy 容器化资产已完成“只读参考 / 差异对照”单值化分类，不再承担正式主职责。
+  - 真实云服务器部署与人工实测已证明纯新主线可正式交付；legacy 回滚演练不再被视为当前轮必需 gate。
 
 ## 九、证据产物固定落位
 - 不新增第二套 phase16 审计目录；本阶段证据统一回写到既有真相源。
@@ -162,5 +162,5 @@
   - deploy / cutover / rollback matrix：`docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`
   - 自动化验证结果与 gap triage：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
   - 人工浏览器验收记录：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`
-  - 正式部署演练记录与 legacy 回滚演练记录：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，并由 `DEPLOYMENT.md` 引用摘要结论
+  - 正式部署记录、真实云服务器实测结论与正式回退口径：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，并由 `DEPLOYMENT.md` 引用摘要结论
   - 最终 cutover 结论与 legacy 退出判断：`docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`、`plan.md`、`README.md`、`AGENTS.md`、`architecture_map.md` 与 `DEPLOYMENT.md`

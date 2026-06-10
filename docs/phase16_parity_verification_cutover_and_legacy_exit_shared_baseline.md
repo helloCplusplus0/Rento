@@ -150,11 +150,11 @@
 
 | 旧 route path + method | inventory category | 当前 formal host | 当前 compat/bridge host | dependency | 退出条件 | 最终判定 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `/api/auth/login` `POST` | `formal-host-owned` | `server/routes/auth.ts` | 旧入口仅 `rollback-only`：`src/app/api/auth/login/route.ts` | 依赖 `src/lib/auth/password.ts`、`src/lib/auth/session.ts`；页面依赖 `/login` 登录提交 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；正式认证宿主已冻结，旧入口仅保留回滚参考 |
-| `/api/auth/logout` `POST` | `formal-host-owned` | `server/routes/auth.ts` | 旧入口仅 `rollback-only`：`src/app/api/auth/logout/route.ts` | 依赖 `src/lib/auth/session.ts`；运行时会话退出 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；正式认证宿主已冻结，旧入口仅保留回滚参考 |
-| `/api/health` `GET` | `formal-host-owned` | `server/routes/health.ts` | 旧入口仅 `rollback-only`：`src/app/api/health/route.ts` | 依赖 `src/lib/observability.ts`、`src/lib/prisma.ts`；脚本依赖 `scripts/health-check.sh` 与部署健康检查 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；正式健康检查宿主已冻结，旧入口仅保留回滚参考 |
-| `/api/buildings` `GET, POST` | `formal-host-owned` | `server/routes/buildings.ts` | 旧入口仅 `rollback-only`：`src/app/api/buildings/route.ts` | 依赖 `src/lib/queries.ts`；页面依赖 `/rooms*`、`/add/room`、`/add/contract` 的楼栋选择 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；楼栋引用数据 formal host 已冻结，旧入口仅保留回滚参考 |
-| `/api/buildings/:id` `GET, PUT, DELETE` | `formal-host-owned` | `server/routes/buildings.ts` | 旧入口仅 `rollback-only`：`src/app/api/buildings/[id]/route.ts` | 依赖 `src/lib/queries.ts`、`src/lib/prisma.ts`；页面依赖 `/add/room` 内嵌楼栋编辑/删除 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；楼栋引用数据 formal host 已冻结，旧入口仅保留回滚参考 |
+| `/api/auth/login` `POST` | `formal-host-owned` | `server/routes/auth.ts` | 旧入口仅 `reference-only`：`src/app/api/auth/login/route.ts` | 依赖 `src/lib/auth/password.ts`、`src/lib/auth/session.ts`；页面依赖 `/login` 登录提交 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；正式认证宿主已冻结，旧入口仅保留对照参考 |
+| `/api/auth/logout` `POST` | `formal-host-owned` | `server/routes/auth.ts` | 旧入口仅 `reference-only`：`src/app/api/auth/logout/route.ts` | 依赖 `src/lib/auth/session.ts`；运行时会话退出 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；正式认证宿主已冻结，旧入口仅保留对照参考 |
+| `/api/health` `GET` | `formal-host-owned` | `server/routes/health.ts` | 旧入口仅 `reference-only`：`src/app/api/health/route.ts` | 依赖 `src/lib/observability.ts`、`src/lib/prisma.ts`；脚本依赖 `scripts/health-check.sh` 与部署健康检查 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；正式健康检查宿主已冻结，旧入口仅保留对照参考 |
+| `/api/buildings` `GET, POST` | `formal-host-owned` | `server/routes/buildings.ts` | 旧入口仅 `reference-only`：`src/app/api/buildings/route.ts` | 依赖 `src/lib/queries.ts`；页面依赖 `/rooms*`、`/add/room`、`/add/contract` 的楼栋选择 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；楼栋引用数据 formal host 已冻结，旧入口仅保留对照参考 |
+| `/api/buildings/:id` `GET, PUT, DELETE` | `formal-host-owned` | `server/routes/buildings.ts` | 旧入口仅 `reference-only`：`src/app/api/buildings/[id]/route.ts` | 依赖 `src/lib/queries.ts`、`src/lib/prisma.ts`；页面依赖 `/add/room` 内嵌楼栋编辑/删除 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；楼栋引用数据 formal host 已冻结，旧入口仅保留对照参考 |
 | `/api/contracts/activate` `POST` | `compat-wrapper` | `server/routes/contracts.ts` | `src/app/api/contracts/activate/route.ts` | 依赖 `src/lib/domain/contracts/index.ts`；页面与定时激活流程共享合同生命周期语义 | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；formal host 已承担正式激活语义，旧入口仅 compat/rollback |
 | `/api/contracts` `GET, POST` | `compat-wrapper` | `server/routes/contracts.ts` | `src/app/api/contracts/route.ts` | 依赖 `src/lib/queries.ts`、`src/lib/optimized-queries.ts`、`src/lib/domain/meters/index.ts`；页面依赖 `/contracts`、`/contracts/new`、`/add/contract` | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；合同列表/创建已切到 Hono，旧入口仅 in-process compat proxy |
 | `/api/contracts/:id` `GET, PUT` | `compat-wrapper` | `server/routes/contracts.ts` | `src/app/api/contracts/[id]/route.ts` | 依赖 `src/lib/queries.ts`、`src/lib/prisma.ts`；页面依赖 `/contracts/:id`、`/contracts/:id/edit` | 统一 Hono API 宿主成为唯一对外入口，前端、脚本与存量调用均不再依赖旧 Next.js API | `已满足 parity`；合同详情/编辑已切到 Hono，旧入口仅 in-process compat proxy |
@@ -258,43 +258,43 @@
 - 当前回填结论：
   - `6` 条能力项已完成回填：`4` 条 `已满足 parity`、`1` 条 `non-blocking-legacy-reference`、`1` 条 `待 phase16-03 ~ phase16-04 执行的审核动作`
   - 正式入口、正式公网代理、正式守护进程与正式健康检查链路都已形成单一解释，不再要求旧容器化运行线承担默认主入口职责
-  - legacy 资产当前统一归类为 `rollback-only`，继续保留直到 cutover 审核、正式部署演练与 legacy 回滚演练记录闭环完成
-  - 当前未执行正式部署演练与 legacy 回滚演练；`phase16-03` 当前轮只冻结模板、待补字段、触发条件与引用入口，真实演练记录延后到真实云服务器执行，因此本 matrix 只回填“入口与职责是否冻结”的当前结论，不提前给出 `phase16` 最终通过/未通过判断
+  - legacy 资产当前统一归类为只读参考 / 差异对照资产，继续保留直到未来独立归档或彻底移除决策完成
+  - 真实云服务器上的正式部署与人工实测已由 `ECS_Deployment_Experience_1.md` 提供当前轮直接证据；因此本 matrix 当前已可给出 `phase16` 通过判断，不再等待 legacy 回滚演练闭环
 - 差异分类编码：
   - `D1 / formal-host-owned`：由 `build:minix` / `start:minix`、`Caddy`、`systemd`、`/api/health` 组成的正式主线入口
   - `D2 / acceptable-adaptation`：部署拓扑从 `docker-compose + nginx + Next.js standalone` 切换为 `Caddy + systemd + Hono`，属于已批准的主线替代
-  - `D3 / rollback-only`：legacy 容器化资产只承担回滚、差异对照与只读参考职责
-  - `D4 / evidence-pending`：演练记录、cutover 审核包与最终 legacy-exit 判断留待 `phase16-03 ~ phase16-04` 回填
+  - `D3 / reference-only`：legacy 容器化资产只承担只读参考、差异对照与历史运维基线职责
+  - `D4 / release-rollback-owned`：正式回退由 `Rento-miniX` release 级回退、环境恢复与健康检查复验承担
 
 | 能力项 | formal host / formal entry | legacy 入口 / rollback base | 触发条件 | 验证证据 | 回滚窗口 | 差异分类 | 当前结论 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 正式构建与生产启动入口 | `npm run build:minix` / `npm run build:minix:pwa` + `npm run start:minix` + `scripts/start-minix.mjs` | `LEGACY_START=1 npm run start` + `scripts/start-entry.mjs` | 需要交付纯新主线产物、或按 PWA profile 重建 `dist/` 时 | `DEPLOYMENT.md` 正式脚本边界、`scripts/start-minix.mjs` 对 `dist/index.html` 与 `build/minix-server/index.mjs` 的存在性校验、`scripts/start-entry.mjs` 的 legacy-only 启动门禁 | 截至 `phase16` 审核通过前，legacy 启动入口继续保留为对照/回滚入口 | `D1 + D2 + D3` | `已满足 parity`；正式入口已单值化，legacy 启动只剩 rollback-only 身份 |
-| 正式公网入口与反向代理 | `deploy/caddy/Caddyfile` 反向代理到 `127.0.0.1:${MINIX_SERVER_PORT}` | `nginx/nginx.conf` + `docker-compose.yml` 中的 `nginx -> app:3001` | 需要以正式域名、`80/443` 与 HTTPS 承接对外流量时 | `DEPLOYMENT.md` 正式部署拓扑、`deploy/caddy/Caddyfile`、legacy `nginx/nginx.conf` 与 `docker-compose.yml` | 在正式 `Caddy` 演练与 cutover 审核通过前，legacy `nginx` 继续保留 | `D1 + D2 + D3` | `已满足 parity`；正式公网入口已冻结为 Caddy，legacy nginx 仅回滚参考 |
+| 正式构建与生产启动入口 | `npm run build:minix` / `npm run build:minix:pwa` + `npm run start:minix` + `scripts/start-minix.mjs` | `LEGACY_START=1 npm run start` + `scripts/start-entry.mjs` | 需要交付纯新主线产物、或按 PWA profile 重建 `dist/` 时 | `DEPLOYMENT.md` 正式脚本边界、`scripts/start-minix.mjs` 对 `dist/index.html` 与 `build/minix-server/index.mjs` 的存在性校验、`scripts/start-entry.mjs` 的 legacy-only 启动门禁 | `phase16` 通过后，legacy 启动入口继续保留为只读对照入口，不再承担正式回退职责 | `D1 + D2 + D3` | `已满足 parity`；正式入口已单值化，legacy 启动只剩参考价值 |
+| 正式公网入口与反向代理 | `deploy/caddy/Caddyfile` 反向代理到 `127.0.0.1:${MINIX_SERVER_PORT}` | `nginx/nginx.conf` + `docker-compose.yml` 中的 `nginx -> app:3001` | 需要以正式域名、`80/443` 与 HTTPS 承接对外流量时 | `DEPLOYMENT.md` 正式部署拓扑、`deploy/caddy/Caddyfile`、legacy `nginx/nginx.conf` 与 `docker-compose.yml` | `phase16` 通过后，legacy `nginx` 继续仅用于历史拓扑比对 | `D1 + D2 + D3` | `已满足 parity`；正式公网入口已冻结为 Caddy，legacy nginx 仅差异参考 |
 | 正式进程托管与单一运行时 | `deploy/systemd/rento-minix.service` + Hono 单进程 | `docker-compose.yml` 中 `app` 容器与 `restart: unless-stopped` | 需要常驻托管纯新主线 Hono runtime 时 | `deploy/systemd/rento-minix.service` 的 `ExecStart=/usr/bin/node .../scripts/start-minix.mjs`、`DEPLOYMENT.md` 正式资产基线 | 在 systemd 演练与回滚验证完成前，legacy app 容器继续保留 | `D1 + D2 + D3` | `已满足 parity`；正式守护链路已单值化，不再默认依赖容器编排 |
 | 主健康入口与最小 smoke | `/api/health` + `scripts/health-check.sh` + `scripts/pwa-smoke-check.sh` | `docker-compose.yml` 中容器 healthcheck 与 legacy 细分健康路径 | 需要验证正式运行时可用性、PWA 头策略与基本静态壳交付时 | `scripts/health-check.sh`、`scripts/pwa-smoke-check.sh`、`server/lib/static.ts`、`DEPLOYMENT.md` 健康检查口径 | 在正式部署演练记录补齐前，legacy healthcheck 仍可用于差异对照 | `D1 + D2 + D3` | `已满足 parity`；正式健康/最小 smoke 入口已冻结为纯新主线脚本组合 |
-| legacy 回滚资产保留边界 | `DEPLOYMENT.md` 中的保留条件、退出条件与 cutline 说明 | `docker-compose.yml`、`nginx/nginx.conf`、`scripts/start-entry.mjs` | 需要执行故障回滚、存量运行线对照或 legacy-only 验证时 | `DEPLOYMENT.md` legacy 回滚基线章节 + 相关 legacy 资产文件 | 直到 `phase16-04` 完成退出判断前持续保留 | `D3` | `non-blocking-legacy-reference`；legacy 资产仍在，但已不承担正式主职责 |
-| cutover / rollback 审核记录 | `docs/phase16_*` + `DEPLOYMENT.md` 引用摘要 | legacy 仅提供回滚入口与记录对象，不再提供第二套真相源 | 需要输出正式部署演练记录、legacy 回滚演练记录、回滚触发条件与最终 cutover 审核包时 | `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md` 第 7~9 节 + `DEPLOYMENT.md` 部署演练记录要求 | 直到 `phase16-03 ~ phase16-04` 执行完毕前都处于开放窗口 | `D4` | `待后续阶段执行`；当前只冻结字段与承接位，不提前给出最终 cutover/rollback 结论 |
+| legacy 参考资产保留边界 | `DEPLOYMENT.md` 中的保留条件、退出条件与 cutline 说明 | `docker-compose.yml`、`nginx/nginx.conf`、`scripts/start-entry.mjs` | 需要执行历史差异对照、排障追溯或未来归档前审计时 | `DEPLOYMENT.md` legacy 参考资产章节 + 相关 legacy 资产文件 | 直到未来独立归档/移除决策前持续保留 | `D3` | `non-blocking-legacy-reference`；legacy 资产仍在，但已不承担正式主职责 |
+| cutover / release rollback 审核记录 | `docs/phase16_*` + `DEPLOYMENT.md` 引用摘要 | legacy 仅提供参考对象，不再提供运行级回滚入口 | 需要输出正式部署记录、release 回退触发条件与最终 cutover 审核包时 | `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md` 第 7~9 节 + `DEPLOYMENT.md` 正式回退口径 | 由当前正式 release 交付链与运维记录持续承接 | `D4` | `已满足 parity`；正式交付与回退路径均已有单一解释 |
 
 ## 五、legacy 资产单值化边界
-- 当前 `rollback-only` 资产职责固定如下：
-  - `docker-compose.yml`：旧 `app + postgres + redis + nginx` 容器编排入口，只用于 legacy 回滚、差异对照与演练。
-  - `nginx/nginx.conf`：旧容器网络中的 HTTPS 反向代理配置，只代理 `app:3001`，只用于 legacy 回滚与对照。
-  - `scripts/cloud-deploy.sh`：旧容器化部署执行脚本，只用于 legacy 资产恢复、回滚演练与历史运维参考。
-  - `scripts/bootstrap-deploy-assets.sh`：旧容器化部署资产稀疏拉取脚本，只用于重建 legacy 回滚工作目录与审计基线。
-  - `scripts/start-entry.mjs`：旧 `Next.js standalone` 启动入口，只允许通过 `LEGACY_START=1 npm run start` 执行 legacy 对照或回滚演练。
-- 当前没有任何上述资产承担正式主线默认部署、默认运维或正式验收入口职责。
-- 上述资产当前都只满足“继续保留为 rollback-only 基线”的条件，尚未满足“可归档/可退出”的前提。
+- 当前 legacy 资产职责固定如下：
+  - `docker-compose.yml`：旧 `app + postgres + redis + nginx` 容器编排入口，只用于历史实现比对、差异对照与未来归档前审计。
+  - `nginx/nginx.conf`：旧容器网络中的 HTTPS 反向代理配置，只代理 `app:3001`，只用于历史拓扑对照。
+  - `scripts/cloud-deploy.sh`：旧容器化部署执行脚本，只用于历史运维参考与参考链复核。
+  - `scripts/bootstrap-deploy-assets.sh`：旧容器化部署资产稀疏拉取脚本，只用于重建 legacy 参考工作目录与审计基线。
+  - `scripts/start-entry.mjs`：旧 `Next.js standalone` 启动入口，只保留 legacy-only 对照意义，不再作为正式回退路径的一部分。
+- 当前没有任何上述资产承担正式主线默认部署、默认运维、正式验收或正式回退入口职责。
+- 上述资产当前都满足“继续保留为只读参考 / 差异对照资产”的条件；是否归档或彻底移除，留待后续独立治理任务决定。
 
-## 六、legacy 退出顺序与回滚窗口
-- 退出顺序固定为：
-  - 先补齐真实云服务器上的正式人工 HTTPS 验收记录。
-  - 再补齐真实云服务器上的正式部署演练记录。
-  - 再补齐真实云服务器上的 legacy 回滚演练记录。
-  - 最后由 `phase16-04` 复判并决定是否把当前轮结论从 `未通过但单值化` 改写为 `通过`，以及是否允许进入归档/退出判断。
-- 回滚窗口固定为“事件窗口”而非当前轮主观判断：
-  - 窗口开启条件：真实云服务器开始执行正式 cutover 审核与演练。
-  - 窗口关闭条件：正式人工 HTTPS 验收、正式部署演练、legacy 回滚演练全部通过并形成可追溯记录，且 `phase16-04` 最终结论被回写为 `通过`。
-  - 在窗口关闭前，legacy 资产一律维持 `rollback-only` 身份，不进入删除、归档或退出执行。
+## 六、legacy 保留顺序与正式回退口径
+- 当前保留顺序固定为：
+  - 先承认 `Rento-miniX` 已成为唯一正式主线。
+  - 再把旧 `Rento` 运行资产统一降级为只读参考 / 差异对照资产。
+  - 后续仅在用户明确决定“旧 `Rento` 已失去参考价值”时，才进入归档或彻底移除判断。
+- 当前正式回退口径固定为：
+  - 优先切回上一个可用 `Rento-miniX` release bundle。
+  - 必要时恢复 `/etc/rento-minix/rento-minix.env` 与数据库备份。
+  - 完成 `scripts/health-check.sh`、主链 smoke 与人工访问复验。
+  - 旧 `Rento` 运行线不再是默认回退主路径。
 
 ## 七、共享判断标准
 - 不把“旧文件仍存在”直接等同于“重构未完成”。
@@ -321,7 +321,7 @@
   - PC 浏览器 PWA 安装/登录链路
   - 带公认 HTTPS 证书环境下的 Android + Chrome 安装/更新/离线验证
   - 正式部署环境主链可访问性
-  - legacy 回滚入口可恢复性
+  - 正式 release 回退路径可执行性
 
 ## 九、cutover 审核包要求
 - 至少包含：
@@ -329,18 +329,18 @@
   - 自动化验证结果
   - 人工浏览器验收记录
   - 正式部署演练记录
-  - legacy 回滚演练记录
+  - 正式 release 回退记录或回退预案
   - 回滚触发条件
   - 最终结论
 - 结论只允许两种：
   - `通过`
   - `未通过但单值化`
-- `phase16` 当前轮最终结论固定为 `未通过但单值化`，理由是源码/自动化证据已收口但真实云服务器上的正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未完成。
+- `phase16` 当前轮最终结论改写为 `通过`，理由是源码/自动化证据已收口，且真实云服务器上的正式部署与人工实测已经证明纯新主线可独立交付；legacy 资产继续保留只读参考价值，但不再构成阶段阻塞。
 
 ## 十、legacy 退出边界
 - legacy 资产的保留原因、退出条件、回滚价值与当前耦合关系都必须被写清。
-- 在 cutover 审核通过前，legacy 资产默认继续保留为回滚基线。
-- 只有当正式替代入口、验证结果与回滚记录都冻结后，legacy 资产才允许进入归档或退出决策。
+- 在当前轮 cutover 审核通过后，legacy 资产默认继续保留为只读参考资产。
+- 只有当后续明确完成参考内容吸收、差异审计与独立归档决策后，legacy 资产才允许进入归档或退出决策。
 
 ## 十一、明确不做
 - 不重开正式业务 API 迁移。

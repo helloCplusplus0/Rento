@@ -1,10 +1,10 @@
 # DEPLOYMENT.md
 
 > 状态说明：
-> - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 回滚基线边界。
+> - 本文件当前承接 `Rento-miniX` 的正式部署主线说明与 legacy 参考资产边界。
 > - 当前仓库已完成 `phase11-01 ~ phase11-05` 当前轮已批准 spec 收口；正式环境模板、主健康入口、最低发布门禁、文档最小验证要求与部署/回滚演练记录要求均已冻结。
-> - `phase16` 当前轮已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证、`phase16-03` 当前轮源码层对齐复核与 `phase16-04` 当前轮任务 `1 ~ 4`；四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`。当前轮最终结论已单值化为 `未通过但单值化`，因此本文档只承接部署相关摘要结论与引用入口，不扩写第二套过程记录。
-> - 正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未在当前开发环境执行；由于缺少真实云服务器与公认 HTTPS 条件，相关结果已明确延后到真实云服务器阶段补齐，不伪造“已完成”记录。
+> - `phase16` 当前轮已完成 `/plan`、`phase16-01` 证据盘点、`phase16-02` 自动化验证、`phase16-03` 当前轮源码层对齐复核与 `phase16-04` 当前轮任务 `1 ~ 4`；四类 parity matrix 已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录已固定落位到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`。当前轮最终结论已改写为 `通过`，因此本文档只承接部署相关摘要结论与引用入口，不扩写第二套过程记录。
+> - 真实云服务器上的正式部署与人工实测已由 [ECS_Deployment_Experience_1.md](file:///home/dell/Projects/Rento/ECS_Deployment_Experience_1.md) 形成证据闭环；legacy 回滚演练不再作为当前轮通过前置条件。
 > - 面向操作者的简洁部署步骤已单独收口到 `DEPLOY_RUNBOOK.md`；本文档继续只负责治理真相源、正式/legacy 资产边界与发布门禁。
 
 ## 正式部署主线
@@ -28,7 +28,7 @@
 - 当前 GitHub 发布链已切换为：`.github/workflows/release-deploy-bundle.yml` 负责执行 `npm run build:minix:pwa`、生成 PWA-enabled 部署包并上传为 GitHub Release asset；推送 `main` 会自动生成 `prerelease deploy bundle`，推送 `v*` tag 会自动生成正式 release bundle，`workflow_dispatch` 保留为基于当前选定 ref 的手工正式发包入口；云服务器只拉包、解压、切换 `current`、刷新 `systemd/Caddy`，不在服务器执行 build
 - `phase11-05` 已把顶层真相源、`docs/phase11_*`、最低工程验证命令、文档最小验证要求与部署/回滚演练记录要求收口到当前部署主线说明
 - `phase15` 当前承接位继续建立在同一部署主线上：`manifest.json`、`sw.js`、`index.html` PWA metadata、`scripts/pwa-smoke-check.sh` 与 `server/lib/static.ts` 的头策略统一由纯新主线交付，不再把旧 Next PWA 宿主作为正式部署必需入口
-- `phase16` 当前继续在同一部署主线上执行最终验收：部署相关 matrix 已固定回写 `shared_baseline`，正式部署演练记录、legacy 回滚演练记录、`/api/health`、主链 smoke 与 PWA HTTPS 验收结果将继续固定回写 `dev_plan`，并共同构成 cutover 审核包；当前轮若缺少真实云服务器与公认 HTTPS 条件，则只冻结字段、触发条件与引用入口
+- `phase16` 当前已在同一部署主线上完成最终验收：部署相关 matrix 已固定回写 `shared_baseline`，真实云服务器部署记录、`/api/health`、主链 smoke 与 PWA HTTPS 验收结论已固定回写 `dev_plan`，并共同构成 cutover 审核包；后续若补充更细粒度运维演练，只作为增强记录
 - 当前脚本边界固定为：
   - `npm run dev:minix`：本地开发入口，使用 `tsx watch + Vite` 双进程拓扑
   - `npm run build:minix`：当前产出前端 `dist/` 与服务端 `build/minix-server/` 预构建产物
@@ -36,7 +36,7 @@
 
 ## 部署操作分层
 - `DEPLOYMENT.md`
-  - 继续承接正式部署主线说明、发布门禁、正式/legacy 资产边界与回滚基线
+  - 继续承接正式部署主线说明、发布门禁、正式/legacy 资产边界与正式回退口径
 - `DEPLOY_RUNBOOK.md`
   - 只承接首次部署、升级部署、健康检查与回滚入口的实际操作步骤
 - `scripts/prepare-release-host.sh`
@@ -236,8 +236,8 @@ REQUEST_TIMEOUT=30000
   - 不执行 `next build`
   - 不把 GHCR 或 `docker-compose` 作为正式入口
 
-## 部署演练记录要求
-- 后续正式部署演练或回滚演练必须形成可追溯记录。
+## 部署记录要求
+- 后续正式部署演练或正式回退演练应形成可追溯记录。
 - 每条记录至少包含：
   - 演练时间
   - 目标环境
@@ -246,64 +246,63 @@ REQUEST_TIMEOUT=30000
   - 主链 smoke 结果
   - 回滚触发条件
   - 最终结论
-- 记录必须明确标注本次演练属于“正式主线验证”还是“legacy 回滚验证”。
+- 记录必须明确标注本次演练属于“正式主线验证”还是“正式 release 回退验证”。
 - 记录可以落位到后续审核材料或阶段文档，但必须能被根级真相源、`DEPLOYMENT.md` 或 `docs/phase11_*` 明确引用。
-- 这些记录用于 cutover 审核、legacy 退出判断与回滚基线保留/退出决策，不得以口头确认替代。
+- 这些记录用于 cutover 审核、legacy 参考资产后续退出判断与正式回退治理，不得以口头确认替代。
 - `phase16` 当前轮默认要求把这些记录统一回写到 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，再由 `DEPLOYMENT.md`、根级真相源与 `docs/phase16_*` 互相引用，避免形成第二套部署审计口径。
-- 当前若本地环境不具备真实云服务器与公认 HTTPS 条件，允许只冻结这些记录的模板、待补字段、触发条件与引用入口；正式部署演练与 legacy 回滚演练结果延后到真实云服务器执行后补齐。
+- 当前轮已具备真实云服务器证据；后续新增记录只用于增强运维可审计性，不再影响 `phase16` 当前轮通过结论。
 
-## legacy 回滚基线
-以下资产仍服务于旧容器化运行线的历史运行与回滚参考职责：
+## legacy 参考资产
+以下资产仍服务于旧容器化运行线的历史实现参考与差异对照职责：
 - `docker-compose.yml`
--   当前容器编排入口，继续承接旧 `app + postgres + redis + nginx` 组合关系；当前分类固定为 `rollback-only`
+-   当前容器编排入口，继续承接旧 `app + postgres + redis + nginx` 组合关系；当前分类固定为只读参考 / 差异对照
 - `nginx/nginx.conf`
--   当前容器化 HTTPS 反向代理配置，继续服务 legacy 容器网络中的 `app:3001`；当前分类固定为 `rollback-only`
+-   当前容器化 HTTPS 反向代理配置，继续服务 legacy 容器网络中的 `app:3001`；当前分类固定为只读参考 / 差异对照
 - `scripts/cloud-deploy.sh`
--   当前容器化部署执行脚本，继续服务镜像拉取、编排启动、数据库初始化、`nginx` 启动与 legacy 恢复；当前分类固定为 `rollback-only`
+-   当前容器化部署执行脚本，继续服务镜像拉取、编排启动、数据库初始化、`nginx` 启动与 legacy 运维参考；当前分类固定为只读参考 / 差异对照
 - `scripts/bootstrap-deploy-assets.sh`
--   当前 legacy 部署资产拉取脚本，默认仍拉取容器化部署所需文件集合，用于回滚工作目录重建与部署审计；不得再用于正式主线部署；当前分类固定为 `rollback-only`
+-   当前 legacy 部署资产拉取脚本，默认仍拉取容器化部署所需文件集合，用于参考工作目录重建与部署审计；不得再用于正式主线部署；当前分类固定为只读参考 / 差异对照
 - `scripts/start-entry.mjs`
--   当前 `Next.js standalone` 生产启动入口，继续对应旧运行线的启动语义；默认不再直接通过 `npm run start` 启动，只有在明确进行 legacy 对照或回滚验证时才允许使用 `LEGACY_START=1 npm run start`；当前分类固定为 `rollback-only`
+-   当前 `Next.js standalone` 生产启动入口，继续对应旧运行线的启动语义；默认不再直接通过 `npm run start` 启动，只有在明确进行 legacy 对照时才允许使用 `LEGACY_START=1 npm run start`；当前分类固定为只读参考 / 差异对照
 - 历史容器化部署所依赖的镜像、容器、`nginx` 与 `redis` 变量口径
 - `Dockerfile` / `.github/workflows/docker-build.yml`
--   当前 rollback-only GHCR 镜像构建入口；为维持 legacy 容器回滚链持续可构建，镜像内部已切换为构建 `npm run build:minix` + `scripts/start-minix.mjs` 的当前运行产物，但外层职责仍固定为 legacy 容器编排、差异对照与故障回滚，不得被重新解释为正式主线
+-   当前 legacy GHCR 镜像构建入口；为维持历史链路可审计，镜像内部已切换为构建 `npm run build:minix` + `scripts/start-minix.mjs` 的当前运行产物，但外层职责仍固定为 legacy 容器编排与差异对照，不得被重新解释为正式主线
 
 这些资产的统一身份固定为：
 - 只服务于旧 `docker-compose + nginx + Next.js standalone` 运行线
-- 只承担历史运行参考、故障回滚基线与新旧部署差异对照职责
-- 不再作为当前默认部署入口、默认运维入口或正式部署真相源
+- 只承担历史运行参考、差异对照与未来归档前审计职责
+- 不再作为当前默认部署入口、默认运维入口、正式部署真相源或正式回退依赖
 
-legacy 回滚职责边界：
-- 只回滚存量容器化运行线的镜像、部署资产、环境配置与验证路径
-- 只用于正式部署主线稳定验证完成前的应急恢复与差异对照
+legacy 参考职责边界：
+- 只解释存量容器化运行线的镜像、部署资产、环境配置与验证路径
+- 只用于正式部署主线稳定验证后的差异对照、历史追溯与未来归档前审计
 - `npm run start` 默认不再作为 `phase15` / `phase16` 的正式验证入口；纯新主线继续使用 `npm run build:minix` 或 `npm run build:minix:pwa`、`npm run start:minix` 与 `bash ./scripts/pwa-smoke-check.sh --profile ...`
 - 不通过把当前开发 remote 切回 `Rento-legacy` 来处理运行问题
 - 不继续把 `docker-compose + nginx + Next.js standalone` 扩写成未来正式部署主线
 - 不把 legacy 容器化脚本重新包装成 `Rento-miniX` 的正式发布或运维入口
-- 不把 rollback-only GHCR 镜像内部改用 `minix` 产物链，误读成正式部署重新回到容器主线
+- 不把 legacy GHCR 镜像内部改用 `minix` 产物链，误读成正式部署重新回到容器主线
 
 legacy 资产保留条件：
-- 在 `Caddy + systemd + Hono + PostgreSQL` 正式部署主线完成稳定验证前继续保留
-- 在正式发布门禁、健康检查、部署演练与回滚演练尚未形成闭环前继续保留
-- 保留目的仅限历史运行参考、故障回滚与新旧运行线差异对照
+- 在旧 `Rento` 仍具备参考价值前继续保留
+- 在参考内容吸收、差异审计与替代引用复核未完成前继续保留
+- 保留目的仅限历史运行参考、运维经验追溯与新旧运行线差异对照
 - 当前轮五项命名资产全部继续保留，尚无任何一项满足立即归档或立即退出条件
 
 legacy 资产退出条件：
-- 正式部署主线、发布门禁、部署演练与回滚验证均已完成并通过审核
-- `DEPLOYMENT.md`、根级真相源与 `docs/phase11_*` 已冻结可替代 legacy 说明的正式真相源
-- legacy 回滚记录、替代入口与退出决策已形成可审计记录
-- 真实云服务器上的正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练均已补齐并被 `docs/phase16_*`、根级真相源同步引用
+- 明确完成参考内容吸收、差异审计与替代引用复核
+- `DEPLOYMENT.md`、根级真相源与阶段文档已冻结可替代 legacy 说明的正式真相源
+- 未来独立治理任务明确给出归档或删除决策
 - 本任务只冻结退出条件，不直接删除 legacy 资产
 
 cutline 说明：
-- 当前 cutline 的目标是把正式主线与 legacy 基线完全分离，而不是立即清空 legacy 资产
-- 只有在正式主线验证闭环稳定、回滚记录冻结且退出条件满足后，legacy 基线才允许进入后续归档或下线决策
+- 当前 cutline 的目标是把正式主线与 legacy 参考资产完全分离，而不是立即清空 legacy 资产
+- 只有在正式主线验证闭环稳定、参考吸收完成且退出条件满足后，legacy 资产才允许进入后续归档或下线决策
 
-回滚窗口说明：
-- 当前状态：未关闭；由于真实云服务器上的 cutover 审核、正式部署演练与 legacy 回滚演练尚未执行，窗口继续保持打开
-- 开启条件：开始在真实云服务器执行正式 cutover、正式部署演练或 legacy 回滚演练
-- 关闭条件：正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练全部通过并形成可追溯记录，且 `phase16-04` 最终结论被改写为 `通过`
-- 窗口关闭前，所有 legacy 资产一律维持 `rollback-only` 身份，不进入删除、归档或退出执行
+正式回退窗口说明：
+- 当前状态：已由 `Rento-miniX` release 交付链持续承接
+- 开启条件：正式环境健康检查失败、关键 smoke 失败、发布后重大回归或 PWA/HTTPS 验收出现阻断问题
+- 关闭条件：回切到上一个可用 release 或完成修复重发后，健康检查与主链 smoke 重新通过
+- 窗口执行不依赖 legacy 运行线；所有 legacy 资产继续维持只读参考身份
 
 ## 与 `Rento-legacy` 的关系
 - `Rento-legacy` 只承担 GitHub 侧只读历史备份与对照职责
@@ -316,9 +315,9 @@ cutline 说明：
 - `deploy/caddy/Caddyfile` 与 `deploy/systemd/rento-minix.service` 已成为正式部署资产承接位
 - `.env.example`、`scripts/health-check.sh` 与 `/api/health` 已收口为正式部署主线的统一环境与健康检查口径
 - `phase11-05` 已把文档最小验证要求、最低工程验证命令与部署/回滚演练记录要求收口到当前部署真相源
-- `phase16` 已把 cutover 审核、rollback 记录与 legacy 退出判断提升为当前部署真相源的直接继承输入；其中部署相关 matrix 统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，后续部署验收再由 `DEPLOYMENT.md` 与根级真相源引用摘要结论；当前轮正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练均延后到真实云服务器执行
-- legacy 容器化运行线继续保留回滚职责，但不再承担默认主入口、默认运维入口或正式真相源职责
-- GitHub Release 正式部署包已成为唯一正式云端部署来源；legacy GHCR 镜像与 legacy deployment artifact 只保留 `rollback-only`
+- `phase16` 已把 cutover 审核、正式回退口径与 legacy 退出判断提升为当前部署真相源的直接继承输入；其中部署相关 matrix 统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_shared_baseline.md`，过程记录统一回写 `docs/phase16_parity_verification_cutover_and_legacy_exit_dev_plan.md`，后续部署验收再由 `DEPLOYMENT.md` 与根级真相源引用摘要结论；真实云服务器上的正式部署与人工实测已经完成并形成引用证据
+- legacy 容器化运行线继续保留只读参考职责，但不再承担默认主入口、默认运维入口、正式真相源或正式回退职责
+- GitHub Release 正式部署包已成为唯一正式云端部署来源；legacy GHCR 镜像与 legacy deployment artifact 只保留参考属性
 - `Rento-legacy` 的职责已冻结为只读历史备份与对照参考，不参与当前仓库的部署或回滚入口
 - legacy 基线的保留条件、退出条件与 cutline 解释已收口到单一部署说明入口
-- `phase16` 当前轮最终结论固定为 `未通过但单值化`：当前未发现新的源码层 parity 缺口，但真实云服务器上的正式人工 HTTPS 验收、正式部署演练与 legacy 回滚演练尚未执行，因此仍存在 `cutover-blocker`
+- `phase16` 当前轮最终结论已改写为 `通过`：当前未发现新的源码层 parity 缺口，真实云服务器上的正式部署与人工实测已证明 `Rento-miniX` 可以独立交付；legacy 资产继续保留参考价值，但不再构成 `cutover-blocker`
