@@ -6,6 +6,10 @@ import {
   RoomStatus,
 } from '@prisma/client'
 
+import {
+  buildExpiringSoonContractWhere,
+  createContractReminderWindow,
+} from './contract-alert-query-filters'
 import { prisma } from './prisma'
 
 /**
@@ -506,12 +510,7 @@ export const optimizedContractQueries = {
 
     // 即将到期筛选
     if (expiringDays) {
-      const expiryDate = new Date()
-      expiryDate.setDate(expiryDate.getDate() + expiringDays)
-      where.endDate = {
-        lte: expiryDate,
-      }
-      where.status = 'ACTIVE'
+      Object.assign(where, buildExpiringSoonContractWhere(createContractReminderWindow(expiringDays)))
     }
 
     // 搜索条件

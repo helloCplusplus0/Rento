@@ -1,12 +1,16 @@
 import {
   calculateDaysUntilContractExpiry,
   calculateDaysUntilContractStart,
-  createContractExpiryAlertDeadline,
   createUpcomingMoveInAlertDeadline,
   EXPIRED_CONTRACT_ALERT_TITLE,
   formatContractExpiryAlertTitle,
   formatUpcomingMoveInAlertTitle,
 } from '@/lib/contract-alert-semantics'
+import {
+  buildExpiredAttentionContractWhere,
+  buildExpiringSoonContractWhere,
+  createContractReminderWindow,
+} from '@/lib/contract-alert-query-filters'
 import { getEnhancedDashboardStats } from '@/lib/dashboard-queries'
 import { globalSettings } from '@/lib/global-settings'
 import { prisma } from '@/lib/prisma'
@@ -79,18 +83,12 @@ export async function getDashboardLeavingTenantsData() {
     await globalSettings.getContractAlertSettings()
   const contractExpiryAlertDays =
     contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
-  const expiryAlertDeadline = createContractExpiryAlertDeadline(
+  const reminderWindow = createContractReminderWindow(
     contractExpiryAlertDays
   )
 
   const contracts = await prisma.contract.findMany({
-    where: {
-      status: 'ACTIVE',
-      endDate: {
-        gte: new Date(),
-        lte: expiryAlertDeadline,
-      },
-    },
+    where: buildExpiringSoonContractWhere(reminderWindow),
     include: {
       renter: {
         select: {
@@ -178,15 +176,14 @@ export async function getDashboardUpcomingContractsData() {
 }
 
 export async function getDashboardContractAlertsData() {
-  const today = new Date()
+  const contractAlertSettingsLoadResult =
+    await globalSettings.getContractAlertSettings()
+  const reminderWindow = createContractReminderWindow(
+    contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
+  )
 
   const expiredContracts = await prisma.contract.findMany({
-    where: {
-      status: 'ACTIVE',
-      endDate: {
-        lt: today,
-      },
-    },
+    where: buildExpiredAttentionContractWhere(reminderWindow),
     include: {
       renter: {
         select: {
@@ -218,7 +215,10 @@ export async function getDashboardContractAlertsData() {
     renterName: contract.renter.name,
     roomInfo: `${contract.room.building.name} - ${contract.room.roomNumber}`,
     endDate: contract.endDate,
-    daysUntilExpiry: calculateDaysUntilContractExpiry(contract.endDate, today),
+    daysUntilExpiry: calculateDaysUntilContractExpiry(
+      contract.endDate,
+      reminderWindow.today
+    ),
     monthlyRent: Number(contract.monthlyRent),
     alertLevel: 'danger' as const,
   }))

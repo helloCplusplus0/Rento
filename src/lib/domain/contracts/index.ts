@@ -25,6 +25,7 @@ import {
   createCheckoutFinalReadingsTx,
   type CheckoutFinalMeterProcessingResult,
 } from '../meters'
+import { deriveRoomOccupancySnapshot } from '@/lib/room-occupancy'
 import {
   defineDomainModuleBoundary,
   PRISMA_CONCURRENT_WRITE_TRANSACTION_CANDIDATE,
@@ -873,7 +874,7 @@ export async function renewContract(
     await tx.contract.update({
       where: { id: input.originalContractId },
       data: {
-        status: 'EXPIRED',
+        status: 'TERMINATED',
         isExtended: true,
         updatedAt: new Date(),
         remarks: appendRemarkBlock(
@@ -1197,12 +1198,36 @@ export async function checkoutContract(
       },
     })
 
+    const remainingActiveContracts = await tx.contract.findMany({
+      where: {
+        roomId: contract.roomId,
+        status: 'ACTIVE',
+        id: {
+          not: input.contractId,
+        },
+      },
+      include: {
+        renter: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ startDate: 'desc' }, { createdAt: 'desc' }],
+    })
+    const nextRoomSnapshot = deriveRoomOccupancySnapshot({
+      status: contract.room.status,
+      currentRenter: contract.room.currentRenter,
+      overdueDays: contract.room.overdueDays,
+      contracts: remainingActiveContracts,
+    })
+
     await tx.room.update({
       where: { id: contract.roomId },
       data: {
-        status: 'VACANT',
-        currentRenter: null,
-        overdueDays: null,
+        status: nextRoomSnapshot.status,
+        currentRenter: nextRoomSnapshot.currentRenter,
+        overdueDays: nextRoomSnapshot.overdueDays,
         updatedAt: new Date(),
       },
     })

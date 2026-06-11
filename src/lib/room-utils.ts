@@ -1,10 +1,11 @@
 import type { RoomStatus } from '@/types/database'
+import { normalizeRoomOccupancySnapshot } from '@/lib/room-occupancy'
 
 /**
  * 转换房间数据中的Decimal字段为number类型
  */
 export function transformRoomDecimalFields(room: any): any {
-  return {
+  return normalizeRoomOccupancySnapshot({
     ...room,
     rent: Number(room.rent),
     area: room.area ? Number(room.area) : null,
@@ -28,7 +29,7 @@ export function transformRoomDecimalFields(room: any): any {
         pendingAmount: Number(bill.pendingAmount),
       })),
     })),
-  }
+  })
 }
 
 /**

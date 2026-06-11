@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { isContractExpiringSoon } from '@/lib/contract-alert-semantics'
+import {
+  DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  isContractExpiringSoon,
+} from '@/lib/contract-alert-semantics'
+import { sortContractsForList } from '@/lib/contract-list-sorting'
 import type { ContractWithDetailsForClient } from '@/types/database'
 import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
 import { ContractGrid } from '@/components/business/ContractGrid'
@@ -49,7 +53,7 @@ export function ContractListPage({
   initialContracts,
   initialStats,
   initialExpiryAlerts,
-  contractExpiryAlertDays = 30,
+  contractExpiryAlertDays = DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
   initialSearchQuery = '',
   onOpenContract,
   onOpenRenewContract,
@@ -64,7 +68,7 @@ export function ContractListPage({
 
   // 筛选合同数据
   const filteredContracts = useMemo(() => {
-    return initialContracts.filter((contract) => {
+    const matchedContracts = initialContracts.filter((contract) => {
       // 搜索筛选
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
@@ -92,6 +96,8 @@ export function ContractListPage({
 
       return true
     })
+
+    return sortContractsForList(matchedContracts)
   }, [contractExpiryAlertDays, initialContracts, searchQuery, statusFilter])
 
   const filterCounts = useMemo(
@@ -157,6 +163,7 @@ export function ContractListPage({
         {/* 合同网格 */}
         <ContractGrid
           contracts={filteredContracts}
+          contractExpiryAlertDays={contractExpiryAlertDays}
           onContractClick={handleContractClick}
           loading={loading}
         />

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { globalSettings } from '@/lib/global-settings'
 import { contractQueries } from '@/lib/queries'
+import { DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS } from '@/lib/contract-alert-semantics'
 import { ContractListPage } from '@/components/pages/ContractListPage'
 
 type ContractsPageSearchParams = Promise<{
@@ -98,7 +99,7 @@ export default async function ContractsPage({
           },
         }}
         initialExpiryAlerts={[]}
-        contractExpiryAlertDays={30}
+        contractExpiryAlertDays={DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS}
         initialSearchQuery={initialSearchQuery}
       />
     )

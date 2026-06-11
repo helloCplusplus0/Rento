@@ -31,8 +31,8 @@ import {
 } from '@/lib/bill-semantics.shared'
 import { getBillDisplayLabel, getBillVisualConfig } from '@/lib/bill-display'
 import {
-  calculateDaysUntilContractExpiry,
-  isContractExpiringSoon,
+  DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  getContractStatusTrackingHint,
 } from '@/lib/contract-alert-semantics'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -45,6 +45,7 @@ import {
   ContractStatusBadge,
 } from '@/components/ui/status-badge'
 import { ContractBillDueSummaryDialog } from '@/components/business/ContractBillDueSummaryDialog'
+import { ContractStatusTrackingHint } from '@/components/business/ContractStatusTrackingHint'
 import { contractDetailMobileStyles } from '@/components/business/contract-detail-mobile-styles'
 import { navigateWithHost, type PageHostNavigation } from '@/components/pages/page-host-navigation'
 
@@ -102,7 +103,7 @@ export function EnhancedContractDetail({
   onOpenRenter,
   onOpenRoom,
   onOpenBill,
-  contractExpiryAlertDays = 30,
+  contractExpiryAlertDays = DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
   className,
   navigation,
 }: EnhancedContractDetailProps) {
@@ -112,8 +113,8 @@ export function EnhancedContractDetail({
 
   const isActive = contract.status === 'ACTIVE'
   const isExpired = contract.status === 'EXPIRED'
-  const daysUntilExpiry = calculateDaysUntilContractExpiry(contract.endDate)
-  const isExpiringSoon = isContractExpiringSoon(
+  const statusTrackingHint = getContractStatusTrackingHint(
+    contract.status,
     contract.endDate,
     contractExpiryAlertDays
   )
@@ -251,10 +252,18 @@ export function EnhancedContractDetail({
                 </span>
               </p>
             </div>
-            <ContractStatusBadge
-              status={contract.status as ContractStatus}
-              className={contractDetailMobileStyles.heroStatusBadge}
-            />
+            <div className={contractDetailMobileStyles.heroStatusCluster}>
+              {statusTrackingHint ? (
+                <ContractStatusTrackingHint
+                  hint={statusTrackingHint}
+                  inverted
+                />
+              ) : null}
+              <ContractStatusBadge
+                status={contract.status as ContractStatus}
+                className={contractDetailMobileStyles.heroStatusBadge}
+              />
+            </div>
           </div>
 
           {/* 关键信息快览 */}
@@ -289,18 +298,6 @@ export function EnhancedContractDetail({
               </p>
             </div>
           </div>
-
-          {/* 到期提醒 */}
-          {isExpiringSoon && (
-            <div className={contractDetailMobileStyles.heroAlert}>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  合同将在 {daysUntilExpiry} 天后到期，请及时处理续约事宜
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 操作按钮 */}

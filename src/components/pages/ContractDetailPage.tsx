@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { EnhancedContractDetail } from '@/components/business/EnhancedContractDetail'
 import { contractDetailMobileStyles } from '@/components/business/contract-detail-mobile-styles'
 import { SingleMeterReadingModal } from '@/components/business/SingleMeterReadingModal'
+import { DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS } from '@/lib/contract-alert-semantics'
 import {
   formatClientApiError,
   readClientApiError,
@@ -28,7 +29,7 @@ interface ContractDetailPageProps {
 
 export function ContractDetailPage({
   contract,
-  contractExpiryAlertDays = 30,
+  contractExpiryAlertDays = DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
   navigation,
   onOpenRenter,
   onOpenRoom,

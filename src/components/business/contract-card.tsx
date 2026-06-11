@@ -2,8 +2,14 @@ import { useState } from 'react'
 import { FileText, User } from 'lucide-react'
 
 import type { ContractWithDetailsForClient } from '@/types/database'
+import {
+  DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
+  getContractStatusTrackingHint,
+  sanitizeContractExpiryAlertDays,
+} from '@/lib/contract-alert-semantics'
 import { calculateOverdueDays, formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { ContractStatusTrackingHint } from '@/components/business/ContractStatusTrackingHint'
 import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,6 +20,7 @@ import { TouchCard } from '@/components/ui/touch-button'
 
 interface ContractCardProps {
   contract: ContractWithDetailsForClient
+  contractExpiryAlertDays?: number
   onClick?: () => void
   className?: string
 }
@@ -31,12 +38,15 @@ interface ContractListProps {
  */
 export function ContractCard({
   contract,
+  contractExpiryAlertDays = DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
   onClick,
   className,
 }: ContractCardProps) {
-  const overdueDays = calculateOverdueDays(contract.endDate)
-  const isExpiringSoon =
-    contract.status === 'ACTIVE' && overdueDays <= 0 && overdueDays >= -30
+  const statusTrackingHint = getContractStatusTrackingHint(
+    contract.status,
+    contract.endDate,
+    contractExpiryAlertDays
+  )
 
   return (
     <TouchCard onClick={onClick} className={className}>
@@ -54,10 +64,15 @@ export function ContractCard({
                 {contract.contractNumber}
               </div>
             </div>
-            <ContractStatusBadge
-              status={contract.status}
-              className={contractListMobileStyles.cardBadge}
-            />
+            <div className={contractListMobileStyles.cardStatusCluster}>
+              {statusTrackingHint ? (
+                <ContractStatusTrackingHint hint={statusTrackingHint} />
+              ) : null}
+              <ContractStatusBadge
+                status={contract.status}
+                className={contractListMobileStyles.cardBadge}
+              />
+            </div>
           </div>
 
           <div className={contractListMobileStyles.detailStack}>
@@ -95,19 +110,6 @@ export function ContractCard({
                 </span>
               ) : null}
             </div>
-            {contract.status === 'EXPIRED' && overdueDays > 0 ? (
-              <div className="mt-1 flex justify-end">
-                <span className={cn(contractListMobileStyles.footerHint, 'text-red-600')}>
-                  已过期 {overdueDays} 天
-                </span>
-              </div>
-            ) : isExpiringSoon ? (
-              <div className="mt-1 flex justify-end">
-                <span className={cn(contractListMobileStyles.footerHint, 'text-orange-600')}>
-                  30 天内到期
-                </span>
-              </div>
-            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -331,17 +333,21 @@ export function ContractList({
  */
 export function CompactContractCard({
   contract,
+  contractExpiryAlertDays = DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
   onClick,
   className,
 }: ContractCardProps) {
+  const normalizedAlertDays =
+    sanitizeContractExpiryAlertDays(contractExpiryAlertDays)
+
   const getExpiryText = () => {
-    const daysToExpiry = calculateOverdueDays(contract.endDate)
-    if (daysToExpiry > 0) {
-      return `过期${daysToExpiry}天`
-    } else if (daysToExpiry >= -30) {
-      return `${Math.abs(daysToExpiry)}天后到期`
-    }
-    return null
+    return (
+      getContractStatusTrackingHint(
+        contract.status,
+        contract.endDate,
+        normalizedAlertDays
+      )?.text ?? null
+    )
   }
 
   return (

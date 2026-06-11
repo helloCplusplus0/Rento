@@ -7,12 +7,14 @@ import { ContractCard } from './contract-card'
 
 interface ContractGridProps {
   contracts: ContractWithDetailsForClient[]
+  contractExpiryAlertDays?: number
   onContractClick?: (contract: ContractWithDetailsForClient) => void
   loading?: boolean
 }
 
 export function ContractGrid({
   contracts,
+  contractExpiryAlertDays,
   onContractClick,
   loading = false,
 }: ContractGridProps) {
@@ -58,6 +60,7 @@ export function ContractGrid({
         <ContractCard
           key={contract.id}
           contract={contract}
+          contractExpiryAlertDays={contractExpiryAlertDays}
           onClick={() => onContractClick?.(contract)}
         />
       ))}

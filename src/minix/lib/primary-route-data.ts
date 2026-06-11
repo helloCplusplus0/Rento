@@ -1,7 +1,12 @@
 import {
+  DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
   calculateDaysUntilContractExpiry,
-  isContractExpiringSoon,
+  isContractExpiredAttention,
+  isContractExpiringSoonAttention,
+  isContractInExpiryAlertWindow,
+  sanitizeContractExpiryAlertDays,
 } from '@/lib/contract-alert-semantics'
+import { normalizeRoomOccupancySnapshot } from '@/lib/room-occupancy'
 import {
   parseDateRange,
   type BillStatsData,
@@ -573,7 +578,7 @@ function normalizeRoomForClient(
   room: any,
   options: { includeContracts?: boolean } = {}
 ): RoomWithBuildingForClient {
-  return {
+  return normalizeRoomOccupancySnapshot({
     ...room,
     rent: toNumberValue(room.rent),
     area: toNullableNumberValue(room.area),
@@ -585,7 +590,7 @@ function normalizeRoomForClient(
           normalizeContractSummaryForClient(contract)
         )
       : room.contracts,
-  } as RoomWithBuildingForClient
+  }) as RoomWithBuildingForClient
 }
 
 function normalizeRenterForClient(
@@ -1283,13 +1288,24 @@ function buildContractStats(
   return {
     totalCount: contracts.length,
     activeCount: contracts.filter((contract) => contract.status === 'ACTIVE').length,
-    expiredCount: contracts.filter((contract) => contract.status === 'EXPIRED').length,
+    expiredCount: contracts.filter((contract) =>
+      isContractExpiredAttention(
+        contract.status,
+        contract.endDate,
+        contract.isExtended,
+        now
+      )
+    ).length,
     terminatedCount: contracts.filter((contract) => contract.status === 'TERMINATED')
       .length,
     expiringSoonCount: contracts.filter(
       (contract) =>
-        contract.status === 'ACTIVE' &&
-        isContractExpiringSoon(contract.endDate, contractExpiryAlertDays, now)
+        isContractExpiringSoonAttention(
+          contract.status,
+          contract.endDate,
+          contractExpiryAlertDays,
+          now
+        )
     ).length,
     newThisMonth: contracts.filter((contract) => {
       const createdAt = new Date(contract.createdAt)
@@ -1298,7 +1314,9 @@ function buildContractStats(
     statusDistribution: {
       pending: contracts.filter((contract) => contract.status === 'PENDING').length,
       active: contracts.filter((contract) => contract.status === 'ACTIVE').length,
-      expired: contracts.filter((contract) => contract.status === 'EXPIRED').length,
+      expired: contracts.filter(
+        (contract) => contract.status === 'EXPIRED' && !contract.isExtended
+      ).length,
       terminated: contracts.filter((contract) => contract.status === 'TERMINATED')
         .length,
     },
@@ -1312,7 +1330,15 @@ function buildContractExpiryAlerts(
   const now = new Date()
 
   return contracts
-    .filter((contract) => contract.status === 'ACTIVE')
+    .filter((contract) =>
+      isContractInExpiryAlertWindow(
+        contract.status,
+        contract.endDate,
+        contract.isExtended,
+        contractExpiryAlertDays,
+        now
+      )
+    )
     .map((contract) => {
       const daysUntilExpiry = calculateDaysUntilContractExpiry(contract.endDate, now)
 
@@ -1325,12 +1351,18 @@ function buildContractExpiryAlerts(
         endDate: new Date(contract.endDate),
         daysUntilExpiry,
         alertType:
-          daysUntilExpiry <= 0 ? 'expired' : daysUntilExpiry <= 7 ? 'danger' : 'warning',
+          isContractExpiredAttention(
+            contract.status,
+            contract.endDate,
+            contract.isExtended,
+            now
+          )
+            ? 'expired'
+            : daysUntilExpiry <= 7
+              ? 'danger'
+              : 'warning',
       } as ContractExpiryAlert
     })
-    .filter(
-      (alert) => alert.daysUntilExpiry <= contractExpiryAlertDays
-    )
     .sort((left, right) => left.daysUntilExpiry - right.daysUntilExpiry)
 }
 
@@ -1457,7 +1489,9 @@ export async function loadContractListRouteData(
     fetchAllContractPages({ renterId }, options),
     fetchApiEnvelope<Partial<AppSettings>>('/settings', '设置加载失败', options),
   ])
-  const contractExpiryAlertDays = Number(settings.contractExpiryAlertDays) || 30
+  const contractExpiryAlertDays = sanitizeContractExpiryAlertDays(
+    settings.contractExpiryAlertDays ?? DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS
+  )
 
   return {
     initialSearchQuery,
@@ -1497,7 +1531,9 @@ export async function loadContractDetailRouteData(
 
   return {
     contract,
-    contractExpiryAlertDays: Number(settings.contractExpiryAlertDays) || 30,
+    contractExpiryAlertDays: sanitizeContractExpiryAlertDays(
+      settings.contractExpiryAlertDays ?? DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS
+    ),
   }
 }
 

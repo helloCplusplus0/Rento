@@ -5,10 +5,16 @@ import type {
   RoomStatus,
 } from '@prisma/client'
 
-import { createContractExpiryAlertDeadline } from './contract-alert-semantics'
+import {
+  buildContractExpiryAlertWhere,
+  buildExpiredAttentionContractWhere,
+  buildExpiringSoonContractWhere,
+  createContractReminderWindow,
+} from './contract-alert-query-filters'
 import { createBillStatusCountMap, sortBillsForDisplay } from './bill-semantics'
 import { globalSettings } from './global-settings'
 import { prisma } from './prisma'
+import { deriveRoomOccupancySnapshot, normalizeRoomOccupancySnapshot } from './room-occupancy'
 
 /**
  * phase10-03 查询层定位：
@@ -50,6 +56,44 @@ export const meterReadingDeletePolicy = {
   reason:
     '抄表记录会影响账单与历史追溯，当前阶段不支持删除历史抄表记录。',
 } as const
+
+function compareRoomRecords(
+  left: any,
+  right: any,
+  sort: { field: string; order: 'asc' | 'desc' }
+) {
+  const direction = sort.order === 'desc' ? -1 : 1
+
+  switch (sort.field) {
+    case 'floorNumber':
+      return (left.floorNumber - right.floorNumber) * direction
+    case 'rent':
+      return (Number(left.rent) - Number(right.rent)) * direction
+    case 'area':
+      return ((Number(left.area) || 0) - (Number(right.area) || 0)) * direction
+    case 'status':
+      return left.status.localeCompare(right.status, 'zh-CN') * direction
+    case 'roomType':
+      return left.roomType.localeCompare(right.roomType, 'zh-CN') * direction
+    case 'createdAt':
+      return (
+        (new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()) *
+        direction
+      )
+    case 'updatedAt':
+      return (
+        (new Date(left.updatedAt).getTime() - new Date(right.updatedAt).getTime()) *
+        direction
+      )
+    case 'roomNumber':
+    default:
+      return (
+        left.roomNumber.localeCompare(right.roomNumber, 'zh-CN', {
+          numeric: true,
+        }) * direction
+      )
+  }
+}
 
 // 楼栋相关查询
 export const buildingQueries = {
@@ -119,64 +163,75 @@ export const buildingQueries = {
 export const roomQueries = {
   // 根据楼栋查找房间
   findByBuilding: (buildingId: string) =>
-    prisma.room.findMany({
-      where: { buildingId },
-      include: {
-        building: true,
-        contracts: {
-          where: { status: 'ACTIVE' },
-          include: { renter: true },
+    prisma.room
+      .findMany({
+        where: { buildingId },
+        include: {
+          building: true,
+          contracts: {
+            where: { status: 'ACTIVE' },
+            include: { renter: true },
+          },
         },
-      },
-      orderBy: [{ floorNumber: 'asc' }, { roomNumber: 'asc' }],
-    }),
+        orderBy: [{ floorNumber: 'asc' }, { roomNumber: 'asc' }],
+      })
+      .then((rooms) => rooms.map((room) => normalizeRoomOccupancySnapshot(room))),
 
   // 根据状态查找房间
   findByStatus: (status: RoomStatus) =>
-    prisma.room.findMany({
-      where: { status },
-      include: {
-        building: true,
-        contracts: {
-          where: { status: 'ACTIVE' },
-          include: { renter: true },
+    prisma.room
+      .findMany({
+        include: {
+          building: true,
+          contracts: {
+            where: { status: 'ACTIVE' },
+            include: { renter: true },
+          },
         },
-      },
-      orderBy: { roomNumber: 'asc' },
-    }),
+        orderBy: { roomNumber: 'asc' },
+      })
+      .then((rooms) =>
+        rooms
+          .map((room) => normalizeRoomOccupancySnapshot(room))
+          .filter((room) => room.status === status)
+      ),
 
   // 查找所有房间
   findAll: () =>
-    prisma.room.findMany({
-      include: {
-        building: true,
-        contracts: {
-          where: { status: 'ACTIVE' },
-          include: { renter: true },
+    prisma.room
+      .findMany({
+        include: {
+          building: true,
+          contracts: {
+            where: { status: 'ACTIVE' },
+            include: { renter: true },
+          },
         },
-      },
-      orderBy: [
-        { building: { name: 'asc' } },
-        { floorNumber: 'asc' },
-        { roomNumber: 'asc' },
-      ],
-    }),
+        orderBy: [
+          { building: { name: 'asc' } },
+          { floorNumber: 'asc' },
+          { roomNumber: 'asc' },
+        ],
+      })
+      .then((rooms) => rooms.map((room) => normalizeRoomOccupancySnapshot(room))),
 
   // 根据ID查找房间
   findById: (id: string) =>
-    prisma.room.findUnique({
-      where: { id },
-      include: {
-        building: true,
-        contracts: {
-          include: {
-            renter: true,
-            bills: true,
+    prisma.room
+      .findUnique({
+        where: { id },
+        include: {
+          building: true,
+          contracts: {
+            include: {
+              renter: true,
+              bills: true,
+            },
+            orderBy: { createdAt: 'desc' }, // 按创建时间倒序，最新的合同在前
           },
-          orderBy: { createdAt: 'desc' }, // 按创建时间倒序，最新的合同在前
         },
-      },
-    }),
+      })
+      .then((room) => (room ? normalizeRoomOccupancySnapshot(room) : room)),
 
   // 创建房间
   create: (data: {
@@ -382,10 +437,6 @@ export const roomQueries = {
       where.floorNumber = { in: filters.floorNumbers }
     }
 
-    if (filters.statuses?.length) {
-      where.status = { in: filters.statuses }
-    }
-
     if (filters.roomTypes?.length) {
       where.roomType = { in: filters.roomTypes }
     }
@@ -404,43 +455,41 @@ export const roomQueries = {
       }
     }
 
-    // 执行查询
-    const [rooms, total] = await Promise.all([
-      prisma.room.findMany({
-        where,
-        include: {
-          building: true,
-          contracts: {
-            where: { status: 'ACTIVE' },
-            include: { renter: true },
-          },
+    const rawRooms = await prisma.room.findMany({
+      where,
+      include: {
+        building: true,
+        contracts: {
+          where: { status: 'ACTIVE' },
+          include: { renter: true },
         },
-        orderBy: { [sort.field]: sort.order },
-        skip: (pagination.page - 1) * pagination.limit,
-        take: pagination.limit,
-      }),
-      prisma.room.count({ where }),
-    ])
+      },
+    })
 
-    // 计算聚合数据
-    const aggregations = await prisma.room
-      .groupBy({
-        by: ['status'],
-        where,
-        _count: { status: true },
-      })
-      .then((results) => ({
-        statusCounts: results.reduce(
-          (acc, item) => {
-            acc[item.status] = item._count.status
-            return acc
-          },
-          {} as Record<string, number>
-        ),
-      }))
+    const normalizedRooms = rawRooms.map((room) => normalizeRoomOccupancySnapshot(room))
+    const statusFilteredRooms = filters.statuses?.length
+      ? normalizedRooms.filter((room) => filters.statuses!.includes(room.status))
+      : normalizedRooms
+    const sortedRooms = [...statusFilteredRooms].sort((left, right) =>
+      compareRoomRecords(left, right, sort)
+    )
+    const total = sortedRooms.length
+    const paginatedRooms = sortedRooms.slice(
+      (pagination.page - 1) * pagination.limit,
+      pagination.page * pagination.limit
+    )
+    const aggregations = {
+      statusCounts: statusFilteredRooms.reduce(
+        (acc, room) => {
+          acc[room.status] = (acc[room.status] || 0) + 1
+          return acc
+        },
+        {} as Record<string, number>
+      ),
+    }
 
     return {
-      rooms,
+      rooms: paginatedRooms,
       pagination: {
         total,
         page: pagination.page,
@@ -808,11 +857,21 @@ export const contractQueries = {
 
       // 同步更新房间状态：只有ACTIVE合同才占用房间
       if (initialStatus === 'ACTIVE') {
+        const renter = await tx.renter.findUnique({
+          where: { id: data.renterId },
+          select: { name: true },
+        })
+
+        if (!renter) {
+          throw new Error(`租客不存在: ${data.renterId}`)
+        }
+
         await tx.room.update({
           where: { id: data.roomId },
           data: {
             status: 'OCCUPIED',
-            currentRenter: data.renterId,
+            currentRenter: renter.name,
+            overdueDays: null,
           },
         })
       }
@@ -859,11 +918,34 @@ export const contractQueries = {
 
       // 如果合同状态变为TERMINATED，同步更新房间状态为VACANT
       if (data.status === 'TERMINATED') {
+        const remainingActiveContracts = await tx.contract.findMany({
+          where: {
+            roomId: existingContract.roomId,
+            status: 'ACTIVE',
+            id: { not: id },
+          },
+          include: {
+            renter: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: [{ startDate: 'desc' }, { createdAt: 'desc' }],
+        })
+        const nextRoomSnapshot = deriveRoomOccupancySnapshot({
+          status: existingContract.room.status,
+          currentRenter: existingContract.room.currentRenter,
+          overdueDays: existingContract.room.overdueDays,
+          contracts: remainingActiveContracts,
+        })
+
         await tx.room.update({
           where: { id: existingContract.roomId },
           data: {
-            status: 'VACANT',
-            currentRenter: null,
+            status: nextRoomSnapshot.status,
+            currentRenter: nextRoomSnapshot.currentRenter,
+            overdueDays: nextRoomSnapshot.overdueDays,
           },
         })
       }
@@ -887,47 +969,56 @@ export const contractQueries = {
       await globalSettings.getContractAlertSettings()
     const contractExpiryAlertDays =
       contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
-    const expiryAlertDeadline = createContractExpiryAlertDeadline(
+    const reminderWindow = createContractReminderWindow(
       contractExpiryAlertDays
     )
 
-    const [total, active, expired, terminated, expiringSoon, newThisMonth] =
-      await Promise.all([
-        prisma.contract.count(),
-        prisma.contract.count({ where: { status: 'ACTIVE' } }),
-        prisma.contract.count({ where: { status: 'EXPIRED' } }),
-        prisma.contract.count({ where: { status: 'TERMINATED' } }),
-        prisma.contract.count({
-          where: {
-            status: 'ACTIVE',
-            endDate: {
-              gte: new Date(),
-              lte: expiryAlertDeadline,
-            },
+    const [
+      total,
+      active,
+      expiredCount,
+      expiredStatusCount,
+      terminated,
+      expiringSoon,
+      newThisMonth,
+    ] = await Promise.all([
+      prisma.contract.count(),
+      prisma.contract.count({ where: { status: 'ACTIVE' } }),
+      prisma.contract.count({
+        where: buildExpiredAttentionContractWhere(reminderWindow),
+      }),
+      prisma.contract.count({
+        where: {
+          status: 'EXPIRED',
+          isExtended: false,
+        },
+      }),
+      prisma.contract.count({ where: { status: 'TERMINATED' } }),
+      prisma.contract.count({
+        where: buildExpiringSoonContractWhere(reminderWindow),
+      }),
+      prisma.contract.count({
+        where: {
+          createdAt: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
           },
-        }),
-        prisma.contract.count({
-          where: {
-            createdAt: {
-              gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-            },
-          },
-        }),
-      ])
+        },
+      }),
+    ])
 
-    const pending = total - active - expired - terminated
+    const pending = total - active - expiredStatusCount - terminated
 
     return {
       totalCount: total,
       activeCount: active,
-      expiredCount: expired,
+      expiredCount,
       terminatedCount: terminated,
       expiringSoonCount: expiringSoon,
       newThisMonth,
       statusDistribution: {
         pending,
         active,
-        expired,
+        expired: expiredStatusCount,
         terminated,
       },
     }
@@ -939,28 +1030,12 @@ export const contractQueries = {
       await globalSettings.getContractAlertSettings()
     const contractExpiryAlertDays =
       contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
-    const expiryAlertDeadline = createContractExpiryAlertDeadline(
+    const reminderWindow = createContractReminderWindow(
       contractExpiryAlertDays
     )
 
     const contracts = await prisma.contract.findMany({
-      where: {
-        OR: [
-          // 统一提醒窗口内到期的活跃合同
-          {
-            status: 'ACTIVE',
-            endDate: {
-              gte: new Date(),
-              lte: expiryAlertDeadline,
-            },
-          },
-          // 已到期但未处理的合同
-          {
-            status: 'ACTIVE',
-            endDate: { lt: new Date() },
-          },
-        ],
-      },
+      where: buildContractExpiryAlertWhere(reminderWindow),
       include: {
         room: { include: { building: true } },
         renter: true,

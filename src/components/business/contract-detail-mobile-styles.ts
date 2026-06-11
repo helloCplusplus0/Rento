@@ -9,6 +9,8 @@ export const contractDetailMobileStyles = {
   heroHeader:
     'mb-2.5 flex items-start justify-between gap-2 sm:mb-4 sm:gap-3',
   heroHeadingBlock: 'min-w-0 flex-1',
+  heroStatusCluster:
+    'ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1.5 self-start',
   heroTitle: 'break-words text-lg font-bold leading-6 sm:mb-2 sm:text-2xl sm:leading-7',
   heroSubtitle:
     'mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 text-xs leading-5 text-white/90 sm:mt-0 sm:text-lg sm:leading-7',
@@ -17,7 +19,7 @@ export const contractDetailMobileStyles = {
   heroSubtitleSecondary:
     'min-w-0 max-w-full font-mono text-[11px] leading-5 wrap-anywhere sm:text-base sm:leading-7',
   heroStatusBadge:
-    'ml-auto w-fit shrink-0 border-white/30 bg-white/20 text-white sm:self-start',
+    'w-fit shrink-0 border-white/30 bg-white/20 text-white sm:self-start',
   heroQuickGrid:
     'grid grid-cols-2 gap-x-3 gap-y-2 text-sm sm:grid-cols-2 sm:gap-4 md:grid-cols-4',
   heroQuickItem:
@@ -28,7 +30,6 @@ export const contractDetailMobileStyles = {
     'text-sm font-medium leading-5 sm:mt-0 sm:text-left sm:text-base sm:leading-6',
   heroQuickValueEmphasis:
     'text-base font-semibold leading-5 sm:mt-0 sm:text-left sm:text-lg sm:leading-6',
-  heroAlert: 'mt-2.5 rounded-lg border border-yellow-300/30 bg-yellow-500/20 p-2.5 sm:mt-4 sm:p-3',
   actionsGrid:
     'grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-4 sm:gap-3',
   actionButton:

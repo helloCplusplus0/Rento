@@ -312,9 +312,9 @@ export class DataConsistencyChecker {
       const activeContractsWithWrongRoomStatus = await prisma.contract.findMany(
         {
           where: {
-            status: { in: ['ACTIVE', 'PENDING'] },
+            status: 'ACTIVE',
             room: {
-              status: { not: 'OCCUPIED' },
+              status: { notIn: ['OCCUPIED', 'OVERDUE'] },
             },
           },
           include: {
@@ -344,10 +344,10 @@ export class DataConsistencyChecker {
       // 检查OCCUPIED房间是否有活跃合同
       const occupiedRoomsWithoutActiveContract = await prisma.room.findMany({
         where: {
-          status: 'OCCUPIED',
+          status: { in: ['OCCUPIED', 'OVERDUE'] },
           contracts: {
             none: {
-              status: { in: ['ACTIVE', 'PENDING'] },
+              status: 'ACTIVE',
             },
           },
         },
