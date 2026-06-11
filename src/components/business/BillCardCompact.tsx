@@ -1,19 +1,29 @@
 'use client'
 
+import { User } from 'lucide-react'
+
 import type { BillWithContractForClient } from '@/types/database'
+import {
+  DEFAULT_BILL_TRACKING_ALERT_DAYS,
+  getBillStatusTrackingHint,
+  sanitizeBillTrackingAlertDays,
+} from '@/lib/bill-alert-semantics'
 import {
   getBillDisplayLabel,
   getBillVisualConfig,
 } from '@/lib/bill-display'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { BillStatusTrackingHint } from '@/components/business/BillStatusTrackingHint'
 import { billListMobileStyles } from '@/components/business/bill-list-mobile-styles'
+import { contractListMobileStyles } from '@/components/business/contract-list-mobile-styles'
 import { Card, CardContent } from '@/components/ui/card'
 import { BillStatusBadge } from '@/components/ui/status-badge'
 import { TouchCard } from '@/components/ui/touch-button'
 
 interface BillCardCompactProps {
   bill: BillWithContractForClient
+  contractExpiryAlertDays?: number
   onClick?: () => void
   className?: string
 }
@@ -25,28 +35,26 @@ interface BillCardCompactProps {
  */
 export function BillCardCompact({
   bill,
+  contractExpiryAlertDays = DEFAULT_BILL_TRACKING_ALERT_DAYS,
   onClick,
   className,
 }: BillCardCompactProps) {
   const isOverdue = bill.status === 'OVERDUE'
-  const overdueDays = isOverdue
-    ? Math.ceil(
-        (Date.now() - new Date(bill.dueDate).getTime()) / (1000 * 60 * 60 * 24)
-      )
-    : 0
+  const normalizedAlertDays = sanitizeBillTrackingAlertDays(
+    contractExpiryAlertDays
+  )
+  const statusTrackingHint = getBillStatusTrackingHint(
+    bill,
+    normalizedAlertDays
+  )
+  const visualConfig = getBillVisualConfig(bill)
+  const Icon = visualConfig.icon
 
   return (
     <TouchCard onClick={onClick} className={className}>
-      <Card className="gap-0 overflow-hidden py-0 transition-all hover:shadow-md">
-        <CardContent className={billListMobileStyles.compactCardContent}>
-          {(() => {
-            const visualConfig = getBillVisualConfig(bill)
-            const Icon = visualConfig.icon
-
-            return (
-              <>
-          {/* 头部信息行 - 与桌面端功能完全一致 */}
-          <div className={billListMobileStyles.compactCardHeader}>
+      <Card className={contractListMobileStyles.card}>
+        <CardContent className={contractListMobileStyles.cardContent}>
+          <div className={contractListMobileStyles.cardHeader}>
             <div className={billListMobileStyles.compactCardLeading}>
               <div
                 className={cn(
@@ -58,51 +66,48 @@ export function BillCardCompact({
               >
                 <Icon className="h-4 w-4" />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className={billListMobileStyles.compactTitle}>
+              <div className={contractListMobileStyles.cardLeading}>
+                <div className={contractListMobileStyles.cardTitle}>
                   {getBillDisplayLabel(bill)}
                 </div>
-                <div className={billListMobileStyles.compactMeta}>
+                <div className={contractListMobileStyles.cardMeta}>
                   {bill.billNumber}
                 </div>
-                <div className={billListMobileStyles.compactMeta}>
+                <div className={contractListMobileStyles.cardMeta}>
                   {bill.contract.room.building.name} -{' '}
                   {bill.contract.room.roomNumber}
                 </div>
               </div>
             </div>
-            <BillStatusBadge
-              status={bill.status}
-              className={billListMobileStyles.compactBadge}
-            />
+            <div className={contractListMobileStyles.cardStatusCluster}>
+              {statusTrackingHint ? (
+                <BillStatusTrackingHint hint={statusTrackingHint} />
+              ) : null}
+              <BillStatusBadge
+                status={bill.status}
+                className={contractListMobileStyles.cardBadge}
+              />
+            </div>
           </div>
 
-          {/* 详细信息区域 - 补齐桌面端的所有功能 */}
-          <div className={billListMobileStyles.compactDetails}>
-            {/* 金额信息 - 与桌面端一致 */}
-            <div className={billListMobileStyles.compactDetailRow}>
-              <span className={billListMobileStyles.compactLabel}>
+          <div className={contractListMobileStyles.detailStack}>
+            <div className={contractListMobileStyles.detailRow}>
+              <span className={contractListMobileStyles.detailLabel}>
                 应收金额
               </span>
-              <span
-                className={cn(
-                  billListMobileStyles.compactValue,
-                  'font-semibold text-gray-900'
-                )}
-              >
+              <span className={contractListMobileStyles.detailValue}>
                 {formatCurrency(Number(bill.amount))}
               </span>
             </div>
 
-            {/* 已收金额 - 补齐桌面端功能 */}
             {Number(bill.receivedAmount) > 0 && (
-              <div className={billListMobileStyles.compactDetailRow}>
-                <span className={billListMobileStyles.compactLabel}>
+              <div className={contractListMobileStyles.detailRow}>
+                <span className={contractListMobileStyles.detailLabel}>
                   已收金额
                 </span>
                 <span
                   className={cn(
-                    billListMobileStyles.compactValue,
+                    contractListMobileStyles.detailValue,
                     'text-green-600'
                   )}
                 >
@@ -111,15 +116,14 @@ export function BillCardCompact({
               </div>
             )}
 
-            {/* 待收金额 - 补齐桌面端功能 */}
             {Number(bill.pendingAmount) > 0 && (
-              <div className={billListMobileStyles.compactDetailRow}>
-                <span className={billListMobileStyles.compactLabel}>
+              <div className={contractListMobileStyles.detailRow}>
+                <span className={contractListMobileStyles.detailLabel}>
                   待收金额
                 </span>
                 <span
                   className={cn(
-                    billListMobileStyles.compactValue,
+                    contractListMobileStyles.detailValue,
                     'text-orange-600'
                   )}
                 >
@@ -128,96 +132,64 @@ export function BillCardCompact({
               </div>
             )}
 
-            {/* 到期日期 - 与桌面端一致 */}
-            <div className={billListMobileStyles.compactDetailRow}>
-              <span className={billListMobileStyles.compactLabel}>
+            <div className={contractListMobileStyles.detailRow}>
+              <span className={contractListMobileStyles.detailLabel}>
                 到期日期
               </span>
-              <span
-                className={cn(
-                  billListMobileStyles.compactValue,
-                  'text-gray-900'
-                )}
-              >
+              <span className={contractListMobileStyles.detailValue}>
                 {formatDate(bill.dueDate)}
               </span>
             </div>
 
-            {/* 账期信息 - 补齐桌面端功能 */}
             {bill.period && (
-              <div className={billListMobileStyles.compactDetailPairRow}>
-                <span className={billListMobileStyles.compactDetailPairLabel}>
+              <div className={contractListMobileStyles.detailPairRow}>
+                <span className={contractListMobileStyles.detailLabel}>
                   账期
                 </span>
-                <span className={billListMobileStyles.compactDetailPairValue}>
+                <span className={contractListMobileStyles.detailPairValue}>
                   {bill.period}
                 </span>
               </div>
             )}
 
-            {/* 支付方式 - 补齐桌面端功能 */}
             {bill.paymentMethod && (
-              <div className={billListMobileStyles.compactDetailPairRow}>
-                <span className={billListMobileStyles.compactDetailPairLabel}>
+              <div className={contractListMobileStyles.detailPairRow}>
+                <span className={contractListMobileStyles.detailLabel}>
                   支付方式
                 </span>
-                <span className={billListMobileStyles.compactDetailPairValue}>
+                <span className={contractListMobileStyles.detailPairValue}>
                   {bill.paymentMethod}
                 </span>
               </div>
             )}
 
-            {/* 操作员信息 - 补齐桌面端功能 */}
             {bill.operator && (
-              <div className={billListMobileStyles.compactDetailPairRow}>
-                <span className={billListMobileStyles.compactDetailPairLabel}>
+              <div className={contractListMobileStyles.detailPairRow}>
+                <span className={contractListMobileStyles.detailLabel}>
                   操作员
                 </span>
-                <span className={billListMobileStyles.compactDetailPairValue}>
+                <span className={contractListMobileStyles.detailPairValue}>
                   {bill.operator}
                 </span>
               </div>
             )}
           </div>
 
-          {/* 底部信息 - 与桌面端功能一致 */}
-          <div className={billListMobileStyles.compactFooter}>
-            <div className={billListMobileStyles.compactFooterRow}>
-              <div className={billListMobileStyles.compactFooterLeading}>
-                <div
-                  className={cn(
-                    billListMobileStyles.compactFooterDot,
-                    isOverdue ? 'bg-red-500' : 'bg-blue-500'
-                  )}
-                ></div>
-                <span className={billListMobileStyles.compactMeta}>
+          <div className={contractListMobileStyles.footer}>
+            <div className={contractListMobileStyles.footerRow}>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <User className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                <span className={contractListMobileStyles.footerMetaText}>
                   租客：{bill.contract.renter.name}
                 </span>
               </div>
-
-              {/* 逾期信息 - 与桌面端一致 */}
-              {isOverdue && (
-                <div className={billListMobileStyles.compactOverdueInfo}>
-                  已逾期 {overdueDays} 天
-                </div>
-              )}
+              {bill.type ? (
+                <span className={contractListMobileStyles.footerMetaSubtle}>
+                  {bill.type}
+                </span>
+              ) : null}
             </div>
-
-            {/* 备注信息 - 补齐桌面端功能 */}
-            {bill.remarks && (
-              <div className={billListMobileStyles.compactRemarks}>
-                <span className={billListMobileStyles.compactLabel}>
-                  备注：
-                </span>
-                <span className={billListMobileStyles.compactRemarksValue}>
-                  {bill.remarks}
-                </span>
-              </div>
-            )}
           </div>
-              </>
-            )
-          })()}
         </CardContent>
       </Card>
     </TouchCard>

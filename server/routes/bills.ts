@@ -49,6 +49,8 @@ interface BillDetailItem {
   id: string
   billId: string
   meterReadingId: string
+  meterId?: string
+  meterNumber?: string
   meterType: string
   meterName: string
   usage: number
@@ -678,6 +680,7 @@ export function createBillRoutes(env: MinixServerEnv) {
                   meter: {
                     select: {
                       id: true,
+                      meterNumber: true,
                       displayName: true,
                       meterType: true,
                       unit: true,
@@ -695,6 +698,8 @@ export function createBillRoutes(env: MinixServerEnv) {
               id: detail.id,
               billId: detail.billId,
               meterReadingId: detail.meterReadingId,
+              meterId: detail.meterReading?.meter?.id,
+              meterNumber: detail.meterReading?.meter?.meterNumber,
               meterType: detail.meterType,
               meterName:
                 detail.meterName ||
@@ -741,6 +746,7 @@ export function createBillRoutes(env: MinixServerEnv) {
                 meter: {
                   select: {
                     id: true,
+                    meterNumber: true,
                     displayName: true,
                     meterType: true,
                     unit: true,
@@ -755,6 +761,8 @@ export function createBillRoutes(env: MinixServerEnv) {
                 id: `legacy-${meterReading.id}`,
                 billId,
                 meterReadingId: meterReading.id,
+                meterId: meterReading.meter.id,
+                meterNumber: meterReading.meter.meterNumber,
                 meterType: meterReading.meter.meterType,
                 meterName: meterReading.meter.displayName,
                 usage: Number(meterReading.usage),

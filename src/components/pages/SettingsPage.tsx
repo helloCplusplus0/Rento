@@ -130,7 +130,8 @@ export function SettingsPage({
     {
       id: 'contractExpiryAlertDays',
       title: '合同到期提醒窗口',
-      description: '用于合同列表筛选、详情提醒和离店提醒的统一到期窗口',
+      description:
+        '用于合同列表/详情提醒，以及账单列表卡片“今日到期 / X 天后到期 / 已逾期 X 天”的统一窗口；缺省时回退到全局默认值',
       type: 'input',
       value: settings.contractExpiryAlertDays,
       unit: '天',
@@ -223,6 +224,9 @@ export function SettingsPage({
             <p className={settingsMobileStyles.introText}>
               这里保存的是后续流程默认配置，不会直接改写历史合同、历史账单或既有抄表记录。
             </p>
+            <p className={settingsMobileStyles.introText}>
+              其中“合同到期提醒窗口”当前同时作为合同提醒与账单列表卡片状态跟踪提示的全局兜底阈值。
+            </p>
           </div>
         </div>
 
@@ -257,6 +261,8 @@ export function SettingsPage({
                   提醒相关
                 </div>
                 <ul className="list-disc space-y-1 pl-5">
+                  <li>合同到期提醒窗口当前同时服务合同提醒与账单卡片状态跟踪提示。</li>
+                  <li>账单列表卡片不单独新增第二套窗口设置，继续复用这一全局阈值。</li>
                   <li>通知偏好、提醒渠道和角色级提醒策略当前仍未在本页开放。</li>
                 </ul>
               </div>

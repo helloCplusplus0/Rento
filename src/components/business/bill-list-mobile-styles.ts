@@ -45,6 +45,4 @@ export const billListMobileStyles = {
   compactFooterLeading: 'flex min-w-0 items-center gap-1.5',
   compactFooterDot: 'h-1.5 w-1.5 rounded-full',
   compactOverdueInfo: 'shrink-0 text-[11px] font-medium leading-4 text-red-600',
-  compactRemarks: 'mt-0.5 sm:mt-1',
-  compactRemarksValue: 'ml-1 text-xs leading-4 text-gray-700',
 } as const

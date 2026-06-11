@@ -69,6 +69,7 @@ function BillListRouteContent({ data }: { data: BillListRouteData }) {
     <BillListPage
       initialBills={data.bills}
       initialSearchQuery={data.initialSearchQuery}
+      contractExpiryAlertDays={data.contractExpiryAlertDays}
       onOpenBill={(bill) =>
         navigateToMinixOrDocument(navigate, `/bills/${bill.id}`)
       }

@@ -167,6 +167,7 @@ export interface ContractCheckoutRouteData {
 export interface BillListRouteData {
   initialSearchQuery: string
   bills: BillWithContractForClient[]
+  contractExpiryAlertDays: number
 }
 
 export interface BillStatsRouteData {
@@ -182,6 +183,8 @@ interface BillUtilityDetailApiItem {
   id: string
   billId: string
   meterReadingId: string
+  meterId?: string
+  meterNumber?: string
   meterType: string
   meterName: string
   usage: unknown
@@ -210,6 +213,8 @@ export interface BillUtilityDetailRouteItem {
   id: string
   billId: string
   meterReadingId: string
+  meterId?: string
+  meterNumber?: string
   meterType: string
   meterName: string
   usage: number
@@ -503,6 +508,8 @@ function normalizeBillUtilityDetailForClient(
     id: detail.id,
     billId: detail.billId,
     meterReadingId: detail.meterReadingId,
+    meterId: detail.meterId,
+    meterNumber: detail.meterNumber,
     meterType: detail.meterType,
     meterName: detail.meterName,
     usage: toNumberValue(detail.usage),
@@ -1583,11 +1590,28 @@ export async function loadBillListRouteData(
 ): Promise<BillListRouteData> {
   const url = new URL(requestUrl)
   const initialSearchQuery = normalizeSearchQuery(url.searchParams.get('search'))
-  const bills = await fetchAllBillPages(initialSearchQuery, options)
+  const [bills, settings] = await Promise.all([
+    fetchAllBillPages(initialSearchQuery, options),
+    fetchApiEnvelope<Partial<AppSettings>>(
+      '/settings',
+      '账单提醒设置加载失败',
+      options
+    ).catch((error) => {
+      console.error(
+        '[minix] 加载账单提醒窗口配置失败，已回退默认值',
+        error
+      )
+
+      return {} as Partial<AppSettings>
+    }),
+  ])
 
   return {
     initialSearchQuery,
     bills,
+    contractExpiryAlertDays: sanitizeContractExpiryAlertDays(
+      settings.contractExpiryAlertDays ?? DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS
+    ),
   }
 }
 

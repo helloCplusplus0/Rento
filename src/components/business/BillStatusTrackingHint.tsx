@@ -1,8 +1,8 @@
-import type { ContractStatusTrackingHint as ContractStatusTrackingHintViewModel } from '@/lib/contract-alert-semantics'
+import type { BillStatusTrackingHint as BillStatusTrackingHintViewModel } from '@/lib/bill-alert-semantics'
 import { cn } from '@/lib/utils'
 
-interface ContractStatusTrackingHintProps {
-  hint: ContractStatusTrackingHintViewModel
+interface BillStatusTrackingHintProps {
+  hint: BillStatusTrackingHintViewModel
   inverted?: boolean
   className?: string
 }
@@ -19,11 +19,11 @@ const invertedToneClassNames = {
   danger: 'border-white/20 bg-white/15 text-white',
 } as const
 
-export function ContractStatusTrackingHint({
+export function BillStatusTrackingHint({
   hint,
   inverted = false,
   className,
-}: ContractStatusTrackingHintProps) {
+}: BillStatusTrackingHintProps) {
   const toneClassNames = inverted
     ? invertedToneClassNames[hint.tone]
     : defaultToneClassNames[hint.tone]

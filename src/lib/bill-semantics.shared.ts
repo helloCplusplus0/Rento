@@ -4,6 +4,7 @@
  * 禁止在这里引入 Prisma 单例、事务或任何 server-only 依赖。
  */
 export const BILL_AMOUNT_EPSILON = 0.01
+const DAY_IN_MS = 24 * 60 * 60 * 1000
 
 export type SharedBillStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'COMPLETED'
 
@@ -106,6 +107,31 @@ export function getBillPresentationStatus(
   return 'OPEN'
 }
 
+function createStartOfUtcDay(now: Date): Date {
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  )
+}
+
+function normalizeToUtcDayTimestamp(value: Date | string | number): number {
+  const normalizedDate = new Date(value)
+  return Date.UTC(
+    normalizedDate.getUTCFullYear(),
+    normalizedDate.getUTCMonth(),
+    normalizedDate.getUTCDate()
+  )
+}
+
+export function calculateDaysUntilBillDue(
+  dueDate: Date | string | number,
+  now: Date = new Date()
+): number {
+  return Math.round(
+    (normalizeToUtcDayTimestamp(dueDate) - createStartOfUtcDay(now).getTime()) /
+      DAY_IN_MS
+  )
+}
+
 function toBillTimestamp(value: Date | string | number): number {
   return new Date(value).getTime()
 }
@@ -114,16 +140,44 @@ function getBillDisplayGroupRank(bill: BillDisplaySortableLike): number {
   return getBillPresentationStatus(bill) === 'SETTLED' ? 1 : 0
 }
 
+export function getBillDistanceFromToday(
+  bill: Pick<BillDisplaySortableLike, 'dueDate'>,
+  now: Date = new Date()
+): number {
+  return Math.abs(calculateDaysUntilBillDue(bill.dueDate, now))
+}
+
+function getBillDueDirectionRank(
+  bill: Pick<BillDisplaySortableLike, 'dueDate'>,
+  now: Date = new Date()
+): number {
+  return calculateDaysUntilBillDue(bill.dueDate, now) < 0 ? 0 : 1
+}
+
 export function compareBillsForDisplay(
   a: BillDisplaySortableLike,
   b: BillDisplaySortableLike
 ): number {
+  const today = createStartOfUtcDay(new Date())
   const groupDiff = getBillDisplayGroupRank(a) - getBillDisplayGroupRank(b)
   if (groupDiff !== 0) {
     return groupDiff
   }
 
-  const dueDateDiff = toBillTimestamp(a.dueDate) - toBillTimestamp(b.dueDate)
+  const distanceDiff = getBillDistanceFromToday(a, today) - getBillDistanceFromToday(b, today)
+  if (distanceDiff !== 0) {
+    return distanceDiff
+  }
+
+  // 同距离时，逾期账单优先于未来到期账单，例如“已逾期 1 天”优先于“1 天后到期”。
+  const dueDirectionDiff =
+    getBillDueDirectionRank(a, today) - getBillDueDirectionRank(b, today)
+  if (dueDirectionDiff !== 0) {
+    return dueDirectionDiff
+  }
+
+  const dueDateDiff =
+    normalizeToUtcDayTimestamp(a.dueDate) - normalizeToUtcDayTimestamp(b.dueDate)
   if (dueDateDiff !== 0) {
     return dueDateDiff
   }

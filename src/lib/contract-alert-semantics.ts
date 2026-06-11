@@ -7,7 +7,7 @@ export const EXPIRED_CONTRACT_ALERT_TITLE = '已到期合同'
 export interface ContractStatusTrackingHint {
   kind: 'expiring-soon' | 'expired'
   text: string
-  tone: 'warning' | 'danger'
+  tone: 'info' | 'warning' | 'danger'
 }
 
 function createStartOfToday(now: Date): Date {
@@ -162,7 +162,7 @@ export function getContractStatusTrackingHint(
     return {
       kind: 'expiring-soon',
       text: `${daysUntilExpiry} 天后到期`,
-      tone: 'warning',
+      tone: 'info',
     }
   }
 

@@ -754,7 +754,8 @@ export const optimizedBillQueries = {
     }
 
     const [orderedBillIds, total] = await Promise.all([
-      // Prisma 原生 orderBy 无法直接表达“未完结优先”的展示分组，分页列表改为数据库侧 CASE 排序。
+      // Prisma 原生 orderBy 无法直接表达“未完结优先 + 距今天数升序 + 同距离逾期优先”的展示分组，
+      // 分页列表改为数据库侧 CASE 排序以保持与 shared bill semantics 一致。
       prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
         SELECT b."id"
         FROM "bills" AS b
@@ -766,6 +767,18 @@ export const optimizedBillQueries = {
         ORDER BY
           CASE
             WHEN b."status" IN ('PENDING', 'OVERDUE') AND b."pendingAmount" > 0.01 THEN 0
+            ELSE 1
+          END ASC,
+          ABS(
+            DATE_PART(
+              'day',
+              DATE_TRUNC('day', b."dueDate" AT TIME ZONE 'UTC')
+                - DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
+            )
+          ) ASC,
+          CASE
+            WHEN DATE_TRUNC('day', b."dueDate" AT TIME ZONE 'UTC')
+              < DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') THEN 0
             ELSE 1
           END ASC,
           b."dueDate" ASC,

@@ -179,7 +179,7 @@ export const DEFAULT_SETTINGS: SettingValue[] = [
     value: DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS,
     type: 'number',
     category: 'notification',
-    description: '合同到期提醒窗口天数',
+    description: '合同提醒与账单状态跟踪提示共用的窗口天数',
   },
   {
     key: 'upcomingMoveInAlertDays',

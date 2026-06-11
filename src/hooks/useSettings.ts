@@ -14,7 +14,7 @@ export interface AppSettings {
   defaultPaymentTiming: string // 默认付款时间
   defaultDepositMonths: number // 默认押金月数
   autoGenerateContractBills: boolean // 创建合同后默认自动生成账单
-  contractExpiryAlertDays: number // 合同到期提醒窗口天数
+  contractExpiryAlertDays: number // 合同/账单窗口型提醒的统一阈值天数
   upcomingMoveInAlertDays: number // 待入住合同提醒窗口天数
 
   // 系统设置

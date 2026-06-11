@@ -18,7 +18,6 @@ import {
   BillBasicInfo,
   type UtilityBillDetailsData,
 } from '@/components/business/BillBasicInfo'
-import { ContractRenterInfo } from '@/components/business/ContractRenterInfo'
 import { billDetailMobileStyles } from '@/components/business/bill-detail-mobile-styles'
 import { PaymentConfirmDialog } from '@/components/business/PaymentConfirmDialog'
 import { DetailPageTemplate } from '@/components/layout/DetailPageTemplate'
@@ -205,9 +204,6 @@ export function BillDetailPage({
           onOpenContract={onOpenContract}
           onOpenRenter={onOpenRenter}
         />
-
-        {/* 合同和租客信息 - 简化布局 */}
-        <ContractRenterInfo bill={bill} />
       </DetailPageTemplate>
 
       {/* 支付确认对话框 */}

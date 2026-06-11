@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ExternalLink, HelpCircle } from 'lucide-react'
+import { Droplets, ExternalLink, Flame, HelpCircle, Zap } from 'lucide-react'
 
 import { getBillDisplayLabel } from '@/lib/bill-display'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -40,6 +40,8 @@ export interface UtilityBillDetailItem {
   id: string
   billId: string
   meterReadingId: string
+  meterId?: string
+  meterNumber?: string
   meterType: string
   meterName: string
   usage: number
@@ -62,6 +64,48 @@ export interface UtilityBillDetailsData {
 
 const detailLinkClassName =
   'group flex w-full items-start gap-1 text-left text-sm font-medium leading-6 text-blue-600 transition-colors hover:text-blue-800'
+
+function getUtilityDetailMeterCode(detail: UtilityBillDetailItem) {
+  if (detail.meterNumber?.trim()) {
+    return detail.meterNumber.trim()
+  }
+
+  if (detail.meterId?.trim()) {
+    return detail.meterId.trim().slice(-8).toUpperCase()
+  }
+
+  return null
+}
+
+function getUtilityDetailMeterVisuals(meterType: string) {
+  switch (meterType) {
+    case 'ELECTRICITY':
+      return {
+        icon: Zap,
+        iconClassName: 'bg-amber-100 text-amber-700',
+      }
+    case 'COLD_WATER':
+      return {
+        icon: Droplets,
+        iconClassName: 'bg-sky-100 text-sky-700',
+      }
+    case 'HOT_WATER':
+      return {
+        icon: Droplets,
+        iconClassName: 'bg-cyan-100 text-cyan-700',
+      }
+    case 'GAS':
+      return {
+        icon: Flame,
+        iconClassName: 'bg-orange-100 text-orange-700',
+      }
+    default:
+      return {
+        icon: Droplets,
+        iconClassName: 'bg-gray-100 text-gray-600',
+      }
+  }
+}
 
 /**
  * 账单基本信息组件
@@ -455,47 +499,87 @@ function UtilitiesBillDetails({
             {billDetails.map((detail, index) => (
               <div
                 key={detail.id || index}
-                className={billDetailMobileStyles.detailCard}
+                className={cn(
+                  billDetailMobileStyles.detailCard,
+                  'border-gray-200 shadow-sm'
+                )}
               >
-                <div className={billDetailMobileStyles.detailCardHeader}>
-                  <div>
-                    <h5 className="text-sm font-semibold leading-6 text-gray-900">
-                      {detail.meterName || getMeterTypeName(detail.meterType)}
-                    </h5>
-                    <p className="text-xs leading-5 text-gray-500">
-                      {formatCurrency(detail.unitPrice)}/{detail.unit || '度'}
-                    </p>
-                    {detail.priceSource && (
-                      <p className="text-xs leading-5 text-blue-600">
-                        {detail.priceSource === 'METER_CONFIG'
-                          ? '仪表单价'
-                          : '全局单价'}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-base font-semibold leading-6 text-green-600 sm:text-lg">
-                      {formatCurrency(detail.amount)}
-                    </p>
-                  </div>
-                </div>
-                <div className={billDetailMobileStyles.detailCardMetaRow}>
-                  <div>
-                    <span className="leading-6 text-gray-600">
-                      {detail.usage} {detail.unit || '度'}
-                      {detail.previousReading !== null &&
-                        detail.currentReading && (
-                          <span className="text-gray-500">
-                            {' '}
-                            ({detail.currentReading} - {detail.previousReading})
+                {(() => {
+                  const visuals = getUtilityDetailMeterVisuals(detail.meterType)
+                  const MeterIcon = visuals.icon
+                  const meterCode = getUtilityDetailMeterCode(detail)
+
+                  return (
+                    <>
+                      <div className={billDetailMobileStyles.detailCardHeader}>
+                        <div className="flex min-w-0 w-full items-start gap-2 sm:flex-1">
+                          <div
+                            className={cn(
+                              'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9',
+                              visuals.iconClassName
+                            )}
+                          >
+                            <MeterIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
+                              <div className="min-w-0">
+                                <h5 className="truncate text-sm font-semibold leading-5 text-gray-900 sm:leading-6">
+                                  {detail.meterName || getMeterTypeName(detail.meterType)}
+                                </h5>
+                              </div>
+                              <div className="shrink-0 self-start rounded-lg bg-emerald-50 px-2.5 py-1.5 text-right sm:min-w-[76px] sm:px-3 sm:py-2">
+                                <p className="text-lg font-semibold leading-5 tabular-nums text-emerald-700 sm:text-lg sm:leading-6">
+                                  {formatCurrency(detail.amount)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-1 text-xs leading-5 text-gray-500 sm:mt-1.5 sm:gap-1.5">
+                              {meterCode ? (
+                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 font-mono text-[11px] font-medium leading-4 text-gray-600 sm:py-1">
+                                  {meterCode}
+                                </span>
+                              ) : null}
+                              <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 sm:py-1">
+                                {formatCurrency(detail.unitPrice)}/{detail.unit || '度'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-[auto_auto] items-center gap-x-2.5 gap-y-1 border-t border-dashed border-gray-200 pt-2 text-xs leading-5 text-gray-500 sm:flex sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1.5 sm:pt-2.5">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5">
+                          <span className="text-[11px] leading-4 text-gray-500">
+                            用量
                           </span>
-                        )}
-                    </span>
-                  </div>
-                  <div className="text-xs leading-5 text-gray-500">
-                    抄表日期：{formatDate(detail.readingDate)}
-                  </div>
-                </div>
+                          <span className="font-semibold text-gray-900">
+                            {detail.usage} {detail.unit || '度'}
+                          </span>
+                        </span>
+                        {detail.previousReading !== null ? (
+                          <span className="col-span-2 inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] leading-4 text-gray-600 sm:col-auto">
+                            <span>读数</span>
+                            <span className="font-mono tabular-nums">
+                              {detail.currentReading}
+                            </span>
+                            <span className="text-gray-400">-</span>
+                            <span className="font-mono tabular-nums">
+                              {detail.previousReading}
+                            </span>
+                          </span>
+                        ) : null}
+                        <span className="justify-self-end inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 sm:justify-self-auto">
+                          <span className="text-[11px] leading-4 text-gray-500">
+                            抄表
+                          </span>
+                          <span className="font-medium text-gray-700">
+                            {formatDate(detail.readingDate)}
+                          </span>
+                        </span>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             ))}
           </div>

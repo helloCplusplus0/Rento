@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 
+import { DEFAULT_BILL_TRACKING_ALERT_DAYS } from '@/lib/bill-alert-semantics'
 import {
   buildBillPresentationStats,
   getBillPresentationStatus,
@@ -25,6 +26,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 interface BillListPageProps {
   initialBills: BillWithContractForClient[]
   initialSearchQuery?: string
+  contractExpiryAlertDays?: number
   onOpenBill?: (bill: BillWithContractForClient) => void
   onOpenStats?: () => void
 }
@@ -36,11 +38,13 @@ interface BillListPageProps {
  */
 function BillGrid({
   bills,
+  contractExpiryAlertDays,
   onBillClick,
   loading,
   className,
 }: {
   bills: BillWithContractForClient[]
+  contractExpiryAlertDays: number
   onBillClick?: (bill: BillWithContractForClient) => void
   loading?: boolean
   className?: string
@@ -98,6 +102,7 @@ function BillGrid({
           <BillCardCompact
             key={bill.id}
             bill={bill}
+            contractExpiryAlertDays={contractExpiryAlertDays}
             onClick={() => onBillClick?.(bill)}
           />
         ))}
@@ -110,6 +115,7 @@ function BillGrid({
             key={bill.id}
             bill={bill}
             className="h-full"
+            contractExpiryAlertDays={contractExpiryAlertDays}
             onClick={() => onBillClick?.(bill)}
           />
         ))}
@@ -125,6 +131,7 @@ function BillGrid({
 export function BillListPage({
   initialBills,
   initialSearchQuery = '',
+  contractExpiryAlertDays = DEFAULT_BILL_TRACKING_ALERT_DAYS,
   onOpenBill,
   onOpenStats,
 }: BillListPageProps) {
@@ -233,6 +240,7 @@ export function BillListPage({
         {/* 账单网格 */}
         <BillGrid
           bills={filteredBills}
+          contractExpiryAlertDays={contractExpiryAlertDays}
           onBillClick={handleBillClick}
           loading={false}
         />

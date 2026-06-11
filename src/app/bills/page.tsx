@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { BarChart3 } from 'lucide-react'
 
+import { globalSettings } from '@/lib/global-settings'
+import { DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS } from '@/lib/contract-alert-semantics'
 import { billQueries } from '@/lib/queries'
-import { Button } from '@/components/ui/button'
 import { BillListPage } from '@/components/pages/BillListPage'
 
 // 禁用静态生成，强制使用服务端渲染
@@ -16,8 +15,12 @@ export const metadata: Metadata = {
 
 export default async function BillsPage() {
   try {
-    // 获取所有账单数据
-    const bills = await billQueries.findAll()
+    const [bills, contractAlertSettingsLoadResult] = await Promise.all([
+      billQueries.findAll(),
+      globalSettings.getContractAlertSettings(),
+    ])
+    const contractExpiryAlertDays =
+      contractAlertSettingsLoadResult.settings.contractExpiryAlertDays
 
     // 转换 Decimal 类型为 number
     const billsData = bills.map((bill) => ({
@@ -50,15 +53,19 @@ export default async function BillsPage() {
       },
     }))
 
-    return <BillListPage initialBills={billsData} />
+    return (
+      <BillListPage
+        initialBills={billsData}
+        contractExpiryAlertDays={contractExpiryAlertDays}
+      />
+    )
   } catch (error) {
     console.error('Failed to load bills:', error)
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">加载失败</h2>
-        <p className="mb-4 text-gray-600">无法加载账单数据，请稍后重试</p>
-        <Button onClick={() => window.location.reload()}>重新加载</Button>
-      </div>
+      <BillListPage
+        initialBills={[]}
+        contractExpiryAlertDays={DEFAULT_CONTRACT_EXPIRY_ALERT_DAYS}
+      />
     )
   }
 }
